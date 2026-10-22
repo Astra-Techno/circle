@@ -1,6 +1,20 @@
 # Phase 1 validation — 22 October 2026
 
-Environment: Windows, Flutter stable 3.44.8, Dart 3.12.2, Node 22.16.0. PHP is not on PATH; no backend work was attempted. The original repository had only README.md and CODEX_START_PROMPT.md and no Git history. Work is on feature/flutter-phase1.
+## Latest increment: navigation and feed reliability
+
+Worked exclusively on `main`. The worktree was clean and `git pull --ff-only origin main` reported up to date before implementation. Fetched `origin/main` again before delivery; no concurrent remote commits appeared. No feature branches or pull requests were created.
+
+Actual checks: `flutter pub get --enforce-lockfile` passed; `dart format --output=none --set-exit-if-changed .` passed on 18 Dart files with zero changes; `flutter analyze` passed with no issues; `flutter test` passed all **41 tests**, including the 10 existing golden comparisons without regeneration. One new brace-style lint was fixed before final validation.
+
+New coverage verifies invitation return destinations, rejection of external/unknown/looping destinations, query/fragment preservation, session-end cleanup, ordinary entry to the feed, and scrolling to the hundredth post then opening its detail. Existing interactions, accessibility and narrow/tablet/dark/large-text checks continue to pass. Golden baselines are unchanged and remain provisional; no new manual native screenshot review is claimed.
+
+`flutter devices` and `flutter emulators` again found no Android device or emulator. Native interaction, Android build, TalkBack and keyboard validation remain outstanding. No new web or APK build was run for this increment. `codex mcp list` still provides no configured Context7/Figma/Playwright integration; current primary Flutter/go_router docs were used without installing MCP servers or dependencies.
+
+Modified areas: app route policy/router, lazy feed presentation, regression tests, main-only CI and workflow/development/architecture documentation. No backend or real accounts/media were introduced. Native OS app links are not registered; the new return policy applies to in-app go_router destinations.
+
+## Initial prototype validation (historical)
+
+Environment: Windows, Flutter stable 3.44.8, Dart 3.12.2, Node 22.16.0. PHP is not on PATH; no backend work was attempted. The original repository had only README.md and CODEX_START_PROMPT.md and no Git history. Current work is on `main` only.
 
 ## Executed checks
 

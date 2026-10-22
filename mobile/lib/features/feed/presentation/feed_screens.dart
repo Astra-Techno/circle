@@ -26,8 +26,9 @@ class FeedScreen extends ConsumerWidget {
           ),
         ),
         data: (posts) {
+          if (postId == null) return FeedTimeline(posts: posts);
           final selected = posts.where((post) => post.id == postId).firstOrNull;
-          if (postId != null && selected == null) {
+          if (selected == null) {
             return const Notice(
               title: 'Memory unavailable',
               message: 'This post is no longer in your circle.',
@@ -37,60 +38,93 @@ class FeedScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(Space.lg),
               children: [
-                if (postId == null) ...[
-                  Text(
-                    'THE CLASS OF 2006',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  const SizedBox(height: Space.sm),
-                  Text(
-                    'Good to be together.',
-                    style: Theme.of(context).textTheme.headlineLarge,
-                  ),
-                  const SizedBox(height: Space.sm),
-                  const Text('Marigold College · Fictional private community'),
-                  const SizedBox(height: Space.section),
-                  FilledButton.icon(
-                    onPressed: () => context.push('/create'),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Share a memory'),
-                  ),
-                  const SizedBox(height: Space.section),
-                  if (posts.isEmpty)
-                    const Notice(
-                      title: 'The first story starts with you',
-                      message: 'Share a memory to bring this circle to life.',
+                PostCard(post: selected, detail: true),
+                Text(
+                  'Around this memory',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: Space.lg),
+                if (selected.comments.isEmpty)
+                  const Text('Be the first to add a thought.'),
+                for (final comment in selected.comments)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(Space.lg),
+                      child: Text(comment),
                     ),
-                  for (final post in posts) PostCard(post: post),
-                ] else ...[
-                  PostCard(post: selected!, detail: true),
-                  Text(
-                    'Around this memory',
-                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  const SizedBox(height: Space.lg),
-                  if (selected.comments.isEmpty)
-                    const Text('Be the first to add a thought.'),
-                  for (final comment in selected.comments)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(Space.lg),
-                        child: Text(comment),
-                      ),
-                    ),
-                  TextComposer(
-                    key: ValueKey(postId),
-                    label: 'Add a comment',
-                    button: 'Send comment',
-                    onSubmit: (text) =>
-                        ref.read(feedProvider.notifier).comment(postId!, text),
-                  ),
-                ],
+                TextComposer(
+                  key: ValueKey(postId),
+                  label: 'Add a comment',
+                  button: 'Send comment',
+                  onSubmit: (text) =>
+                      ref.read(feedProvider.notifier).comment(postId!, text),
+                ),
               ],
             ),
           );
         },
       );
+}
+
+class FeedTimeline extends StatelessWidget {
+  const FeedTimeline({super.key, required this.posts});
+  final List<Post> posts;
+  @override
+  Widget build(BuildContext context) {
+    final indexes = <String, int>{
+      'feed-intro': 0,
+      if (posts.isEmpty) 'feed-empty': 1,
+      for (var index = 0; index < posts.length; index++)
+        'post-${posts[index].id}': index + 1,
+    };
+    return ReadingPane(
+      child: ListView.builder(
+        padding: const EdgeInsets.all(Space.lg),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        itemCount: 1 + (posts.isEmpty ? 1 : posts.length),
+        findChildIndexCallback: (key) =>
+            key is ValueKey<String> ? indexes[key.value] : null,
+        itemBuilder: (context, index) {
+          if (index == 0) return const _FeedIntro(key: ValueKey('feed-intro'));
+          if (posts.isEmpty) {
+            return const Notice(
+              key: ValueKey('feed-empty'),
+              title: 'The first story starts with you',
+              message: 'Share a memory to bring this circle to life.',
+            );
+          }
+          final post = posts[index - 1];
+          return PostCard(key: ValueKey('post-${post.id}'), post: post);
+        },
+      ),
+    );
+  }
+}
+
+class _FeedIntro extends StatelessWidget {
+  const _FeedIntro({super.key});
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text('THE CLASS OF 2006', style: Theme.of(context).textTheme.labelLarge),
+      const SizedBox(height: Space.sm),
+      Text(
+        'Good to be together.',
+        style: Theme.of(context).textTheme.headlineLarge,
+      ),
+      const SizedBox(height: Space.sm),
+      const Text('Marigold College · Fictional private community'),
+      const SizedBox(height: Space.section),
+      FilledButton.icon(
+        onPressed: () => context.push('/create'),
+        icon: const Icon(Icons.edit_outlined),
+        label: const Text('Share a memory'),
+      ),
+      const SizedBox(height: Space.section),
+    ],
+  );
 }
 
 class PostCard extends ConsumerWidget {

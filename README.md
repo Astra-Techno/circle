@@ -2,7 +2,7 @@
 
 > **Current branch policy (owner instruction):** Use `main` only for all work and pushes. Do not create feature/topic branches. This supersedes older branching/PR workflow recommendations below and in the startup prompt. Preserve user changes and never force-push.
 
-> **Project status:** New project / implementation specification. No features are assumed to exist yet.
+> **Project status:** Phase 1 Flutter prototype implemented with fictional, session-local data. See `docs/validation.md` for verified behavior and remaining device/backend work.
 >
 > **First launch:** A private social network for one college-friends community. **Future vision:** Multiple independently administered private communities.
 
@@ -193,23 +193,23 @@ For Android emulator testing, the emulator normally reaches the host's localhost
 
 ## 9. Codex Web + local development simultaneously
 
-One **private GitHub repository** is the source of truth. Codex Web uses remote branches/PRs; Codex CLI operates on your local checkout. They do **not** automatically share uncommitted changes.
+One **private GitHub repository** is the source of truth. Codex Web and local Codex both work directly on `main`. They do **not** automatically share uncommitted changes. Never create feature branches or pull requests.
 
 **Preferred ownership split:**
 
 | Workstream | Tool/branch | Owner files |
 |---|---|---|
-| Flutter interface | Codex Web / `feature/flutter-ui` | `mobile/**` |
-| API and migrations | Local Codex / `feature/backend` | `backend/**` |
+| Flutter interface | Codex Web / `main` | `mobile/**` |
+| API and migrations | Local Codex / `main` | `backend/**` |
 | Contracts and security decisions | Shared review on `main` | `docs/**`, `AGENTS.md` |
 
 Rules:
 1. Settle shared API contract and entities on `main` before parallel feature work.
-2. One agent/branch owns a given file at a time. Avoid simultaneous edits to lockfiles or shared configuration.
-3. Use PRs to merge; review generated changes, tests, migrations and security behavior.
+2. One workstream owns a given file at a time. Coordinate ownership before simultaneous Web/local work. Avoid simultaneous edits to lockfiles or shared configuration.
+3. Commit completed and verified changes directly to `main`, then push to `origin/main` after successful validation. Never force-push or use destructive Git commands.
 4. Run `flutter analyze` and `flutter test` in `mobile/`; run PHP tests from `backend/` once configured.
 5. Use `.env.example` for configuration templates and `.env` locally; never commit real secrets.
-6. Pull latest `main` regularly; keep tasks small and integration frequent.
+6. Inspect status and pull the latest `origin/main` before starting. Never overwrite uncommitted changes. If remote changes appear, fetch and reconcile them safely before pushing. Keep tasks small and integration frequent.
 
 ## 10. First implementation milestone: a runnable Flutter prototype
 
@@ -264,7 +264,7 @@ Your immediate assignment is Milestone 1 only: build a runnable Flutter prototyp
 Do not add a real API, cloud credentials, Firebase configuration, payments, or AI features yet. Do not modify unrelated files or claim something is tested when it isn't.
 ```
 
-After the first Flutter prototype is reviewed, begin backend/API work on a separate branch.
+After the first Flutter prototype is reviewed, begin backend/API work on `main` with coordinated file ownership.
 
 ## 11. Definition of done for MVP
 
@@ -308,9 +308,9 @@ Treat the deliverable as a real consumer-grade social application, **not a colle
 - UI: widget tests, golden screenshot tests with fixed viewport and fonts, accessibility checks, overflow checks, and manual review on 360×800, 393×852 and tablet layouts; test dark mode and larger text scales.
 - PHP: Composer validation, PSR-12 linting, static analysis (PHPStan), PHPUnit or Pest automated tests, authorization tests for cross-community/group leakage, and API integration tests.
 - Web admin: TypeScript strict mode, lint/type checks, unit tests, Playwright browser smoke tests. Use Playwright **only** for web UI, not as a substitute for native Flutter emulator testing.
-- CI: add jobs for Flutter format/analyze/test, PHP lint/static analysis/test and backend security tests; add web jobs when admin is introduced. Block merges when checks fail.
+- CI: add jobs for Flutter format/analyze/test, PHP lint/static analysis/test and backend security tests; add web jobs when admin is introduced. Validate before committing and pushing directly to `main`; CI reruns checks on `main`.
 - Use security reviews for auth, multi-tenancy, signed media access, rate limits, moderation and retention/deletion. No user-generated media or PII uploaded to external AI/MCP tools without explicit authorization.
-- Every PR reports: scope, screenshots when UI changes, validation commands with real results, risks, and known limitations.
+- Every delivery reports: scope, screenshots when UI changes, validation commands with real results, risks, and known limitations. Do not create pull requests.
 
 ## 14. Design system and pixel-perfect implementation
 
@@ -427,7 +427,7 @@ For milestone acceptance check: coherent end-to-end flows, visual consistency, c
 
 A task is **done** only after acceptance criteria are met, not when code is merely generated.
 
-**Required checks before every Flutter UI PR**
+**Required checks before every Flutter UI commit**
 ```bash
 cd mobile
 flutter pub get
@@ -436,7 +436,7 @@ flutter analyze
 flutter test
 ```
 
-**Required checks before backend PRs** (once backend scaffolding exists)
+**Required checks before backend commits** (once backend scaffolding exists)
 ```bash
 cd backend
 composer validate --strict
@@ -457,9 +457,9 @@ Create `composer test` and `composer analyse` scripts when initializing the back
 - Ensure tests cover business behavior, state transitions, authorization denial and tenant isolation.
 
 **Repo collaboration policy**
-- `main` stays protected; Codex Web and local CLI work on independent topic branches.
+- Always work on `main`; never create feature branches or pull requests. Pull `origin/main` before starting, commit completed and verified work directly to `main`, and push after successful validation. Fetch and reconcile remote changes safely before pushing.
 - The first task owns `mobile/` only. Later backend tasks own `backend/`; changes to `docs/api-contracts/` require review by both tracks.
-- Keep commits focused and PRs reviewable. Do not reset, force-push, overwrite another branch or replace existing project structures without permission.
+- Keep commits focused and reviewable. Never use force push or destructive Git commands. Preserve all uncommitted changes and coordinate file ownership between concurrent Web/local workstreams.
 - `AGENTS.md` records executable development rules; `README.md` defines product and implementation requirements.
 - Record architectural decisions in `docs/adr/` using decision, context, alternatives, consequences.
 
@@ -470,6 +470,6 @@ Create `composer test` and `composer analyse` scripts when initializing the back
 3. If no Figma design exists, first create `docs/design-system.md` and original in-app mockups; do not claim a Figma-derived pixel-perfect result.
 4. Build the **first vertical slice**: welcome → invitation entry (mock verification) → home feed → post detail → comments, using fictional local data. Then extend navigation to groups, memories, directory and events.
 5. Run formatter, analyzer and tests; capture emulator screenshots if an emulator is available. Document any validation that could not run.
-6. Commit on a feature branch and prepare a concise PR description with checks and screenshots. No automatic merge to `main`.
+6. Commit completed and verified changes directly to `main` and push to `origin/main` after successful validation. Include a concise delivery report with checks and screenshots. Never create feature branches or pull requests.
 
 **Do not launch or collect real classmates' personal information until** invite-only access, private media delivery, abuse reporting, content deletion, account deletion, security checks and a simple privacy notice are implemented and reviewed.

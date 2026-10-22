@@ -7,6 +7,7 @@ import 'package:mobile/app/session.dart';
 import 'package:mobile/features/feed/domain/post.dart';
 import 'package:mobile/features/feed/data/mock_feed_repository.dart';
 import 'package:mobile/features/feed/presentation/feed_controller.dart';
+import 'package:mobile/features/feed/presentation/feed_screens.dart';
 
 Future<void> launch(
   WidgetTester tester, {
@@ -76,6 +77,42 @@ void main() {
     expect(find.textContaining('A very long fictional'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets(
+    'scrolling a long feed reaches the last post and opens its detail',
+    (tester) async {
+      await launch(tester, entered: true, repository: ShortFeed());
+      expect(find.byKey(const ValueKey('post-99')), findsNothing);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('post-99')),
+        600,
+        scrollable: find.byType(Scrollable).first,
+        maxScrolls: 100,
+      );
+      await tester.pumpAndSettle();
+      final card = find.byKey(const ValueKey('post-99'));
+      expect(
+        find.descendant(of: card, matching: find.text('Memory number 99')),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.descendant(of: card, matching: find.text('0 comments')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Memory number 99'), findsOneWidget);
+      expect(find.text('Around this memory'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets('ordinary invitation entry still opens the feed', (tester) async {
+    await launch(tester);
+    await tester.tap(find.text('Enter with an invitation'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'CIRCLE-DEMO');
+    await tester.ensureVisible(find.text('Open my circle'));
+    await tester.tap(find.text('Open my circle'));
+    await tester.pumpAndSettle();
+    expect(find.text('Good to be together.'), findsOneWidget);
+  });
   testWidgets('ending demo clears local writes and blocks private routes', (
     tester,
   ) async {
@@ -90,8 +127,19 @@ void main() {
     await tester.tap(find.text('End demo and clear session'));
     await tester.pumpAndSettle();
     expect(find.text('Your invitation'), findsOneWidget);
+    expect(
+      container
+          .read(routerProvider)
+          .routeInformationProvider
+          .value
+          .uri
+          .queryParameters
+          .containsKey('next'),
+      false,
+    );
     container.read(sessionProvider.notifier).enter('CIRCLE-DEMO');
     await tester.pumpAndSettle();
+    expect(find.text('Good to be together.'), findsOneWidget);
     expect(
       container
           .read(feedProvider)
@@ -142,7 +190,8 @@ void main() {
     await tester.enterText(find.byType(TextField), 'CIRCLE-DEMO');
     await tester.tap(find.text('Open my circle'));
     await tester.pumpAndSettle();
-    expect(find.text('Good to be together.'), findsOneWidget);
+    expect(find.text('Around this memory'), findsOneWidget);
+    expect(find.byType(PostCard), findsOneWidget);
   });
   testWidgets('reaction save comment and creation survive route changes', (
     tester,
@@ -302,6 +351,20 @@ class LargeFeed extends MockFeedRepository {
       communityId: demoCommunity,
       author: 'A fictional member with a very long name',
       body: 'A very long fictional memory. ' * 50,
+      date: 'Local fixture',
+    ),
+  );
+}
+
+class ShortFeed extends MockFeedRepository {
+  @override
+  Future<List<Post>> load(String communityId) async => List.generate(
+    100,
+    (index) => Post(
+      id: '$index',
+      communityId: demoCommunity,
+      author: 'Fictional member $index',
+      body: 'Memory number $index',
       date: 'Local fixture',
     ),
   );

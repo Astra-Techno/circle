@@ -7,19 +7,24 @@ import '../features/feed/presentation/feed_screens.dart';
 import '../features/community/domain/entry.dart';
 import '../features/community/presentation/community_screens.dart';
 import 'session.dart';
+import 'route_policy.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
-  ref.listen(sessionProvider, (_, _) => refresh.value++);
-  final router = GoRouter(
+  late final GoRouter router;
+  ref.listen(sessionProvider, (previous, entered) {
+    if (previous == true && !entered) {
+      // Ending a session discards pending return destinations and old pages.
+      router.go('/invite');
+    }
+    refresh.value++;
+  });
+  router = GoRouter(
     refreshListenable: refresh,
-    redirect: (context, state) {
-      final entered = ref.read(sessionProvider);
-      final public = state.uri.path == '/' || state.uri.path == '/invite';
-      if (!entered && !public) return '/invite';
-      if (entered && public) return '/feed';
-      return null;
-    },
+    redirect: (context, state) => invitationRedirect(
+      entered: ref.read(sessionProvider),
+      location: state.uri,
+    ),
     routes: [
       GoRoute(path: '/', builder: (_, _) => const WelcomeScreen()),
       GoRoute(path: '/invite', builder: (_, _) => const InvitationScreen()),
