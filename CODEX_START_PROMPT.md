@@ -1,5 +1,7 @@
 # CIRCLE — Copy-ready Codex CLI kickoff prompt
 
+> **Current branch policy (owner instruction):** Work and push directly on `main` only. Do not create feature/topic branches. This overrides older feature-branch requirements below and in README.md. Preserve user changes and never force-push.
+
 Paste the prompt below into Codex from the repository root after copying the updated `README.md` there.
 
 ---

@@ -1,5 +1,7 @@
 # CIRCLE — Private Communities, Shared Memories
 
+> **Current branch policy (owner instruction):** Use `main` only for all work and pushes. Do not create feature/topic branches. This supersedes older branching/PR workflow recommendations below and in the startup prompt. Preserve user changes and never force-push.
+
 > **Project status:** New project / implementation specification. No features are assumed to exist yet.
 >
 > **First launch:** A private social network for one college-friends community. **Future vision:** Multiple independently administered private communities.
