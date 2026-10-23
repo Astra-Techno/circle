@@ -4,7 +4,8 @@ import '../../../core/design.dart';
 import '../domain/access_validation.dart';
 
 class AccessWelcome extends StatelessWidget {
-  const AccessWelcome({super.key});
+  const AccessWelcome({super.key, this.onExploreDemo});
+  final VoidCallback? onExploreDemo;
   @override
   Widget build(BuildContext context) => _AccessPage(
     children: [
@@ -41,14 +42,25 @@ class AccessWelcome extends StatelessWidget {
         child: const Text('Already here? Log in'),
       ),
       const SizedBox(height: Space.lg),
+      if (onExploreDemo != null)
+        OutlinedButton.icon(
+          onPressed: onExploreDemo,
+          icon: const Icon(Icons.explore_outlined),
+          label: const Text('Explore fictional circles'),
+        ),
       const _PreviewNote(),
     ],
   );
 }
 
 class AccessForm extends StatefulWidget {
-  const AccessForm({super.key, required this.registering});
+  const AccessForm({
+    super.key,
+    required this.registering,
+    this.onPreviewComplete,
+  });
   final bool registering;
+  final VoidCallback? onPreviewComplete;
   @override
   State<AccessForm> createState() => _AccessFormState();
 }
@@ -74,7 +86,11 @@ class _AccessFormState extends State<AccessForm> {
     _mobile.clear();
     _password.clear();
     FocusScope.of(context).unfocus();
-    context.go('/complete');
+    if (widget.onPreviewComplete != null) {
+      widget.onPreviewComplete!();
+    } else {
+      context.go('/complete');
+    }
   }
 
   @override
