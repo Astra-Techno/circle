@@ -1,0 +1,6 @@
+# Tests tagged `smoke` talk to a real, running CIRCLE API over HTTP. They are
+# skipped in normal runs; see mobile/README.md ("Smoke test against a real
+# server") for how to run them on purpose.
+tags:
+  smoke:
+    skip: "Real-HTTP smoke test: run with --run-skipped --tags smoke and --dart-define=CIRCLE_SMOKE_API=<base URL>"

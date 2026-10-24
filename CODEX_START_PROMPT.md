@@ -1,47 +1,59 @@
 # CIRCLE — Copy-ready Codex CLI kickoff prompt
 
-> **Current branch policy (owner instruction):** Work and push directly on `main` only. Do not create feature/topic branches. This overrides older feature-branch requirements below and in README.md. Preserve user changes and never force-push.
+> **Current branch policy (owner instruction):** Work and push directly on `main` only. Do not create feature/topic branches. Preserve user changes and never force-push.
 
-Paste the prompt below into Codex from the repository root after copying the updated `README.md` there.
+Paste the prompt below into Codex from the repository root.
 
 ---
 
-You are the principal Flutter engineer, senior software architect, UI systems designer, and test lead for **CIRCLE**, an invite-only college-friends social app.
+You are the principal Flutter engineer, senior software architect, UI systems designer and test lead for **CIRCLE**, a private app where any real-life group (family, office, school, college, friends, club) can create a group, nest subgroups up to 10 levels deep, and share Memories, chat (group and 1:1, Instagram Direct style), plan events and run polls with only its members.
 
 ## Source of truth
-Read `README.md` **completely** before making changes, with special attention to engineering standards, MCP configuration, design quality, and definition of done (sections 13–18). Inspect the existing repository; preserve any existing code and user changes. If `AGENTS.md` exists, read and follow it.
+Read `README.md` **completely** before making changes:
+- §2: accounts (mobile + password, ADR 0005), groups, 10-level nesting, owner/admin/member roles, invite links, approval, listed/hidden subgroups, cascade removal.
+- §3: Memories, chat, events, polls, albums, profiles, notifications, moderation.
+- §4: UI plan. §4.0's ease-of-use and calm rules override feature wishes. Also the screen inventory, flows, states and UI-1…UI-6 phases with their status.
+- §12: current status. §15–20: engineering standards and definition of done.
+
+Also read `AGENTS.md`, `docs/adr/` (0001–0007), `docs/architecture.md` and `docs/validation.md`. Inspect the repository; preserve existing code and user changes. The post stream is called **Memories**, never "feed".
 
 ## Local development setup
-1. Inspect Git status, tooling, available SDKs and `codex mcp list`.
-2. Use Context7 for up-to-date dependency/API guidance when available. Use Figma MCP only when an actual authorized design link exists. Use Playwright MCP only for browser/web testing, not native Flutter screenshots. Use native Flutter analyzer, widget tests, golden tests, integration tests, and Android emulator/device for Flutter validation.
-3. If an MCP integration is unavailable, document that limitation and continue using installed local tools. Never invent a server, an API, successful authentication, screenshots, or test results. Do not embed secrets.
+1. Inspect Git status, tooling, available SDKs (Flutter 3.44.8, PHP 8.3, Composer) and the configured MCP servers.
+2. Use Context7 for up-to-date dependency/API guidance when available. Use Figma MCP only when an authorized design link exists. Use Stitch/Mobbin only for exploration and references, never as approval. Use Playwright MCP only for web testing, not native Flutter screenshots. Use the Flutter analyzer, widget tests, golden tests, integration tests and an Android emulator/device for Flutter validation.
+3. If an integration is unavailable, document that limitation and continue with installed local tools. Never invent a server, an API, successful authentication, screenshots or test results. Do not embed secrets.
 
-## Phase 1 — Flutter vertical slice (implement now)
-Build an attractive, production-minded Flutter **Android-first** app within `mobile/` using stable Flutter/Dart, Riverpod, go_router and Dio (if networking is needed). Start with a documented design system and reusable semantic theme tokens.
+## Current assignment
+Pick the next incomplete item from README §12 / §4.6, in this order unless the owner says otherwise:
 
-Implement a **working** journey:
-- Welcome and invitation onboarding, with explicitly MOCK invitation validation.
-- Home feed using realistic FICTIONAL college-friends profiles and posts.
-- Post detail, comments, reaction toggles and save/unsave with persistent in-session state.
-- Bottom navigation and functional shells for groups, memories, friends directory, reunions and profile.
-- Loading, empty, error, validation, long-text and accessibility states.
+1. **Finish UI-2** if any part is still open: groups tree, members/roles, invites with consent, mock invite links, join requests, approval/listed/hidden settings, leave with cascade warning.
+2. **UI-3:** Memories with photo placeholders, comments, reactions, audience picker (never a silent default), polls in Memories.
+3. **UI-4:** events, RSVP with guest counts, attendees, date polls.
+4. **UI-5:** Instagram Direct–style chat UI with local mock messages (explicitly not real-time): Chats/Requests, group + 1:1, double-tap ❤️, swipe to reply, unsend/edit, shared Memory/event/poll cards, polls.
+5. **UI-6:** albums, activity inbox, search, privacy/notification settings, reporting, tablet two-pane.
 
-Architecture: feature-first, separated presentation/domain/data layers; typed models, repositories, Riverpod providers/controllers, dependency injection, reusable UI building blocks, and testable data mocks. Do not put HTTP calls or database logic inside widgets. Backend and real authentication come later; do not fake production-readiness.
+Backend work is limited to fixes and tests until the owner reviews `docs/api-contracts/openapi.yaml` (ADR 0006).
+
+Architecture: feature-first presentation/domain/data layers, typed models, repository interfaces with mock implementations, Riverpod controllers, go_router (`StatefulShellRoute`), reusable components in `core/`. Product rules (depth limit, owner/last-admin rules, approval, listed/hidden, cascade removal, DM privacy) live in domain code with unit tests, not in widgets. Features never import `app/` or another feature's `data/`. No HTTP or database logic in widgets. Label mock behaviour once per screen; do not fake production auth, uploads or real-time delivery.
 
 ## Professional visual standard
-Create a polished, warm and premium interface suitable for college alumni rather than a generic social clone. Define 4-point spacing scale, semantic colors, typography, radii, iconography, responsive constraints and light/dark themes. Use licensed or fictional placeholder assets. Support common Android sizes, system font scaling and accessible targets. If no approved Figma frames exist, produce original UI and explicitly label it as original; never claim pixel-perfect equivalence to a nonexistent reference.
+Warm, calm and premium for adults of every age and group type. Follow README §4.0, §4.5 and §16 and `docs/design-system.md`:
+- 4-point spacing, semantic colors, typography, radii;
+- light/dark themes, responsive phone/tablet layouts, system font scaling;
+- ≥ 48 px targets.
 
-## Deliverables
-- Flutter project in `mobile/` with clear feature structure.
-- `docs/architecture.md`, `docs/design-system.md`, `docs/api-contracts/README.md` (future contract overview).
-- `AGENTS.md` with concise recurring instructions consistent with README.
-- Unit/widget tests, targeted golden tests, CI workflow, developer setup commands, emulator screenshot review checklist.
-- Brief `docs/decisions.md` describing significant tradeoffs.
+With no approved Figma frames, produce original UI and label it as original. Never claim pixel-perfect equivalence to a nonexistent reference.
 
 ## Verification required
-Run and report real results of `dart format --output=none --set-exit-if-changed .`, `flutter analyze` and `flutter test` in `mobile/`. If the emulator/device is accessible, run the app, exercise the main journey, capture screenshots, inspect layout and address defects. If not accessible, say exactly what remains unverified. Don't call incomplete UI, placeholder actions, untested functionality or unreviewed golden screenshots 'done'.
+Run and report real results:
+- In `mobile/`: `dart format --output=none --set-exit-if-changed .`, `flutter analyze` and `flutter test`.
+- In `backend/`, if touched: `composer test` and `composer analyse`.
+
+Goldens are rendered on Windows; regenerate and inspect them there. If an emulator/device is accessible, run the app, exercise the phase's flows, capture screenshots and fix defects. If not, say exactly what remains unverified. Don't call incomplete UI, placeholder actions, untested functionality or unreviewed golden screenshots "done".
 
 ## Collaboration safeguards
-Work exclusively on `main`. Inspect status and pull the latest `origin/main` before starting. Never create feature branches or pull requests, force-push, use destructive Git commands, overwrite uncommitted edits, install untrusted MCP packages, or store personal classmates' data. Commit completed and verified changes directly to `main`, then push to `origin/main` after validation. If remote changes appear, fetch and reconcile them safely before pushing. Coordinate file and lockfile ownership when Codex Web and local work overlap; avoid touching `backend/` in this first task. Prefer small coherent commits and document changed files.
+- Work exclusively on `main`. Inspect status and pull the latest `origin/main` before starting.
+- Never create branches or pull requests, force-push, use destructive Git commands, overwrite uncommitted edits, install untrusted MCP packages or store real people's data.
+- Commit completed and verified changes directly to `main`, then push to `origin/main` after validation. **Commit shared docs too**; don't leave README/AGENTS/docs edits uncommitted.
+- Coordinate file and lockfile ownership when Codex Web and local work overlap.
 
-First, give a concise plan based on the actual repository and local tooling. Then **implement**, test and document the working Phase 1 app. Finish with changed files, executed commands and results, screenshot status, blockers and precise next step.
+First, give a concise plan based on the actual repository and local tooling. Then **implement**, test and document the work. Finish with changed files, executed commands and results, screenshot status, blockers and the precise next step.

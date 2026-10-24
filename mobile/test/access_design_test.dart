@@ -1,49 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/auth_design_preview.dart';
 import 'package:mobile/features/auth/domain/access_validation.dart';
+import 'package:mobile/features/workspace/application/workspace_providers.dart';
+import 'support/circle_harness.dart';
 
-Future<void> reveal(WidgetTester tester, Finder finder) async {
-  if (finder.evaluate().isEmpty) {
-    await tester.scrollUntilVisible(
-      finder,
-      200,
-      scrollable: find.byType(Scrollable).first,
-      maxScrolls: 50,
-    );
-  }
-  await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
-  await tester.pumpAndSettle();
+Future<void> fillAccess(WidgetTester tester, {required String password}) async {
+  await tester.enterText(
+    find.byKey(const ValueKey('access-mobile')),
+    '+99912345678',
+  );
+  await tester.enterText(
+    find.byKey(const ValueKey('access-password')),
+    password,
+  );
 }
 
-Future<void> openPreview(
-  WidgetTester tester, {
-  Size size = const Size(393, 852),
-  double scale = 1,
-  Brightness brightness = Brightness.light,
-  double keyboard = 0,
-}) async {
-  tester.view.physicalSize = size;
-  tester.view.devicePixelRatio = 1;
-  tester.view.viewInsets = FakeViewPadding(bottom: keyboard);
-  tester.platformDispatcher.textScaleFactorTestValue = scale;
-  tester.platformDispatcher.platformBrightnessTestValue = brightness;
-  addTearDown(() {
-    tester.view.resetPhysicalSize();
-    tester.view.resetDevicePixelRatio();
-    tester.view.resetViewInsets();
-    tester.platformDispatcher.clearTextScaleFactorTestValue();
-    tester.platformDispatcher.clearPlatformBrightnessTestValue();
-  });
-  await tester.pumpWidget(const AuthDesignPreview());
-  await tester.pumpAndSettle();
-}
+String fieldText(WidgetTester tester, String key) =>
+    tester.widget<TextFormField>(find.byKey(ValueKey(key))).controller!.text;
 
 void main() {
   testWidgets('welcome has accessible labels, contrast and touch targets', (
     tester,
   ) async {
-    await openPreview(tester);
+    await openCircle(tester, entered: false);
     final handle = tester.ensureSemantics();
     try {
       await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
@@ -53,6 +32,7 @@ void main() {
       handle.dispose();
     }
   });
+
   test(
     'international phone syntax validates without claiming verification',
     () {
@@ -69,6 +49,7 @@ void main() {
       }
     },
   );
+
   test(
     'registration passphrases have length bounds; login allows existing passwords',
     () {
@@ -85,111 +66,118 @@ void main() {
       expect(AccessValidation.password('', registering: false), isNotNull);
     },
   );
+
   testWidgets(
-    'registration validates and completes only a clearly labeled preview',
+    'registration validates, clears input and opens an empty workspace',
     (tester) async {
-      await openPreview(tester);
-      await reveal(tester, find.text('Create account'));
-      await tester.tap(find.text('Create account'));
-      await tester.pumpAndSettle();
-      await reveal(tester, find.text('Preview registration'));
-      await tester.tap(find.text('Preview registration'));
-      await tester.pumpAndSettle();
+      final container = await openCircle(tester, entered: false);
+      await tapText(tester, 'Create account');
+      await tapText(tester, 'Preview registration');
       expect(find.textContaining('Include the country code'), findsOneWidget);
       expect(find.text('Enter your password.'), findsOneWidget);
-      await tester.enterText(
-        find.byKey(const ValueKey('access-mobile')),
-        '+99912345678',
-      );
-      await tester.enterText(
-        find.byKey(const ValueKey('access-password')),
-        'a fictional passphrase',
-      );
+      expect(container.read(circlePreviewSessionProvider), isFalse);
+      await fillAccess(tester, password: 'short');
+      await tapText(tester, 'Preview registration');
+      expect(find.textContaining('Use 15–128 characters'), findsOneWidget);
+      await fillAccess(tester, password: 'a fictional passphrase');
       await tester.tap(find.byTooltip('Show password'));
       await tester.pumpAndSettle();
       expect(find.byTooltip('Hide password'), findsOneWidget);
-      await reveal(tester, find.text('Preview registration'));
-      await tester.tap(find.text('Preview registration'));
+      await tapText(tester, 'Preview registration');
+      expect(container.read(circlePreviewSessionProvider), isTrue);
+      expect(workspaceOf(container).groups, isEmpty);
+      expect(find.text('A little space for your people'), findsOneWidget);
+      // Ending the preview returns to welcome; the form starts empty again.
+      await container.read(circlePreviewSessionProvider.notifier).leave();
       await tester.pumpAndSettle();
-      expect(find.textContaining('No account was created'), findsOneWidget);
-      expect(find.byType(TextFormField), findsNothing);
-      await reveal(tester, find.text('Back to the design preview'));
-      await tester.tap(find.text('Back to the design preview'));
-      await tester.pumpAndSettle();
-      await reveal(tester, find.text('Create account'));
-      await tester.tap(find.text('Create account'));
-      await tester.pumpAndSettle();
-      final mobile = tester.widget<TextFormField>(
-        find.byKey(const ValueKey('access-mobile')),
-      );
-      expect(mobile.controller!.text, isEmpty);
-      final password = tester.widget<TextFormField>(
-        find.byKey(const ValueKey('access-password')),
-      );
-      expect(password.controller!.text, isEmpty);
+      await tapText(tester, 'Create account');
+      expect(fieldText(tester, 'access-mobile'), isEmpty);
+      expect(fieldText(tester, 'access-password'), isEmpty);
     },
   );
-  testWidgets('login preview never requires an invitation or OTP', (
+
+  testWidgets('login never requires an invitation or OTP', (tester) async {
+    final container = await openCircle(tester, entered: false);
+    await tapText(tester, 'Log in');
+    expect(find.textContaining('OTP'), findsOneWidget);
+    await fillAccess(tester, password: 'fictional password');
+    await tapText(tester, 'Preview log in');
+    expect(container.read(circlePreviewSessionProvider), isTrue);
+    // Logging in never joins the fictional groups: the workspace is empty.
+    expect(find.text('A little space for your people'), findsOneWidget);
+  });
+
+  testWidgets('forms offer password-manager autofill hints', (tester) async {
+    await openCircle(tester, entered: false);
+    await tapText(tester, 'Create account');
+    expect(find.byType(AutofillGroup), findsOneWidget);
+    List<String>? hints(String key) => tester
+        .widget<EditableText>(
+          find.descendant(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byType(EditableText),
+          ),
+        )
+        .autofillHints
+        ?.toList();
+    expect(hints('access-mobile'), [AutofillHints.telephoneNumber]);
+    expect(hints('access-password'), [AutofillHints.newPassword]);
+    await tapText(tester, 'Have an account? Log in');
+    expect(hints('access-password'), [AutofillHints.password]);
+  });
+
+  testWidgets('switching between login and register keeps the destination', (
     tester,
   ) async {
-    await openPreview(tester);
-    await reveal(tester, find.text('Already here? Log in'));
-    await tester.tap(find.text('Already here? Log in'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const ValueKey('access-mobile')),
-      '+99912345678',
+    final container = await openCircle(tester, entered: false);
+    await go(tester, container, '/groups/g/club');
+    expect(currentUri(container).queryParameters['next'], '/groups/g/club');
+    await tapText(tester, 'New here? Create account');
+    expect(
+      currentUri(container).toString(),
+      '/register?next=%2Fgroups%2Fg%2Fclub',
     );
-    await tester.enterText(
-      find.byKey(const ValueKey('access-password')),
-      'fictional password',
-    );
-    await reveal(tester, find.text('Preview log in'));
-    await tester.tap(find.text('Preview log in'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('No account was created'), findsOneWidget);
+    await tapText(tester, 'Have an account? Log in');
+    await fillAccess(tester, password: 'fictional password');
+    await tapText(tester, 'Preview log in');
+    expect(currentUri(container).path, '/groups/g/club');
   });
+
   for (final size in [
     const Size(360, 800),
     const Size(393, 852),
     const Size(900, 1100),
   ]) {
     testWidgets('access layouts scale with keyboard at $size', (tester) async {
-      await openPreview(
+      await openCircle(
         tester,
+        entered: false,
         size: size,
         scale: 2,
         brightness: Brightness.dark,
         keyboard: 260,
       );
       expect(tester.takeException(), isNull);
-      await reveal(tester, find.text('Create account'));
-      await tester.tap(find.text('Create account'));
-      await tester.pumpAndSettle();
+      await tapText(tester, 'Create account');
       await reveal(tester, find.text('Preview registration'));
       expect(tester.takeException(), isNull);
-      await reveal(tester, find.text('Have an account? Log in'));
-      await tester.tap(find.text('Have an account? Log in'));
-      await tester.pumpAndSettle();
+      await tapText(tester, 'Have an account? Log in');
       await reveal(tester, find.text('Preview log in'));
       expect(tester.takeException(), isNull);
     });
   }
+
   for (final screen in ['welcome', 'register', 'login', 'register_dark']) {
     testWidgets('access golden $screen', (tester) async {
-      await openPreview(
+      await openCircle(
         tester,
+        entered: false,
         brightness: screen.endsWith('dark')
             ? Brightness.dark
             : Brightness.light,
       );
       if (screen != 'welcome') {
-        final label = screen == 'login'
-            ? 'Already here? Log in'
-            : 'Create account';
-        await reveal(tester, find.text(label));
-        await tester.tap(find.text(label));
-        await tester.pumpAndSettle();
+        await tapText(tester, screen == 'login' ? 'Log in' : 'Create account');
       }
       await expectLater(
         find.byType(MaterialApp),

@@ -4,10 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   TestWidgetsFlutterBinding.ensureInitialized();
-  final text = FontLoader('CircleRoboto')
-    ..addFont(rootBundle.load('assets/fonts/roboto-regular.ttf'))
-    ..addFont(rootBundle.load('assets/fonts/roboto-medium.ttf'))
-    ..addFont(rootBundle.load('assets/fonts/roboto-bold.ttf'));
+  final text = FontLoader('PlusJakartaSans')
+    ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-Regular.ttf'))
+    ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-Medium.ttf'))
+    ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-SemiBold.ttf'))
+    ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-Bold.ttf'));
   await text.load();
   await (FontLoader(
     'MaterialIcons',

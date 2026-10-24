@@ -1,5 +1,27 @@
+/// What the access form sends in server mode. The password is exactly as
+/// typed (never trimmed); the mobile number has spacing removed.
+class AccessDetails {
+  const AccessDetails({
+    required this.registering,
+    required this.mobile,
+    required this.password,
+    this.name,
+  });
+  final bool registering;
+  final String mobile, password;
+  final String? name;
+
+  /// Never print credentials.
+  @override
+  String toString() => 'AccessDetails(<redacted>)';
+}
+
 /// Input syntax only. Neither phone ownership nor credentials are verified here.
 abstract final class AccessValidation {
+  /// "+91 98765 43210" → "+919876543210" (the API's E.164 form).
+  static String normalizeMobile(String input) =>
+      input.replaceAll(RegExp(r'[\s()\-]'), '');
+
   static String? mobile(String? input) {
     final value = (input ?? '').replaceAll(RegExp(r'[\s()\-]'), '');
     if (!RegExp(r'^\+[1-9][0-9]{7,14}$').hasMatch(value)) {

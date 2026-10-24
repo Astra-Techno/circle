@@ -6,6 +6,7 @@ namespace Circle\Core;
 
 use PDO;
 use PDOException;
+use PDOStatement;
 
 final class Database
 {
@@ -28,9 +29,11 @@ final class Database
         self::$pdo = new PDO($dsn, $user, $pass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            // Native prepares: every named placeholder may appear only once per statement.
             PDO::ATTR_EMULATE_PREPARES => false,
             PDO::ATTR_STRINGIFY_FETCHES => false,
-            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
+            // All TIMESTAMP values are read and written in UTC.
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci, time_zone = '+00:00'",
         ]);
 
         return self::$pdo;
@@ -54,9 +57,47 @@ final class Database
 
     public static function rollback(): void
     {
-        if (self::connection()->inTransaction()) {
-            self::connection()->rollBack();
+        if (self::$pdo !== null && self::$pdo->inTransaction()) {
+            self::$pdo->rollBack();
         }
+    }
+
+    /**
+     * Runs $work in a transaction; rolls back and rethrows on any throwable
+     * (including test-mode ResponseSent), so callers never commit half-done work.
+     *
+     * @template T
+     * @param callable(): T $work
+     * @return T
+     */
+    public static function transaction(callable $work): mixed
+    {
+        self::beginTransaction();
+        try {
+            $result = $work();
+            self::commit();
+            return $result;
+        } catch (\Throwable $e) {
+            self::rollback();
+            throw $e;
+        }
+    }
+
+    /** @param array<string, mixed> $params */
+    private static function run(string $sql, array $params): PDOStatement
+    {
+        $stmt = self::connection()->prepare($sql);
+        foreach ($params as $name => $value) {
+            $type = match (true) {
+                is_int($value) => PDO::PARAM_INT,
+                is_bool($value) => PDO::PARAM_BOOL,
+                $value === null => PDO::PARAM_NULL,
+                default => PDO::PARAM_STR,
+            };
+            $stmt->bindValue(':' . ltrim((string) $name, ':'), $value, $type);
+        }
+        $stmt->execute();
+        return $stmt;
     }
 
     /**
@@ -65,30 +106,32 @@ final class Database
      */
     public static function query(string $sql, array $params = []): array
     {
-        $stmt = self::connection()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
+        return self::run($sql, $params)->fetchAll();
     }
 
-    /** @param array<string, mixed> $params */
+    /**
+     * @param array<string, mixed> $params
+     * @return array<string, mixed>|null
+     */
     public static function queryOne(string $sql, array $params = []): ?array
     {
-        $stmt = self::connection()->prepare($sql);
-        $stmt->execute($params);
-        $row = $stmt->fetch();
-        return $row !== false ? $row : null;
+        $row = self::run($sql, $params)->fetch();
+        return is_array($row) ? $row : null;
     }
 
     /** @param array<string, mixed> $params */
     public static function execute(string $sql, array $params = []): int
     {
-        $stmt = self::connection()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->rowCount();
+        return self::run($sql, $params)->rowCount();
     }
 
-    public static function lastInsertId(): string
+    public static function lastInsertId(): int
     {
-        return self::connection()->lastInsertId();
+        return (int) self::connection()->lastInsertId();
+    }
+
+    public static function isDuplicateKey(PDOException $e): bool
+    {
+        return ($e->errorInfo[1] ?? null) === 1062;
     }
 }

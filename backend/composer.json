@@ -10,6 +10,11 @@
         "phpunit/phpunit": "^11.0",
         "phpstan/phpstan": "^2.0"
     },
+    "suggest": {
+        "ext-gd": "Required to accept photo uploads (decode JPEG/PNG/WebP, re-encode to WebP, strip EXIF/GPS, resize). Without it media uploads fail closed with 503.",
+        "ext-exif": "Applies the camera orientation before metadata is stripped.",
+        "ext-fileinfo": "Required for media uploads: real-content sniffing (enabled by default in PHP builds)."
+    },
     "autoload": {
         "psr-4": {
             "Circle\\": "src/"
@@ -22,9 +27,10 @@
     },
     "scripts": {
         "test": "phpunit --colors=always",
-        "analyse": "phpstan analyse src --level=6",
+        "analyse": "phpstan analyse --no-progress",
         "migrate": "php src/Core/migrate.php",
-        "serve": "php -S localhost:8080 -t public"
+        "serve": "php -S localhost:8080 -t public",
+        "media:cleanup": "php src/Core/media_cleanup.php"
     },
     "config": {
         "sort-packages": true,

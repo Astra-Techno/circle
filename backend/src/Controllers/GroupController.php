@@ -14,26 +14,23 @@ use Circle\Repositories\MemberRepository;
 final class GroupController
 {
     private const TYPES = ['family', 'friends', 'school', 'college', 'office', 'club', 'other'];
-    private const MAX_DEPTH = 10;
+    public const MAX_DEPTH = 10;
 
     public static function index(Request $request): void
     {
-        $userId = $request->attr('user_id');
-        $groups = GroupRepository::findByUser((int) $userId);
-
-        Response::ok($groups);
+        Response::ok(GroupRepository::findByUser($request->userId()));
     }
 
     public static function show(Request $request): void
     {
-        $userId = (int) $request->attr('user_id');
+        $userId = $request->userId();
         $groupId = (int) $request->param('id');
 
         MemberRepository::requireActiveMember($groupId, $userId);
 
         $group = GroupRepository::findById($groupId);
         if ($group === null) {
-            Response::notFound('Group not found.');
+            Response::error('not_member', 'You are not a member of this group.', 403);
         }
 
         $group['member_count'] = MemberRepository::countActive($groupId);
@@ -43,9 +40,13 @@ final class GroupController
         Response::ok($group);
     }
 
+    /**
+     * Any user may create a root group; any active member of a group may create
+     * a subgroup inside it. The creator becomes owner and admin.
+     */
     public static function create(Request $request): void
     {
-        $userId = (int) $request->attr('user_id');
+        $userId = $request->userId();
         $name = $request->string('name');
         $type = $request->string('type', 'other');
         $description = $request->string('description');
@@ -66,14 +67,17 @@ final class GroupController
         $parentIdInt = null;
 
         if ($parentId !== null && $parentId !== '') {
+            if (!is_int($parentId) && !(is_string($parentId) && ctype_digit($parentId))) {
+                Response::validationError('parent_id must be a group id.');
+            }
             $parentIdInt = (int) $parentId;
 
-            // Must be a member of the parent group
+            // Must be an active member of the (exact) parent group.
             MemberRepository::requireActiveMember($parentIdInt, $userId);
 
             $parent = GroupRepository::findById($parentIdInt);
             if ($parent === null) {
-                Response::notFound('Parent group not found.');
+                Response::error('not_member', 'You are not a member of this group.', 403);
             }
 
             $depth = (int) $parent['depth'] + 1;
@@ -84,8 +88,9 @@ final class GroupController
             $rootId = $parent['root_id'] ?? $parent['id'];
         }
 
-        Database::beginTransaction();
-        try {
+        $groupId = Database::transaction(static function () use (
+            $parentIdInt, $rootId, $depth, $type, $name, $description, $visibility, $approvalMode, $userId
+        ): int {
             Database::execute(
                 'INSERT INTO `groups` (parent_id, root_id, depth, `type`, name, description, visibility, approval_mode, owner_user_id)
                  VALUES (:parent, :root, :depth, :type, :name, :desc, :vis, :approval, :owner)',
@@ -102,25 +107,22 @@ final class GroupController
                 ]
             );
 
-            $groupId = (int) Database::lastInsertId();
+            $groupId = Database::lastInsertId();
 
-            // Set root_id for root groups (self-referencing)
+            // Root groups reference themselves as root.
             if ($rootId === null) {
                 Database::execute(
-                    'UPDATE `groups` SET root_id = :id WHERE id = :id',
-                    ['id' => $groupId]
+                    'UPDATE `groups` SET root_id = :root WHERE id = :id',
+                    ['root' => $groupId, 'id' => $groupId]
                 );
-                $rootId = $groupId;
             }
 
-            // Insert closure table entries
-            // Self-reference
+            // Closure table: self-reference plus a copy of the parent's ancestors.
             Database::execute(
                 'INSERT INTO group_closure (ancestor_id, descendant_id, distance) VALUES (:id, :id2, 0)',
                 ['id' => $groupId, 'id2' => $groupId]
             );
 
-            // Copy ancestor entries from parent
             if ($parentIdInt !== null) {
                 Database::execute(
                     'INSERT INTO group_closure (ancestor_id, descendant_id, distance)
@@ -130,23 +132,17 @@ final class GroupController
                 );
             }
 
-            // Add creator as owner (admin role)
-            MemberRepository::addMember($groupId, $userId, 'admin', 'active');
+            MemberRepository::addMember($groupId, $userId, 'admin', $userId);
 
-            Database::commit();
+            return $groupId;
+        });
 
-            $group = GroupRepository::findById($groupId);
-            Response::created($group, 'Group created.');
-
-        } catch (\Throwable $e) {
-            Database::rollback();
-            Response::serverError('Failed to create group.');
-        }
+        Response::created(GroupRepository::findById($groupId), 'Group created.');
     }
 
     public static function update(Request $request): void
     {
-        $userId = (int) $request->attr('user_id');
+        $userId = $request->userId();
         $groupId = (int) $request->param('id');
 
         MemberRepository::requireAdmin($groupId, $userId);
@@ -154,45 +150,33 @@ final class GroupController
         $sets = [];
         $params = ['id' => $groupId];
 
-        $name = $request->string('name');
-        if ($name !== '') {
+        if ($request->has('name')) {
+            $name = $request->string('name');
             (new Validator())->string('name', $name, 1, 100)->bail();
             $sets[] = 'name = :name';
             $params['name'] = $name;
         }
 
-        $desc = $request->string('description');
-        if ($desc !== '') {
+        if ($request->has('description')) {
+            $desc = $request->string('description');
+            (new Validator())->string('description', $desc, 0, 1000, 'Description')->bail();
             $sets[] = 'description = :desc';
             $params['desc'] = $desc;
         }
 
-        $type = $request->string('type');
-        if ($type !== '') {
-            (new Validator())->enum('type', $type, self::TYPES)->bail();
-            $sets[] = '`type` = :type';
-            $params['type'] = $type;
-        }
-
-        $approval = $request->string('approval_mode');
-        if ($approval !== '') {
-            (new Validator())->enum('approval_mode', $approval, ['auto', 'manual'])->bail();
-            $sets[] = 'approval_mode = :approval';
-            $params['approval'] = $approval;
-        }
-
-        $visibility = $request->string('visibility');
-        if ($visibility !== '') {
-            (new Validator())->enum('visibility', $visibility, ['listed', 'hidden'])->bail();
-            $sets[] = 'visibility = :vis';
-            $params['vis'] = $visibility;
-        }
-
-        $linkSharing = $request->string('link_sharing');
-        if ($linkSharing !== '') {
-            (new Validator())->enum('link_sharing', $linkSharing, ['admins', 'members'])->bail();
-            $sets[] = 'link_sharing = :ls';
-            $params['ls'] = $linkSharing;
+        $enums = [
+            'type' => ['`type`', self::TYPES],
+            'approval_mode' => ['approval_mode', ['auto', 'manual']],
+            'visibility' => ['visibility', ['listed', 'hidden']],
+            'link_sharing' => ['link_sharing', ['admins', 'members']],
+        ];
+        foreach ($enums as $field => [$column, $allowed]) {
+            if ($request->has($field)) {
+                $value = $request->string($field);
+                (new Validator())->enum($field, $value, $allowed)->bail();
+                $sets[] = "{$column} = :{$field}";
+                $params[$field] = $value;
+            }
         }
 
         if ($sets === []) {
@@ -204,99 +188,95 @@ final class GroupController
             $params
         );
 
-        $group = GroupRepository::findById($groupId);
-        Response::ok($group, 'Group updated.');
+        Response::ok(GroupRepository::findById($groupId), 'Group updated.');
     }
 
     public static function subgroups(Request $request): void
     {
-        $userId = (int) $request->attr('user_id');
+        $userId = $request->userId();
         $groupId = (int) $request->param('id');
 
         MemberRepository::requireActiveMember($groupId, $userId);
 
-        $subgroups = GroupRepository::getDirectChildren($groupId, $userId);
-        Response::ok($subgroups);
+        Response::ok(GroupRepository::getDirectChildren($groupId, $userId));
     }
 
+    /**
+     * Leaving cascades to every descendant group. It is refused while the
+     * person owns, or is the last admin of, this group or any descendant they
+     * belong to: ownership/admin must be handed over first (no orphan groups).
+     */
     public static function leave(Request $request): void
     {
-        $userId = (int) $request->attr('user_id');
+        $userId = $request->userId();
         $groupId = (int) $request->param('id');
+
+        MemberRepository::requireActiveMember($groupId, $userId);
 
         $group = GroupRepository::findById($groupId);
         if ($group === null) {
-            Response::notFound('Group not found.');
+            Response::error('not_member', 'You are not a member of this group.', 403);
         }
 
-        // Owner cannot leave without transferring ownership
         if ((int) $group['owner_user_id'] === $userId) {
             Response::error('owner_protected', 'Transfer ownership before leaving.', 422);
         }
 
-        // Last admin cannot leave
-        $role = MemberRepository::getRole($groupId, $userId);
-        if ($role === 'admin') {
-            $adminCount = MemberRepository::countAdmins($groupId);
-            if ($adminCount <= 1) {
+        $blockers = MemberRepository::exitBlockers($groupId, $userId);
+        foreach ($blockers as $b) {
+            if ($b['id'] === $groupId && $b['reason'] === 'last_admin') {
                 Response::error('last_admin', 'Promote another admin before leaving.', 422);
             }
         }
-
-        // Cascade: leave this group and all descendant groups
-        Database::beginTransaction();
-        try {
-            $descendantIds = GroupRepository::getDescendantIds($groupId);
-            $allGroupIds = array_merge([$groupId], $descendantIds);
-
-            foreach ($allGroupIds as $gid) {
-                MemberRepository::removeMember($gid, $userId, 'left');
-            }
-
-            Database::commit();
-
-            $affectedGroups = array_map(fn($id) => ['group_id' => $id], $allGroupIds);
-            Response::ok(['left_groups' => $affectedGroups], 'Left group and all subgroups.');
-
-        } catch (\Throwable $e) {
-            Database::rollback();
-            Response::serverError('Failed to leave group.');
+        if ($blockers !== []) {
+            Response::error(
+                'subgroup_handover_required',
+                'You own or are the only admin of subgroups inside this group. Transfer ownership or promote another admin there first.',
+                409,
+                ['groups' => $blockers]
+            );
         }
+
+        $left = Database::transaction(
+            static fn (): array => MemberRepository::cascadeExit($groupId, $userId, 'left')
+        );
+
+        Response::ok(
+            ['left_groups' => array_map(static fn (int $id): array => ['group_id' => $id], $left)],
+            'Left group and all subgroups.'
+        );
     }
 
     public static function transferOwnership(Request $request): void
     {
-        $userId = (int) $request->attr('user_id');
+        $userId = $request->userId();
         $groupId = (int) $request->param('id');
         $newOwnerId = $request->int('new_owner_id');
 
-        $group = GroupRepository::findById($groupId);
-        if ($group === null) {
-            Response::notFound('Group not found.');
-        }
+        MemberRepository::requireActiveMember($groupId, $userId);
 
-        if ((int) $group['owner_user_id'] !== $userId) {
+        $group = GroupRepository::findById($groupId);
+        if ($group === null || (int) $group['owner_user_id'] !== $userId) {
             Response::forbidden('Only the owner can transfer ownership.');
         }
 
-        MemberRepository::requireActiveMember($groupId, $newOwnerId);
+        if ($newOwnerId === $userId) {
+            Response::validationError('You already own this group.');
+        }
 
-        Database::beginTransaction();
-        try {
+        if (!MemberRepository::isActiveMember($groupId, $newOwnerId)) {
+            Response::error('member_not_found', 'The new owner must be an active member of this group.', 422);
+        }
+
+        Database::transaction(static function () use ($groupId, $newOwnerId): void {
             Database::execute(
                 'UPDATE `groups` SET owner_user_id = :new WHERE id = :id',
                 ['new' => $newOwnerId, 'id' => $groupId]
             );
-
-            // Ensure new owner is admin
+            // The owner is always an admin. The previous owner stays an admin.
             MemberRepository::ensureAdmin($groupId, $newOwnerId);
+        });
 
-            Database::commit();
-            Response::ok(null, 'Ownership transferred.');
-
-        } catch (\Throwable $e) {
-            Database::rollback();
-            Response::serverError('Failed to transfer ownership.');
-        }
+        Response::ok(null, 'Ownership transferred.');
     }
 }

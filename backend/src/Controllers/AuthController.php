@@ -5,87 +5,123 @@ declare(strict_types=1);
 namespace Circle\Controllers;
 
 use Circle\Core\Database;
+use Circle\Core\Env;
 use Circle\Core\JWT;
+use Circle\Core\Passwords;
 use Circle\Core\Request;
 use Circle\Core\Response;
 use Circle\Core\Validator;
+use Circle\Middleware\RateLimitMiddleware;
 
+/**
+ * Mobile number + password accounts (ADR 0005).
+ *
+ * - Passwords are read byte-for-byte (never trimmed) and hashed with Argon2id.
+ * - Registration never reveals whether a number is already registered: every
+ *   valid request gets the same 202 response, and the client then signs in.
+ * - Login failures are generic and always cost one Argon2id verification.
+ */
 final class AuthController
 {
+    /** Hard cap on login input to bound hashing work; longer input simply fails. */
+    private const MAX_LOGIN_PASSWORD_BYTES = 1024;
+
     public static function register(Request $request): void
     {
         $mobile = $request->string('mobile');
-        $password = $request->string('password');
+        $password = $request->raw('password');
         $displayName = $request->string('display_name');
 
         $v = new Validator();
         $v->required('mobile', $mobile)->mobile($mobile);
-        $v->required('password', $password)->password($password);
+        if ($password === '') {
+            Response::validationError('password is required.');
+        }
+        $v->password($password);
         $v->string('display_name', $displayName, 0, 100, 'Display name');
         $v->bail();
 
-        // Check uniqueness
+        // Hash first so the "already registered" path costs the same.
+        $passwordHash = Passwords::hash($password);
+
         $existing = Database::queryOne(
             'SELECT id FROM users WHERE mobile = :mobile',
             ['mobile' => $mobile]
         );
-        if ($existing !== null) {
-            Response::error('mobile_taken', 'This mobile number is already registered.', 409);
+
+        if ($existing === null) {
+            try {
+                Database::execute(
+                    'INSERT INTO users (mobile, password_hash, display_name) VALUES (:mobile, :hash, :name)',
+                    ['mobile' => $mobile, 'hash' => $passwordHash, 'name' => $displayName]
+                );
+            } catch (\PDOException $e) {
+                if (!Database::isDuplicateKey($e)) {
+                    throw $e;
+                }
+                // Concurrent registration of the same number: same generic answer.
+            }
         }
 
-        $passwordHash = password_hash($password, PASSWORD_ARGON2ID);
-
-        Database::execute(
-            'INSERT INTO users (mobile, password_hash, display_name) VALUES (:mobile, :hash, :name)',
-            ['mobile' => $mobile, 'hash' => $passwordHash, 'name' => $displayName]
+        Response::accepted(
+            ['next' => 'login'],
+            'If this number can be registered, your account is ready. Sign in to continue.'
         );
-
-        $userId = (int) Database::lastInsertId();
-        $tokens = JWT::issueTokens($userId);
-
-        // Store refresh token hash
-        self::storeRefreshToken($userId, $tokens['refresh_token']);
-
-        Response::created([
-            'user' => [
-                'id' => $userId,
-                'mobile' => $mobile,
-                'display_name' => $displayName,
-            ],
-            ...$tokens,
-        ], 'Account created successfully.');
     }
 
     public static function login(Request $request): void
     {
         $mobile = $request->string('mobile');
-        $password = $request->string('password');
+        $password = $request->raw('password');
 
-        $v = new Validator();
-        $v->required('mobile', $mobile);
-        $v->required('password', $password);
-        $v->bail();
-
-        $user = Database::queryOne(
-            'SELECT id, mobile, display_name, password_hash, status FROM users WHERE mobile = :mobile',
-            ['mobile' => $mobile]
-        );
-
-        // Generic failure message to avoid user enumeration
-        if ($user === null || !password_verify($password, $user['password_hash'])) {
-            Response::error('invalid_credentials', 'Invalid mobile number or password.', 401);
+        if ($mobile === '' || $password === '') {
+            Response::validationError('Mobile number and password are required.');
         }
 
+        if (RateLimitMiddleware::tooManyLoginFailures($mobile)) {
+            Response::header('Retry-After', '900');
+            Response::tooMany('Too many sign-in attempts. Please try again later.');
+        }
+
+        $user = null;
+        if (strlen($password) <= self::MAX_LOGIN_PASSWORD_BYTES && strlen($mobile) <= 20) {
+            $user = Database::queryOne(
+                'SELECT id, mobile, display_name, password_hash, status FROM users WHERE mobile = :mobile',
+                ['mobile' => $mobile]
+            );
+        }
+
+        $hash = $user !== null && $user['status'] !== 'deleted' ? (string) $user['password_hash'] : null;
+        $verified = strlen($password) <= self::MAX_LOGIN_PASSWORD_BYTES
+            ? Passwords::verify($password, $hash)
+            : Passwords::verify('', null);
+
+        if (!$verified || $user === null) {
+            RateLimitMiddleware::recordLoginFailure($mobile);
+            Response::unauthorized('Invalid mobile number or password.', 'invalid_credentials');
+        }
+
+        // Only someone holding the correct password learns the account state.
         if ($user['status'] !== 'active') {
-            Response::error('account_suspended', 'This account is not active.', 403);
+            Response::forbidden('This account is not active.', 'account_inactive');
         }
 
-        $tokens = JWT::issueTokens((int) $user['id']);
-        self::storeRefreshToken((int) $user['id'], $tokens['refresh_token']);
+        $userId = (int) $user['id'];
+
+        if ($hash !== null && Passwords::needsRehash($hash)) {
+            Database::execute(
+                'UPDATE users SET password_hash = :hash WHERE id = :id',
+                ['hash' => Passwords::hash($password), 'id' => $userId]
+            );
+        }
+
+        $sessionId = bin2hex(random_bytes(16));
+        $tokens = JWT::issueTokens($userId, $sessionId);
+        self::storeRefreshToken($userId, $sessionId, $tokens['refresh_token']);
 
         Response::ok([
             'user' => [
-                'id' => (int) $user['id'],
+                'id' => $userId,
                 'mobile' => $user['mobile'],
                 'display_name' => $user['display_name'],
             ],
@@ -93,65 +129,77 @@ final class AuthController
         ], 'Login successful.');
     }
 
+    /**
+     * Rotates the refresh token. The presented token is revoked atomically, so
+     * a token can be redeemed exactly once.
+     */
     public static function refresh(Request $request): void
     {
-        $refreshToken = $request->string('refresh_token');
+        $refreshToken = $request->raw('refresh_token');
         if ($refreshToken === '') {
             Response::validationError('Refresh token is required.');
         }
 
-        $userId = JWT::validateRefresh($refreshToken);
-        if ($userId === null) {
-            Response::unauthorized('Invalid or expired refresh token.');
+        $claims = JWT::validateRefresh($refreshToken);
+        if ($claims === null) {
+            Response::unauthorized('Invalid or expired refresh token.', 'invalid_token');
         }
+        $userId = $claims['user_id'];
+        $sessionId = $claims['session_id'];
 
-        // Verify token exists in DB and not revoked
-        $tokenHash = hash('sha256', $refreshToken);
-        $stored = Database::queryOne(
-            'SELECT id FROM refresh_tokens WHERE user_id = :uid AND token_hash = :hash AND revoked_at IS NULL AND expires_at > NOW()',
-            ['uid' => $userId, 'hash' => $tokenHash]
-        );
+        $tokens = Database::transaction(static function () use ($refreshToken, $userId, $sessionId): ?array {
+            $stored = Database::queryOne(
+                'SELECT rt.id, u.status
+                 FROM refresh_tokens rt JOIN users u ON u.id = rt.user_id
+                 WHERE rt.user_id = :uid AND rt.session_id = :sid AND rt.token_hash = :hash
+                   AND rt.revoked_at IS NULL AND rt.expires_at > NOW()
+                 FOR UPDATE',
+                ['uid' => $userId, 'sid' => $sessionId, 'hash' => hash('sha256', $refreshToken)]
+            );
 
-        if ($stored === null) {
-            Response::unauthorized('Refresh token has been revoked.');
+            if ($stored === null) {
+                Response::unauthorized('Invalid or expired refresh token.', 'invalid_token');
+            }
+
+            $revoked = Database::execute(
+                'UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = :id AND revoked_at IS NULL',
+                ['id' => (int) $stored['id']]
+            );
+            if ($revoked !== 1) {
+                Response::unauthorized('Invalid or expired refresh token.', 'invalid_token');
+            }
+
+            if ($stored['status'] !== 'active') {
+                self::revokeSession($userId, $sessionId);
+                return null;
+            }
+
+            $tokens = JWT::issueTokens($userId, $sessionId);
+            self::storeRefreshToken($userId, $sessionId, $tokens['refresh_token']);
+            return $tokens;
+        });
+
+        if ($tokens === null) {
+            Response::forbidden('This account is not active.', 'account_inactive');
         }
-
-        // Revoke old token
-        Database::execute(
-            'UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = :id',
-            ['id' => $stored['id']]
-        );
-
-        // Issue new pair
-        $tokens = JWT::issueTokens($userId);
-        self::storeRefreshToken($userId, $tokens['refresh_token']);
 
         Response::ok($tokens, 'Tokens refreshed.');
     }
 
+    /** Ends the current session: its refresh tokens and access tokens stop working. */
     public static function logout(Request $request): void
     {
-        $userId = $request->attr('user_id');
-        $refreshToken = $request->string('refresh_token');
-
-        if ($refreshToken !== '') {
-            $tokenHash = hash('sha256', $refreshToken);
-            Database::execute(
-                'UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = :uid AND token_hash = :hash',
-                ['uid' => $userId, 'hash' => $tokenHash]
-            );
-        }
+        $sessionId = $request->attr('session_id');
+        self::revokeSession($request->userId(), is_string($sessionId) ? $sessionId : '');
 
         Response::ok(null, 'Logged out.');
     }
 
     public static function me(Request $request): void
     {
-        $userId = $request->attr('user_id');
-
         $user = Database::queryOne(
             'SELECT id, mobile, display_name, about, avatar_path, created_at FROM users WHERE id = :id AND status = :s',
-            ['id' => $userId, 's' => 'active']
+            ['id' => $request->userId(), 's' => 'active']
         );
 
         if ($user === null) {
@@ -165,20 +213,18 @@ final class AuthController
 
     public static function updateMe(Request $request): void
     {
-        $userId = $request->attr('user_id');
-        $displayName = $request->string('display_name');
-        $about = $request->string('about');
-
         $sets = [];
-        $params = ['id' => $userId];
+        $params = ['id' => $request->userId()];
 
-        if ($displayName !== '') {
+        if ($request->has('display_name')) {
+            $displayName = $request->string('display_name');
             (new Validator())->string('display_name', $displayName, 1, 100, 'Display name')->bail();
             $sets[] = 'display_name = :name';
             $params['name'] = $displayName;
         }
 
-        if ($about !== '') {
+        if ($request->has('about')) {
+            $about = $request->string('about');
             (new Validator())->string('about', $about, 0, 500, 'About')->bail();
             $sets[] = 'about = :about';
             $params['about'] = $about;
@@ -196,14 +242,26 @@ final class AuthController
         self::me($request);
     }
 
-    private static function storeRefreshToken(int $userId, string $token): void
+    private static function storeRefreshToken(int $userId, string $sessionId, string $token): void
     {
-        $tokenHash = hash('sha256', $token);
-        $expiresAt = date('Y-m-d H:i:s', time() + (int) \Circle\Core\Env::get('JWT_REFRESH_EXPIRY', '604800'));
-
         Database::execute(
-            'INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (:uid, :hash, :exp)',
-            ['uid' => $userId, 'hash' => $tokenHash, 'exp' => $expiresAt]
+            'INSERT INTO refresh_tokens (user_id, session_id, token_hash, expires_at)
+             VALUES (:uid, :sid, :hash, DATE_ADD(NOW(), INTERVAL :ttl SECOND))',
+            [
+                'uid' => $userId,
+                'sid' => $sessionId,
+                'hash' => hash('sha256', $token),
+                'ttl' => Env::int('JWT_REFRESH_EXPIRY', 604800),
+            ]
+        );
+    }
+
+    private static function revokeSession(int $userId, string $sessionId): void
+    {
+        Database::execute(
+            'UPDATE refresh_tokens SET revoked_at = NOW()
+             WHERE user_id = :uid AND session_id = :sid AND revoked_at IS NULL',
+            ['uid' => $userId, 'sid' => $sessionId]
         );
     }
 }

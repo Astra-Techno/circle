@@ -2,5 +2,7 @@ parameters:
     level: 6
     paths:
         - src
+        - tests
     excludePaths:
         - src/Core/migrate.php
+        - src/Core/media_cleanup.php

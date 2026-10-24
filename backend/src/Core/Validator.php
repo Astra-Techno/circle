@@ -43,9 +43,14 @@ final class Validator
         return $this;
     }
 
+    /** Length is counted in Unicode characters on the exact, untrimmed value. */
     public function password(string $value): self
     {
-        $len = mb_strlen($value);
+        if (!mb_check_encoding($value, 'UTF-8')) {
+            $this->errors[] = 'Password must be valid text.';
+            return $this;
+        }
+        $len = mb_strlen($value, 'UTF-8');
         if ($len < 15) {
             $this->errors[] = 'Password must be at least 15 characters.';
         }
@@ -55,6 +60,18 @@ final class Validator
         return $this;
     }
 
+    /** Optional calendar date in YYYY-MM-DD form. */
+    public function date(string $field, string $value, string $label = ''): self
+    {
+        $label = $label ?: $field;
+        $d = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+        if ($d === false || $d->format('Y-m-d') !== $value) {
+            $this->errors[] = "{$label} must be a date in YYYY-MM-DD format.";
+        }
+        return $this;
+    }
+
+    /** @param array<int, mixed> $allowed */
     public function enum(string $field, mixed $value, array $allowed, string $label = ''): self
     {
         $label = $label ?: $field;

@@ -6,7 +6,7 @@ namespace Circle\Core;
 
 final class Router
 {
-    /** @var array<string, array<array{pattern: string, handler: callable, middleware: string[]}>> */
+    /** @var array<string, array<int, array{pattern: string, handler: callable, middleware: string[]}>> */
     private array $routes = [];
 
     /** @var array<string, callable> */
@@ -81,41 +81,54 @@ final class Router
         ];
     }
 
+    /**
+     * `{token}` matches an opaque URL-safe token, `{mediaId}`/`{uploadId}` a UUID,
+     * `{size}` a media size name; every other placeholder is a numeric id.
+     */
     private function pathToPattern(string $path): string
     {
         $path = rtrim($path, '/') ?: '/';
-        return '#^' . preg_replace('#\{([a-zA-Z_]+)\}#', '(?P<$1>[a-zA-Z0-9_-]+)', $path) . '$#';
+        $regex = preg_replace_callback(
+            '#\{([a-zA-Z_]+)\}#',
+            static fn (array $m): string => match ($m[1]) {
+                'token' => '(?P<token>[A-Za-z0-9_-]{16,128})',
+                'mediaId', 'uploadId' => '(?P<' . $m[1] . '>[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})',
+                'size' => '(?P<size>thumb|medium|full)',
+                default => '(?P<' . $m[1] . '>[0-9]{1,19})',
+            },
+            $path
+        );
+        return '#^' . $regex . '$#';
     }
 
-    public function dispatch(Request $request): never
+    public function dispatch(Request $request): void
     {
-        if ($request->method === 'OPTIONS') {
-            Response::noContent();
-        }
-
         $routes = $this->routes[$request->method] ?? [];
 
         foreach ($routes as $route) {
-            if (preg_match($route['pattern'], $request->path, $matches)) {
+            if (preg_match($route['pattern'], $request->path, $matches) === 1) {
                 $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
                 $request = $request->withParams($params);
 
                 $handler = $this->buildPipeline($route['handler'], $route['middleware']);
                 $handler($request);
-                exit;
+
+                // Every handler must send a response; reaching here is a bug.
+                throw new \LogicException('Route handler returned without sending a response.');
             }
         }
 
         Response::notFound('Endpoint not found');
     }
 
+    /** @param string[] $middlewareNames */
     private function buildPipeline(callable $handler, array $middlewareNames): callable
     {
         $pipeline = $handler;
 
         foreach (array_reverse($middlewareNames) as $name) {
             if (!isset($this->middleware[$name])) {
-                continue;
+                throw new \LogicException("Unknown middleware: {$name}");
             }
             $mw = $this->middleware[$name];
             $next = $pipeline;

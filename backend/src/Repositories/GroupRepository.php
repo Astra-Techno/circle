@@ -23,13 +23,28 @@ final class GroupRepository
             return null;
         }
 
-        $group['id'] = (int) $group['id'];
-        $group['parent_id'] = $group['parent_id'] !== null ? (int) $group['parent_id'] : null;
-        $group['root_id'] = $group['root_id'] !== null ? (int) $group['root_id'] : null;
-        $group['depth'] = (int) $group['depth'];
-        $group['owner_user_id'] = (int) $group['owner_user_id'];
+        return self::normalise($group);
+    }
 
-        return $group;
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private static function normalise(array $row): array
+    {
+        $row['id'] = (int) $row['id'];
+        if (array_key_exists('parent_id', $row)) {
+            $row['parent_id'] = $row['parent_id'] !== null ? (int) $row['parent_id'] : null;
+        }
+        if (array_key_exists('root_id', $row)) {
+            $row['root_id'] = $row['root_id'] !== null ? (int) $row['root_id'] : null;
+        }
+        $row['depth'] = (int) $row['depth'];
+        $row['owner_user_id'] = (int) $row['owner_user_id'];
+        if (array_key_exists('member_count', $row)) {
+            $row['member_count'] = (int) $row['member_count'];
+        }
+        return $row;
     }
 
     /**
@@ -49,43 +64,39 @@ final class GroupRepository
             ['uid' => $userId, 's' => 'active']
         );
 
-        return array_map(fn($row) => [
-            ...$row,
-            'id' => (int) $row['id'],
-            'parent_id' => $row['parent_id'] !== null ? (int) $row['parent_id'] : null,
-            'root_id' => $row['root_id'] !== null ? (int) $row['root_id'] : null,
-            'depth' => (int) $row['depth'],
-            'owner_user_id' => (int) $row['owner_user_id'],
-        ], $rows);
+        return array_map(self::normalise(...), $rows);
     }
 
     /**
-     * Get direct child groups, respecting visibility for non-members.
+     * Direct child groups visible to a member of the parent: listed ones, plus
+     * hidden ones the viewer is an active member of.
      * @return array<int, array<string, mixed>>
      */
     public static function getDirectChildren(int $groupId, int $viewerUserId): array
     {
-        return Database::query(
-            'SELECT g.id, g.depth, g.`type`, g.name, g.description, g.visibility, g.approval_mode,
+        $rows = Database::query(
+            'SELECT g.id, g.parent_id, g.depth, g.`type`, g.name, g.description, g.visibility, g.approval_mode,
                     g.owner_user_id, g.created_at,
-                    CASE WHEN gm.user_id IS NOT NULL THEN gm.role ELSE NULL END AS my_role,
-                    (SELECT COUNT(*) FROM group_members WHERE group_id = g.id AND status = :s) AS member_count
+                    gm.role AS my_role,
+                    (SELECT COUNT(*) FROM group_members c WHERE c.group_id = g.id AND c.status = :s_count) AS member_count
              FROM `groups` g
-             LEFT JOIN group_members gm ON g.id = gm.group_id AND gm.user_id = :uid AND gm.status = :s
+             LEFT JOIN group_members gm ON g.id = gm.group_id AND gm.user_id = :uid AND gm.status = :s_join
              WHERE g.parent_id = :pid
                AND (g.visibility = :listed OR gm.user_id IS NOT NULL)
              ORDER BY g.name',
-            ['pid' => $groupId, 'uid' => $viewerUserId, 's' => 'active', 'listed' => 'listed']
+            ['s_count' => 'active', 'uid' => $viewerUserId, 's_join' => 'active', 'pid' => $groupId, 'listed' => 'listed']
         );
+
+        return array_map(self::normalise(...), $rows);
     }
 
     /**
      * Get ancestor breadcrumb path for a group.
-     * @return array<int, array{id: int, name: string, depth: int}>
+     * @return array<int, array<string, mixed>>
      */
     public static function getAncestors(int $groupId): array
     {
-        return Database::query(
+        $rows = Database::query(
             'SELECT g.id, g.name, g.depth
              FROM group_closure gc
              JOIN `groups` g ON gc.ancestor_id = g.id
@@ -93,18 +104,23 @@ final class GroupRepository
              ORDER BY gc.distance DESC',
             ['id' => $groupId]
         );
+        return array_map(static fn (array $r): array => [
+            'id' => (int) $r['id'],
+            'name' => (string) $r['name'],
+            'depth' => (int) $r['depth'],
+        ], $rows);
     }
 
     /**
-     * Get all descendant group IDs (for cascade operations).
+     * Get all descendant group IDs (for cascade operations), shallowest first.
      * @return int[]
      */
     public static function getDescendantIds(int $groupId): array
     {
         $rows = Database::query(
-            'SELECT descendant_id FROM group_closure WHERE ancestor_id = :id AND distance > 0',
+            'SELECT descendant_id FROM group_closure WHERE ancestor_id = :id AND distance > 0 ORDER BY distance',
             ['id' => $groupId]
         );
-        return array_map(fn($r) => (int) $r['descendant_id'], $rows);
+        return array_map(static fn (array $r): int => (int) $r['descendant_id'], $rows);
     }
 }

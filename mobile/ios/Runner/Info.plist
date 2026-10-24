@@ -24,6 +24,15 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CIRCLE opens your photo library only when you tap Add photos, so you can share the photos you choose with one of your groups.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Development only: lets server mode reach a CIRCLE API on the
+		     local network over HTTP. Internet servers still need HTTPS. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

@@ -1,0 +1,1661 @@
+openapi: 3.1.0
+info:
+  title: CIRCLE API
+  version: 0.3.1
+  license:
+    name: Proprietary
+  summary: Private nested groups, invites and Memories for any community.
+  description: |
+    **Status: approved by the owner for implementation (23 Oct 2026).** Every
+    operation in this document is implemented in `backend/` (PHP 8.3, MySQL/MariaDB)
+    and may be used by the app. 0.3.1 implements the M4 private media operations
+    (ADR 0007) and adds the `media` list to Memory responses.
+
+    ## Conventions
+    - Base path `/api/v1`, JSON request and response bodies (`Content-Type: application/json`).
+    - All timestamps are UTC, formatted `YYYY-MM-DD HH:MM:SS`.
+    - Successful responses use `{ "success": true, "message": string, "data": ... }`;
+      list endpoints with pagination use `{ "success": true, "data": [...], "pagination": {...} }`.
+    - Errors always use the `Error` envelope with a stable machine-readable `code`.
+      Raw database or exception text is never returned.
+
+    ## Authorization model
+    - Authenticated endpoints need `Authorization: Bearer <access_token>`.
+      The token's session must still be open (not logged out) and the account `active`.
+    - Group access is **active membership of the exact group id**. Membership of a
+      parent or child group never grants access. "Group does not exist" and "you are
+      not a member" return the same `403 not_member`, and a Memory in a group you are
+      not in returns the same `404` as a missing Memory, so ids cannot be probed.
+    - Roles: one `owner` (always also an admin; cannot be removed, demoted or leave —
+      ownership can be transferred), `admin`, `member`.
+
+    ## Rate limits (per client IP, fixed 60-second window)
+    - `/auth/register`, `/auth/login`, `/auth/refresh`: `RATE_LIMIT_AUTH_PER_MINUTE` (default 10).
+    - Every other endpoint except `/health`, including `/invites/{token}` preview and
+      `/auth/logout`: `RATE_LIMIT_PER_MINUTE` (default 60).
+    - Login also has a per-mobile-number limit on failed attempts:
+      `LOGIN_MAX_FAILURES_PER_MOBILE` (default 10) per 15 minutes, across all IPs.
+    - Photo upload tickets also have a per-person limit: `MEDIA_UPLOADS_PER_HOUR`
+      (default 60) per hour, and at most `MEDIA_MAX_OPEN_UPLOADS` (default 50)
+      unattached uploads per person (`422 media_limit_reached`).
+    - Exceeding a limit returns `429 rate_limited` with a `Retry-After` header (seconds).
+
+    ## Media (ADR 0007)
+    - The app only ever sees media **ids**. Bytes are reached through a signed link
+      from `GET /media/{mediaId}`, valid for about 5 minutes and re-authorized on
+      every request. Signed paths are relative to the API base (`/api/v1`).
+    - Uploads are re-encoded on the server (all metadata, including EXIF/GPS, is
+      removed) into `thumb` (≤ 320 px), `medium` (≤ 1080 px) and `full` (≤ 2048 px),
+      stored as WebP (JPEG if the server's GD has no WebP). Originals are never kept.
+    - Accepted types: JPEG, PNG, WebP. HEIC is accepted only when the server's image
+      processor supports it; the current GD-based server does **not**, and answers
+      `415 media_type_not_allowed` (the app should convert HEIC to JPEG first).
+    - When the server cannot process images (no image library installed) upload
+      requests fail closed with `503 server_error`; when the media signing secret is
+      not configured, media requests return `500 server_error`.
+
+    ## Not yet implemented (planned, not part of this contract)
+    Direct add with consent, events, polls, chat (and chat attachments), albums,
+    idempotency keys (other than media upload tickets), account recovery/number
+    change, OTP.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development (`composer serve`)
+tags:
+  - name: System
+    description: Service health.
+  - name: Auth
+    description: Mobile number + password accounts and sessions (ADR 0005).
+  - name: Profile
+    description: The signed-in person.
+  - name: Groups
+    description: Nested groups (max depth 10) with identical rules at every level.
+  - name: Members
+    description: Roles, removal, bans.
+  - name: Invites
+    description: Expiring, revocable invite links.
+  - name: Join requests
+    description: Manual approval flow.
+  - name: Memories
+    description: The shared post stream of a group, with comments, reactions and saves.
+  - name: Media
+    description: |
+      Private photos for Memories (ADR 0007, milestone M4; albums and chat later).
+      Media is only ever reachable through short-lived signed links issued after
+      an exact-group membership check.
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [System]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: Service is up.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status: { type: string, const: healthy }
+                          time: { type: string, format: date-time }
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [Auth]
+      summary: Register with mobile number and password
+      description: |
+        Creates an account if the number is not registered. **The response is identical
+        whether or not the number was already registered** (ADR 0005: never reveal whether
+        a number is registered). The client then calls `/auth/login`; no tokens are issued here.
+        Passwords are used exactly as sent (never trimmed), 15–128 Unicode characters,
+        hashed with Argon2id (m=64 MiB, t=3, p=1).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mobile, password]
+              properties:
+                mobile: { $ref: '#/components/schemas/Mobile' }
+                password: { $ref: '#/components/schemas/Password' }
+                display_name: { type: string, maxLength: 100 }
+      responses:
+        '202':
+          description: Accepted. Same body for new and already-registered numbers.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          next: { type: string, const: login }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [Auth]
+      summary: Sign in and open a session
+      description: |
+        Failures are generic (`401 invalid_credentials`) for unknown numbers, wrong
+        passwords and deleted accounts, and always cost one Argon2id verification.
+        `403 account_inactive` is only returned when the correct password was given.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mobile, password]
+              properties:
+                mobile: { type: string }
+                password: { type: string, description: Sent exactly as typed; never trimmed. }
+      responses:
+        '200':
+          description: Signed in.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/TokenPair'
+                          - type: object
+                            properties:
+                              user:
+                                type: object
+                                properties:
+                                  id: { type: integer }
+                                  mobile: { type: string }
+                                  display_name: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/refresh:
+    post:
+      operationId: refreshTokens
+      tags: [Auth]
+      summary: Rotate the refresh token
+      description: |
+        Each refresh token can be redeemed exactly once; the response contains a new
+        pair for the same session. Access tokens issued earlier in the session remain
+        valid until they expire.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        '200':
+          description: New token pair.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/TokenPair' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [Auth]
+      summary: End the current session
+      description: Revokes the session of the presented access token; its access and refresh tokens stop working immediately.
+      responses:
+        '200': { $ref: '#/components/responses/OkNull' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [Profile]
+      summary: My profile
+      responses:
+        '200':
+          description: Profile.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      operationId: updateMe
+      tags: [Profile]
+      summary: Update my profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                display_name: { type: string, minLength: 1, maxLength: 100 }
+                about: { type: string, maxLength: 500 }
+      responses:
+        '200':
+          description: Updated profile.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /groups:
+    get:
+      operationId: listMyGroups
+      tags: [Groups]
+      summary: Groups I am an active member of (all levels)
+      responses:
+        '200':
+          description: My groups, ordered by root, depth, name.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/GroupSummary'
+                            - type: object
+                              properties:
+                                role: { $ref: '#/components/schemas/Role' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      operationId: createGroup
+      tags: [Groups]
+      summary: Create a root group or a subgroup
+      description: |
+        Any user may create a root group. Any **active member of the parent** may create
+        a subgroup. The creator becomes owner and admin. Maximum depth is 10 (root = 1).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 100 }
+                type: { $ref: '#/components/schemas/GroupType' }
+                description: { type: string, maxLength: 1000 }
+                parent_id: { type: [integer, 'null'] }
+                visibility: { $ref: '#/components/schemas/Visibility' }
+                approval_mode: { $ref: '#/components/schemas/ApprovalMode' }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Group' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /groups/{id}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      operationId: getGroup
+      tags: [Groups]
+      summary: Group details (members only)
+      responses:
+        '200':
+          description: Group.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Group'
+                          - type: object
+                            properties:
+                              member_count: { type: integer }
+                              my_role: { $ref: '#/components/schemas/Role' }
+                              ancestors:
+                                type: array
+                                description: Breadcrumb from root to direct parent.
+                                items:
+                                  type: object
+                                  properties:
+                                    id: { type: integer }
+                                    name: { type: string }
+                                    depth: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    patch:
+      operationId: updateGroup
+      tags: [Groups]
+      summary: Update group settings (admins)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name: { type: string, minLength: 1, maxLength: 100 }
+                description: { type: string, maxLength: 1000 }
+                type: { $ref: '#/components/schemas/GroupType' }
+                approval_mode: { $ref: '#/components/schemas/ApprovalMode' }
+                visibility: { $ref: '#/components/schemas/Visibility' }
+                link_sharing: { type: string, enum: [admins, members] }
+      responses:
+        '200':
+          description: Updated group.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Group' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /groups/{id}/subgroups:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      operationId: listSubgroups
+      tags: [Groups]
+      summary: Direct subgroups visible to me
+      description: Listed subgroups, plus hidden subgroups I am an active member of. Requires membership of `{id}`.
+      responses:
+        '200':
+          description: Subgroups.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/GroupSummary'
+                            - type: object
+                              properties:
+                                my_role: { oneOf: [{ $ref: '#/components/schemas/Role' }, { type: 'null' }] }
+                                member_count: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /groups/{id}/leave:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    post:
+      operationId: leaveGroup
+      tags: [Groups]
+      summary: Leave a group and all its subgroups
+      description: |
+        Cascades to every descendant group, cancels my pending join requests there and
+        revokes invite links I created there. Refused for the owner (`owner_protected`),
+        for the last admin (`last_admin`), and while I own or am the only admin of any
+        descendant group I belong to (`409 subgroup_handover_required`, with
+        `error.details.groups` listing those groups and the reason).
+      responses:
+        '200':
+          description: Left.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          left_groups:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                group_id: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/HandoverRequired' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /groups/{id}/transfer-ownership:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    post:
+      operationId: transferOwnership
+      tags: [Groups]
+      summary: Transfer ownership (owner only)
+      description: The new owner must be an active member and becomes admin; the previous owner stays admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_owner_id]
+              properties:
+                new_owner_id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/OkNull' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /groups/{id}/members:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      operationId: listMembers
+      tags: [Members]
+      summary: Active members (members only)
+      description: Mobile numbers are never included.
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+          description: Out-of-range values are clamped.
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Members, admins first.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, const: true }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Member' }
+                  pagination: { $ref: '#/components/schemas/OffsetPagination' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /groups/{id}/members/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      operationId: updateMemberRole
+      tags: [Members]
+      summary: Change a member's role (admins)
+      description: The owner's role cannot be changed; the last admin cannot be demoted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { $ref: '#/components/schemas/Role' }
+      responses:
+        '200': { $ref: '#/components/responses/OkNull' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      operationId: removeMember
+      tags: [Members]
+      summary: Remove or ban a member (admins)
+      description: |
+        Removes the member from this group and every descendant (cascade), cancels their
+        pending join requests and revokes links they created in that subtree. A removed
+        person can only rejoin through an invite link **created after** the removal.
+        With `ban=true` they cannot rejoin this group at all until unbanned.
+        Refused while the member owns or is the only admin of a descendant group
+        (`409 subgroup_handover_required`, without naming the subgroups).
+      parameters:
+        - name: ban
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200': { $ref: '#/components/responses/OkNull' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/HandoverRequired' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /groups/{id}/members/{userId}/unban:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/UserId'
+    post:
+      operationId: unbanMember
+      tags: [Members]
+      summary: Lift a ban (admins)
+      description: The person is then treated as removed (needs a link created after the original removal).
+      responses:
+        '200': { $ref: '#/components/responses/OkNull' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /groups/{id}/invite-links:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      operationId: listInviteLinks
+      tags: [Invites]
+      summary: List the group's invite links (admins)
+      description: Raw tokens are stored only as hashes and are never returned again.
+      responses:
+        '200':
+          description: Up to 200 most recent links.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/InviteLinkInfo' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createInviteLink
+      tags: [Invites]
+      summary: Create an invite link
+      description: Admins only, or any member when the group's `link_sharing` is `members`. Links always expire.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expires_in_hours: { type: integer, minimum: 1, maximum: 720, default: 168 }
+                max_uses: { type: [integer, 'null'], minimum: 1, maximum: 10000 }
+      responses:
+        '201':
+          description: Created. `token` is shown only once.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/NewInviteLink' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /groups/{id}/invite-links/reset:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    post:
+      operationId: resetInviteLinks
+      tags: [Invites]
+      summary: Revoke all links and create a fresh one (admins)
+      responses:
+        '201':
+          description: All previous links revoked; new default link (7 days, unlimited uses).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/NewInviteLink' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /groups/{id}/invite-links/{linkId}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - name: linkId
+        in: path
+        required: true
+        schema: { type: integer }
+    delete:
+      operationId: revokeInviteLink
+      tags: [Invites]
+      summary: Revoke one link
+      description: Admins can revoke any link of the group; members can revoke links they created. Idempotent.
+      responses:
+        '200':
+          description: Revoked.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: integer }
+                          revoked: { type: boolean, const: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /invites/{token}:
+    parameters:
+      - $ref: '#/components/parameters/InviteToken'
+    get:
+      operationId: previewInvite
+      tags: [Invites]
+      summary: Preview an invite (public)
+      security: []
+      responses:
+        '200':
+          description: Group preview.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          group_name: { type: string }
+                          group_type: { $ref: '#/components/schemas/GroupType' }
+                          cover_path: { type: [string, 'null'] }
+                          is_subgroup: { type: boolean }
+                          approval_required: { type: boolean }
+                          member_count: { type: integer }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '410': { $ref: '#/components/responses/LinkGone' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /invites/{token}/join:
+    parameters:
+      - $ref: '#/components/parameters/InviteToken'
+    post:
+      operationId: joinViaInvite
+      tags: [Invites]
+      summary: Join (or request to join) via an invite link
+      description: |
+        - Subgroup links require active membership of the **direct parent** (`403 not_parent_member`).
+        - `approval_mode=auto` joins immediately; `manual` creates one pending request
+          (repeating the call while pending is a no-op).
+        - A use is consumed atomically when a member joins or a new request is created.
+        - Banned people, and removed people using a link created before their removal,
+          get `403 join_not_allowed`.
+      responses:
+        '200':
+          description: Joined or pending.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status: { type: string, enum: [joined, pending_approval] }
+                          group_id: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '410': { $ref: '#/components/responses/LinkGone' }
+
+  /groups/{id}/join-requests:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      operationId: listJoinRequests
+      tags: [Join requests]
+      summary: Pending join requests (admins)
+      description: Requesters are shown by display name only; mobile numbers are never exposed.
+      responses:
+        '200':
+          description: Pending requests, oldest first.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/JoinRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /groups/{id}/join-requests/{rid}/approve:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/RequestId'
+    post:
+      operationId: approveJoinRequest
+      tags: [Join requests]
+      summary: Approve a request (admins)
+      description: |
+        Re-checks that the requester is still an active member of the direct parent and
+        is not banned. If not, the request is cancelled and `409 not_parent_member` or
+        `409 join_not_allowed` is returned.
+      responses:
+        '200': { $ref: '#/components/responses/OkNull' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /groups/{id}/join-requests/{rid}/decline:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/RequestId'
+    post:
+      operationId: declineJoinRequest
+      tags: [Join requests]
+      summary: Decline a request (admins)
+      description: The person may request again later.
+      responses:
+        '200': { $ref: '#/components/responses/OkNull' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /memories:
+    get:
+      operationId: listMemories
+      tags: [Memories]
+      summary: Memories from my groups, newest first
+      description: |
+        Without `group_id`: Memories from every group I am an active member of.
+        With `group_id`: that exact group only (`403 not_member` otherwise).
+        Keyset pagination: pass `pagination.next_cursor` back as `cursor`; it is opaque.
+      parameters:
+        - name: group_id
+          in: query
+          schema: { type: integer }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+          description: Out-of-range values are clamped.
+      responses:
+        '200':
+          description: A page of Memories.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, const: true }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/MemoryListItem' }
+                  pagination: { $ref: '#/components/schemas/CursorPagination' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /groups/{id}/memories:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    post:
+      operationId: createMemory
+      tags: [Memories]
+      summary: Share a Memory in a group (members)
+      description: |
+        The group is taken from the path only; any `group_id` in the body is ignored.
+        `body` is required (1–2000 characters) unless `media_ids` is non-empty; then it
+        may be empty or omitted (stored and returned as `""`). Photos are attached in
+        the same transaction as the Memory; if any id is not usable the whole request
+        fails with `422 validation_error` and `error.details.media_ids` lists the
+        refused ids (the same answer for unknown, foreign, unready, discarded or
+        already attached media).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body: { type: string, maxLength: 2000, description: 'Required (min 1 character) when `media_ids` is empty or absent.' }
+                memory_date: { type: string, format: date }
+                place: { type: string, maxLength: 255 }
+                media_ids:
+                  type: array
+                  maxItems: 10
+                  uniqueItems: true
+                  items: { type: string, format: uuid }
+                  description: |
+                    Photos in display order. Each must be `ready`, uploaded by the
+                    caller to this same group, not discarded and not attached to
+                    anything yet. An asset can be attached only once.
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Memory' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /memories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/MemoryId'
+    get:
+      operationId: getMemory
+      tags: [Memories]
+      summary: A Memory with comments and reactions (members of its group)
+      responses:
+        '200':
+          description: Memory.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Memory'
+                          - type: object
+                            properties:
+                              comments:
+                                type: array
+                                items: { $ref: '#/components/schemas/Comment' }
+                              reactions:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    user_id: { type: integer }
+                                    emoji: { $ref: '#/components/schemas/Emoji' }
+                                    display_name: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: updateMemory
+      tags: [Memories]
+      summary: Edit my Memory (author, still a member)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                body: { type: string, minLength: 1, maxLength: 2000 }
+                memory_date: { type: string, description: 'YYYY-MM-DD, or empty string to clear.' }
+                place: { type: string, maxLength: 255, description: Empty string clears. }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Memory' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      operationId: deleteMemory
+      tags: [Memories]
+      summary: Remove a Memory (author or admin of that exact group)
+      responses:
+        '200': { $ref: '#/components/responses/OkNull' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /memories/{id}/comments:
+    parameters:
+      - $ref: '#/components/parameters/MemoryId'
+    post:
+      operationId: addComment
+      tags: [Memories]
+      summary: Comment on a Memory (members)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, minLength: 1, maxLength: 2000 }
+                parent_id: { type: [integer, 'null'], description: Must be an active comment on the same Memory. }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Comment' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /memories/{id}/reactions:
+    parameters:
+      - $ref: '#/components/parameters/MemoryId'
+    post:
+      operationId: toggleReaction
+      tags: [Memories]
+      summary: Toggle my reaction (members)
+      description: Same emoji again removes my reaction; a different emoji replaces it. One reaction per person.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                emoji: { $ref: '#/components/schemas/Emoji' }
+      responses:
+        '200':
+          description: New state.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          reacted: { type: boolean }
+                          emoji: { oneOf: [{ $ref: '#/components/schemas/Emoji' }, { type: 'null' }] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /memories/{id}/save:
+    parameters:
+      - $ref: '#/components/parameters/MemoryId'
+    post:
+      operationId: toggleSave
+      tags: [Memories]
+      summary: Toggle saved (members)
+      responses:
+        '200':
+          description: New state.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          saved: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /groups/{id}/media/uploads:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    post:
+      operationId: createMediaUpload
+      tags: [Media]
+      summary: Ask for an upload ticket (members)
+      description: |
+        Checks active membership of the exact group (`403 not_member` otherwise), the
+        type allowlist (`415`), the size limit (`413`), the cap on unattached uploads
+        (`422 media_limit_reached`) and the per-person hourly limit (`429`), then
+        returns a ticket valid for 15 minutes. Repeating the same `client_upload_id`
+        with the same group, type, size and hash returns the same ticket (idempotent,
+        not counted against the limits); reusing it for a different upload returns
+        `409 conflict`. `image/heic` is refused with `415` unless the server's image
+        processor supports HEIC (the current GD-based server does not).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [client_upload_id, mime_type, byte_size, sha256]
+              properties:
+                client_upload_id: { type: string, format: uuid }
+                mime_type:
+                  type: string
+                  enum: [image/jpeg, image/png, image/webp, image/heic]
+                  description: '`image/heic` only when the server supports it (see above).'
+                byte_size: { type: integer, minimum: 1, maximum: 15728640, description: 'Exact size of the bytes that will be sent; at most 15 MiB.' }
+                sha256: { type: string, pattern: '^[a-fA-F0-9]{64}$', description: SHA-256 of exactly those bytes (hex). }
+      responses:
+        '201':
+          description: Upload ticket created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/MediaUploadTicket' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/MediaRejected' }
+        '415': { $ref: '#/components/responses/MediaRejected' }
+        '422':
+          description: '`validation_error`, or `media_limit_reached` (too many unattached uploads).'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/ServerError' }
+        '503': { $ref: '#/components/responses/MediaUnavailable' }
+
+  /media/uploads/{uploadId}/content:
+    parameters:
+      - $ref: '#/components/parameters/UploadId'
+    put:
+      operationId: uploadMediaContent
+      tags: [Media]
+      summary: Send the photo bytes (ticket owner)
+      description: |
+        Raw bytes as the request body. Only the ticket's owner, while still an active
+        member of the group (otherwise the same `404` as an unknown upload), before the
+        ticket expires (`410 upload_expired`). The body must be exactly the announced
+        size and SHA-256 (`422 media_invalid`); a body larger than announced is cut off
+        with `413 media_too_large`. The server checks the real content, not the name or
+        `Content-Type`: magic bytes and file signature must be an allowed type (`415
+        media_type_not_allowed`), must match the announced type and have a readable
+        header with sane dimensions (at most 12000 px per side and 40 MP; `422
+        media_invalid`). It then re-encodes the photo (removing all metadata including
+        GPS/EXIF), creates `thumb`, `medium` and `full` sizes, discards the original
+        and marks the asset `ready`. Sending again after success returns the ready
+        asset. If the content cannot be decoded the upload becomes `failed` (`422
+        media_invalid`; start a new upload). Unattached assets are deleted after 24 hours.
+      requestBody:
+        required: true
+        content:
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/png: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+          image/heic: { schema: { type: string, format: binary } }
+      responses:
+        '200':
+          description: Processed and ready to attach.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/MediaAsset' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '410': { $ref: '#/components/responses/MediaRejected' }
+        '413': { $ref: '#/components/responses/MediaRejected' }
+        '415': { $ref: '#/components/responses/MediaRejected' }
+        '422': { $ref: '#/components/responses/MediaRejected' }
+        '500': { $ref: '#/components/responses/ServerError' }
+        '503': { $ref: '#/components/responses/MediaUnavailable' }
+
+  /media/{mediaId}:
+    parameters:
+      - $ref: '#/components/parameters/MediaId'
+    get:
+      operationId: getMediaLink
+      tags: [Media]
+      summary: Get a short-lived signed link to view a photo (members)
+      description: |
+        Re-checked on **every** request: the asset is `ready`; the caller is an active
+        member of the asset's exact group (never inherited from parent or child
+        groups); an asset not yet attached to a Memory is visible to its uploader only;
+        and moderation hasn't hidden it (hidden media is `404` for everyone, including
+        admins, until moderation tools exist). Chat attachments (conversation access,
+        ADR 0003) come with chat. A missing asset and one you can't see both return the
+        same `404`. The returned `url` is relative to the API base and needs no bearer
+        token.
+      parameters:
+        - name: size
+          in: query
+          required: false
+          schema: { type: string, enum: [thumb, medium, full], default: medium }
+      responses:
+        '200':
+          description: Signed link valid for `MEDIA_LINK_TTL` seconds (default 300).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/SignedMediaLink' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    delete:
+      operationId: deleteUnattachedMedia
+      tags: [Media]
+      summary: Discard an upload that was never attached (uploader)
+      description: |
+        Only the uploader (otherwise the same `404` as an unknown id), and only while
+        the asset is not attached to a Memory (`409 conflict`). Its files are removed
+        at once. Attached media is deleted by deleting the Memory: it stops being
+        served immediately and its files are purged after `MEDIA_PURGE_AFTER_DAYS`
+        (default 7).
+      responses:
+        '200': { $ref: '#/components/responses/OkNull' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /media/files/{mediaId}/{size}:
+    get:
+      operationId: getMediaFile
+      tags: [Media]
+      summary: Download photo bytes with a signed link (no bearer token)
+      description: |
+        No bearer token: access comes only from the signature returned by
+        `GET /media/{mediaId}` (hex HMAC-SHA256 over `id|size|expires`, with a secret
+        separate from `JWT_SECRET`). Expired, tampered or mismatched (other id or size)
+        links return `403 media_link_invalid`. A media item deleted or hidden after the
+        link was issued returns `404`. Rate-limited per IP like other endpoints.
+        Response headers: `Cache-Control: private, max-age=<seconds until expiry>`,
+        `X-Content-Type-Options: nosniff`, `Content-Disposition: inline`,
+        `Content-Security-Policy: default-src 'none'; sandbox`. The server may hand the
+        transfer to the web server (`X-Sendfile`/`X-Accel-Redirect`); clients see the
+        same response.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/MediaId'
+        - name: size
+          in: path
+          required: true
+          schema: { type: string, enum: [thumb, medium, full] }
+        - name: expires
+          in: query
+          required: true
+          schema: { type: integer, description: Unix time. }
+        - name: sig
+          in: query
+          required: true
+          schema: { type: string, pattern: '^[a-f0-9]{64}$' }
+      responses:
+        '200':
+          description: The image.
+          headers:
+            Cache-Control:
+              schema: { type: string, examples: ['private, max-age=300'] }
+            X-Content-Type-Options:
+              schema: { type: string, const: nosniff }
+          content:
+            image/webp: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+        '403': { $ref: '#/components/responses/MediaRejected' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        HS256 access token (default lifetime 3600 s). Claims: `sub`, `sid` (session),
+        `jti`, `iat`, `exp` (mandatory), `type=access`. Refresh tokens (`type=refresh`,
+        default 604800 s) are only accepted by `/auth/refresh`.
+
+  parameters:
+    GroupId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: integer }
+    RequestId:
+      name: rid
+      in: path
+      required: true
+      schema: { type: integer }
+    MemoryId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    UploadId:
+      name: uploadId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    MediaId:
+      name: mediaId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    InviteToken:
+      name: token
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[A-Za-z0-9_-]{16,128}$' }
+
+  responses:
+    OkNull:
+      description: Done.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Success'
+              - type: object
+                properties:
+                  data: { type: 'null' }
+    ValidationError:
+      description: '`validation_error`, `invalid_cursor`, `owner_protected`, `last_admin`, `depth_limit`, `member_not_found` (transfer target).'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: '`unauthorized` (no token), `invalid_token`, `invalid_credentials`.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: '`account_inactive`, `not_member`, `forbidden` (role too low), `not_parent_member`, `join_not_allowed`.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: '`not_found`, `member_not_found`.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: '`already_member`, `not_parent_member`, `join_not_allowed`, `conflict`.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    HandoverRequired:
+      description: '`subgroup_handover_required`. On leave, `error.details.groups` lists `{id, name, reason: owner|last_admin}`.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    LinkGone:
+      description: '`link_revoked`, `link_expired`, `link_exhausted`.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    MediaRejected:
+      description: |
+        The upload or link was refused: `media_too_large` (413),
+        `media_type_not_allowed` (415), `media_invalid` (422), `upload_expired` (410)
+        or `media_link_invalid` (403).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RateLimited:
+      description: '`rate_limited`. See `Retry-After`.'
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    MediaUnavailable:
+      description: '`server_error` (503) — the server cannot process images right now (fails closed; nothing is stored). Retry later.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ServerError:
+      description: '`server_error` — generic; also returned for every request when the server is misconfigured (e.g. weak `JWT_SECRET`), and for media requests when `MEDIA_SIGNING_SECRET` is missing or weak.'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Success:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, const: true }
+        message: { type: string }
+        data: {}
+    Error:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, const: false }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { $ref: '#/components/schemas/ErrorCode' }
+            message: { type: string, description: Human-readable; may change. Clients branch on `code`. }
+            details: { type: object, additionalProperties: true }
+    ErrorCode:
+      type: string
+      enum:
+        - validation_error
+        - invalid_cursor
+        - unauthorized
+        - invalid_token
+        - invalid_credentials
+        - account_inactive
+        - forbidden
+        - not_member
+        - not_found
+        - member_not_found
+        - owner_protected
+        - last_admin
+        - subgroup_handover_required
+        - depth_limit
+        - already_member
+        - not_parent_member
+        - join_not_allowed
+        - link_revoked
+        - link_expired
+        - link_exhausted
+        - conflict
+        - rate_limited
+        - server_error
+        - media_too_large
+        - media_type_not_allowed
+        - media_invalid
+        - media_limit_reached
+        - upload_expired
+        - media_link_invalid
+    Mobile:
+      type: string
+      pattern: '^\+[1-9][0-9]{7,14}$'
+      description: E.164 with country code. Syntax only; ownership is not verified (no OTP yet).
+    Password:
+      type: string
+      minLength: 15
+      maxLength: 128
+      description: Unicode characters, spaces allowed, used exactly as sent.
+    TokenPair:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        token_type: { type: string, const: Bearer }
+        expires_in: { type: integer, description: Access token lifetime in seconds. }
+    Me:
+      type: object
+      properties:
+        id: { type: integer }
+        mobile: { type: string }
+        display_name: { type: string }
+        about: { type: string }
+        avatar_path: { type: [string, 'null'] }
+        created_at: { type: string }
+    Role:
+      type: string
+      enum: [admin, member]
+      description: The owner is identified by `owner_user_id` and is always an admin.
+    GroupType:
+      type: string
+      enum: [family, friends, school, college, office, club, other]
+      default: other
+    Visibility:
+      type: string
+      enum: [listed, hidden]
+      default: listed
+      description: Hidden subgroups are not listed to members of the parent.
+    ApprovalMode:
+      type: string
+      enum: [auto, manual]
+      default: auto
+    GroupSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        parent_id: { type: [integer, 'null'] }
+        root_id: { type: [integer, 'null'] }
+        depth: { type: integer, minimum: 1, maximum: 10 }
+        type: { $ref: '#/components/schemas/GroupType' }
+        name: { type: string }
+        description: { type: string }
+        visibility: { $ref: '#/components/schemas/Visibility' }
+        approval_mode: { $ref: '#/components/schemas/ApprovalMode' }
+        owner_user_id: { type: integer }
+        created_at: { type: string }
+    Group:
+      allOf:
+        - $ref: '#/components/schemas/GroupSummary'
+        - type: object
+          properties:
+            cover_path: { type: [string, 'null'] }
+            link_sharing: { type: string, enum: [admins, members] }
+            event_creation: { type: string, enum: [members, admins] }
+            updated_at: { type: string }
+    Member:
+      type: object
+      properties:
+        id: { type: integer }
+        display_name: { type: string }
+        about: { type: string }
+        avatar_path: { type: [string, 'null'] }
+        role: { $ref: '#/components/schemas/Role' }
+        is_owner: { type: boolean }
+        joined_at: { type: [string, 'null'] }
+    OffsetPagination:
+      type: object
+      properties:
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+    CursorPagination:
+      type: object
+      properties:
+        next_cursor: { type: [string, 'null'] }
+        has_more: { type: boolean }
+        limit: { type: integer }
+    NewInviteLink:
+      type: object
+      properties:
+        id: { type: integer }
+        token: { type: string, description: Shown once; only a SHA-256 hash is stored. }
+        expires_at: { type: string }
+        max_uses: { type: [integer, 'null'] }
+        link: { type: string, examples: ['/i/<token>'] }
+    InviteLinkInfo:
+      type: object
+      properties:
+        id: { type: integer }
+        created_by: { type: integer }
+        created_by_name: { type: string }
+        created_at: { type: string }
+        expires_at: { type: [string, 'null'] }
+        max_uses: { type: [integer, 'null'] }
+        use_count: { type: integer }
+        revoked_at: { type: [string, 'null'] }
+        status: { type: string, enum: [active, expired, exhausted, revoked] }
+    JoinRequest:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        status: { type: string, const: pending }
+        message: { type: string }
+        created_at: { type: string }
+        display_name: { type: string }
+        avatar_path: { type: [string, 'null'] }
+    Emoji:
+      type: string
+      enum: ['❤️', '😂', '😮', '😢', '🙏', '👍', '🎉', '🔥']
+      default: '❤️'
+    Memory:
+      type: object
+      properties:
+        id: { type: integer }
+        group_id: { type: integer }
+        author_id: { type: integer }
+        body: { type: string, description: 'May be empty ("") when the Memory has photos.' }
+        memory_date: { type: [string, 'null'], format: date }
+        place: { type: [string, 'null'] }
+        created_at: { type: string }
+        updated_at: { type: string }
+        author_name: { type: string }
+        author_avatar: { type: [string, 'null'] }
+        group_name: { type: string }
+        group_type: { $ref: '#/components/schemas/GroupType' }
+        media:
+          type: array
+          maxItems: 10
+          description: |
+            Photos in display order (empty for text-only Memories). Ids and pixel size
+            (upright, after orientation) only — never URLs or storage paths; ask
+            `GET /media/{mediaId}` for a signed link. Hidden or deleted photos are left out.
+          items: { $ref: '#/components/schemas/MemoryMedia' }
+    MemoryMedia:
+      type: object
+      required: [id, width, height]
+      properties:
+        id: { type: string, format: uuid }
+        width: { type: integer }
+        height: { type: integer }
+    MemoryListItem:
+      allOf:
+        - $ref: '#/components/schemas/Memory'
+        - type: object
+          properties:
+            reaction_count: { type: integer }
+            comment_count: { type: integer }
+            user_reacted: { type: boolean }
+            user_saved: { type: boolean }
+    Comment:
+      type: object
+      properties:
+        id: { type: integer }
+        parent_id: { type: [integer, 'null'] }
+        author_id: { type: integer }
+        body: { type: string }
+        created_at: { type: string }
+        author_name: { type: string }
+        author_avatar: { type: [string, 'null'] }
+    MediaUploadTicket:
+      type: object
+      description: ADR 0007. The `upload_id` is also the future media id.
+      properties:
+        upload_id: { type: string, format: uuid }
+        upload_path: { type: string, description: 'Path for the PUT, relative to the API base: /media/uploads/{uploadId}/content.' }
+        expires_at: { type: string, description: UTC; 15 minutes after creation. }
+        max_bytes: { type: integer, description: The announced `byte_size`; the PUT body must be exactly this long. }
+    MediaAsset:
+      type: object
+      description: ADR 0007. Never contains a storage path or URL.
+      properties:
+        id: { type: string, format: uuid }
+        group_id: { type: integer }
+        uploader_id: { type: integer }
+        kind: { type: string, enum: [image] }
+        mime_type: { type: string, description: 'Stored type once ready (image/webp, or image/jpeg); the announced type before.' }
+        width: { type: [integer, 'null'], description: 'Pixel width after orientation; null until ready.' }
+        height: { type: [integer, 'null'] }
+        byte_size: { type: integer, description: 'Bytes of the stored `full` size once ready; the announced size before.' }
+        status: { type: string, enum: [pending, ready, failed, deleted] }
+        sizes: { type: array, items: { type: string, enum: [thumb, medium, full] } }
+        created_at: { type: string }
+    SignedMediaLink:
+      type: object
+      description: ADR 0007.
+      properties:
+        url: { type: string, description: 'Signed path relative to the API base, e.g. /media/files/{id}/medium?expires=1792758951&sig=<64 hex>. No bearer token needed.' }
+        expires_at: { type: string, description: UTC; `MEDIA_LINK_TTL` seconds (default 300) after issue. }
+        width: { type: integer, description: Pixel width of this size. }
+        height: { type: integer }
+        mime_type: { type: string }

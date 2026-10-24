@@ -5,7 +5,7 @@ import 'package:mobile/main.dart' as app;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  testWidgets('fictional circles to a new group-scoped Memory on device', (
+  testWidgets('fictional circles: accept an invitation, then share a Memory', (
     tester,
   ) async {
     app.main();
@@ -14,14 +14,27 @@ void main() {
     await tester.tap(find.text('Explore fictional circles'));
     await tester.pumpAndSettle();
     expect(find.text('Memories'), findsOneWidget);
+
     await tester.tap(find.widgetWithText(NavigationDestination, 'Groups'));
     await tester.pumpAndSettle();
     expect(find.text('Your kind\nof company.'), findsOneWidget);
+    expect(find.text('Invitations for you'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Accept invitation to Board games'));
+    await tester.pumpAndSettle();
+    expect(find.text('You joined Board games.'), findsOneWidget);
+
     await tester.tap(find.widgetWithText(NavigationDestination, 'Home'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('New Memory'));
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Sunday miles'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'Our first shared moment.');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Sunday miles'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create Memory'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Your Memory'),
+      'Our first shared moment.',
+    );
     await tester.ensureVisible(find.text('Share Memory'));
     await tester.tap(find.text('Share Memory'));
     await tester.pumpAndSettle();
