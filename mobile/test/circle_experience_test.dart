@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/circle_brand.dart';
 import 'package:mobile/app/circle_experience.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
 import 'support/circle_harness.dart';
@@ -11,6 +12,7 @@ void main() {
     (tester) async {
       await openCircle(tester, entered: false);
       await tapText(tester, 'Explore fictional circles');
+      expect(find.byType(CircleBrand), findsOneWidget);
       expect(find.text('Memories'), findsOneWidget);
       for (final label in ['Home', 'Chats', 'Groups', 'Events', 'You']) {
         expect(
@@ -187,10 +189,15 @@ void main() {
     'love, save, comments, RSVP and ending preview persist then clear',
     (tester) async {
       final container = await openCircle(tester);
+      await reveal(
+        tester,
+        find.byTooltip('Save Memory from Mira in The Sunday table'),
+      );
       await tester.tap(
         find.byTooltip('Save Memory from Mira in The Sunday table'),
       );
       await tester.pumpAndSettle();
+      expect(workspaceOf(container).memories.first.saved, isTrue);
       await go(tester, container, '/home/memory/table');
       await tapText(tester, 'Love');
       expect(workspaceOf(container).memories.first.loved, isTrue);
@@ -656,6 +663,15 @@ void main() {
             : null,
       );
       await go(tester, container, route);
+      if (route == '/home') {
+        await tester.runAsync(
+          () => precacheImage(
+            const AssetImage(CircleIdentity.artwork),
+            tester.element(find.byType(CircleBrand)),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
@@ -667,6 +683,13 @@ void main() {
 
   testWidgets('original circle golden dark home', (tester) async {
     await openCircle(tester, brightness: Brightness.dark);
+    await tester.runAsync(
+      () => precacheImage(
+        const AssetImage(CircleIdentity.artwork),
+        tester.element(find.byType(CircleBrand)),
+      ),
+    );
+    await tester.pumpAndSettle();
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/circle_home_dark.png'),

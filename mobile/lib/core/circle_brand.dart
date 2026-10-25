@@ -10,13 +10,15 @@ abstract final class CircleIdentity {
 }
 
 class CircleBrand extends StatelessWidget {
-  const CircleBrand({super.key, this.compact = false});
-  final bool compact;
+  const CircleBrand({super.key, bool compact = false})
+    : _maxWidth = compact ? 240 : 480;
+  const CircleBrand.home({super.key}) : _maxWidth = 160;
+  final double _maxWidth;
 
   @override
   Widget build(BuildContext context) => Center(
     child: ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: compact ? 240 : 480),
+      constraints: BoxConstraints(maxWidth: _maxWidth),
       child: Image.asset(
         CircleIdentity.artwork,
         fit: BoxFit.contain,

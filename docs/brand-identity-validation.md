@@ -20,3 +20,11 @@ Validation on Windows:
 - `flutter build web --release --no-wasm-dry-run`: passed, including the final manifest and branding assets.
 
 Initial checks caught a login assertion that needed to scroll to the existing OTP guidance, the screenshot asset-decoding race, and date-dependent existing goldens. These were corrected before delivery. Screenshots are under `mobile/test/goldens/access_*.png`.
+
+## Home follow-up — 25 October 2026
+
+Home now uses the same supplied full identity above the group filters in both empty and populated workspaces. `CircleBrand.home()` provides the compact size centrally; the original artwork is unchanged and scrolls with the page. Header navigation, search, activity, group filtering and the create action retain their existing behaviour. The tour widget test also checks that Home contains the brand component.
+
+Light and dark Home goldens were regenerated on Windows and visually inspected. All nine main-screen golden checks passed; only the two Home baseline files changed. The focused Home/navigation suite passed all 40 tests. The save interaction test now scrolls to its control and verifies saved state after the new header shifts content down.
+
+Final checks: `dart format --output=none --set-exit-if-changed .` passed on 149 files with zero changes; `flutter analyze` found no issues; `flutter test -j 2` passed 490 tests with one opt-in HTTP smoke test skipped; `flutter build web --release --no-wasm-dry-run` passed. Native Android/iOS rendering remains unverified.

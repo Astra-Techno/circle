@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
+import '../../../core/circle_brand.dart';
 import '../../../core/design.dart';
 import '../../groups/domain/group_tree.dart';
 import '../../workspace/application/workspace_providers.dart';
@@ -50,6 +51,8 @@ class CircleHome extends ConsumerWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const CircleBrand.home(),
+                    const SizedBox(height: Space.lg),
                     if (workspace.groups.isNotEmpty) ...[
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
