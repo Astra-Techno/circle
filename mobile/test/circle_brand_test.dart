@@ -13,7 +13,7 @@ void main() {
       await tester.pumpAndSettle();
       final image = tester.widget<Image>(find.byType(Image).first);
       expect((image.image as AssetImage).assetName, CircleIdentity.artwork);
-      expect(image.semanticLabel, 'CIRCLE. MY CIRCLE. BILLION MEMORIES.');
+      expect(image.semanticLabel, 'CIRCLE. My Circle. Billion Memories.');
       expect(find.text('PRIVATE GROUPS. SHARED MEMORIES.'), findsNothing);
       expect(File(CircleIdentity.artwork).existsSync(), isTrue);
     },

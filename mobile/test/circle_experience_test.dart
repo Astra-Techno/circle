@@ -34,7 +34,7 @@ void main() {
     'mobile/password preview grants no sample memberships; first group and Memory work',
     (tester) async {
       final container = await openCircle(tester, entered: false);
-      await tapText(tester, 'Create account');
+      await tapText(tester, 'Get Started');
       await tester.enterText(
         find.byKey(const ValueKey('access-mobile')),
         '9876543210',

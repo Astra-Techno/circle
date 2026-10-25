@@ -72,7 +72,7 @@ void main() {
     'registration validates, clears input and opens an empty workspace',
     (tester) async {
       final container = await openCircle(tester, entered: false);
-      await tapText(tester, 'Create account');
+      await tapText(tester, 'Get Started');
       await tapText(tester, 'Preview registration');
       expect(find.text('Enter your mobile number.'), findsOneWidget);
       expect(find.text('Enter your password.'), findsOneWidget);
@@ -91,7 +91,7 @@ void main() {
       // Ending the preview returns to welcome; the form starts empty again.
       await container.read(circlePreviewSessionProvider.notifier).leave();
       await tester.pumpAndSettle();
-      await tapText(tester, 'Create account');
+      await tapText(tester, 'Get Started');
       // Mobile field resets to empty (dial code is in the dropdown).
       expect(fieldText(tester, 'access-mobile'), isEmpty);
       expect(fieldText(tester, 'access-password'), isEmpty);
@@ -112,7 +112,7 @@ void main() {
 
   testWidgets('forms offer password-manager autofill hints', (tester) async {
     await openCircle(tester, entered: false);
-    await tapText(tester, 'Create account');
+    await tapText(tester, 'Get Started');
     expect(find.byType(AutofillGroup), findsOneWidget);
     List<String>? hints(String key) => tester
         .widget<EditableText>(
@@ -161,7 +161,7 @@ void main() {
         keyboard: 260,
       );
       expect(tester.takeException(), isNull);
-      await tapText(tester, 'Create account');
+      await tapText(tester, 'Get Started');
       await reveal(tester, find.text('Preview registration'));
       expect(tester.takeException(), isNull);
       await tapText(tester, 'Have an account? Log in');
@@ -180,14 +180,14 @@ void main() {
             : Brightness.light,
       );
       if (screen != 'welcome') {
-        await tapText(tester, screen == 'login' ? 'Log in' : 'Create account');
+        await tapText(tester, screen == 'login' ? 'Log in' : 'Get Started');
       }
       // Asset decoding is asynchronous and pumpAndSettle alone may capture
       // an empty image before its first frame, especially on a cold cache.
       await tester.runAsync(
         () => precacheImage(
           const AssetImage(CircleIdentity.artwork),
-          tester.element(find.byType(CircleBrand)),
+          tester.element(find.byType(Scaffold).first),
         ),
       );
       await tester.pumpAndSettle();

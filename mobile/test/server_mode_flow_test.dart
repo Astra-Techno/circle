@@ -46,7 +46,7 @@ void main() {
     expect(find.textContaining('Connected to circle.test'), findsOneWidget);
     expect(find.textContaining('Nothing is sent or stored'), findsNothing);
     expect(find.text('Explore fictional circles'), findsOneWidget);
-    await tap(tester, find.text('Create account'));
+    await tap(tester, find.text('Get Started'));
     expect(find.text('Preview registration'), findsNothing);
     await enter(
       tester,

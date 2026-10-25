@@ -193,13 +193,28 @@ log_step('📋', render_file_list($copied, BASE_DIR), 'muted');
 // STEP 3b — Update landing page & downloads (APK)
 // ══════════════════════════════════════════════════════════════
 
-// Copy website/index.html → home.html (landing page at site root)
-$srcWebsite = $repoRoot . '/website/index.html';
-if (file_exists($srcWebsite)) {
-    copy($srcWebsite, BASE_DIR . '/home.html');
-    log_step('✓', 'Landing page updated (home.html)', 'ok');
+// Copy website/ assets → site root (landing page + logo)
+$srcWebsiteDir = $repoRoot . '/website';
+if (is_dir($srcWebsiteDir)) {
+    $websiteCopied = [];
+    // index.html → home.html (landing page at site root)
+    if (file_exists($srcWebsiteDir . '/index.html')) {
+        copy($srcWebsiteDir . '/index.html', BASE_DIR . '/home.html');
+        $websiteCopied[] = BASE_DIR . '/home.html';
+    }
+    // Copy all other website files (logo, images, etc.) to site root
+    foreach (glob($srcWebsiteDir . '/*') as $wf) {
+        $name = basename($wf);
+        if ($name === 'index.html') continue; // already handled
+        if (is_file($wf)) {
+            copy($wf, BASE_DIR . '/' . $name);
+            $websiteCopied[] = BASE_DIR . '/' . $name;
+        }
+    }
+    log_step('✓', 'Landing page updated — ' . count($websiteCopied) . ' file(s)', 'ok');
+    log_step('📋', render_file_list($websiteCopied, BASE_DIR), 'muted');
 } else {
-    log_step('·', 'No website/index.html in repo — skipping landing page', 'muted');
+    log_step('·', 'No website/ folder in repo — skipping landing page', 'muted');
 }
 
 // Copy downloads/ folder (APK + download page)

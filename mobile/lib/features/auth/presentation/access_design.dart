@@ -18,37 +18,75 @@ class AccessWelcome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
+    final colors = theme.colorScheme;
+    final muted = colors.onSurfaceVariant;
     return _AccessPage(
       children: [
-        const CircleBrand(),
+        // ── Logo badge + brand name + tagline ──
+        const _WelcomeBrand(),
+        const SizedBox(height: Space.lg),
+
+        // ── Photo collage hero ──
+        const _PhotoCollage(),
+        const SizedBox(height: Space.section),
+
+        // ── Headline ──
+        Text(
+          'Your People.\nYour Moments.\nYour Circle.',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.headlineLarge,
+        ),
         const SizedBox(height: Space.md),
         Text(
-          'A private place to stay close, share memories and celebrate life together, without algorithms, ads or public noise.',
+          'A private place to stay close, share memories, and '
+          'celebrate life together without algorithms, ads, or '
+          'public noise.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge?.copyWith(color: muted),
         ),
         const SizedBox(height: Space.section),
+
+        // ── Promises ──
         const _Promises(),
         const SizedBox(height: Space.section),
-        FilledButton(
-          onPressed: () => context.go('/register'),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text('Create account', textAlign: TextAlign.center),
-              ),
-              SizedBox(width: Space.sm),
-              Icon(Icons.arrow_forward),
-            ],
+
+        // ── Get Started (→ register) ──
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: FilledButton(
+            onPressed: () => context.go('/register'),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text('Get Started', textAlign: TextAlign.center),
+                ),
+                SizedBox(width: Space.sm),
+                Icon(Icons.arrow_forward),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: Space.md),
-        OutlinedButton.icon(
-          onPressed: () => context.go('/login'),
-          icon: const Icon(Icons.login),
-          label: const Text('Log in'),
+
+        // ── Log in ──
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: FilledButton.tonal(
+            onPressed: () => context.go('/login'),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.login),
+                SizedBox(width: Space.sm),
+                Flexible(
+                  child: Text('Log in', textAlign: TextAlign.center),
+                ),
+              ],
+            ),
+          ),
         ),
         if (onExploreDemo != null) ...[
           const SizedBox(height: Space.sm),
@@ -58,11 +96,347 @@ class AccessWelcome extends StatelessWidget {
             label: const Text('Explore fictional circles'),
           ),
         ],
-        const SizedBox(height: Space.md),
+        const SizedBox(height: Space.lg),
         _PreviewNote(connectedTo: connectedTo, welcome: true),
+        const SizedBox(height: Space.md),
+        Text(
+          'By continuing, you agree to CIRCLE\u2019s '
+          'Community Values & Privacy Pact.',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelSmall?.copyWith(color: muted),
+        ),
       ],
     );
   }
+}
+
+/// Infinity logo in a tinted circle, bold "CIRCLE", and tagline.
+class _WelcomeBrand extends StatelessWidget {
+  const _WelcomeBrand();
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Column(
+      children: [
+        const SizedBox(height: Space.md),
+        // Logo image inside a soft circular badge
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colors.surfaceContainerHigh,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.all(Space.sm),
+            child: Image.asset(
+              CircleIdentity.artwork,
+              fit: BoxFit.contain,
+              semanticLabel: CircleIdentity.semantics,
+            ),
+          ),
+        ),
+        const SizedBox(height: Space.sm),
+        Text(
+          'CIRCLE',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            letterSpacing: 4,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'PRIVATE GROUPS. SHARED MEMORIES.',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colors.onSurfaceVariant,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A warm photo-collage section emulating the design mock-up.
+/// Uses placeholder illustrations since we don't bundle stock photos.
+class _PhotoCollage extends StatelessWidget {
+  const _PhotoCollage();
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final accents = CircleAccents.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Space.lg),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Main "photo" placeholder
+              Expanded(
+                flex: 7,
+                child: Transform.rotate(
+                  angle: -0.035,
+                  child: Container(
+                    padding: const EdgeInsets.all(Space.xs),
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      borderRadius: BorderRadius.circular(
+                        CircleRadius.small,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.shadow.withValues(alpha: 0.06),
+                          blurRadius: Space.sm,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 120,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                              CircleRadius.xsmall,
+                            ),
+                            color: accents.calmContainer,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.photo_library_outlined,
+                              size: 40,
+                              color: colors.onSurfaceVariant
+                                  .withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: Space.xs),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Space.xs,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  'Sunday Supper',
+                                  style: theme.textTheme.labelSmall,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Icon(
+                                Icons.favorite,
+                                size: 14,
+                                color: accents.heart,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: Space.sm),
+              // Right column: small photo + group badge
+              Expanded(
+                flex: 5,
+                child: Column(
+                  children: [
+                    Transform.rotate(
+                      angle: 0.05,
+                      child: Container(
+                        padding: const EdgeInsets.all(Space.xs),
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(
+                            CircleRadius.small,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.shadow.withValues(alpha: 0.06),
+                              blurRadius: Space.sm,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Container(
+                          height: 64,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                              CircleRadius.xsmall,
+                            ),
+                            color: accents.sageContainer,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.people_outline,
+                              size: 28,
+                              color: colors.onSurfaceVariant
+                                  .withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: Space.sm),
+                    // Group badge
+                    Container(
+                      padding: const EdgeInsets.all(Space.sm),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHighest
+                            .withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(CircleRadius.small),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleInitialAvatar(
+                            icon: Icons.lock,
+                            size: CircleAvatarSize.small,
+                          ),
+                          const SizedBox(width: Space.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Living Room',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  'Invite only',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Space.md),
+          // Quality badge + member avatars
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Space.sm,
+                    vertical: Space.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(CircleRadius.pill),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.shadow.withValues(alpha: 0.04),
+                        blurRadius: Space.xs,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.verified_user,
+                        size: 16,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: Space.xs),
+                      Flexible(
+                        child: Text(
+                          'Heirloom Quality',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: Space.sm),
+              // Stacked member avatars
+              SizedBox(
+                width: 54,
+                height: 24,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    _MiniAvatar(label: 'M', color: accents.calm),
+                    Positioned(
+                      left: 14,
+                      child: _MiniAvatar(
+                        label: 'K',
+                        color: colors.primary,
+                        textColor: colors.onPrimary,
+                      ),
+                    ),
+                    Positioned(
+                      left: 28,
+                      child: _MiniAvatar(
+                        label: '+8',
+                        color: colors.surfaceContainerHigh,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniAvatar extends StatelessWidget {
+  const _MiniAvatar({required this.label, required this.color, this.textColor});
+  final String label;
+  final Color color;
+  final Color? textColor;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 24,
+    height: 24,
+    decoration: BoxDecoration(
+      color: color,
+      shape: BoxShape.circle,
+      border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
+    ),
+    child: Center(
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: textColor ?? Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
+    ),
+  );
 }
 
 class _Promises extends StatelessWidget {
@@ -70,13 +444,36 @@ class _Promises extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     Widget row(IconData icon, String text) => Padding(
       padding: const EdgeInsets.symmetric(vertical: Space.xs),
       child: Row(
         children: [
-          CircleInitialAvatar(icon: icon, tone: CircleTone.surface),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: colors.surface,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: colors.shadow.withValues(alpha: 0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Icon(icon, size: 18, color: colors.primary),
+          ),
           const SizedBox(width: Space.md),
-          Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -88,14 +485,14 @@ class _Promises extends StatelessWidget {
       ),
       child: Column(
         children: [
-          row(Icons.shield_outlined, 'Private to the groups you choose'),
+          row(Icons.shield_outlined, '100% Private to your chosen groups'),
           row(
             Icons.do_not_disturb_on_outlined,
-            'No follower counts, vanity metrics or ads',
+            'No follower counts, vanity metrics, or ads',
           ),
           row(
             Icons.family_restroom_outlined,
-            'Clear and simple for every age, 15 to 75',
+            'Safe, legible, and simple for ages 15 to 75',
           ),
         ],
       ),
@@ -333,7 +730,7 @@ class _AccessFormState extends State<AccessForm> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   helperText: widget.registering
-                      ? '6–128 characters.'
+                      ? '6\u2013128 characters.'
                       : null,
                   helperMaxLines: 3,
                   errorMaxLines: 3,
@@ -385,8 +782,8 @@ class _AccessFormState extends State<AccessForm> {
                             : 'Preview log in')
                       : _busy
                       ? (widget.registering
-                            ? 'Creating your account…'
-                            : 'Logging in…')
+                            ? 'Creating your account\u2026'
+                            : 'Logging in\u2026')
                       : (widget.registering ? 'Create account' : 'Log in'),
                 ),
               ),
@@ -458,7 +855,7 @@ class _PreviewNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     connectedTo == null
-        ? 'Design preview · use fictional details only. Nothing is sent or stored.'
+        ? 'Design preview \u00b7 use fictional details only. Nothing is sent or stored.'
         : welcome
         ? 'Connected to $connectedTo. Explore fictional circles is a separate tour that stays on this device.'
         : 'Connected to $connectedTo. Your details are sent to this server only.',
