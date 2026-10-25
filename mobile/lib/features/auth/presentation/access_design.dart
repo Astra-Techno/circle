@@ -142,6 +142,14 @@ class _AccessFormState extends State<AccessForm> {
   bool _obscured = true;
   bool _busy = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
+    final prefix = AccessValidation.dialCodeForLocale(locale);
+    if (prefix.isNotEmpty) _mobile.text = prefix;
+  }
   @override
   void dispose() {
     _name.dispose();
@@ -279,7 +287,7 @@ class _AccessFormState extends State<AccessForm> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   helperText: widget.registering
-                      ? '15–128 characters. A passphrase works well.'
+                      ? '6–128 characters.'
                       : null,
                   helperMaxLines: 3,
                   errorMaxLines: 3,

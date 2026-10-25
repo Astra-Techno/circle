@@ -79,7 +79,7 @@ void main() {
       expect(container.read(circlePreviewSessionProvider), isFalse);
       await fillAccess(tester, password: 'short');
       await tapText(tester, 'Preview registration');
-      expect(find.textContaining('Use 15–128 characters'), findsOneWidget);
+      expect(find.textContaining('Use 6–128 characters'), findsOneWidget);
       await fillAccess(tester, password: 'a fictional passphrase');
       await tester.tap(find.byTooltip('Show password'));
       await tester.pumpAndSettle();
@@ -92,7 +92,11 @@ void main() {
       await container.read(circlePreviewSessionProvider.notifier).leave();
       await tester.pumpAndSettle();
       await tapText(tester, 'Create account');
-      expect(fieldText(tester, 'access-mobile'), isEmpty);
+      // Mobile field resets to auto-detected country prefix (or empty).
+      final prefix = AccessValidation.dialCodeForLocale(
+        WidgetsBinding.instance.platformDispatcher.locale,
+      );
+      expect(fieldText(tester, 'access-mobile'), prefix);
       expect(fieldText(tester, 'access-password'), isEmpty);
     },
   );

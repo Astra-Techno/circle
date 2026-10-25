@@ -51,8 +51,8 @@ final class Validator
             return $this;
         }
         $len = mb_strlen($value, 'UTF-8');
-        if ($len < 15) {
-            $this->errors[] = 'Password must be at least 15 characters.';
+        if ($len < 6) {
+            $this->errors[] = 'Password must be at least 6 characters.';
         }
         if ($len > 128) {
             $this->errors[] = 'Password must be at most 128 characters.';
