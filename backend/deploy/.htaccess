@@ -1,0 +1,39 @@
+# CIRCLE API — shared hosting root .htaccess
+# This file goes in the subdomain document root (circle.cloudkart24.com/).
+# It protects private directories and routes all API requests to index.php.
+
+# ── Block direct access to private files and directories ──────
+# These MUST never be served by the web server.
+<FilesMatch "^\.env$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^composer\.(json|lock)$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^phpunit\.xml$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^phpstan\.neon$">
+    Require all denied
+</FilesMatch>
+
+# Block all PHP files except index.php and _migrate.php
+RewriteEngine On
+
+# Block access to private directories entirely
+RewriteRule ^(src|vendor|database|storage|tests|deploy)(/|$) - [F,L]
+
+# Allow downloads/ to be served as static files (APK, etc.)
+RewriteRule ^downloads/ - [L]
+
+# ── Pass Authorization header (Apache CGI/FastCGI drops it) ──
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# ── Front controller: route everything to index.php ──────────
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
