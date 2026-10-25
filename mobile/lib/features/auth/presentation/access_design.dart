@@ -139,6 +139,7 @@ class _AccessFormState extends State<AccessForm> {
   final _name = TextEditingController();
   final _mobile = TextEditingController();
   final _password = TextEditingController();
+  late DialCode _dialCode;
   bool _obscured = true;
   bool _busy = false;
   String? _error;
@@ -147,8 +148,7 @@ class _AccessFormState extends State<AccessForm> {
   void initState() {
     super.initState();
     final locale = WidgetsBinding.instance.platformDispatcher.locale;
-    final prefix = AccessValidation.dialCodeForLocale(locale);
-    if (prefix.isNotEmpty) _mobile.text = prefix;
+    _dialCode = AccessValidation.dialCodeForLocale(locale);
   }
   @override
   void dispose() {
@@ -157,6 +157,9 @@ class _AccessFormState extends State<AccessForm> {
     _password.dispose();
     super.dispose();
   }
+
+  /// Combines dial code + phone number into E.164 format.
+  String get _fullMobile => '${_dialCode.code}${_mobile.text.trim()}';
 
   void _submit() {
     if (_busy || !_form.currentState!.validate()) return;
@@ -185,7 +188,7 @@ class _AccessFormState extends State<AccessForm> {
     final error = await submit(
       AccessDetails(
         registering: widget.registering,
-        mobile: AccessValidation.normalizeMobile(_mobile.text),
+        mobile: AccessValidation.normalizeMobile(_fullMobile),
         password: _password.text,
         name: widget.registering ? _name.text.trim() : null,
       ),
@@ -264,21 +267,64 @@ class _AccessFormState extends State<AccessForm> {
                 ),
                 const SizedBox(height: Space.lg),
               ],
-              TextFormField(
-                controller: _mobile,
-                key: const ValueKey('access-mobile'),
-                decoration: const InputDecoration(
-                  labelText: 'Mobile number',
-                  hintText: '+ country code and number',
-                  errorMaxLines: 3,
-                  prefixIcon: Icon(Icons.phone_iphone_outlined),
-                ),
-                keyboardType: TextInputType.phone,
-                textInputAction: TextInputAction.next,
-                autofillHints: const [AutofillHints.telephoneNumber],
-                autocorrect: false,
-                enableSuggestions: false,
-                validator: AccessValidation.mobile,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Country code dropdown
+                  SizedBox(
+                    width: 108,
+                    child: DropdownButtonFormField<DialCode>(
+                      initialValue: _dialCode,
+                      decoration: const InputDecoration(
+                        labelText: 'Code',
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 16,
+                        ),
+                      ),
+                      isExpanded: true,
+                      items: dialCodes
+                          .map((d) => DropdownMenuItem(
+                                value: d,
+                                child: Text(
+                                  '${d.flag} ${d.code}',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setState(() => _dialCode = v);
+                      },
+                      selectedItemBuilder: (context) => dialCodes
+                          .map((d) => Text(
+                                '${d.flag} ${d.code}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                                overflow: TextOverflow.ellipsis,
+                              ))
+                          .toList(),
+                    ),
+                  ),
+                  const SizedBox(width: Space.sm),
+                  // Phone number field
+                  Expanded(
+                    child: TextFormField(
+                      controller: _mobile,
+                      key: const ValueKey('access-mobile'),
+                      decoration: const InputDecoration(
+                        labelText: 'Mobile number',
+                        hintText: 'Phone number',
+                        errorMaxLines: 3,
+                        prefixIcon: Icon(Icons.phone_iphone_outlined),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.telephoneNumber],
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      validator: AccessValidation.phoneNumber,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: Space.lg),
               TextFormField(

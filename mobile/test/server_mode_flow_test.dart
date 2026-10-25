@@ -7,11 +7,17 @@ import 'package:mobile/core/api/api_providers.dart';
 import 'package:mobile/core/circle_signed_image.dart';
 import 'package:mobile/features/memories/application/media_providers.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
+import 'package:mobile/features/auth/domain/access_validation.dart';
 import 'support/circle_harness.dart' show currentUri, openTab, reveal;
 import 'support/fake_api.dart';
 import 'support/server_harness.dart';
 
 const password = 'correct horse battery staple';
+
+/// The dial code that the form auto-selects based on test platform locale.
+String get _prefix => AccessValidation.dialCodeForLocale(
+  WidgetsBinding.instance.platformDispatcher.locale,
+).code;
 
 Future<void> enter(WidgetTester tester, Finder field, String text) async {
   await tester.enterText(field, text);
@@ -50,7 +56,7 @@ void main() {
     await enter(
       tester,
       find.byKey(const ValueKey('access-mobile')),
-      '+1 555 000 0001',
+      '5550000001',
     );
     await enter(
       tester,
@@ -63,7 +69,7 @@ void main() {
     final paths = server.adapter.requests.map((r) => r.path).toList();
     expect(paths.take(2), ['/auth/register', '/auth/login']);
     expect(server.adapter.requests.first.json['password'], ' $password ');
-    expect(server.adapter.requests.first.json['mobile'], '+15550000001');
+    expect(server.adapter.requests.first.json['mobile'], '${_prefix}5550000001');
     expect((await tokens.read())?.accessToken, startsWith('access-'));
     expect(currentUri(container).path, '/home');
     expect(
@@ -102,13 +108,14 @@ void main() {
   testWidgets('a failed log-in is generic; the right password gets in', (
     tester,
   ) async {
-    final server = FakeCircleServer()..addUser('+15550000002', password, 'Dev');
+    final server = FakeCircleServer()
+      ..addUser('${_prefix}5550000002', password, 'Dev');
     await openServerCircle(tester, server);
     await tap(tester, find.text('Log in'));
     await enter(
       tester,
       find.byKey(const ValueKey('access-mobile')),
-      '+15550000002',
+      '5550000002',
     );
     await enter(
       tester,
@@ -137,7 +144,7 @@ void main() {
 
   testWidgets('features the server lacks say so, calmly, once', (tester) async {
     final server = FakeCircleServer();
-    final user = server.addUser('+15550000003', password, 'Mira');
+    final user = server.addUser('${_prefix}5550000003', password, 'Mira');
     final family = server.addGroup('Family', user);
     final container = await openServerCircle(
       tester,
@@ -199,7 +206,7 @@ void main() {
     tester,
   ) async {
     final server = FakeCircleServer();
-    final user = server.addUser('+15550000004', password, 'Lena');
+    final user = server.addUser('${_prefix}5550000004', password, 'Lena');
     server.addGroup('Book club', user, type: 'club');
     final tokens = await storedSession(server, user);
     server.expireAccessTokens();
@@ -213,7 +220,7 @@ void main() {
     tester,
   ) async {
     final server = FakeCircleServer();
-    final user = server.addUser('+15550000005', password, 'Sam');
+    final user = server.addUser('${_prefix}5550000005', password, 'Sam');
     final tokens = await storedSession(server, user);
     server
       ..expireAccessTokens()
@@ -229,7 +236,7 @@ void main() {
 
   testWidgets('photos: 503 is calm, the words still share', (tester) async {
     final server = FakeCircleServer();
-    final user = server.addUser('+15550000006', password, 'Noor');
+    final user = server.addUser('${_prefix}5550000006', password, 'Noor');
     final group = server.addGroup('Family', user);
     final picker = FakePhotoPicker([PickedPhoto(name: 'a.jpg', bytes: jpeg())]);
     final container = await openServerCircle(
@@ -266,7 +273,7 @@ void main() {
     tester,
   ) async {
     final server = FakeCircleServer(mediaAvailable: true);
-    final user = server.addUser('+15550000007', password, 'Priya');
+    final user = server.addUser('${_prefix}5550000007', password, 'Priya');
     final group = server.addGroup('Family', user);
     final container = await openServerCircle(
       tester,
@@ -302,9 +309,9 @@ void main() {
   testWidgets('comments: @suggestions are the group’s members; plain text '
       'goes to the server', (tester) async {
     final server = FakeCircleServer();
-    final user = server.addUser('+15550000009', password, 'Asha');
-    final dev = server.addUser('+15550000010', password, 'Devika');
-    server.addUser('+15550000011', password, 'Dhruv');
+    final user = server.addUser('${_prefix}5550000009', password, 'Asha');
+    final dev = server.addUser('${_prefix}5550000010', password, 'Devika');
+    server.addUser('${_prefix}5550000011', password, 'Dhruv');
     final group = server.addGroup('Family', user);
     server.members[group]![dev] = 'member';
     final memory = server.addMemory(group, user, 'Sunday lunch');
@@ -338,7 +345,7 @@ void main() {
 
   testWidgets('log out ends the session and clears the tokens', (tester) async {
     final server = FakeCircleServer();
-    final user = server.addUser('+15550000008', password, 'Tomas');
+    final user = server.addUser('${_prefix}5550000008', password, 'Tomas');
     final tokens = await storedSession(server, user);
     final container = await openServerCircle(tester, server, tokens: tokens);
     container.read(circleRouterProvider).go('/you/account');

@@ -8,7 +8,7 @@ import 'support/circle_harness.dart';
 Future<void> fillAccess(WidgetTester tester, {required String password}) async {
   await tester.enterText(
     find.byKey(const ValueKey('access-mobile')),
-    '+99912345678',
+    '9876543210',
   );
   await tester.enterText(
     find.byKey(const ValueKey('access-password')),
@@ -74,7 +74,7 @@ void main() {
       final container = await openCircle(tester, entered: false);
       await tapText(tester, 'Create account');
       await tapText(tester, 'Preview registration');
-      expect(find.textContaining('Include the country code'), findsOneWidget);
+      expect(find.text('Enter your mobile number.'), findsOneWidget);
       expect(find.text('Enter your password.'), findsOneWidget);
       expect(container.read(circlePreviewSessionProvider), isFalse);
       await fillAccess(tester, password: 'short');
@@ -92,11 +92,8 @@ void main() {
       await container.read(circlePreviewSessionProvider.notifier).leave();
       await tester.pumpAndSettle();
       await tapText(tester, 'Create account');
-      // Mobile field resets to auto-detected country prefix (or empty).
-      final prefix = AccessValidation.dialCodeForLocale(
-        WidgetsBinding.instance.platformDispatcher.locale,
-      );
-      expect(fieldText(tester, 'access-mobile'), prefix);
+      // Mobile field resets to empty (dial code is in the dropdown).
+      expect(fieldText(tester, 'access-mobile'), isEmpty);
       expect(fieldText(tester, 'access-password'), isEmpty);
     },
   );

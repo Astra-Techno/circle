@@ -37,7 +37,7 @@ void main() {
       await tapText(tester, 'Create account');
       await tester.enterText(
         find.byKey(const ValueKey('access-mobile')),
-        '+99912345678',
+        '9876543210',
       );
       await tester.enterText(
         find.byKey(const ValueKey('access-password')),
@@ -240,7 +240,7 @@ void main() {
       expect(find.text('Good to have\nyou back.'), findsOneWidget);
       await tester.enterText(
         find.byKey(const ValueKey('access-mobile')),
-        '+99912345678',
+        '9876543210',
       );
       await tester.enterText(
         find.byKey(const ValueKey('access-password')),
