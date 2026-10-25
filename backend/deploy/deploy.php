@@ -190,17 +190,35 @@ log_step('✓', 'Backend updated — ' . count($copied) . ' file(s)', 'ok');
 log_step('📋', render_file_list($copied, BASE_DIR), 'muted');
 
 // ══════════════════════════════════════════════════════════════
-// STEP 3b — Update downloads (APK, landing page)
+// STEP 3b — Update landing page & downloads (APK)
 // ══════════════════════════════════════════════════════════════
+
+// Copy website/index.html → home.html (landing page at site root)
+$srcWebsite = $repoRoot . '/website/index.html';
+if (file_exists($srcWebsite)) {
+    copy($srcWebsite, BASE_DIR . '/home.html');
+    log_step('✓', 'Landing page updated (home.html)', 'ok');
+} else {
+    log_step('·', 'No website/index.html in repo — skipping landing page', 'muted');
+}
+
+// Copy downloads/ folder (APK + download page)
 $srcDownloads = $repoRoot . '/downloads';
 if (is_dir($srcDownloads)) {
-    log_step('📱', 'Updating downloads (APK, landing page)…');
+    log_step('📱', 'Updating downloads (APK)…');
     $dlCopied = [];
     rcopy($srcDownloads, BASE_DIR . '/downloads', [], $dlCopied);
     log_step('✓', 'Downloads updated — ' . count($dlCopied) . ' file(s)', 'ok');
     log_step('📋', render_file_list($dlCopied, BASE_DIR), 'muted');
 } else {
     log_step('·', 'No downloads/ folder in repo — skipping', 'muted');
+}
+
+// Copy .htaccess from deploy template (keeps routing rules up to date)
+$srcHtaccess = $repoRoot . '/backend/deploy/.htaccess';
+if (file_exists($srcHtaccess)) {
+    copy($srcHtaccess, BASE_DIR . '/.htaccess');
+    log_step('✓', '.htaccess updated', 'ok');
 }
 
 // ══════════════════════════════════════════════════════════════

@@ -26,6 +26,9 @@ RewriteEngine On
 # Block access to private directories entirely
 RewriteRule ^(src|vendor|database|storage|tests|deploy)(/|$) - [F,L]
 
+# Serve landing page at site root
+RewriteRule ^$ home.html [L]
+
 # Allow downloads/ to be served as static files (APK, etc.)
 RewriteRule ^downloads/ - [L]
 
