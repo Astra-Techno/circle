@@ -3,10 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/circle_brand.dart';
 import '../domain/access_validation.dart';
 
-/// Welcome: the owner's Stitch layout ("Your People. Your Moments. Your
-/// Circle."). Create account and Log in are the two clear choices; the
+/// Welcome with the owner's complete supplied CIRCLE identity.
+/// Create account and Log in are the two clear choices; the
 /// fictional tour is a quiet third option for the prototype.
 class AccessWelcome extends StatelessWidget {
   const AccessWelcome({super.key, this.onExploreDemo, this.connectedTo});
@@ -20,42 +21,7 @@ class AccessWelcome extends StatelessWidget {
     final muted = theme.colorScheme.onSurfaceVariant;
     return _AccessPage(
       children: [
-        const Center(
-          child: CircleInitialAvatar(
-            icon: Icons.all_inclusive,
-            size: CircleAvatarSize.hero,
-          ),
-        ),
-        const SizedBox(height: Space.md),
-        Text(
-          'CIRCLE',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineMedium?.copyWith(letterSpacing: 4),
-        ),
-        const SizedBox(height: Space.xs),
-        Text(
-          'PRIVATE GROUPS. SHARED MEMORIES.',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: muted,
-            letterSpacing: 1.5,
-          ),
-        ),
-        const SizedBox(height: Space.section),
-        // The collage is a decorative illustration (described for screen
-        // readers), so its tiny captions keep their drawn size.
-        MediaQuery.withNoTextScaling(child: const _WelcomeCollage()),
-        const SizedBox(height: Space.section),
-        // Display text is already large; capping its growth keeps words
-        // whole on narrow phones while body text still scales fully.
-        MediaQuery.withClampedTextScaling(
-          maxScaleFactor: 1.3,
-          child: Text(
-            'Your people. Your moments. Your circle.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.displaySmall,
-          ),
-        ),
+        const CircleBrand(),
         const SizedBox(height: Space.md),
         Text(
           'A private place to stay close, share memories and celebrate life together, without algorithms, ads or public noise.',
@@ -99,209 +65,6 @@ class AccessWelcome extends StatelessWidget {
   }
 }
 
-/// A fictional keepsake collage: two illustrated "photos", an invite-only
-/// room and a calm promise. No real people or remote images.
-class _WelcomeCollage extends StatelessWidget {
-  const _WelcomeCollage();
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accents = CircleAccents.of(context);
-    return Semantics(
-      image: true,
-      label:
-          'Illustration: a family supper and a hillside outing, shared in an invite-only circle',
-      child: ExcludeSemantics(
-        child: Container(
-          padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(
-            color: accents.calmContainer,
-            borderRadius: BorderRadius.circular(CircleRadius.sheet),
-          ),
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 5,
-                    child: Transform.rotate(
-                      angle: -0.03,
-                      child: const _Polaroid(
-                        icon: Icons.dinner_dining_outlined,
-                        caption: 'Sunday supper',
-                        height: 120,
-                        loved: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: Space.md),
-                  Expanded(
-                    flex: 4,
-                    child: Column(
-                      children: [
-                        Transform.rotate(
-                          angle: 0.04,
-                          child: const _Polaroid(
-                            icon: Icons.landscape_outlined,
-                            height: 64,
-                          ),
-                        ),
-                        const SizedBox(height: Space.md),
-                        Container(
-                          padding: const EdgeInsets.all(Space.sm),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerLowest,
-                            borderRadius: BorderRadius.circular(
-                              CircleRadius.tile,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const CircleInitialAvatar(
-                                icon: Icons.lock_outline,
-                                tone: CircleTone.strong,
-                                size: CircleAvatarSize.small,
-                              ),
-                              const SizedBox(width: Space.sm),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Living room',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.labelMedium,
-                                    ),
-                                    Text(
-                                      'Invite only',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.labelSmall
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Space.md),
-              Row(
-                children: [
-                  const Expanded(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: CirclePill(
-                        'Calm and private',
-                        icon: Icons.verified_user_outlined,
-                        tone: CircleTone.surface,
-                      ),
-                    ),
-                  ),
-                  for (final (index, label) in ['M', 'K', '+8'].indexed)
-                    Align(
-                      widthFactor: 0.75,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: accents.calmContainer,
-                            width: 2,
-                          ),
-                        ),
-                        child: CircleInitialAvatar(
-                          name: label == '+8' ? null : label,
-                          icon: label == '+8' ? Icons.more_horiz : null,
-                          tone: index == 1
-                              ? CircleTone.strong
-                              : index == 0
-                              ? CircleTone.heart
-                              : CircleTone.neutral,
-                          size: CircleAvatarSize.small,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// An illustrated "photo" with a white keepsake border.
-class _Polaroid extends StatelessWidget {
-  const _Polaroid({
-    required this.icon,
-    required this.height,
-    this.caption,
-    this.loved = false,
-  });
-  final IconData icon;
-  final double height;
-  final String? caption;
-  final bool loved;
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accents = CircleAccents.of(context);
-    return Container(
-      padding: const EdgeInsets.all(Space.sm),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(CircleRadius.small),
-        border: Border.all(color: accents.hairline),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            height: height,
-            decoration: BoxDecoration(
-              color: accents.recessed,
-              borderRadius: BorderRadius.circular(CircleRadius.small),
-            ),
-            child: Icon(
-              icon,
-              size: height / 2.4,
-              color: theme.colorScheme.secondary,
-            ),
-          ),
-          if (caption != null)
-            Padding(
-              padding: const EdgeInsets.only(top: Space.sm),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      caption!,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                  if (loved)
-                    Icon(Icons.favorite_border, size: 16, color: accents.heart),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The three promises from the design, in plain words.
 class _Promises extends StatelessWidget {
   const _Promises();
   @override
@@ -629,38 +392,7 @@ class _AccessPage extends StatelessWidget {
 class _Brand extends StatelessWidget {
   const _Brand();
   @override
-  Widget build(BuildContext context) => Wrap(
-    spacing: Space.section,
-    runSpacing: Space.md,
-    crossAxisAlignment: WrapCrossAlignment.center,
-    children: [
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.blur_circular,
-            color: Theme.of(context).colorScheme.primary,
-            size: 32,
-          ),
-          const SizedBox(width: Space.sm),
-          Text(
-            'CIRCLE',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(letterSpacing: 3),
-          ),
-        ],
-      ),
-      const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.lock_outline, size: 18),
-          SizedBox(width: Space.xs),
-          Text('Private by choice'),
-        ],
-      ),
-    ],
-  );
+  Widget build(BuildContext context) => const CircleBrand(compact: true);
 }
 
 class _PreviewNote extends StatelessWidget {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/circle_brand.dart';
 import 'package:mobile/features/auth/domain/access_validation.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
 import 'support/circle_harness.dart';
@@ -99,6 +100,7 @@ void main() {
   testWidgets('login never requires an invitation or OTP', (tester) async {
     final container = await openCircle(tester, entered: false);
     await tapText(tester, 'Log in');
+    await reveal(tester, find.textContaining('OTP'));
     expect(find.textContaining('OTP'), findsOneWidget);
     await fillAccess(tester, password: 'fictional password');
     await tapText(tester, 'Preview log in');
@@ -179,6 +181,15 @@ void main() {
       if (screen != 'welcome') {
         await tapText(tester, screen == 'login' ? 'Log in' : 'Create account');
       }
+      // Asset decoding is asynchronous and pumpAndSettle alone may capture
+      // an empty image before its first frame, especially on a cold cache.
+      await tester.runAsync(
+        () => precacheImage(
+          const AssetImage(CircleIdentity.artwork),
+          tester.element(find.byType(CircleBrand)),
+        ),
+      );
+      await tester.pumpAndSettle();
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('goldens/access_$screen.png'),

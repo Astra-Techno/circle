@@ -649,7 +649,12 @@ void main() {
     '/compose',
   ]) {
     testWidgets('original circle golden $route', (tester) async {
-      final container = await openCircle(tester);
+      final container = await openCircle(
+        tester,
+        now: route == '/events' || route == '/groups/g/friends'
+            ? DateTime(2026, 10, 24, 12)
+            : null,
+      );
       await go(tester, container, route);
       await expectLater(
         find.byType(MaterialApp),

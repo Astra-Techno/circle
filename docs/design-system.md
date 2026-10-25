@@ -2,6 +2,16 @@
 
 No Figma reference has been provided. Everything here is an **original** Material 3 design direction. Product scope and screens: README §3–4.
 
+## Supplied brand identity (owner, 25 October 2026)
+
+- Name: **CIRCLE**.
+- Tagline, exactly: **MY CIRCLE. BILLION MEMORIES.**
+- Canonical artwork: `mobile/assets/brand/circle-brand.png`, copied byte-for-byte from the owner's supplied PNG. Use the complete logo, wordmark and tagline together. Do not redraw, crop or recolour the artwork.
+- `core/circle_brand.dart` supplies the shared access-screen lockup and its screen-reader label. The supplied image retains its light background in dark mode.
+- Welcome and access forms replace the previous infinity/blur symbols, collage and alternate slogans with this identity. General product copy and group-type icons are not brand marks.
+- Android/iOS launcher assets and web icons are mechanical size exports of the complete artwork. Regenerate on Windows with `mobile/tool/generate_brand_icons.ps1`; no additional dependencies or image generation are used.
+- The existing semantic screen palette and component kit below remain the UI system; the supplied artwork is an intentional branded image asset.
+
 ## Direction: "Luminous Pure Minimal" (owner choice, 23 Oct 2026)
 
 Source: `~/Downloads/DESIGN.md` ("Luminous Pure Minimal"). It **replaces** "Warm Keepsake":

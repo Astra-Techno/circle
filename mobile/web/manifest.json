@@ -3,9 +3,9 @@
     "short_name": "CIRCLE",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FAF8F2",
-    "theme_color": "#245748",
-    "description": "CIRCLE fictional community prototype.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#1B223C",
+    "description": "MY CIRCLE. BILLION MEMORIES.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
