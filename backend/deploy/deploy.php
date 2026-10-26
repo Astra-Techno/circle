@@ -69,24 +69,24 @@ register_shutdown_function(static function () use (&$failureReserve, &$deploymen
     $failureReserve = '';
     $error = error_get_last();
     if (!$deploymentComplete && $error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
-        error_log('[CIRCLE deploy] Fatal failure at ' . basename($error['file']) . ':' . $error['line']);
+        error_log('[CIRCLE deploy] ' . redact_deploy_error($error['message'] . ' at ' . $error['file'] . ':' . $error['line']));
         http_response_code(500);
         echo page('Deploy Failed', render_log() . render_banner(false,
-            'PHP stopped during deployment. Check the hosting PHP error log for this request. PHP ' . htmlspecialchars(PHP_VERSION) . '; memory limit ' . htmlspecialchars((string) ini_get('memory_limit')) . '.'));
+            'PHP stopped during deployment. Check the hosting PHP error log for this request. PHP ' . htmlspecialchars(PHP_VERSION) . '; memory limit ' . htmlspecialchars((string) ini_get('memory_limit')) . '.') . render_error_details('PHP fatal error (' . $error['type'] . ')', $error['message'], $error['file'], $error['line']));
     }
     if (is_string($tmpZip)) @unlink($tmpZip);
     if (is_string($tmpDir)) rrmdir($tmpDir);
 });
 set_exception_handler(static function (Throwable $error) use (&$deploymentComplete): void {
-    error_log('[CIRCLE deploy] ' . get_class($error) . ' at ' . basename($error->getFile()) . ':' . $error->getLine());
+    error_log('[CIRCLE deploy] ' . throwable_details($error));
     $deploymentComplete = true;
     http_response_code(500);
     echo page('Deploy Failed', render_log() . render_banner(false,
-        'Deployment stopped. Check the hosting PHP error log; no secret values are shown here.'));
+        'Deployment stopped. Error details follow; credential values are redacted.') . render_error_details(get_class($error), $error->getMessage(), $error->getFile(), $error->getLine(), $error));
 });
 set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
     if (!(error_reporting() & $severity)) return false;
-    throw new ErrorException('Deployment filesystem or runtime operation failed.', 0, $severity, $file, $line);
+    throw new ErrorException($message, 0, $severity, $file, $line);
 });
 
 // ── Config ───────────────────────────────────────────────────
@@ -130,6 +130,7 @@ $zipUrl = 'https://codeload.github.com/' . $repo . '/zip/' . rawurlencode($branc
 $destination = fopen($tmpZip, 'wb');
 if ($destination === false) abort('Cannot open the temporary archive for writing.');
 $httpCode = 0;
+$transportError = '';
 $downloaded = false;
 try {
     if (function_exists('curl_init')) {
@@ -145,6 +146,7 @@ try {
             CURLOPT_HTTPHEADER => $token !== '' ? ['Authorization: Bearer ' . $token] : [],
         ]);
         $downloaded = curl_exec($ch) === true;
+        $transportError = 'cURL ' . curl_errno($ch) . ': ' . curl_error($ch);
         $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
     } elseif (filter_var(ini_get('allow_url_fopen'), FILTER_VALIDATE_BOOLEAN)) {
@@ -153,7 +155,9 @@ try {
                 'header' => "User-Agent: Circle-Deployer/2.0\r\n" . ($token !== '' ? "Authorization: Bearer {$token}\r\n" : '')],
             'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
         ]);
+        error_clear_last();
         $source = @fopen($zipUrl, 'rb', false, $ctx);
+        if ($source === false) $transportError = (error_get_last()['message'] ?? 'Cannot open HTTPS stream.');
         if ($source !== false) {
             $metadata = stream_get_meta_data($source);
             foreach ($metadata['wrapper_data'] ?? [] as $line) {
@@ -170,7 +174,7 @@ try {
 }
 if (!$downloaded || $httpCode !== 200) {
     if (in_array($httpCode, [401, 403, 404], true)) abort('GitHub repository access failed (HTTP ' . $httpCode . '). Check GITHUB_REPO, GITHUB_BRANCH and the hosting GITHUB_TOKEN.');
-    abort('Repository download failed (HTTP ' . $httpCode . '). Check hosting outbound HTTPS access, trusted CA certificates and disk space.');
+    abort('Repository download failed (HTTP ' . $httpCode . '). Check hosting outbound HTTPS access, trusted CA certificates and disk space. ' . redact_deploy_error($transportError));
 }
 $zipBytes = filesize($tmpZip);
 if ($zipBytes === false || $zipBytes === 0) abort('The downloaded ZIP is empty.');
@@ -343,6 +347,40 @@ echo page('Deploy', render_log() . render_banner(
 // Helpers
 // ═══════════════════════════════════════════════════════════════
 
+/** Redact configured secrets before printing or logging diagnostics. */
+function redact_deploy_error(string $text): string {
+    global $envVars, $deployKey, $givenKey;
+    $secrets = [$deployKey ?? '', $givenKey ?? ''];
+    foreach ($envVars as $name => $value) {
+        if (preg_match('/PASSWORD|PASSWD|SECRET|TOKEN|KEY|CREDENTIAL/i', $name) && is_string($value)) $secrets[] = $value;
+    }
+    usort($secrets, static fn(string $a, string $b): int => strlen($b) <=> strlen($a));
+    foreach (array_unique($secrets) as $secret) {
+        if ($secret !== '') $text = str_replace([$secret, rawurlencode($secret), urlencode($secret)], '[REDACTED]', $text);
+    }
+    $text = preg_replace('~(https?://)[^/\s@]+@~i', '$1[REDACTED]@', $text) ?? $text;
+    $text = preg_replace('~((?:key|token|password|secret)=)[^&\s]+~i', '$1[REDACTED]', $text) ?? $text;
+    return $text;
+}
+
+function throwable_details(Throwable $error): string {
+    return redact_deploy_error(get_class($error) . ': ' . $error->getMessage() . "\n" . $error->getFile() . ':' . $error->getLine());
+}
+
+/** Traces intentionally omit function arguments, which can contain credentials. */
+function render_error_details(string $type, string $message, string $file, int $line, ?Throwable $error = null): string {
+    $details = $type . ': ' . $message . "\nFile: " . $file . "\nLine: " . $line;
+    if ($error !== null) {
+        $details .= "\n\nTrace (arguments omitted):";
+        foreach ($error->getTrace() as $index => $frame) {
+            $details .= "\n#" . $index . ' ' . ($frame['file'] ?? '[internal]') . ':' . ($frame['line'] ?? 0)
+                . ' ' . ($frame['class'] ?? '') . ($frame['type'] ?? '') . ($frame['function'] ?? '');
+        }
+    }
+    return '<pre style="white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;background:#fff;border:1px solid #fecaca">'
+        . htmlspecialchars(redact_deploy_error($details), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre>';
+}
+
 /**
  * Runs migrations using Circle's schema: database/migrations/*.sql
  * Uses its own PDO (not Circle\Core\Database) to avoid bootstrap issues.
@@ -405,7 +443,7 @@ function runMigrations(): array {
                 $ins->execute(['name' => $name]);
                 $log[] = ['status' => 'done', 'name' => $name];
             } catch (PDOException $e) {
-                $log[] = ['status' => 'fail', 'name' => $name, 'error' => ' — Failed; check the hosting PHP error log.'];
+                $log[] = ['status' => 'fail', 'name' => $name, 'error' => ' — ' . throwable_details($e)];
                 break; // stop on first failure
             }
         }
@@ -414,7 +452,7 @@ function runMigrations(): array {
             $log[] = ['status' => 'skip', 'name' => 'No migration files found'];
         }
     } catch (Throwable $e) {
-        $log[] = ['status' => 'fail', 'name' => 'DB connection', 'error' => ' — Failed; check the hosting PHP error log.'];
+        $log[] = ['status' => 'fail', 'name' => 'DB connection', 'error' => ' — ' . throwable_details($e)];
     }
 
     return $log;
