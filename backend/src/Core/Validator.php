@@ -25,7 +25,11 @@ final class Validator
             $this->errors[] = "{$label} must be a string.";
             return $this;
         }
-        $len = mb_strlen(trim($value));
+        $len = preg_match_all('/./us', trim($value));
+        if ($len === false) {
+            $this->errors[] = "{$label} must be valid UTF-8 text.";
+            return $this;
+        }
         if ($len < $min) {
             $this->errors[] = "{$label} must be at least {$min} characters.";
         }
@@ -46,11 +50,11 @@ final class Validator
     /** Length is counted in Unicode characters on the exact, untrimmed value. */
     public function password(string $value): self
     {
-        if (!mb_check_encoding($value, 'UTF-8')) {
+        $len = preg_match_all('/./us', $value);
+        if ($len === false) {
             $this->errors[] = 'Password must be valid text.';
             return $this;
         }
-        $len = mb_strlen($value, 'UTF-8');
         if ($len < 6) {
             $this->errors[] = 'Password must be at least 6 characters.';
         }
