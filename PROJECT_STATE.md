@@ -9,10 +9,9 @@ Updated: 26 October 2026. This file is a short handoff, not a substitute for ins
 - Preview implementations do not establish live chat/events/albums/moderation or push preference enforcement.
 
 ## Repository versus live release
-- Downloadable artifact history includes `8c1f677` stable APK replacement; later source checkpoints add profiles and gated push foundations without a new APK.
-- Review found incompatible APK signing, reused build7 and inconsistent stable/versioned artifacts/metadata. Fix before another runtime release; README §0.4–0.5.
-- Last read-only live check still identified the previously verified 1.0.6+7 artifact: 63,085,188 bytes, SHA-256 `8ab534bd2aa0b33cce92d3ee9d091549567062d11944d02bcaeb52ba47a9c15a`.
-- Recheck current Git and hosted metadata before assuming deployment state has changed.
+- Owner requested an installation-check APK: candidate 1.0.7+8, production API, preview/push disabled, original beta signing certificate verified. Package details: `docs/mobile-release-1.0.7.md`.
+- Stable/new immutable APKs and both site buttons/metadata align; 63,359,206 bytes, SHA-256 `cf55a769270c28266c0025f1a680f60dc6a57e1fd6e88e437b31e7af241cb157`. Earlier immutable artifacts retained.
+- Hosted metadata was build7 before this packaging task. Publishing/deployment verification is recorded separately; local packaging alone is not live availability.
 
 ## Current work and priorities
 - Canonical backlog and acceptance criteria: `docs/pending-work.md`.
@@ -24,11 +23,11 @@ Updated: 26 October 2026. This file is a short handoff, not a substitute for ins
 
 ## Current source checkpoint (not a deployed release)
 - Working checkout: `/workspace/circle-docs-sync`, main; primary `/workspace/circle` still preserves original WIP. Do not reapply that old patch to integrated source.
-- B1/B2 integrated in fd3a327: private profiles, session guards, migration 008 and truthful capability gates. Profile visual/native/live acceptance and coherent APK publication remain open.
+- B1/B2 integrated in fd3a327: private profiles, session guards, migration 008 and truthful capability gates. Profile visual/native/live acceptance remains open; owner-requested build8 is packaged for installation testing.
 - N1a (265fcd2) and N1b complete in source: session-safe devices/preferences plus migration 010 transactional Memory/comment/reply outbox, injectable FCM transport and bounded CLI worker. OpenAPI 0.3.5. Capture/delivery/settings UI remain off; worker is Android-only.
 - Backend full suite: 159 tests / 2,673 assertions passed on circle_test; focused queue/policy: 24 tests / 573 assertions passed; PHPStan and Composer validation clean.
 - This backend-only batch: Flutter format/analyze clean and 11 server-mode checks passed. Prior full Flutter run: 513 passed / 1 skipped / 13 existing golden failures; no baselines changed or new visual approval claimed.
-- Windows golden approval, native picker/push, hosted profile checks and new APK publication remain unresolved. No deployment/build in this batch.
+- Windows golden approval, native picker/push and hosted profile behavior remain unresolved. Build8 passed 17 focused profile/UI checks and APK identity checks; hosting verification follows the artifact push.
 - Evidence: `docs/integration-checkpoint.md`, `docs/push-foundation.md`, `docs/notification-worker.md`. Scoped contract/worker review found no blockers; 306 OpenAPI refs and minimal envelope schema fixtures validated.
 - Next N1c: SDK lifecycle/contextual opt-in UI, trusted origin/account/session/expiry validation and scoped deduplication; then authorized foreground/tap behavior and device checks. Reaction/group hooks and remaining families stay tracked; hosting cron/credentials/retention require verification before enablement.
 

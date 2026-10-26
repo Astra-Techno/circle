@@ -1,0 +1,13 @@
+# Android beta 1.0.7 (build 8) — installation check
+
+Requested by the owner for physical Android installation and testing. This build includes current source through the transactional notification-worker checkpoint 7289994, with editable profile name/bio/personal details and private profile/cover photos. Existing accounts, groups, Memories, media and search remain available. Server capabilities continue to reflect implemented services; live Chats and Events remain tracked feature batches.
+
+Build configuration uses https://circle.cloudkart24.com/api/v1, CIRCLE_PREVIEW=false and CIRCLE_PUSH_ENABLED=false. Notification infrastructure is present in source, but this build does not enable SDK delivery or notification settings. Backend queue/delivery defaults remain off; no cron is installed by this release.
+
+The focused profile API/photo UI/You/design checks passed: 17 tests, including cancellation, replacement/removal, Unicode edits, failed saves and narrow large-text layout. Current backend checkpoint passed 159 tests / 2,673 assertions and PHPStan. Latest Flutter analysis and server-flow checks were clean before packaging. Historical 13 Windows golden comparisons remain unresolved; baselines are unchanged. This owner-requested beta is for device verification, not a claim that physical installation, picker behavior or push delivery already passed.
+
+Test on the phone: sign in, open You, edit/clear personal details, restart and confirm persistence; add/replace/remove the avatar and cover independently; cancel the photo picker and retry a failed operation. Also confirm existing groups and Memories still work. The new profile endpoints require the corresponding backend migrations (008–010 are shipped with current main).
+
+Release APK build completed in 258.6 seconds. Verified package `com.circlecommunity.mobile`, version `1.0.7+8`, min SDK 24 (Android 7.0), target SDK 36 and ARM32/ARM64/x86_64 libraries. APK signature verification passed with the established beta certificate SHA-256 `6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c`. This remains a development-signed beta; no keystore was added to Git.
+
+Artifact size: 63,359,206 bytes. SHA-256: `cf55a769270c28266c0025f1a680f60dc6a57e1fd6e88e437b31e7af241cb157`. Stable `downloads/circle.apk` and new immutable `downloads/circle-1.0.7-8.apk` match. Previous immutable releases are retained. Both website buttons, version/minimum-Android labels and release metadata point to build 8. Deployment and hosted-byte verification are recorded separately after the source/artifact push.
