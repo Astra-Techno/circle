@@ -1,6 +1,6 @@
 # Live API validation — 26 October 2026
 
-Latest result: GD is enabled and the photo workflow passed 25/25 checks, including cleanup. The first table below records the earlier run before hosting enabled GD; the successful retest is recorded at the end.
+Latest result: GD media checks passed 25/25 and post-deployment Memory query checks passed 45/45. All created test content was cleaned up. The first table records the earlier run before hosting enabled GD; successful retests follow.
 
 Server: https://circle.cloudkart24.com/api/v1. PHP 8.3.36 and Argon2id are available. Fictional data only; no existing user data was accessed or changed.
 
@@ -75,3 +75,16 @@ After hosting enabled GD on PHP 8.3, all **25 live media checks passed** using a
 - All newly created Memories/uploads were cleaned up and the fictional account session was logged out.
 
 Evidence: `/tmp/circle-live-api-check/media-results.json` (25/25 checks passed). This verifies the live PNG-to-WebP workflow, resizing and metadata marker removal; it does not substitute for physical Android camera/gallery validation.
+
+## Deployed Memory filters — live regression
+
+After deployment of commit `c0b4cd3`, **45/45 checks passed** against the live API. Five labelled fictional Memories were created in the existing fictional root/child groups and removed afterward; both sessions were logged out. No new accounts or groups were created.
+
+- Combined `group_id`, `saved=true`, `q` and limit-one cursor pagination returned exactly the two matching saved Memories without duplicates.
+- Plain search included the unsaved match; global saved search included the matching Memory in the other exact group where the test user is a member.
+- `%`, `_` and `!` were treated literally. Unicode search matched a Tamil place name; whitespace trimming and no-result queries worked.
+- Invalid saved values and a 201-character emoji query returned 422.
+- A former member received 403 for the exact-group query and no matching results from global search.
+- All five fixture deletions and both logouts returned 200.
+
+Evidence: `/tmp/circle-live-api-check/query-results.json` (45/45 checks passed). These live checks validate API behavior; they do not constitute physical Android UI validation.
