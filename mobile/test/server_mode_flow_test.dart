@@ -15,9 +15,7 @@ import 'support/server_harness.dart';
 const password = 'correct horse battery staple';
 
 /// The dial code that the form auto-selects based on test platform locale.
-String get _prefix => AccessValidation.dialCodeForLocale(
-  WidgetsBinding.instance.platformDispatcher.locale,
-).code;
+String get _prefix => AccessValidation.defaultDialCode.code;
 
 Future<void> enter(WidgetTester tester, Finder field, String text) async {
   await tester.enterText(field, text);
@@ -69,7 +67,10 @@ void main() {
     final paths = server.adapter.requests.map((r) => r.path).toList();
     expect(paths.take(2), ['/auth/register', '/auth/login']);
     expect(server.adapter.requests.first.json['password'], ' $password ');
-    expect(server.adapter.requests.first.json['mobile'], '${_prefix}5550000001');
+    expect(
+      server.adapter.requests.first.json['mobile'],
+      '${_prefix}5550000001',
+    );
     expect((await tokens.read())?.accessToken, startsWith('access-'));
     expect(currentUri(container).path, '/home');
     expect(

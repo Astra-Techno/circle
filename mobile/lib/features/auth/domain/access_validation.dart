@@ -22,9 +22,9 @@ class AccessDetails {
 class DialCode {
   const DialCode(this.region, this.code, this.name, this.flag);
   final String region; // ISO 3166-1 alpha-2
-  final String code;   // e.g. "+91"
-  final String name;   // e.g. "India"
-  final String flag;   // e.g. "🇮🇳"
+  final String code; // e.g. "+91"
+  final String name; // e.g. "India"
+  final String flag; // e.g. "🇮🇳"
 
   @override
   String toString() => '$flag $code';
@@ -96,6 +96,13 @@ const dialCodes = <DialCode>[
 
 /// Input syntax only. Neither phone ownership nor credentials are verified here.
 abstract final class AccessValidation {
+  /// Language/locale is not physical location. India is the owner's default;
+  /// manual selection or an explicit location lookup can replace it.
+  static DialCode get defaultDialCode =>
+      dialCodes.firstWhere((d) => d.region == 'IN');
+  static DialCode? dialCodeForRegion(String region) =>
+      dialCodes.where((d) => d.region == region.toUpperCase()).firstOrNull;
+
   /// Returns the [DialCode] for the device's locale region, or India as default.
   static DialCode dialCodeForLocale(Locale locale) {
     final region = locale.countryCode?.toUpperCase() ?? '';

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../../core/circle_brand.dart';
+import '../../../core/circle_failure.dart';
 import '../domain/access_validation.dart';
+import '../application/country_provider.dart';
 
 /// Welcome with the owner's complete supplied CIRCLE identity.
 /// Create account and Log in are the two clear choices; the
@@ -51,9 +54,9 @@ class AccessWelcome extends StatelessWidget {
         const SizedBox(height: Space.section),
 
         // ── Get Started (→ register) ──
-        SizedBox(
+        Container(
           width: double.infinity,
-          height: 52,
+          constraints: const BoxConstraints(minHeight: 52),
           child: FilledButton(
             onPressed: () => context.go('/register'),
             child: const Row(
@@ -71,9 +74,9 @@ class AccessWelcome extends StatelessWidget {
         const SizedBox(height: Space.md),
 
         // ── Log in ──
-        SizedBox(
+        Container(
           width: double.infinity,
-          height: 52,
+          constraints: const BoxConstraints(minHeight: 52),
           child: FilledButton.tonal(
             onPressed: () => context.go('/login'),
             child: const Row(
@@ -81,9 +84,7 @@ class AccessWelcome extends StatelessWidget {
               children: [
                 Icon(Icons.login),
                 SizedBox(width: Space.sm),
-                Flexible(
-                  child: Text('Log in', textAlign: TextAlign.center),
-                ),
+                Flexible(child: Text('Log in', textAlign: TextAlign.center)),
               ],
             ),
           ),
@@ -146,9 +147,9 @@ class _WelcomeBrand extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: Space.xs),
         Text(
-          'PRIVATE GROUPS. SHARED MEMORIES.',
+          CircleIdentity.tagline,
           style: theme.textTheme.labelSmall?.copyWith(
             color: colors.onSurfaceVariant,
             letterSpacing: 1.5,
@@ -172,7 +173,7 @@ class _PhotoCollage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(Space.lg),
       decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
+        color: accents.recessed,
         borderRadius: BorderRadius.circular(CircleRadius.card),
       ),
       child: Column(
@@ -189,9 +190,7 @@ class _PhotoCollage extends StatelessWidget {
                     padding: const EdgeInsets.all(Space.xs),
                     decoration: BoxDecoration(
                       color: colors.surface,
-                      borderRadius: BorderRadius.circular(
-                        CircleRadius.small,
-                      ),
+                      borderRadius: BorderRadius.circular(CircleRadius.small),
                       boxShadow: [
                         BoxShadow(
                           color: colors.shadow.withValues(alpha: 0.06),
@@ -211,13 +210,13 @@ class _PhotoCollage extends StatelessWidget {
                             ),
                             color: accents.calmContainer,
                           ),
-                          child: Center(
-                            child: Icon(
-                              Icons.photo_library_outlined,
-                              size: 40,
-                              color: colors.onSurfaceVariant
-                                  .withValues(alpha: 0.4),
-                            ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Image.asset(
+                            "assets/welcome/sunday-supper.jpg",
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            semanticLabel:
+                                "Illustrative family supper from the supplied design",
                           ),
                         ),
                         const SizedBox(height: Space.xs),
@@ -279,13 +278,13 @@ class _PhotoCollage extends StatelessWidget {
                             ),
                             color: accents.sageContainer,
                           ),
-                          child: Center(
-                            child: Icon(
-                              Icons.people_outline,
-                              size: 28,
-                              color: colors.onSurfaceVariant
-                                  .withValues(alpha: 0.4),
-                            ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Image.asset(
+                            "assets/welcome/friends.jpg",
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            semanticLabel:
+                                "Illustrative friends at sunset from the supplied design",
                           ),
                         ),
                       ),
@@ -295,8 +294,9 @@ class _PhotoCollage extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(Space.sm),
                       decoration: BoxDecoration(
-                        color: colors.surfaceContainerHighest
-                            .withValues(alpha: 0.6),
+                        color: colors.surfaceContainerHighest.withValues(
+                          alpha: 0.6,
+                        ),
                         borderRadius: BorderRadius.circular(CircleRadius.small),
                       ),
                       child: Row(
@@ -425,7 +425,10 @@ class _MiniAvatar extends StatelessWidget {
     decoration: BoxDecoration(
       color: color,
       shape: BoxShape.circle,
-      border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
+      border: Border.all(
+        color: Theme.of(context).colorScheme.surface,
+        width: 2,
+      ),
     ),
     child: Center(
       child: Text(
@@ -500,7 +503,7 @@ class _Promises extends StatelessWidget {
   }
 }
 
-class AccessForm extends StatefulWidget {
+class AccessForm extends ConsumerStatefulWidget {
   const AccessForm({
     super.key,
     required this.registering,
@@ -528,10 +531,10 @@ class AccessForm extends StatefulWidget {
   /// A safe in-app destination to resume, kept when switching forms.
   final String? next;
   @override
-  State<AccessForm> createState() => _AccessFormState();
+  ConsumerState<AccessForm> createState() => _AccessFormState();
 }
 
-class _AccessFormState extends State<AccessForm> {
+class _AccessFormState extends ConsumerState<AccessForm> {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _mobile = TextEditingController();
@@ -539,14 +542,17 @@ class _AccessFormState extends State<AccessForm> {
   late DialCode _dialCode;
   bool _obscured = true;
   bool _busy = false;
+  bool _locating = false;
+  int _countryRevision = 0;
+  String? _countryNotice;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    final locale = WidgetsBinding.instance.platformDispatcher.locale;
-    _dialCode = AccessValidation.dialCodeForLocale(locale);
+    _dialCode = AccessValidation.defaultDialCode;
   }
+
   @override
   void dispose() {
     _name.dispose();
@@ -557,6 +563,31 @@ class _AccessFormState extends State<AccessForm> {
 
   /// Combines dial code + phone number into E.164 format.
   String get _fullMobile => '${_dialCode.code}${_mobile.text.trim()}';
+
+  Future<void> _detectCountry() async {
+    final revision = _countryRevision;
+    setState(() {
+      _locating = true;
+      _countryNotice = null;
+    });
+    try {
+      final region = await ref.read(countryLocatorProvider).detectCountry();
+      if (!mounted || revision != _countryRevision) return;
+      final detected = AccessValidation.dialCodeForRegion(region);
+      setState(() {
+        if (detected != null) _dialCode = detected;
+        _countryNotice = detected == null
+            ? 'Choose your country manually.'
+            : '${detected.name} selected. You can change it below.';
+      });
+    } on CircleFailure catch (error) {
+      if (mounted && revision == _countryRevision) {
+        setState(() => _countryNotice = error.message);
+      }
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
 
   void _submit() {
     if (_busy || !_form.currentState!.validate()) return;
@@ -613,16 +644,6 @@ class _AccessFormState extends State<AccessForm> {
     children: [
       const _Brand(),
       const SizedBox(height: Space.hero),
-      Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: CircleInitialAvatar(
-          icon: widget.registering
-              ? Icons.person_add_alt_1_outlined
-              : Icons.waving_hand_outlined,
-          size: CircleAvatarSize.large,
-        ),
-      ),
-      const SizedBox(height: Space.section),
       Text(
         widget.registering
             ? 'Make room for\nyour people.'
@@ -671,33 +692,44 @@ class _AccessFormState extends State<AccessForm> {
                   SizedBox(
                     width: 108,
                     child: DropdownButtonFormField<DialCode>(
+                      key: ValueKey(_dialCode.region),
                       initialValue: _dialCode,
                       decoration: const InputDecoration(
                         labelText: 'Code',
                         contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 16,
+                          horizontal: Space.md,
+                          vertical: Space.lg,
                         ),
                       ),
                       isExpanded: true,
                       items: dialCodes
-                          .map((d) => DropdownMenuItem(
-                                value: d,
-                                child: Text(
-                                  '${d.flag} ${d.code}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) setState(() => _dialCode = v);
-                      },
-                      selectedItemBuilder: (context) => dialCodes
-                          .map((d) => Text(
+                          .map(
+                            (d) => DropdownMenuItem(
+                              value: d,
+                              child: Text(
                                 '${d.flag} ${d.code}',
                                 style: Theme.of(context).textTheme.bodySmall,
-                                overflow: TextOverflow.ellipsis,
-                              ))
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() {
+                            _dialCode = v;
+                            _countryRevision++;
+                            _countryNotice = null;
+                          });
+                        }
+                      },
+                      selectedItemBuilder: (context) => dialCodes
+                          .map(
+                            (d) => Text(
+                              '${d.flag} ${d.code}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          )
                           .toList(),
                     ),
                   ),
@@ -723,6 +755,22 @@ class _AccessFormState extends State<AccessForm> {
                   ),
                 ],
               ),
+              const SizedBox(height: Space.lg),
+              TextButton.icon(
+                onPressed: _locating || _busy ? null : _detectCountry,
+                icon: const Icon(Icons.my_location_outlined),
+                label: Text(
+                  _locating
+                      ? 'Finding your country…'
+                      : 'Use my location for country code',
+                ),
+              ),
+              Text(
+                'Optional: your phone’s location service finds the country. CIRCLE does not store your location.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              if (_countryNotice != null)
+                Semantics(liveRegion: true, child: Text(_countryNotice!)),
               const SizedBox(height: Space.lg),
               TextFormField(
                 controller: _password,
@@ -774,7 +822,7 @@ class _AccessFormState extends State<AccessForm> {
               ],
               const SizedBox(height: Space.section),
               FilledButton(
-                onPressed: _busy ? null : _submit,
+                onPressed: _busy || _locating ? null : _submit,
                 child: Text(
                   widget.onSubmit == null
                       ? (widget.registering

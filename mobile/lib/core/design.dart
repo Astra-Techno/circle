@@ -11,11 +11,9 @@ abstract final class Space {
       large = 40;
 }
 
-/// "Luminous Pure Minimal" roles that Material's [ColorScheme] has no slot
-/// for. The design is monochrome: deep indigo on pure white, slate text and
-/// cool hairlines, with no saturated accents. The `heart`, `calm` and `sage`
-/// families keep their names so screens don't change, but all resolve to
-/// quiet indigo/slate washes; groups are told apart by icon and name.
+/// Warm Keepsake on White: indigo structure, lavender selection, coral
+/// reactions and sage confirmations. Semantic roles keep colour consistent
+/// across every feature; group identity also always has an icon and name.
 @immutable
 class CircleAccents extends ThemeExtension<CircleAccents> {
   const CircleAccents({
@@ -35,13 +33,13 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     required this.activeDot,
   });
 
-  /// Love and reactions (a filled indigo heart, no alarm colours).
+  /// Love and reactions: warm coral with an accessible text variant.
   final Color heart, heartText, heartContainer;
 
-  /// Selection and focus: the indigo wash (#1B223C at about 6%).
+  /// Selection and focus: soft lavender with darker accessible text.
   final Color calm, calmText, calmContainer;
 
-  /// Supporting slate family (events, confirmations, secondary groups).
+  /// Supporting sage family (events, confirmations, secondary groups).
   final Color sage, sageText, sageContainer;
 
   /// Recessed fills (comment previews, tiles) and the 1px hairline border.
@@ -51,37 +49,37 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
   /// scheme's onSurfaceVariant-style slate (#475467) via the text theme.
   final Color title, caption;
 
-  /// The "Active now" dot on a person's avatar: solid indigo (no new hue),
+  /// The "Active now" dot on a person's avatar: sage,
   /// drawn with a ring of the surface colour.
   final Color activeDot;
 
   static const light = CircleAccents(
-    heart: Color(0xFF1B223C),
-    heartText: Color(0xFF1B223C),
-    heartContainer: Color(0xFFF1F2F6),
-    calm: Color(0xFF1B223C),
-    calmText: Color(0xFF1B223C),
-    calmContainer: Color(0xFFF1F2F6),
-    sage: Color(0xFF475467),
-    sageText: Color(0xFF344054),
-    sageContainer: Color(0xFFF2F4F7),
-    recessed: Color(0xFFF6F7FA),
+    heart: Color(0xFFC24534),
+    heartText: Color(0xFF9C3426),
+    heartContainer: Color(0xFFFFE8E1),
+    calm: Color(0xFF5753AC),
+    calmText: Color(0xFF46408D),
+    calmContainer: Color(0xFFEAE7FF),
+    sage: Color(0xFF297B6F),
+    sageText: Color(0xFF23675D),
+    sageContainer: Color(0xFFE0F3ED),
+    recessed: Color(0xFFF0F3FF),
     hairline: Color(0xFFEAEDF5),
     title: Color(0xFF1A1D2E),
     caption: Color(0xFF667085),
-    activeDot: Color(0xFF1B223C),
+    activeDot: Color(0xFF297B6F),
   );
 
   static const dark = CircleAccents(
-    heart: Color(0xFFDCE1FF),
-    heartText: Color(0xFFDCE1FF),
-    heartContainer: Color(0xFF1E2333),
-    calm: Color(0xFFDCE1FF),
-    calmText: Color(0xFFDCE1FF),
-    calmContainer: Color(0xFF1E2333),
-    sage: Color(0xFFB0B8C8),
-    sageText: Color(0xFFC9D0DC),
-    sageContainer: Color(0xFF1C212B),
+    heart: Color(0xFFFFB4A6),
+    heartText: Color(0xFFFFDAD3),
+    heartContainer: Color(0xFF4E211C),
+    calm: Color(0xFFC4C0FF),
+    calmText: Color(0xFFE3DFFF),
+    calmContainer: Color(0xFF2C2854),
+    sage: Color(0xFF9FD8C8),
+    sageText: Color(0xFFC2EBDD),
+    sageContainer: Color(0xFF183E36),
     recessed: Color(0xFF181B24),
     hairline: Color(0xFF262B38),
     title: Color(0xFFF0F1F7),
@@ -137,9 +135,8 @@ TextTheme _textTheme({required Color title, required Color body}) {
   );
 }
 
-/// "Luminous Pure Minimal" (owner choice, 23 Oct 2026): pure white canvas
-/// and cards, deep indigo actions, slate text, cool hairlines and ambient
-/// depth instead of grey stacking. See docs/design-system.md.
+/// Warm Keepsake on White (owner, 26 Oct 2026): white canvas and cards,
+/// indigo actions, lavender panels, coral reactions and sage confirmations.
 ThemeData circleTheme(Brightness brightness) {
   final light = brightness == Brightness.light;
   final accents = light ? CircleAccents.light : CircleAccents.dark;
@@ -153,7 +150,7 @@ ThemeData circleTheme(Brightness brightness) {
     onPrimary: light ? Colors.white : const Color(0xFF131A34),
     primaryContainer: accents.calmContainer,
     onPrimaryContainer: accents.calmText,
-    secondary: light ? const Color(0xFF475467) : const Color(0xFFB0B8C8),
+    secondary: light ? const Color(0xFF5753AC) : const Color(0xFFC4C0FF),
     onSecondary: light ? Colors.white : const Color(0xFF101828),
     secondaryContainer: accents.calmContainer,
     onSecondaryContainer: accents.calmText,
@@ -167,10 +164,10 @@ ThemeData circleTheme(Brightness brightness) {
     surfaceContainerLow: light ? Colors.white : const Color(0xFF151821),
     surfaceContainer: accents.recessed,
     surfaceContainerHigh: light
-        ? const Color(0xFFF1F2F6)
+        ? const Color(0xFFEAE7FF)
         : const Color(0xFF1E2333),
     surfaceContainerHighest: light
-        ? const Color(0xFFEAEDF5)
+        ? const Color(0xFFE2E8F9)
         : const Color(0xFF262B38),
     outline: accents.caption,
     outlineVariant: accents.hairline,

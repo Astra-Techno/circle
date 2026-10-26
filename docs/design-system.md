@@ -1,5 +1,15 @@
 # CIRCLE design system
 
+## Current direction — Warm Keepsake on White (26 October 2026)
+
+The owner supplied `stitch_circle_private_social_network/{screen.png,code.html,DESIGN.md}` and requested a colourful app with a white background. This supersedes the monochrome direction below. The initial appearance is **light**, independent of device dark mode; the existing appearance setting can still select dark or system.
+
+Keep pure white canvas/cards and indigo primary actions. Shared `CircleAccents` now supplies lavender (`calm`, `calmText`, `calmContainer`), coral (`heart*`) and sage/teal (`sage*`, `activeDot`). Use the accessible darker variants for text, pastel containers for panels, and icon/name labels alongside colour. All values stay in `core/design.dart`.
+
+Welcome follows the supplied composition: owner logo/name/tagline, two photo tiles, Living Room privacy card, quality badge and avatars, centred headline, three promises and account/login actions. The two illustrative photos from the owner's export are bundled in `assets/welcome/`; no public image URLs are used at runtime. Keep login available rather than an inert invite button, and do not introduce placeholder legal links. The waving-hand and person-add decorations are removed from access forms.
+
+The sections below preserve the earlier design rationale and component inventory; the current palette and supplied welcome composition take precedence where they differ.
+
 No Figma reference has been provided. Everything here is an **original** Material 3 design direction. Product scope and screens: README §3–4.
 
 ## Supplied brand identity (owner, 25 October 2026)

@@ -2,7 +2,7 @@
 
 ## Mobile app (`mobile/`)
 
-Prerequisites: Flutter 3.44.8 stable / Dart 3.12.2, Android SDK and a configured emulator or physical device. No backend is required; the app uses a fictional, session-local mock.
+Prerequisites: Flutter 3.44.8 stable / Dart 3.12.2, Android SDK and a configured emulator or physical device. Debug builds without an API override use a fictional, session-local mock; release builds connect to the deployed HTTPS API by default.
 
 ```bash
 cd mobile
@@ -10,9 +10,9 @@ flutter pub get --enforce-lockfile
 flutter run -d <android-device-id>      # web fallback: flutter run -d chrome (does not validate Android)
 ```
 
-On the welcome screen:
+In a debug/explicit preview build, on the welcome screen:
 - **Explore fictional circles** loads sample groups: family, a college batch nested 4 levels deep, office and club, with pending invitations and join requests.
-- **Create account / Log in** accepts any well-formed fictional mobile number (e.g. `+91 98765 43210`) and password (15–128 characters for registration). Input is validated and discarded, and the workspace starts empty.
+- **Get Started / Log in** accepts well-formed fictional mobile details and a password (6–128 characters for registration). Input is validated and discarded, and the workspace starts empty.
 
 Nothing is sent or stored. Everything resets when the preview ends or the app restarts.
 
@@ -31,6 +31,10 @@ flutter test integration_test -d <android-device-id>
 - Generated baselines are provisional and need product review.
 
 ## Server mode (app ↔ backend)
+
+Release installations use `https://circle.cloudkart24.com/api/v1` unless overridden. A release should show **Create account**, not **Preview registration**. For an explicitly fictional release, pass `--dart-define=CIRCLE_PREVIEW=true`.
+
+The initial appearance is white/light even on a dark device. The calling code starts at India +91. **Use my location for country code** asks for one-time foreground location on Android/iOS; no background permission or CIRCLE-side coordinate storage is used. Denial and lookup failures preserve manual country selection. Web/desktop use manual selection.
 
 Run the backend (below), then build the app against it:
 

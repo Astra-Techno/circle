@@ -2,6 +2,7 @@
     <!-- Server mode talks to the CIRCLE API. Photos are picked with the
          system photo picker, which needs no storage or camera permission. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <!-- allowBackup is off so session tokens (encrypted with a device-bound
          key by flutter_secure_storage) are never restored onto another
          device, where they could not be decrypted. -->

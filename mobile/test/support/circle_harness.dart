@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/app/circle_experience.dart';
+import 'package:mobile/core/theme_controller.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
 
 /// Pumps the real app. [entered] starts a preview session; [showcase]
@@ -40,6 +41,9 @@ Future<ProviderContainer> openCircle(
     ],
   );
   addTearDown(container.dispose);
+  container
+      .read(themeProvider.notifier)
+      .change(brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light);
   if (entered) {
     await container
         .read(circlePreviewSessionProvider.notifier)

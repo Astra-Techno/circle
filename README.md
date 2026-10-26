@@ -327,6 +327,8 @@ Loading (skeletons, not spinners, for lists), empty (helpful next action), error
 
 ### 4.5 Visual direction
 
+**Update, 26 Oct 2026 (owner):** use the supplied Warm Keepsake welcome composition, restore lavender/coral/teal accents throughout the shared kit, and default to a pure white/light canvas even on a dark device. This supersedes the monochrome palette described below. Keep the existing optional dark/system appearance choices. See the current-direction section of `docs/design-system.md`.
+
 Warm, calm and premium, suitable for a grandmother, an office team and a college gang alike. Avoid the earlier college-only "nostalgic archive" look and generic social-media clones.
 - **"Luminous Pure Minimal"** (owner choice):
   - pure white canvas and cards with `#EAEDF5` hairlines;
@@ -526,7 +528,7 @@ Rules:
 
 **In progress:**
 - **M4 private media** is implemented in the backend (contract 0.3.1, ADR 0007). Real image processing needs `php8.3-gd`.
-- **App ↔ backend connected (server mode):** build with `--dart-define=CIRCLE_API_BASE_URL=…` for real accounts, groups, members, invite links, join requests, Memories (comments, reactions, saves) and photos. Features the server doesn't have yet show "Not on the server yet". Preview mode remains the default.
+- **App ↔ backend connected (server mode):** build with `--dart-define=CIRCLE_API_BASE_URL=…` for accounts, groups, members, invite links, join requests, Memories (comments, reactions, saves) and photos. Features the server doesn't have yet show "Not on the server yet". As of 26 Oct, release builds default to the deployed HTTPS API; debug/tests remain local previews. Use `CIRCLE_PREVIEW=true` for an explicitly fictional release.
 
 **Known gaps:** server mode covers only the M2–M4 features; preview mode has no persistence; no real-time chat delivery or albums, no real photo upload or member tagging, and no maps, calendar export or reminders (these need a device or backend). It has never been validated on a native Android/iOS device.
 
