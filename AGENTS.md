@@ -1,6 +1,18 @@
 # CIRCLE engineering rules
 
-Read README.md (especially §0 shared implementation/release rules and §2–4: accounts, group rules, features, UI plan; §4.0 ease-of-use and calm rules override feature wishes), CODEX_START_PROMPT.md and docs/adr/ before a new workstream. Use fictional data only; never real personal data.
+Start with `PROJECT_STATE.md` and these rules. Read only the README sections, ADRs, contracts and design guidance relevant to the task; their requirements remain binding. README §0 governs implementation/releases and §4.0 governs calm UX. Read `CODEX_START_PROMPT.md` when setup/workflow context is needed, rather than loading the entire kickoff prompt and README for every task. This targeted-reading policy supersedes older instructions to read every document in full. Use fictional data only.
+
+## Efficient workflow — ChatGPT/Codex and Claude
+
+- Keep the current goal and acceptance criteria short. Inspect status/recent diffs and use scoped `rg` searches before opening files. Retain a working map; do not repeat whole-app discovery unless new evidence requires it.
+- Use one agent by default. Delegate only when the user or applicable instructions authorize it and independent work justifies the extra context. Give each agent narrow file ownership and avoid duplicated analysis.
+- Make the smallest complete change using existing components and APIs. Avoid unrelated refactors, speculative features and repeated visual redesign.
+- During implementation run focused checks. At integration/release run the required broader checks below. Repeat passed checks only after relevant edits, failures or unresolved concerns; never save tokens by skipping authorization, privacy or release-integrity verification.
+- Build/deploy once per completed, verified batch unless the user requests an immediate build. Documentation-only work does not need an APK or runtime test rerun.
+- Keep commentary useful and brief; summarize long tool output and report failures precisely. Final replies should normally state the outcome, validation, blockers and relevant links without repeating the plan or logs.
+- Update `PROJECT_STATE.md` at task boundaries with verified state, next work and blockers. Keep it under 60 lines. Distinguish repository state, local unfinished work and live deployment; never infer one from another.
+
+## Engineering and release requirements
 
 - Product vocabulary: the post stream is "Memories", never "feed". Groups nest up to 10 levels. Enforce group rules (roles, owner protection, approval, listed/hidden, parent membership at join and approval, cascade removal without orphaned subgroups, DM eligibility) in domain/controller code with unit tests, never only in widgets. Access is per exact group, never inherited.
 - Accounts follow ADR 0005: mobile number + password, OTP later; registration never grants membership. Preview access remains explicitly fictional/local; server access follows the reviewed API.

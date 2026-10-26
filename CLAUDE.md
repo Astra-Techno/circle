@@ -1,8 +1,6 @@
-# Claude Code instructions for CIRCLE
+# Claude Code instructions
 
-The shared project rules are imported below. Read and follow README §0 (shared implementation and release rules), the product/privacy requirements in §2–4, and AGENTS.md before making changes. Current owner instructions take precedence over older examples or status snapshots.
-
-Do not treat existing noncompliant code or an enabled feature flag as proof that a service works. Keep findings, implementation and verification distinct. Preserve concurrent uncommitted work and follow the shared main-only Git policy.
+Use the compact shared context below. Follow the task-scoped reading and efficient-workflow rules in AGENTS.md; load the relevant README/ADR/contract sections when needed. Do not automatically import the full README or repeat completed repository analysis. Current owner instructions take precedence.
 
 @AGENTS.md
-@README.md
+@PROJECT_STATE.md

@@ -2,7 +2,7 @@
 
 > **Current branch policy (owner instruction):** Use `main` only for all work and pushes. Do not create feature/topic branches. This supersedes older branching/PR workflow recommendations below and in the startup prompt. Preserve user changes and never force-push.
 
-> **Required reading for Codex, Claude Code and other coding agents:** follow [§0: shared implementation and release rules](#0-shared-implementation-and-release-rules) and [AGENTS.md](AGENTS.md) before making changes. [CLAUDE.md](CLAUDE.md) imports these shared instructions for Claude Code. Current owner instructions take precedence; older status snapshots and examples do not override the current rules.
+> **Required reading for Codex, Claude Code and other coding agents:** follow [§0: shared implementation and release rules](#0-shared-implementation-and-release-rules) and [AGENTS.md](AGENTS.md) before making changes. [CLAUDE.md](CLAUDE.md) loads compact shared instructions for Claude Code; detailed rules are read as needed. Current owner instructions take precedence; older status snapshots and examples do not override the current rules.
 >
 > **Status distinction:** account/group/Memory APIs and private Memory media have been implemented and live-tested. The broader chat/events/albums UI includes local previews. Firebase source files and enabled feature flags alone do not establish working push delivery or server feature support. See §12 and the release/validation records for evidence.
 >
@@ -11,6 +11,10 @@
 ## 0. Shared implementation and release rules
 
 These rules apply equally to Claude Code, local Codex and Codex Web. They take precedence over conflicting older workflow examples or status descriptions elsewhere in this repository. Keep the product and privacy rules in §2–4 and the current ADRs. Existing code that violates a rule is a defect to fix, not permission to repeat it.
+
+### 0.0 Efficient context and execution
+
+ChatGPT/Codex and Claude follow the efficient workflow in `AGENTS.md`. Start with the compact `PROJECT_STATE.md`, inspect recent diffs and read relevant sections rather than repeatedly loading the whole repository. Use one agent by default, scoped checks while editing and required broader validation at integration/release. Batch APK builds after completed work unless the owner requests otherwise. Keep reports brief and update the handoff with verified results. Token savings never justify weaker privacy, incomplete implementations or false test/release claims.
 
 ### 0.1 Safe collaboration and Git
 
