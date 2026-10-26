@@ -64,8 +64,9 @@ $log = [];
 $deploymentComplete = false;
 $failureReserve = str_repeat('x', 262144);
 $tmpZip = null;
+$tmpTar = null;
 $tmpDir = null;
-register_shutdown_function(static function () use (&$failureReserve, &$deploymentComplete, &$tmpZip, &$tmpDir): void {
+register_shutdown_function(static function () use (&$failureReserve, &$deploymentComplete, &$tmpZip, &$tmpTar, &$tmpDir): void {
     $failureReserve = '';
     $error = error_get_last();
     if (!$deploymentComplete && $error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
@@ -75,6 +76,7 @@ register_shutdown_function(static function () use (&$failureReserve, &$deploymen
             'PHP stopped during deployment. Check the hosting PHP error log for this request. PHP ' . htmlspecialchars(PHP_VERSION) . '; memory limit ' . htmlspecialchars((string) ini_get('memory_limit')) . '.') . render_error_details('PHP fatal error (' . $error['type'] . ')', $error['message'], $error['file'], $error['line']));
     }
     if (is_string($tmpZip)) @unlink($tmpZip);
+    if (is_string($tmpTar)) @unlink($tmpTar);
     if (is_string($tmpDir)) rrmdir($tmpDir);
 });
 set_exception_handler(static function (Throwable $error) use (&$deploymentComplete): void {
@@ -116,17 +118,21 @@ function abort(string $msg): never {
 // ══════════════════════════════════════════════════════════════
 log_step('⬇', 'Downloading <strong>' . htmlspecialchars($repo . '@' . $branch) . '</strong> from GitHub…');
 
-if (!class_exists('ZipArchive')) abort('PHP zip extension is missing. Enable zip in the hosting PHP extensions.');
+$useZip = class_exists('ZipArchive');
+if (!$useZip && (!class_exists('PharData') || !function_exists('gzopen'))) {
+    abort('Enable PHP Phar and zlib for TAR.GZ deployment, or enable zip for ZIP deployment.');
+}
+log_step('·', $useZip ? 'Using ZIP archive support' : 'ZIP unavailable: using TAR.GZ with Phar and zlib (no shell commands)', 'muted');
 if (!extension_loaded('pdo_mysql')) abort('PHP pdo_mysql extension is missing. Enable it in the hosting PHP extensions.');
 if (!preg_match('~^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$~D', $repo)) abort('Invalid GITHUB_REPO setting.');
 if ($branch === '') abort('GITHUB_BRANCH must not be empty.');
 $lock = fopen(BASE_DIR . '/.env.deploy.lock', 'c');
 if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) abort('Another deployment is running, or the deployment lock is not writable.');
 $tmpZip = tempnam(sys_get_temp_dir(), 'circle_deploy_');
-if ($tmpZip === false) abort('Cannot create a temporary ZIP file. Check hosting temp storage permissions.');
+if ($tmpZip === false) abort('Cannot create a temporary archive file. Check hosting temp storage permissions.');
 $tmpDir = $tmpZip . '_extract';
 if (!mkdir($tmpDir, 0700)) abort('Cannot create a private extraction directory.');
-$zipUrl = 'https://codeload.github.com/' . $repo . '/zip/' . rawurlencode($branch);
+$zipUrl = 'https://codeload.github.com/' . $repo . ($useZip ? '/zip/' : '/tar.gz/') . rawurlencode($branch);
 $destination = fopen($tmpZip, 'wb');
 if ($destination === false) abort('Cannot open the temporary archive for writing.');
 $httpCode = 0;
@@ -177,17 +183,50 @@ if (!$downloaded || $httpCode !== 200) {
     abort('Repository download failed (HTTP ' . $httpCode . '). Check hosting outbound HTTPS access, trusted CA certificates and disk space. ' . redact_deploy_error($transportError));
 }
 $zipBytes = filesize($tmpZip);
-if ($zipBytes === false || $zipBytes === 0) abort('The downloaded ZIP is empty.');
+if ($zipBytes === false || $zipBytes === 0) abort('The downloaded archive is empty.');
 log_step('✓', 'Archive streamed to disk (' . round($zipBytes / 1024) . ' KB); PHP memory limit ' . htmlspecialchars((string) ini_get('memory_limit')), 'ok');
-log_step('📦', 'Checking and extracting ZIP…');
-$zip = new ZipArchive();
-if ($zip->open($tmpZip, ZipArchive::CHECKCONS) !== true) abort('Downloaded archive is not a valid ZIP.');
-for ($i = 0; $i < $zip->numFiles; $i++) {
-    $name = $zip->getNameIndex($i);
-    if ($name === false || str_starts_with($name, '/') || str_contains($name, '\\') || preg_match('~(^|/)\.\.(/|$)~', $name)) abort('Unsafe ZIP entry; deployment stopped.');
+log_step('📦', 'Checking and extracting archive…');
+if ($useZip) {
+    $zip = new ZipArchive();
+    if ($zip->open($tmpZip, ZipArchive::CHECKCONS) !== true) abort('Downloaded archive is not a valid ZIP.');
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = $zip->getNameIndex($i);
+        if ($name === false || !safe_archive_path($name)) abort('Unsafe ZIP entry; deployment stopped.');
+        $operations = 0;
+        $attributes = 0;
+        if ($zip->getExternalAttributesIndex($i, $operations, $attributes) && (($attributes >> 16) & 0170000) === 0120000) {
+            abort('Archive links are not permitted.');
+        }
+    }
+    if (!$zip->extractTo($tmpDir)) abort('ZIP extraction failed. Check disk space and temporary-directory permissions.');
+    $zip->close();
+} else {
+    // Decompress to disk: neither the compressed download nor TAR is held in memory.
+    $tmpTar = $tmpZip . '.tar';
+    $compressed = gzopen($tmpZip, 'rb');
+    if ($compressed === false) abort('Cannot open downloaded gzip archive.');
+    $plain = fopen($tmpTar, 'xb');
+    if ($plain === false) abort('Cannot create temporary TAR file. Check disk space.');
+    chmod($tmpTar, 0600);
+    try {
+        if (stream_copy_to_stream($compressed, $plain) === false) abort('Gzip decompression failed.');
+    } finally {
+        fclose($compressed);
+        fclose($plain);
+    }
+    $tar = new PharData($tmpTar);
+    $prefix = 'phar://' . $tmpTar . '/';
+    foreach (new RecursiveIteratorIterator($tar, RecursiveIteratorIterator::SELF_FIRST) as $entry) {
+        $path = $entry->getPathname();
+        if (!str_starts_with($path, $prefix) || !safe_archive_path(substr($path, strlen($prefix))) || $entry->isLink()) {
+            abort('Unsafe TAR entry; deployment stopped.');
+        }
+    }
+    if (!$tar->extractTo($tmpDir)) abort('TAR extraction failed. Check disk space and temporary-directory permissions.');
+    unset($tar);
+    unlink($tmpTar);
+    $tmpTar = null;
 }
-if (!$zip->extractTo($tmpDir)) abort('ZIP extraction failed. Check disk space and temporary-directory permissions.');
-$zip->close();
 unlink($tmpZip);
 $tmpZip = null;
 
@@ -195,7 +234,7 @@ $tmpZip = null;
 $extractedDirs = glob($tmpDir . '/*', GLOB_ONLYDIR);
 if (empty($extractedDirs)) {
     rrmdir($tmpDir);
-    abort('ZIP extraction failed — no directories found.');
+    abort('Archive extraction failed — no directories found.');
 }
 $repoRoot = $extractedDirs[0];
 
@@ -346,6 +385,12 @@ echo page('Deploy', render_log() . render_banner(
 // ═══════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════
+
+/** Archive names must stay inside the private extraction directory. */
+function safe_archive_path(string $name): bool {
+    return $name !== '' && !str_starts_with($name, '/') && !str_contains($name, '\\')
+        && !str_contains($name, "\0") && !preg_match('~(^|/)\.\.(/|$)|^[A-Za-z]:~', $name);
+}
 
 /** Redact configured secrets before printing or logging diagnostics. */
 function redact_deploy_error(string $text): string {
