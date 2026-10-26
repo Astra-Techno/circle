@@ -61,3 +61,7 @@ Build with the existing beta signing key and production API configuration, publi
 ## Delivery verification
 
 Android beta 1.0.5+6 and backend changes were committed and pushed in c0b4cd3, then deployed successfully using ZIP support. The live runtime confirms ZIP, GD and mbstring loaded. Both hosted APK paths matched the committed 63,002,644-byte artifact and SHA-256; release metadata matched. Post-deployment Memory query regression passed 45/45 with fixture cleanup. See [release record](mobile-release-1.0.5.md). These checks close this delivery wave; feature families and native/visual acceptance work marked pending above remain pending.
+
+## Visual refinement follow-up
+
+Android beta 1.0.6+7 implements a compact Home brand introduction, richer shared indigo accents, softer depth, a rounded navigation dock, expandable invitation summaries and root-group cards. At large text sizes, decorative headers become compact and create actions move into a fixed footer above navigation. Functional regression checks passed 500 tests with one opt-in skip, and seven signed-in layout renders passed; 13 Windows golden comparisons and physical-device validation remain pending. See [release record](mobile-release-1.0.6.md) and [visual review](design-previews/1.0.6/README.md). No additional backend feature families were introduced.
