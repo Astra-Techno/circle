@@ -571,6 +571,8 @@ Rules:
 
 ## 12. Current status and next milestone
 
+Current pending tasks, dependencies and next-release scope: [execution backlog](docs/pending-work.md). Consult it before starting another feature.
+
 **Done:**
 - **M1** (old single-community prototype). It is now retired and its code is being removed.
 - **UI-1** (23 Oct): 5-tab shell, access preview (mobile + password, local only), fictional multi-group tour, nested groups with exact-membership checks and the 10-level limit, text Memories, love/save/comment, local RSVP.
