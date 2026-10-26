@@ -178,3 +178,11 @@ This will:
 ### Database connection refused
 - Verify DB credentials in `.env` match exactly what cPanel shows
 - Some hosts use `127.0.0.1` instead of `localhost`
+
+## Deployer update: streamed downloads and visible failures
+
+Replace the hosted `deploy.php` with the current `backend/deploy/deploy.php` before running another deployment. Keep the hosting `.env` and its existing DEPLOY_KEY/GITHUB_TOKEN values; the script contains no credentials. It does not update its own hosted copy.
+
+The replacement streams the repository archive from GitHub codeload directly to a private temporary file instead of retaining the APK-sized ZIP in PHP memory. It keeps HTTPS certificate verification enabled, checks required PHP extensions before deployment, validates ZIP paths, prevents overlapping deployments, checks copy failures, removes temporary files and sends non-cacheable deployment reports. Authenticated exceptions and fatal runtime failures produce a report with the last completed steps rather than an empty response. Detailed PHP errors still belong in the private hosting error log. Existing root `.htaccess` is preserved so the host's PHP handler is not replaced; apply routing-template changes separately if needed.
+
+Validation in the cloud machine: a complete deployment of the real repository archive succeeded with `memory_limit=32M` against the dedicated `circle_test` database; copied APK SHA-256 matched release metadata, existing `.htaccess` stayed unchanged, unauthorized requests returned 403, and disabling extensions produced the missing-ZIP diagnostic. This establishes local behavior; the hosting failure cannot be confirmed fixed until the replacement is uploaded and run on that host.

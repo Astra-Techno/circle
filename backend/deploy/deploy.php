@@ -25,7 +25,11 @@ declare(strict_types=1);
 
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
-set_time_limit(120);
+@set_time_limit(300);
+ini_set('log_errors', '1');
+header('Cache-Control: no-store, max-age=0');
+header('Pragma: no-cache');
+header('Referrer-Policy: no-referrer');
 
 define('BASE_DIR',   __DIR__);
 define('START_TIME', microtime(true));
@@ -55,6 +59,36 @@ if (strlen($deployKey) < 32 || $givenKey === '' || !hash_equals($deployKey, $giv
     die(page('Access Denied', '<div class="err">403 — Invalid or missing deployment key.</div>'));
 }
 
+// Authenticated failures must produce a useful report without exposing secrets.
+$log = [];
+$deploymentComplete = false;
+$failureReserve = str_repeat('x', 262144);
+$tmpZip = null;
+$tmpDir = null;
+register_shutdown_function(static function () use (&$failureReserve, &$deploymentComplete, &$tmpZip, &$tmpDir): void {
+    $failureReserve = '';
+    $error = error_get_last();
+    if (!$deploymentComplete && $error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log('[CIRCLE deploy] Fatal failure at ' . basename($error['file']) . ':' . $error['line']);
+        http_response_code(500);
+        echo page('Deploy Failed', render_log() . render_banner(false,
+            'PHP stopped during deployment. Check the hosting PHP error log for this request. PHP ' . htmlspecialchars(PHP_VERSION) . '; memory limit ' . htmlspecialchars((string) ini_get('memory_limit')) . '.'));
+    }
+    if (is_string($tmpZip)) @unlink($tmpZip);
+    if (is_string($tmpDir)) rrmdir($tmpDir);
+});
+set_exception_handler(static function (Throwable $error) use (&$deploymentComplete): void {
+    error_log('[CIRCLE deploy] ' . get_class($error) . ' at ' . basename($error->getFile()) . ':' . $error->getLine());
+    $deploymentComplete = true;
+    http_response_code(500);
+    echo page('Deploy Failed', render_log() . render_banner(false,
+        'Deployment stopped. Check the hosting PHP error log; no secret values are shown here.'));
+});
+set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+    if (!(error_reporting() & $severity)) return false;
+    throw new ErrorException('Deployment filesystem or runtime operation failed.', 0, $severity, $file, $line);
+});
+
 // ── Config ───────────────────────────────────────────────────
 $repo   = $envVars['GITHUB_REPO']   ?? 'Astra-Techno/circle';
 $branch = $envVars['GITHUB_BRANCH'] ?? 'main';
@@ -69,76 +103,89 @@ function log_step(string $icon, string $msg, string $type = 'info'): void {
 }
 
 function abort(string $msg): never {
-    log_step('✗', $msg, 'err');
-    echo page('Deploy Failed', render_log() . render_banner(false, $msg));
+    global $deploymentComplete;
+    $deploymentComplete = true;
+    http_response_code(500);
+    log_step('✗', htmlspecialchars($msg), 'err');
+    echo page('Deploy Failed', render_log() . render_banner(false, htmlspecialchars($msg)));
     exit;
 }
 
 // ══════════════════════════════════════════════════════════════
 // STEP 1 — Download repo ZIP from GitHub
 // ══════════════════════════════════════════════════════════════
-log_step('⬇', "Downloading <strong>{$repo}@{$branch}</strong> from GitHub…");
+log_step('⬇', 'Downloading <strong>' . htmlspecialchars($repo . '@' . $branch) . '</strong> from GitHub…');
 
-$zipUrl  = "https://github.com/{$repo}/archive/refs/heads/{$branch}.zip";
-$zipData = false;
-
-if (function_exists('curl_init')) {
-    $ch = curl_init($zipUrl);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_TIMEOUT        => 60,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_USERAGENT      => 'Circle-Deployer/1.0',
-        CURLOPT_HTTPHEADER     => array_filter([
-            $token !== '' ? "Authorization: Bearer {$token}" : null,
-        ]),
-    ]);
-    $zipData  = curl_exec($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErr  = curl_error($ch);
-    curl_close($ch);
-
-    if ($httpCode === 404) abort("Repo not found (404). Check GITHUB_REPO or add GITHUB_TOKEN for private repos.");
-    if ($httpCode === 401 || $httpCode === 403) abort("GitHub auth failed ({$httpCode}). Check GITHUB_TOKEN in .env.");
-    if ($httpCode !== 200) abort("GitHub returned HTTP {$httpCode}. cURL error: {$curlErr}");
-} else {
-    $ctx = stream_context_create(['http' => [
-        'method'          => 'GET',
-        'timeout'         => 60,
-        'follow_location' => 1,
-        'header'          => implode("\r\n", array_filter([
-            'User-Agent: Circle-Deployer/1.0',
-            $token !== '' ? "Authorization: Bearer {$token}" : '',
-        ])),
-    ]]);
-    $zipData = @file_get_contents($zipUrl, false, $ctx);
+if (!class_exists('ZipArchive')) abort('PHP zip extension is missing. Enable zip in the hosting PHP extensions.');
+if (!extension_loaded('pdo_mysql')) abort('PHP pdo_mysql extension is missing. Enable it in the hosting PHP extensions.');
+if (!preg_match('~^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$~D', $repo)) abort('Invalid GITHUB_REPO setting.');
+if ($branch === '') abort('GITHUB_BRANCH must not be empty.');
+$lock = fopen(BASE_DIR . '/.env.deploy.lock', 'c');
+if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) abort('Another deployment is running, or the deployment lock is not writable.');
+$tmpZip = tempnam(sys_get_temp_dir(), 'circle_deploy_');
+if ($tmpZip === false) abort('Cannot create a temporary ZIP file. Check hosting temp storage permissions.');
+$tmpDir = $tmpZip . '_extract';
+if (!mkdir($tmpDir, 0700)) abort('Cannot create a private extraction directory.');
+$zipUrl = 'https://codeload.github.com/' . $repo . '/zip/' . rawurlencode($branch);
+$destination = fopen($tmpZip, 'wb');
+if ($destination === false) abort('Cannot open the temporary archive for writing.');
+$httpCode = 0;
+$downloaded = false;
+try {
+    if (function_exists('curl_init')) {
+        $ch = curl_init($zipUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_FILE => $destination,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_CONNECTTIMEOUT => 20,
+            CURLOPT_TIMEOUT => 240,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_USERAGENT => 'Circle-Deployer/2.0',
+            CURLOPT_HTTPHEADER => $token !== '' ? ['Authorization: Bearer ' . $token] : [],
+        ]);
+        $downloaded = curl_exec($ch) === true;
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+    } elseif (filter_var(ini_get('allow_url_fopen'), FILTER_VALIDATE_BOOLEAN)) {
+        $ctx = stream_context_create([
+            'http' => ['timeout' => 240, 'follow_location' => 0,
+                'header' => "User-Agent: Circle-Deployer/2.0\r\n" . ($token !== '' ? "Authorization: Bearer {$token}\r\n" : '')],
+            'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+        ]);
+        $source = @fopen($zipUrl, 'rb', false, $ctx);
+        if ($source !== false) {
+            $metadata = stream_get_meta_data($source);
+            foreach ($metadata['wrapper_data'] ?? [] as $line) {
+                if (preg_match('~^HTTP/\S+ (\d{3})~', $line, $match)) $httpCode = (int) $match[1];
+            }
+            $downloaded = stream_copy_to_stream($source, $destination) !== false;
+            fclose($source);
+        }
+    } else {
+        abort('Enable PHP cURL or allow_url_fopen to download the repository.');
+    }
+} finally {
+    fclose($destination);
 }
-
-if ($zipData === false || $zipData === '') {
-    abort('Failed to download ZIP. Enable cURL or allow_url_fopen on this server.');
+if (!$downloaded || $httpCode !== 200) {
+    if (in_array($httpCode, [401, 403, 404], true)) abort('GitHub repository access failed (HTTP ' . $httpCode . '). Check GITHUB_REPO, GITHUB_BRANCH and the hosting GITHUB_TOKEN.');
+    abort('Repository download failed (HTTP ' . $httpCode . '). Check hosting outbound HTTPS access, trusted CA certificates and disk space.');
 }
-log_step('✓', 'Download complete (' . round(strlen($zipData) / 1024) . ' KB)', 'ok');
-
-// ══════════════════════════════════════════════════════════════
-// STEP 2 — Extract to temp dir
-// ══════════════════════════════════════════════════════════════
-log_step('📦', 'Extracting ZIP…');
-
-$tmpZip = sys_get_temp_dir() . '/circle_deploy_' . time() . '.zip';
-$tmpDir = sys_get_temp_dir() . '/circle_extract_' . time();
-
-file_put_contents($tmpZip, $zipData);
-unset($zipData);
-
+$zipBytes = filesize($tmpZip);
+if ($zipBytes === false || $zipBytes === 0) abort('The downloaded ZIP is empty.');
+log_step('✓', 'Archive streamed to disk (' . round($zipBytes / 1024) . ' KB); PHP memory limit ' . htmlspecialchars((string) ini_get('memory_limit')), 'ok');
+log_step('📦', 'Checking and extracting ZIP…');
 $zip = new ZipArchive();
-if ($zip->open($tmpZip) !== true) {
-    @unlink($tmpZip);
-    abort('Failed to open ZIP. ZipArchive extension may be missing.');
+if ($zip->open($tmpZip, ZipArchive::CHECKCONS) !== true) abort('Downloaded archive is not a valid ZIP.');
+for ($i = 0; $i < $zip->numFiles; $i++) {
+    $name = $zip->getNameIndex($i);
+    if ($name === false || str_starts_with($name, '/') || str_contains($name, '\\') || preg_match('~(^|/)\.\.(/|$)~', $name)) abort('Unsafe ZIP entry; deployment stopped.');
 }
-$zip->extractTo($tmpDir);
+if (!$zip->extractTo($tmpDir)) abort('ZIP extraction failed. Check disk space and temporary-directory permissions.');
 $zip->close();
-@unlink($tmpZip);
+unlink($tmpZip);
+$tmpZip = null;
 
 // GitHub ZIP root: circle-main/ or Astra-Techno-circle-abc1234/
 $extractedDirs = glob($tmpDir . '/*', GLOB_ONLYDIR);
@@ -244,8 +291,13 @@ if (is_dir($srcDownloads)) {
 // Copy .htaccess from deploy template (keeps routing rules up to date)
 $srcHtaccess = $repoRoot . '/backend/deploy/.htaccess';
 if (file_exists($srcHtaccess)) {
-    copy($srcHtaccess, BASE_DIR . '/.htaccess');
-    log_step('✓', '.htaccess updated', 'ok');
+    // The host may append PHP handler directives; never replace those.
+    if (!file_exists(BASE_DIR . '/.htaccess')) {
+        copy($srcHtaccess, BASE_DIR . '/.htaccess');
+        log_step('✓', '.htaccess installed', 'ok');
+    } else {
+        log_step('·', 'Existing root .htaccess preserved (including hosting PHP handler)', 'muted');
+    }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -266,7 +318,7 @@ $migrationErrors = false;
 foreach ($migrationLog as $m) {
     $icon = match ($m['status']) { 'done' => '✓', 'skip' => '·', default => '✗' };
     $type = match ($m['status']) { 'done' => 'ok', 'fail' => 'err', default => 'muted' };
-    log_step($icon, $m['name'] . ($m['error'] ?? ''), $type);
+    log_step($icon, htmlspecialchars($m['name'] . ($m['error'] ?? '')), $type);
     if ($m['status'] === 'fail') $migrationErrors = true;
 }
 
@@ -279,6 +331,8 @@ $elapsed = round(microtime(true) - START_TIME, 1);
 $hasError = $migrationErrors || count(array_filter($log, fn($l) => $l['type'] === 'err')) > 0;
 log_step('🏁', "Deployment completed in {$elapsed}s", $hasError ? 'warn' : 'ok');
 
+$deploymentComplete = true;
+if ($hasError) http_response_code(500);
 echo page('Deploy', render_log() . render_banner(
     !$hasError,
     $hasError ? 'Deployment finished with errors.' : 'Deployment successful!'
@@ -351,7 +405,7 @@ function runMigrations(): array {
                 $ins->execute(['name' => $name]);
                 $log[] = ['status' => 'done', 'name' => $name];
             } catch (PDOException $e) {
-                $log[] = ['status' => 'fail', 'name' => $name, 'error' => ' — ' . $e->getMessage()];
+                $log[] = ['status' => 'fail', 'name' => $name, 'error' => ' — Failed; check the hosting PHP error log.'];
                 break; // stop on first failure
             }
         }
@@ -360,7 +414,7 @@ function runMigrations(): array {
             $log[] = ['status' => 'skip', 'name' => 'No migration files found'];
         }
     } catch (Throwable $e) {
-        $log[] = ['status' => 'fail', 'name' => 'DB connection', 'error' => ' — ' . $e->getMessage()];
+        $log[] = ['status' => 'fail', 'name' => 'DB connection', 'error' => ' — Failed; check the hosting PHP error log.'];
     }
 
     return $log;
