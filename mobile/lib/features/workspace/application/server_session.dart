@@ -2,6 +2,7 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_providers.dart';
 import '../../../core/api/auth_api.dart';
+import '../../../core/local_settings.dart';
 
 export '../../../core/api/auth_api.dart' show ApiAccount;
 
@@ -136,6 +137,15 @@ class ServerSession extends Notifier<ServerSessionState> {
   /// [CircleWorkspaceController.logOut], which first sends deletions still
   /// waiting for their Undo window.
   Future<void> logOut() async {
+    final account = state.account;
+    final config = ref.read(apiConfigProvider);
+    if (account != null && config != null) {
+      await ref
+          .read(memoryDraftStoreProvider)
+          .clearScope(
+            DraftScope(server: config.baseUrl.toString(), account: account.id),
+          );
+    }
     await _auth.logout();
     _forgetImages();
     state = const ServerSessionState();

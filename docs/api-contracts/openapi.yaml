@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.1
+  version: 0.3.2
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -9,7 +9,8 @@ info:
     **Status: approved by the owner for implementation (23 Oct 2026).** Every
     operation in this document is implemented in `backend/` (PHP 8.3, MySQL/MariaDB)
     and may be used by the app. 0.3.1 implements the M4 private media operations
-    (ADR 0007) and adds the `media` list to Memory responses.
+    (ADR 0007) and adds the `media` list to Memory responses. 0.3.2 adds the
+    reviewed `saved` and `q` filters to `GET /memories` without changing its response shape.
 
     ## Conventions
     - Base path `/api/v1`, JSON request and response bodies (`Content-Type: application/json`).
@@ -837,11 +838,26 @@ paths:
       description: |
         Without `group_id`: Memories from every group I am an active member of.
         With `group_id`: that exact group only (`403 not_member` otherwise).
+        `saved=true` restricts the list to Memories saved by the current viewer.
+        `saved=false` (the default) does not restrict by saved state.
+        `q` is a literal substring search over body and place, using the database's
+        configured Unicode collation. SQL LIKE wildcard characters (`%`, `_`, `!`)
+        in the input are treated literally. It is trimmed, must be valid UTF-8,
+        and has at most 200 Unicode code points; empty/whitespace-only is unfiltered.
+        Filters combine with AND and never expand membership or visibility.
         Keyset pagination: pass `pagination.next_cursor` back as `cursor`; it is opaque.
       parameters:
         - name: group_id
           in: query
           schema: { type: integer }
+        - name: saved
+          in: query
+          schema: { type: boolean, default: false }
+          description: Only the strings true and false are accepted; other values return 422.
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 200 }
+          description: Trimmed literal substring over Memory body and place; empty is unfiltered.
         - name: cursor
           in: query
           schema: { type: string }

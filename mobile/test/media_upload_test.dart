@@ -348,10 +348,24 @@ void main() {
         keys.add(request.json['client_upload_id']);
         return FakeResponse.error(503, 'server_error');
       });
-      final uploads = PhotoUploads(media)
-        ..add([picked(jpeg())])
-        ..target('7');
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      final uploads = PhotoUploads(media)..add([picked(jpeg())]);
+      Future<void> waitUntilIdle(void Function() start) async {
+        final completed = Completer<void>();
+        void changed() {
+          if (!uploads.busy && !completed.isCompleted) completed.complete();
+        }
+
+        uploads.addListener(changed);
+        try {
+          start();
+          changed();
+          await completed.future.timeout(const Duration(seconds: 5));
+        } finally {
+          uploads.removeListener(changed);
+        }
+      }
+
+      await waitUntilIdle(() => uploads.target('7'));
       final item = uploads.items.single;
       expect(item.status, UploadStatus.failed);
       expect(
@@ -359,8 +373,7 @@ void main() {
         'Photos can’t be processed on this server yet.',
       );
       expect(uploads.hasFailed, isTrue);
-      uploads.retry(item);
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await waitUntilIdle(() => uploads.retry(item));
       expect(keys, hasLength(2));
       expect(keys.toSet(), hasLength(1));
       uploads.dispose();

@@ -536,7 +536,16 @@ class FakeCircleServer {
     if (path == '/memories' && r.method == 'GET') {
       final mine = [
         for (final memory in memories)
-          if (members[memory['group_id']]?.containsKey(me) ?? false) memory,
+          if ((members[memory['group_id']]?.containsKey(me) ?? false) &&
+              (r.query['group_id'] == null ||
+                  '${memory['group_id']}' == r.query['group_id']) &&
+              (r.query['saved'] != 'true' ||
+                  (saves[memory['id']]?.contains(me) ?? false)) &&
+              (r.query['q'] == null ||
+                  '${memory['body']} ${memory['place'] ?? ''}'
+                      .toLowerCase()
+                      .contains(r.query['q']!.toLowerCase())))
+            memory,
       ];
       final start = int.tryParse(r.query['cursor'] ?? '') ?? 0;
       final end = (start + pageSize).clamp(0, mine.length);

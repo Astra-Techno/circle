@@ -101,8 +101,7 @@ class AccessWelcome extends StatelessWidget {
         _PreviewNote(connectedTo: connectedTo, welcome: true),
         const SizedBox(height: Space.md),
         Text(
-          'By continuing, you agree to CIRCLE\u2019s '
-          'Community Values & Privacy Pact.',
+          'Share thoughtfully with the people in your chosen group.',
           textAlign: TextAlign.center,
           style: theme.textTheme.labelSmall?.copyWith(color: muted),
         ),
@@ -489,7 +488,7 @@ class _Promises extends StatelessWidget {
       ),
       child: Column(
         children: [
-          row(Icons.shield_outlined, '100% Private to your chosen groups'),
+          row(Icons.shield_outlined, 'Shared only with your chosen group'),
           row(
             Icons.do_not_disturb_on_outlined,
             'No follower counts, vanity metrics, or ads',

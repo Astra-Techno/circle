@@ -2,7 +2,7 @@
 
 **`openapi.yaml` (OpenAPI 3.1) is the source of truth for `/api/v1`.**
 
-**Approved by the owner for implementation on 23 Oct 2026 (0.3.0); now at 0.3.1 with M4 media implemented.** It describes exactly the 35 operations the draft backend implements today (ADR 0006):
+**Approved by the owner for implementation on 23 Oct 2026 (0.3.0); now at 0.3.2 with M4 media and reviewed Memory query filters implemented.** It describes the implemented operations the draft backend implements today (ADR 0006):
 - accounts and sessions;
 - groups and nested subgroups;
 - members, roles, bans and ownership transfer;
@@ -46,3 +46,7 @@ The app may now integrate with the implemented endpoints, and the backend may im
 6. **Reactions** are limited to an 8-emoji allowlist: ❤️😂😮😢🙏👍🎉🔥.
 
 Implement the Dio client only against the reviewed contract.
+
+## 0.3.2: independent saved/group timelines and complete Memory search
+
+Both the mobile and backend tracks reviewed additive `GET /memories` filters: `saved=true` selects only the current viewer's bookmarks; `saved=false`/omitted is unfiltered. `q` searches literal body/place substrings, trimmed, valid UTF-8, at most 200 Unicode code points, with empty/whitespace-only unfiltered. `%`, `_` and `!` are literal. Both combine with existing `group_id`, `cursor` and `limit`; active exact-group membership still governs every result. The existing response shape and opaque newest-first cursor are unchanged.

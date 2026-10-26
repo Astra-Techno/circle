@@ -42,7 +42,7 @@ $rows = [
 foreach (['error_reporting', 'display_errors', 'display_startup_errors', 'log_errors', 'memory_limit', 'max_execution_time', 'post_max_size', 'upload_max_filesize', 'max_file_uploads', 'date.timezone', 'opcache.enable'] as $setting) {
     $rows[$setting] = (string) ini_get($setting);
 }
-foreach (['pdo_mysql', 'mbstring', 'openssl', 'fileinfo', 'gd', 'exif', 'sodium'] as $extension) {
+foreach (['pdo_mysql', 'mbstring', 'openssl', 'fileinfo', 'gd', 'exif', 'sodium', 'zip', 'Phar', 'zlib'] as $extension) {
     $rows['Extension: ' . $extension] = extension_loaded($extension) ? 'Loaded' : 'Missing';
 }
 $rows['Password algorithms'] = implode(', ', password_algos());

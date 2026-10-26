@@ -42,6 +42,65 @@ void main() {
     dev = server.addUser('+15550000002', 'd' * 20, 'Dev');
   });
 
+  test(
+    'scoped saved, group and search pages find Memories beyond Home',
+    () async {
+      final target = server.addGroup('Fictional target', asha);
+      final other = server.addGroup('Fictional recent', asha);
+      final old = server.addMemory(target, asha, 'Old fictional reunion');
+      server.saves[old] = {asha};
+      for (var i = 0; i < 5; i++) {
+        server.addMemory(other, asha, 'New fictional Memory $i');
+      }
+      final repo = await signedIn(server, asha);
+      final home = await repo.load('$asha');
+      expect(home.memories.any((m) => m.id == '$old'), isFalse);
+      for (final query in [
+        MemoryQuery(groupId: '$target'),
+        const MemoryQuery(saved: true),
+        const MemoryQuery(text: 'reunion'),
+      ]) {
+        final page = await repo.queryMemories('$asha', query);
+        expect(page.items.map((m) => m.id), ['$old']);
+        expect(page.hasMore, isFalse);
+      }
+      await repo.editMemory('$asha', '$old', 'Edited fictional reunion');
+      await repo.react('$asha', '$old', '❤️');
+      await repo.comment('$asha', '$old', 'Fictional reply');
+      await repo.saveMemory('$asha', '$old');
+      expect(
+        (await repo.queryMemories(
+          '$asha',
+          const MemoryQuery(saved: true),
+        )).items,
+        isEmpty,
+      );
+      expect(await repo.refreshMemory('$asha', '$old'), isTrue);
+      expect(
+        (await repo.load(
+          '$asha',
+        )).memories.firstWhere((m) => m.id == '$old').text,
+        'Edited fictional reunion',
+      );
+      final query = MemoryQuery(groupId: '$other');
+      final first = await repo.queryMemories('$asha', query);
+      final next = await repo.queryMemories(
+        '$asha',
+        query,
+        cursor: first.cursor,
+      );
+      expect(first.hasMore, isTrue);
+      expect(
+        first.items
+            .map((m) => m.id)
+            .toSet()
+            .intersection(next.items.map((m) => m.id).toSet()),
+        isEmpty,
+      );
+      repo.dispose();
+    },
+  );
+
   test('a new account starts with an empty workspace', () async {
     final repo = await signedIn(server, asha);
     final workspace = await repo.load('$asha');

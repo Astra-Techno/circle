@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/api/api_providers.dart';
 import '../core/circle_components.dart';
 import '../core/design.dart';
+import '../core/invite_entry.dart';
 import '../core/theme_controller.dart';
 import '../core/two_pane.dart';
 import '../features/albums/presentation/album_detail.dart';
@@ -203,6 +204,11 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
   router = GoRouter(
     refreshListenable: refresh,
     redirect: (context, state) {
+      final invite = circleInviteDestination(
+        state.uri,
+        serverOrigin: server?.baseUrl,
+      );
+      if (invite != null && invite != state.uri.toString()) return invite;
       final entered = ref.read(circleSessionActiveProvider);
       final public = {'/', '/login', '/register'}.contains(state.uri.path);
       if (!entered && !public) {
@@ -643,6 +649,13 @@ class CircleAppShell extends ConsumerWidget {
     final eventsFilter = ref.watch(eventsGroupFilterProvider);
     final workspace = ref.watch(circleWorkspaceProvider).value;
     final features = ref.watch(circleFeaturesProvider);
+    final branches = [
+      0,
+      if (features.has(CircleFeature.chat)) 1,
+      2,
+      if (features.has(CircleFeature.events)) 3,
+      4,
+    ];
     // "New event" only when the viewer may create an event somewhere.
     final canCreateEvent =
         features.has(CircleFeature.events) &&
@@ -741,27 +754,31 @@ class CircleAppShell extends ConsumerWidget {
         maxScaleFactor: navigationMaxTextScale,
         child: NavigationBar(
           height: 60 + 12 * textScale,
-          selectedIndex: index,
+          selectedIndex: branches.contains(index) ? branches.indexOf(index) : 0,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          onDestinationSelected: (target) =>
-              shell.goBranch(target, initialLocation: target == index),
-          destinations: const [
+          onDestinationSelected: (target) => shell.goBranch(
+            branches[target],
+            initialLocation: branches[target] == index,
+          ),
+          destinations: [
             NavigationDestination(
               icon: Icon(Icons.home_outlined),
               label: 'Home',
             ),
-            NavigationDestination(
-              icon: Icon(Icons.forum_outlined),
-              label: 'Chats',
-            ),
+            if (features.has(CircleFeature.chat))
+              NavigationDestination(
+                icon: Icon(Icons.forum_outlined),
+                label: 'Chats',
+              ),
             NavigationDestination(
               icon: Icon(Icons.groups_outlined),
               label: 'Groups',
             ),
-            NavigationDestination(
-              icon: Icon(Icons.event_outlined),
-              label: 'Events',
-            ),
+            if (features.has(CircleFeature.events))
+              NavigationDestination(
+                icon: Icon(Icons.event_outlined),
+                label: 'Events',
+              ),
             NavigationDestination(
               icon: Icon(Icons.person_outline),
               label: 'You',

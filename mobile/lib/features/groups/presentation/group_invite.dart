@@ -89,7 +89,7 @@ class GroupInviteScreen extends ConsumerWidget {
             const PreviewNotice(
               'Preview link — not shareable. It only works inside this preview.',
               server:
-                  'Share this link only with people you know. They open it in CIRCLE with “Open an invite link”.',
+                  'Share this link only with people you know. Tap it on a device with CIRCLE installed, or paste it into “Open an invite link”.',
             ),
             if (link == null)
               FilledButton.icon(

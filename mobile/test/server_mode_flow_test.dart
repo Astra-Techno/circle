@@ -152,7 +152,11 @@ void main() {
       ('Events', 'Events aren’t on the server yet.'),
       ('Chats', 'Chat isn’t on the server yet.'),
     ]) {
-      await tap(tester, find.widgetWithText(NavigationDestination, tab));
+      expect(find.widgetWithText(NavigationDestination, tab), findsNothing);
+      container
+          .read(circleRouterProvider)
+          .go(tab == 'Events' ? '/events' : '/chats');
+      await settle(tester);
       expect(find.text('Not on the server yet'), findsOneWidget);
       expect(find.textContaining(label), findsOneWidget);
       expect(find.byType(FloatingActionButton), findsNothing);
@@ -350,6 +354,21 @@ void main() {
     expect(await tokens.read(), isNull);
     expect(currentUri(container).path, '/');
     expect(container.read(circleViewerProvider), 'you');
+  });
+
+  testWidgets('external custom invite survives sign-in redirect', (
+    tester,
+  ) async {
+    final container = await openServerCircle(tester, FakeCircleServer());
+    container
+        .read(circleRouterProvider)
+        .go('circle://invite/AbC_def-1234567890');
+    await settle(tester);
+    expect(currentUri(container).path, '/login');
+    expect(
+      currentUri(container).queryParameters['next'],
+      '/invite/AbC_def-1234567890',
+    );
   });
 
   testWidgets('the fictional tour stays separate from the server', (

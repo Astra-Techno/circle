@@ -5,6 +5,7 @@ import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../../core/theme_controller.dart';
 import '../../notifications/application/notification_providers.dart';
+import '../../memories/presentation/scoped_memory_list.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
 
@@ -15,7 +16,6 @@ class CircleYou extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) => WorkspaceView(
     builder: (workspace) {
       final waiting = workspace.invitations.length;
-      final saved = workspace.memories.where((memory) => memory.saved);
       final badge = ref.watch(activityBadgeProvider);
       final features = ref.watch(circleFeaturesProvider);
       final account = ref.watch(serverAccountProvider);
@@ -161,8 +161,9 @@ class CircleYou extends ConsumerWidget {
             ),
             const SizedBox(height: Space.md),
             const CircleSectionTitle('Saved Memories'),
-            if (saved.isEmpty)
-              Container(
+            ScopedMemoryList(
+              query: const MemoryQuery(saved: true),
+              empty: Container(
                 padding: const EdgeInsets.all(Space.section),
                 decoration: CircleDepth.panel(
                   context,
@@ -196,8 +197,7 @@ class CircleYou extends ConsumerWidget {
                   ],
                 ),
               ),
-            for (final memory in saved)
-              CircleRow(
+              itemBuilder: (_, memory) => CircleRow(
                 child: ListTile(
                   title: Text(
                     memory.summary,
@@ -208,6 +208,7 @@ class CircleYou extends ConsumerWidget {
                   onTap: () => context.push('/home/memory/${memory.id}'),
                 ),
               ),
+            ),
           ],
         ),
       );

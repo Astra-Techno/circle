@@ -3,7 +3,66 @@ part of 'api_circle_repository.dart';
 /// Memories: cursor-paginated list, create (with uploaded photos), edit,
 /// delete with a client-side Undo window, comments with replies, the
 /// 8-emoji reactions and saves. Polls aren't on the server yet.
-mixin ApiMemoryRepository on ApiRepositoryBase implements MemoryRepository {
+mixin ApiMemoryRepository on ApiRepositoryBase
+    implements MemoryRepository, MemoryQueryReader {
+  @override
+  Future<MemoryPage> queryMemories(
+    String viewer,
+    MemoryQuery query, {
+    String? cursor,
+  }) async {
+    _checkViewer(viewer);
+    if (query.groupId != null) _requireGroup(query.groupId!);
+    final page = await api.getPage(
+      '/memories',
+      query: {
+        'limit': ApiRepositoryBase.memoryPageSize,
+        if (query.groupId != null) 'group_id': query.groupId!,
+        if (query.saved) 'saved': true,
+        if (query.text.trim().isNotEmpty) 'q': query.text.trim(),
+        'cursor': ?cursor,
+      },
+    );
+    final ids = <String>[];
+    for (final item in page.items) {
+      final json = ApiJson.map(item);
+      final id = ApiJson.id(json['id']);
+      final groupId = ApiJson.id(json['group_id']);
+      // Repeat the exact-group boundary when translating server data.
+      if (!_groups.containsKey(groupId) ||
+          (query.groupId != null && groupId != query.groupId)) {
+        continue;
+      }
+      final entry = _memories[id] ?? _MemoryEntry(json);
+      if (entry.json['updated_at'] != json['updated_at']) {
+        entry.comments = null;
+        entry.reactions = null;
+      }
+      entry.json = json;
+      _memories[id] = entry;
+      if (!_pendingDeletes.containsKey(id)) ids.add(id);
+    }
+    // A list says only whether the viewer reacted, not their selected emoji.
+    await ApiRepositoryBase.pool(
+      ids.where(
+        (id) =>
+            ApiJson.boolean(_memories[id]!.json['user_reacted']) &&
+            !_myReactions.containsKey(id),
+      ),
+      (id) async {
+        final json = ApiJson.map(await api.get('/memories/$id'));
+        final reactions = ApiMappers.reactions(json['reactions']);
+        _memories[id]!.reactions = reactions;
+        _myReactions[id] = reactions[viewer];
+      },
+    );
+    return MemoryPage(
+      items: [for (final id in ids) _memory(id)],
+      cursor: page.nextCursor,
+      hasMore: page.hasMore && page.nextCursor != null,
+    );
+  }
+
   @override
   Future<void> _syncMemories() async {
     final page = await api.getPage(

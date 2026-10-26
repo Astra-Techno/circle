@@ -319,3 +319,74 @@ class CircleWorkspaceController extends AsyncNotifier<CircleWorkspace> {
         repo.respondToInvitation(viewer, invitationId, accept: accept),
   );
 }
+
+/// Independently paginated group, saved and search views. Mutations refresh the
+/// current scope; merely browsing Home cannot decide whether these are empty.
+final memoryTimelineProvider = AsyncNotifierProvider.autoDispose
+    .family<MemoryTimeline, MemoryPage, MemoryQuery>(MemoryTimeline.new);
+
+class MemoryTimeline extends AsyncNotifier<MemoryPage> {
+  MemoryTimeline(this.query);
+  final MemoryQuery query;
+  bool _loadingMore = false;
+  int _generation = 0;
+
+  @override
+  Future<MemoryPage> build() async {
+    _generation++;
+    _loadingMore = false;
+    final workspace = await ref.watch(circleWorkspaceProvider.future);
+    final repository = ref.watch(circleRepositoryProvider);
+    final viewer = ref.watch(circleViewerProvider);
+    if (repository is MemoryQueryReader) {
+      return (repository as MemoryQueryReader).queryMemories(viewer, query);
+    }
+    final text = query.text.trim().toLowerCase();
+    return MemoryPage(
+      items: [
+        for (final memory in workspace.memories)
+          if ((query.groupId == null || memory.groupId == query.groupId) &&
+              (!query.saved || memory.saved) &&
+              (text.isEmpty ||
+                  memory.text.toLowerCase().contains(text) ||
+                  (memory.place?.toLowerCase().contains(text) ?? false)))
+            memory,
+      ],
+    );
+  }
+
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    await future;
+  }
+
+  Future<void> loadMore() async {
+    final current = state.value;
+    if (_loadingMore || current == null || !current.hasMore) return;
+    final repository = ref.read(circleRepositoryProvider);
+    if (repository is! MemoryQueryReader) return;
+    _loadingMore = true;
+    final generation = _generation;
+    try {
+      final next = await (repository as MemoryQueryReader).queryMemories(
+        ref.read(circleViewerProvider),
+        query,
+        cursor: current.cursor,
+      );
+      if (!ref.mounted || generation != _generation) return;
+      final combined = {for (final memory in current.items) memory.id: memory};
+      for (final memory in next.items) {
+        combined[memory.id] = memory;
+      }
+      state = AsyncData(
+        MemoryPage(
+          items: combined.values.toList(),
+          cursor: next.cursor,
+          hasMore: next.hasMore,
+        ),
+      );
+    } finally {
+      if (generation == _generation) _loadingMore = false;
+    }
+  }
+}

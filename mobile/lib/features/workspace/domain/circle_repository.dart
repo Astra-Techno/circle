@@ -3,6 +3,7 @@ import 'circle_workspace.dart';
 
 export '../../moderation/domain/moderation_repository.dart';
 export 'circle_workspace.dart';
+export 'memory_page.dart';
 
 /// Every method is asynchronous so an HTTP implementation can replace the
 /// local mock. Failures are reported as [CircleFailure] with calm copy.

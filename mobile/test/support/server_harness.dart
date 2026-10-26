@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/circle_experience.dart';
 import 'package:mobile/core/api/api_providers.dart';
+import 'package:mobile/core/local_settings.dart';
 import 'package:mobile/features/memories/application/media_providers.dart';
 import 'fake_api.dart';
 
@@ -28,6 +29,7 @@ Future<ProviderContainer> openServerCircle(
   FakeCircleServer server, {
   TokenStore? tokens,
   PhotoPicker? picker,
+  LocalSettingsStore? settings,
   Size size = const Size(393, 852),
 }) async {
   tester.view.physicalSize = size;
@@ -39,6 +41,9 @@ Future<ProviderContainer> openServerCircle(
   final container = ProviderContainer(
     overrides: [
       apiConfigProvider.overrideWithValue(testServer),
+      localSettingsStoreProvider.overrideWithValue(
+        settings ?? MemoryLocalSettingsStore(),
+      ),
       tokenStoreProvider.overrideWithValue(tokens ?? MemoryTokenStore()),
       apiHttpAdapterProvider.overrideWithValue(server.adapter),
       photoPickerProvider.overrideWithValue(picker ?? FakePhotoPicker()),

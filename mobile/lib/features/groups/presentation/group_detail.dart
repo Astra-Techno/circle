@@ -7,6 +7,7 @@ import '../../../core/design.dart';
 import '../../albums/presentation/albums_tab.dart';
 import '../../events/presentation/circle_events.dart';
 import '../../memories/presentation/circle_memories.dart';
+import '../../memories/presentation/scoped_memory_list.dart';
 import '../../moderation/presentation/report_sheet.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/feature_gate.dart';
@@ -148,9 +149,6 @@ class _GroupTabs extends StatelessWidget {
   List<Widget> _tab(BuildContext context, int index) {
     switch (index) {
       case 0:
-        final memories = workspace.memories
-            .where((memory) => memory.groupId == group.id)
-            .toList();
         return [
           Align(
             alignment: AlignmentDirectional.centerStart,
@@ -161,13 +159,15 @@ class _GroupTabs extends StatelessWidget {
             ),
           ),
           const SizedBox(height: Space.lg),
-          if (memories.isEmpty)
-            const CircleEmpty(
+          ScopedMemoryList(
+            query: MemoryQuery(groupId: group.id),
+            empty: const CircleEmpty(
               title: 'The first Memory is yours to make',
               message: 'Share a little moment with this exact group.',
             ),
-          for (final memory in memories)
-            CircleMemoryCard(memory: memory, group: group),
+            itemBuilder: (_, memory) =>
+                CircleMemoryCard(memory: memory, group: group),
+          ),
         ];
       case 1:
         return [SubgroupsTab(group: group, workspace: workspace)];

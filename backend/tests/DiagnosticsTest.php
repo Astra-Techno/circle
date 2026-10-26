@@ -32,6 +32,8 @@ final class DiagnosticsTest extends TestCase
                 if (in_array($mode, ['allowed', 'deployment'], true)) {
                     self::assertStringContainsString(PHP_VERSION, $html);
                     self::assertStringContainsString('memory_limit', $html);
+                    self::assertStringContainsString('Extension: zip', $html);
+                    self::assertStringContainsString('Extension: gd', $html);
                     self::assertStringNotContainsString('DB_PASSWORD', $html);
                     self::assertStringNotContainsString(__DIR__, $html);
                 } else {

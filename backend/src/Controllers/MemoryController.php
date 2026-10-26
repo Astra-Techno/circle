@@ -31,6 +31,20 @@ final class MemoryController
         $groupId = $request->query('group_id');
         $limit = $request->queryInt('limit', self::DEFAULT_LIMIT, 1, self::MAX_LIMIT);
 
+        $saved = $request->query['saved'] ?? 'false';
+        if (!is_string($saved) || !in_array($saved, ['true', 'false'], true)) {
+            Response::validationError('saved must be true or false.');
+        }
+        $query = $request->query['q'] ?? '';
+        if (!is_string($query) || strlen($query) > 800) {
+            Response::validationError('q must be valid UTF-8 text with at most 200 characters.');
+        }
+        $query = trim($query);
+        $queryLength = preg_match_all('/./us', $query);
+        if ($queryLength === false || $queryLength > 200) {
+            Response::validationError('q must be valid UTF-8 text with at most 200 characters.');
+        }
+
         $params = ['viewer' => $userId, 'gm_status' => 'active', 'm_status' => 'active'];
         $where = 'WHERE m.status = :m_status AND gm.user_id = :viewer AND gm.status = :gm_status';
 
@@ -39,6 +53,19 @@ final class MemoryController
             MemberRepository::requireActiveMember($gid, $userId);
             $where .= ' AND m.group_id = :gid';
             $params['gid'] = $gid;
+        }
+
+        if ($saved === 'true') {
+            $where .= ' AND EXISTS(SELECT 1 FROM saves filtered_save WHERE filtered_save.memory_id = m.id AND filtered_save.user_id = :filter_saved_uid)';
+            $params['filter_saved_uid'] = $userId;
+        }
+        if ($queryLength > 0) {
+            // Literal substring matching: clients do not supply SQL LIKE wildcards.
+            $pattern = '%' . strtr($query, ['!' => '!!', '%' => '!%', '_' => '!_']) . '%';
+            $where .= " AND (m.body LIKE :query_body ESCAPE '!' OR m.place LIKE :query_place ESCAPE '!')";
+            // Native PDO prepares require a unique placeholder for each occurrence.
+            $params['query_body'] = $pattern;
+            $params['query_place'] = $pattern;
         }
 
         $cursor = $request->query('cursor');

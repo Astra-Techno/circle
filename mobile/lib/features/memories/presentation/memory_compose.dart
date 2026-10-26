@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../core/local_settings.dart';
+import '../../../core/api/api_providers.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_signed_image.dart';
@@ -24,7 +27,8 @@ class CircleCompose extends ConsumerStatefulWidget {
   ConsumerState<CircleCompose> createState() => _CircleComposeState();
 }
 
-class _CircleComposeState extends ConsumerState<CircleCompose> {
+class _CircleComposeState extends ConsumerState<CircleCompose>
+    with WidgetsBindingObserver {
   final _text = TextEditingController();
   final _year = TextEditingController();
   final _place = TextEditingController();
@@ -41,13 +45,100 @@ class _CircleComposeState extends ConsumerState<CircleCompose> {
 
   /// Real photos on a server (null in the preview, which uses scenes).
   PhotoUploads? _uploads;
+  MemoryDraftStore? _draftStore;
+  DraftLease? _draftLease;
+  MemoryTextDraft? _resumeDraft;
+  Timer? _draftTimer;
+  bool _draftReady = false, _submitted = false;
+  String? _draftNotice, _effectiveGroup;
+
+  void _draftChanged() {
+    if (!_draftReady || _submitted || _resumeDraft != null) return;
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 450), _saveDraft);
+  }
+
+  Future<void> _saveDraft() async {
+    final lease = _draftLease;
+    if (lease == null || _submitted || _resumeDraft != null) return;
+    final ok = await _draftStore!.save(
+      lease,
+      MemoryTextDraft(
+        text: _text.text,
+        year: _year.text,
+        place: _place.text,
+        groupId: _effectiveGroup ?? _groupId ?? widget.initialGroupId,
+      ),
+    );
+    if (!ok && mounted) {
+      setState(() => _draftNotice = 'Draft could not be saved on this device.');
+    }
+  }
+
+  Future<void> _restoreDraft() async {
+    final account = ref.read(serverAccountProvider);
+    final config = ref.read(apiConfigProvider);
+    if (account == null || config == null) return;
+    _draftStore = ref.read(memoryDraftStoreProvider);
+    _draftLease = _draftStore!.open(
+      DraftScope(server: config.baseUrl.toString(), account: account.id),
+    );
+    final draft = await _draftStore!.read(
+      _draftLease!,
+      groupId: widget.initialGroupId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _resumeDraft = draft;
+      _draftReady = true;
+    });
+  }
+
+  Future<void> _resolveDraft(bool resume) async {
+    final draft = _resumeDraft;
+    if (draft == null) return;
+    if (!resume) {
+      final removed = await _draftStore!.remove(_draftLease!, draft.groupId);
+      if (!mounted) return;
+      if (!removed) {
+        setState(
+          () => _draftNotice =
+              'The draft could not be discarded. Please try again.',
+        );
+        return;
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      if (resume) {
+        _text.text = draft.text;
+        _year.text = draft.year;
+        _place.text = draft.place;
+        _groupId = draft.groupId;
+      }
+      _resumeDraft = null;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _text.addListener(_draftChanged);
+    _year.addListener(_draftChanged);
+    _place.addListener(_draftChanged);
+    unawaited(_restoreDraft());
     final media = ref.read(mediaRepositoryProvider);
     if (media != null) {
       _uploads = PhotoUploads(media)..addListener(_uploadsChanged);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed && _draftReady) {
+      _draftTimer?.cancel();
+      unawaited(_saveDraft());
     }
   }
 
@@ -57,6 +148,9 @@ class _CircleComposeState extends ConsumerState<CircleCompose> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _draftTimer?.cancel();
+    if (_draftReady) unawaited(_saveDraft());
     _text.dispose();
     _year.dispose();
     _place.dispose();
@@ -121,7 +215,7 @@ class _CircleComposeState extends ConsumerState<CircleCompose> {
   }
 
   Future<void> _share(String? groupId) async {
-    if (_busy) return;
+    if (_busy || _resumeDraft != null) return;
     final uploads = _uploads;
     if (uploads != null && groupId != null) {
       if (uploads.busy) {
@@ -189,6 +283,13 @@ class _CircleComposeState extends ConsumerState<CircleCompose> {
     );
     if (!mounted) return;
     if (id != null) {
+      _submitted = true;
+      _draftTimer?.cancel();
+      if (_draftLease != null) {
+        // The serial store queues removal after any outstanding autosave.
+        // A device storage plugin must not hold up a successful server share.
+        unawaited(_draftStore!.remove(_draftLease!, groupId));
+      }
       uploads?.clearShared();
       context.go('/home');
     } else {
@@ -217,10 +318,14 @@ class _CircleComposeState extends ConsumerState<CircleCompose> {
           : null;
       // A single group is the only possible audience, so it is not a
       // silent guess. Otherwise nothing is preselected without context.
-      final chosen =
+      final candidate =
           _groupId ??
           fromContext ??
           (workspace.groups.length == 1 ? workspace.groups.single.id : null);
+      final chosen = workspace.groupsById.containsKey(candidate)
+          ? candidate
+          : null;
+      _effectiveGroup = chosen;
       final tree = buildGroupTree(workspace.groups);
       final theme = Theme.of(context);
       final features = ref.watch(circleFeaturesProvider);
@@ -236,6 +341,27 @@ class _CircleComposeState extends ConsumerState<CircleCompose> {
               title: 'Something worth\nsharing.',
               subtitle: 'A small moment can mean a lot to your circle.',
             ),
+            if (_resumeDraft != null) ...[
+              Text(
+                'Resume your saved text draft? Photos must be selected again.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              Wrap(
+                spacing: Space.sm,
+                children: [
+                  TextButton(
+                    onPressed: () => _resolveDraft(true),
+                    child: const Text('Resume draft'),
+                  ),
+                  TextButton(
+                    onPressed: () => _resolveDraft(false),
+                    child: const Text('Discard draft'),
+                  ),
+                ],
+              ),
+            ],
+            if (_draftNotice != null)
+              Text(_draftNotice!, style: theme.textTheme.bodyMedium),
             DropdownButtonFormField<String>(
               initialValue: chosen,
               isExpanded: true,
@@ -265,11 +391,13 @@ class _CircleComposeState extends ConsumerState<CircleCompose> {
                   _audienceError = null;
                 });
                 _target(id);
+                _draftChanged();
               },
             ),
             const SizedBox(height: Space.section),
             TextField(
               controller: _text,
+              readOnly: _resumeDraft != null,
               minLines: 3,
               maxLines: 8,
               maxLength: MemoryRules.maxText,

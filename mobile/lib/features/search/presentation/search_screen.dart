@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../workspace/presentation/feature_gate.dart';
+import '../../workspace/application/workspace_providers.dart';
+import '../../memories/presentation/scoped_memory_list.dart';
 import '../../workspace/presentation/group_visuals.dart';
 import '../application/search_providers.dart';
 
@@ -40,6 +42,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final corpus = ref.watch(searchCorpusProvider);
     final recent = ref.watch(recentSearchesProvider);
     final ready = SearchRules.ready(_query);
+    final server = ref.watch(serverAccountProvider) != null;
     final results = ready && corpus.hasValue
         ? SearchRules.search(_query, corpus.requireValue)
         : null;
@@ -71,14 +74,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           const PreviewNotice(
             'Preview: searches only your fictional circles on this device.',
             server:
-                'Searches your groups, their members and the Memories '
-                'loaded on this device.',
+                'Searches your groups, their members and all Memories you can access.',
           ),
           if (!ready) ...[
             Text(
               _query.trim().isEmpty
-                  ? 'Find groups, people, Memories, events and messages you '
-                        'can already see.'
+                  ? (server
+                        ? 'Find groups, people and Memories in your circles.'
+                        : 'Find groups, people, Memories, events and messages you can already see.')
                   : 'Type at least ${SearchRules.minLength} characters.',
               style: theme.textTheme.bodySmall,
             ),
@@ -103,7 +106,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ],
           ] else if (results == null)
             const CircleSkeleton(count: 3, label: 'Searching')
-          else if (results.isEmpty)
+          else if (results.isEmpty && !server)
             CircleEmpty(
               title: 'No results',
               message:
@@ -111,13 +114,34 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   'only looks inside groups you’re in.',
             )
           else
-            ..._results(results),
+            ..._results(results, includeMemories: !server),
+          if (ready && server) ...[
+            const CircleSectionTitle('Memories'),
+            ScopedMemoryList(
+              query: MemoryQuery(text: _query.trim()),
+              empty: const CircleEmpty(
+                title: 'No matching Memories',
+                message: 'Try another word from the Memory or its place.',
+              ),
+              itemBuilder: (_, memory) => CircleRow(
+                child: ListTile(
+                  title: Text(
+                    memory.summary,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(memory.author),
+                  onTap: () => _open('/home/memory/${memory.id}'),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  List<Widget> _results(SearchResults results) {
+  List<Widget> _results(SearchResults results, {bool includeMemories = true}) {
     final workspace = ref.read(searchCorpusProvider).requireValue.workspace;
     Widget row({
       required Widget leading,
@@ -166,7 +190,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             location: '/people/${hit.id}',
           ),
       ],
-      if (results.memories.isNotEmpty) ...[
+      if (includeMemories && results.memories.isNotEmpty) ...[
         CircleSectionTitle('Memories (${results.memories.length})'),
         for (final memory in results.memories)
           row(
