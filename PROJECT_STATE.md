@@ -18,7 +18,8 @@ Updated: 26 October 2026. This file is a short handoff, not a substitute for ins
 - Canonical backlog and acceptance criteria: `docs/pending-work.md`.
 - Next batch B1–B5: preserve/integrate profile work; truthful capability gates; optional/safe Firebase; complete profiles; correct signing and coherent release.
 - Full push delivery may stay disabled until its own acceptance checks pass. No new live chat/events/albums family in this batch.
-- Later order: real push; safety/privacy/account controls; chat; events; polls; albums. Core reliability/accessibility items remain explicitly tracked.
+- Owner approved sequential backlog execution: real push foundation; safety/privacy/account controls; restore live Chats; restore live Events; polls; albums. Core reliability/accessibility stays tracked.
+- Cross-feature push is required for relevant recipient-facing events; matrix and delivery/privacy/device acceptance are in the canonical backlog. No notifications for every tap/private edit.
 - Do not start another implementation batch before recording which acceptance criteria it owns.
 
 ## Last checks on remote `8c1f677` (not proof of current/live behavior)

@@ -18,18 +18,35 @@ B4 privacy: name/bio follow existing group visibility; profile/cover photos requ
 
 Batch exit: required format/analyzer/backend/static and functional checks pass; fictional live API checks clean up fixtures; sign/package/deploy only the verified candidate. Record Windows golden and physical-device results separately. A source push is not deployment evidence. Build one APK after integration unless the owner explicitly requests an intermediate build.
 
-## Next feature families, in order
+## Next feature families, in order — owner approved execution
 
-Each family gets a small reviewed contract, implementation and acceptance batch; no blanket “enable all” change.
+The owner approved sequential completion of this backlog, restoration of Chats and Events, and notification coverage across every feature. Each family gets a small reviewed contract, implementation and acceptance batch; no blanket “enable all” change. Chats and Events are required product features, not permanently removed screens. Restore Home · Chats · Groups · Events · You as each real service passes its acceptance checks; never expose a preview as live data.
 
 | Order | Family | Required behavior / exit criteria | Dependencies or decisions |
 |---|---|---|---|
 | 1 | Real push notifications | Actual eligible events dispatch; persisted preferences/quiet hours; foreground display; safe tap navigation; account-switch/offline logout handling; invalid-token cleanup; real-device background/terminated tests | B3; server Firebase credentials/curl confirmed privately; device access; iOS configuration before claiming iOS support. Start with supported Memory/invitation events. |
 | 2 | Safety, privacy and account controls | Reports reach authorized admins; block/privacy rules enforced server-side; secure password change; reviewed account export/deletion and retention | Reviewed contracts and owner decisions on retention/legal content. Recovery, OTP and number changes need ownership verification/provider; no reset bypass. Required before broad public onboarding. |
-| 3 | Live chat | Group/1:1 delivery, message consent, exact membership/privacy, idempotency, retry, read state and documented history after removal | Safety foundation, delivery/transport choice and push integration; preview conversations do not migrate as real data. |
-| 4 | Live events and RSVPs | Time zones, create/edit/cancel permissions, attendance/guests/capacity, reminder delivery and date changes | Reviewed API, scheduler and notifications. |
+| 3 | Live chat | Start with group text conversations, persisted history, unread counts, retry/idempotency and message push; then replies, attachments and consent-based 1:1 delivery. Enforce exact membership/privacy and the existing ADR 0003 frozen-history rules after removal | Safety foundation, delivery/transport choice and push integration; preview conversations do not migrate as real data. |
+| 4 | Live events and RSVPs | Start with group event cover, description, location, time zone/date/time and Going/Maybe/Can’t go; create/edit/cancel permissions, push updates and scheduled reminders. Then guests/capacity and event albums | Reviewed API, scheduler and notifications. |
 | 5 | Live polls | Memory/chat/event container permissions, named/anonymous votes, results visibility, closure and safe repeat requests | Container APIs must exist; deliver supported containers incrementally. |
 | 6 | Live albums | Exact-group private photos, create/edit permissions, covers/captions, pagination and cleanup | Existing media lifecycle plus reviewed album API; event albums after event integration. |
+
+## Cross-feature notification delivery — required in each family
+
+“Every feature” means relevant recipient-facing actions, not a push for every tap, private edit or read. Implement the shared delivery foundation first, then add each feature's events with that feature. Maintain one reviewed event/recipient matrix and test it with the API contract.
+
+| Feature | Notification scope |
+|---|---|
+| Groups and invitations | Direct invitation, join-request decisions, authorized admin approval requests, role/access changes; no child-group content leaked to parent members. |
+| Memories | New Memory under the recipient's group preferences; comments/replies and reactions to relevant participants, aggregated to avoid spam; no actor self-notifications. Saving/searching does not notify others. |
+| Profiles and account | Security/account changes only where useful and supported; private bio/photo edits do not broadcast. Do not reveal owner-only fields. Security communication cannot depend solely on the device being changed. |
+| Chats | Eligible new group/direct messages with per-conversation mute, deduplication, unread reconciliation and privacy-safe lock-screen previews; no blocked or removed recipients. |
+| Events | Invitations, relevant RSVP updates for organizers, material edits/cancellation and timezone-correct reminders; cancel obsolete reminders after changes. |
+| Polls | Eligible new polls, closing reminders and available results under container preferences; preserve anonymous-vote privacy and avoid a push for every vote. |
+| Albums | New album/relevant photo additions with batching; exact-group media permissions and safe deep links. |
+| Safety and operations | Report/status notifications only to authorized participants/admins; protect reporter identity. No push for appearance, offline reads or routine background maintenance. |
+
+Shared acceptance: transactional persisted delivery/outbox with retry and idempotency; recheck recipient access/preferences at send time; persisted category/group/conversation mute and quiet hours; foreground/background/terminated behavior; authorized tap destinations and deleted-content fallback; account/server-scoped tokens, logout/account switching and confirmed-invalid-token cleanup; no private payload logs. Device permission refusal never blocks features. Use minimal lock-screen content by default and deduplicate across delivery retries. Scheduled jobs and private server credentials must be verified before claiming delivery works. Each batch records mocked provider tests separately from real-device results; unsupported iOS configuration remains explicit. No promise of push for events that do not yet exist.
 
 ## Core improvements retained in the backlog
 
