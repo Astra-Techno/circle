@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_providers.dart';
 import '../../../core/api/auth_api.dart';
 import '../../../core/local_settings.dart';
+import '../../../core/notifications/push_lifecycle.dart';
 
 export '../../../core/api/auth_api.dart'
     show ApiAccount, ProfilePhotoKind, ProfilePickedPhoto;
@@ -101,6 +102,7 @@ class ServerSession extends Notifier<ServerSessionState> {
 
   void _ended(String message) {
     if (!ref.mounted) return;
+    ref.read(pushLifecycleProvider).invalidate();
     _sessionEpoch++;
     _profileRevision++;
     _forgetImages();
@@ -138,6 +140,7 @@ class ServerSession extends Notifier<ServerSessionState> {
     required String mobile,
     required String password,
   }) async {
+    ref.read(pushLifecycleProvider).invalidate();
     final epoch = ++_sessionEpoch;
     _profileRevision++;
     try {
@@ -244,6 +247,7 @@ class ServerSession extends Notifier<ServerSessionState> {
   /// [CircleWorkspaceController.logOut], which first sends deletions still
   /// waiting for their Undo window.
   Future<void> logOut() async {
+    ref.read(pushLifecycleProvider).invalidate();
     _sessionEpoch++;
     _profileRevision++;
     final auth = _auth;

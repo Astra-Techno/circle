@@ -1,6 +1,6 @@
 # CIRCLE project state
 
-Updated: 26 October 2026. This file is a short handoff, not a substitute for inspecting Git status.
+Updated: 27 October 2026. This file is a short handoff, not a substitute for inspecting Git status.
 
 ## Architecture and scope
 - Flutter/Riverpod/go_router; shared UI tokens in `mobile/lib/core/`.
@@ -26,10 +26,11 @@ Updated: 26 October 2026. This file is a short handoff, not a substitute for ins
 - B1/B2 integrated in fd3a327: private profiles, session guards, migration 008 and truthful capability gates. Profile visual/native/live acceptance remains open; owner-requested build8 is packaged for installation testing.
 - N1a (265fcd2) and N1b complete in source: session-safe devices/preferences plus migration 010 transactional Memory/comment/reply outbox, injectable FCM transport and bounded CLI worker. OpenAPI 0.3.5. Capture/delivery/settings UI remain off; worker is Android-only.
 - Backend full suite: 159 tests / 2,673 assertions passed on circle_test; focused queue/policy: 24 tests / 573 assertions passed; PHPStan and Composer validation clean.
-- This backend-only batch: Flutter format/analyze clean and 11 server-mode checks passed. Prior full Flutter run: 513 passed / 1 skipped / 13 existing golden failures; no baselines changed or new visual approval claimed.
+- N1c1 client checkpoint: strict local envelope validation, bounded encrypted reception history, lazy/manual Android SDK lifecycle and independent auth invalidation. No start caller, opt-in UI, renderer or background presentation enabled. Live APK remains build8.
+- Current Flutter: 525 passed / 1 skipped / 13 existing golden failures; format/analyze clean. Focused runs: 4 envelope/history, 8 lifecycle and 11 server-mode checks pass. Baselines unchanged; no native/visual approval claimed.
 - Windows golden approval, native picker/push and hosted profile behavior remain unresolved. Build8 passed 17 focused profile/UI checks and APK identity checks; hosted publication is verified, physical-device acceptance remains pending.
-- Evidence: `docs/integration-checkpoint.md`, `docs/push-foundation.md`, `docs/notification-worker.md`. Scoped contract/worker review found no blockers; 306 OpenAPI refs and minimal envelope schema fixtures validated.
-- Next N1c: SDK lifecycle/contextual opt-in UI, trusted origin/account/session/expiry validation and scoped deduplication; then authorized foreground/tap behavior and device checks. Reaction/group hooks and remaining families stay tracked; hosting cron/credentials/retention require verification before enablement.
+- Evidence: `docs/integration-checkpoint.md`, `docs/push-foundation.md`, `docs/notification-worker.md`, `docs/push-client-lifecycle.md`. Lifecycle review fixes rechecked without blockers; SDK/device behavior remains unverified. Backend unchanged this batch; prior 159-test evidence retained.
+- Next N1c2: contextual server preferences/permission UI, authorized content lookup, durable presentation handoff, foreground display and validated taps; background/terminated and real-device checks before enablement. Reaction/group hooks and remaining families stay tracked; hosting cron/credentials/retention still require verification.
 
 ## Validation commands
 - Mobile: `dart format --output=none --set-exit-if-changed lib test`, `flutter analyze`, focused `flutter test test/<relevant_test>.dart`; required broader suite at integration/release.

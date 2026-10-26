@@ -1,6 +1,6 @@
 # Pending work and release scope
 
-Updated: 26 October 2026. This is the current execution backlog for Claude and Codex. Product scope remains in README; historical audit evidence remains in implementation-roadmap.md. Status must be rechecked against Git and the live server before implementation. “Planned” does not mean implemented or authorized as a finished release.
+Updated: 27 October 2026. This is the current execution backlog for Claude and Codex. Product scope remains in README; historical audit evidence remains in implementation-roadmap.md. Status must be rechecked against Git and the live server before implementation. “Planned” does not mean implemented or authorized as a finished release.
 
 ## Next batch: stable core and complete profiles
 
@@ -30,6 +30,10 @@ The owner approved sequential completion of this backlog, restoration of Chats a
 | 4 | Live events and RSVPs | Start with group event cover, description, location, time zone/date/time and Going/Maybe/Can’t go; create/edit/cancel permissions, push updates and scheduled reminders. Then guests/capacity and event albums | Reviewed API, scheduler and notifications. |
 | 5 | Live polls | Memory/chat/event container permissions, named/anonymous votes, results visibility, closure and safe repeat requests | Container APIs must exist; deliver supported containers incrementally. |
 | 6 | Live albums | Exact-group private photos, create/edit permissions, covers/captions, pagination and cleanup | Existing media lifecycle plus reviewed album API; event albums after event integration. |
+
+## Completed source batch N1c1: scoped client reception and SDK lifecycle
+
+Owns strict envelope validation against active server/account/session/expiry, bounded persistent foreground deduplication, serialized SDK registration/rotation/cleanup, cancelled stale callbacks and nonblocking authentication integration. No UI opt-in, foreground notification display, background-isolate presentation or tap navigation is enabled in this subtask. Evidence: [push-client-lifecycle.md](push-client-lifecycle.md). The following N1c2 task connects contextual preferences/permission UI, durable presentation handoff and authorized display/taps; background and real-device checks remain required.
 
 ## Completed source batch N1b: durable Memory delivery queue
 

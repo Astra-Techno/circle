@@ -1,101 +1,73 @@
-import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../api/api_providers.dart';
 
-/// Handles background messages when the app is terminated or in background.
-/// Must be a top-level function (not a class method).
+/// Background presentation requires authenticated scope validation in its own
+/// isolate. Until that path is implemented, data-only messages do not display.
 @pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  // Never log private message identifiers or payloads.
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
+
+abstract interface class FcmGateway {
+  bool get supported;
+  Future<void> initialize();
+  Future<bool> permission({required bool request});
+  Future<void> activate();
+  Future<String?> token();
+  Future<void> deactivate();
+  Stream<String> get tokenChanges;
+  Stream<Map<String, dynamic>> get foreground;
+  Stream<Map<String, dynamic>> get opened;
+  Future<Map<String, dynamic>?> initialMessage();
 }
 
-/// Manages Firebase Cloud Messaging: permission, token registration,
-/// foreground display, and token refresh.
-class FcmService {
-  FcmService({required this.ref});
-  final Ref ref;
-
-  FirebaseMessaging get _messaging => FirebaseMessaging.instance;
-  StreamSubscription<RemoteMessage>? _foregroundSub;
-  StreamSubscription<String>? _tokenRefreshSub;
-
-  /// Initialise FCM after Firebase.initializeApp() has been called.
-  Future<void> init() async {
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      debugPrint('[FCM] Notification permission denied');
-      return;
-    }
-
-    // Register the current token with the backend.
-    final token = await _messaging.getToken();
-    if (token != null) await _registerToken(token);
-
-    // Listen for token refresh (happens periodically or on reinstall).
-    _tokenRefreshSub = _messaging.onTokenRefresh.listen(_registerToken);
-
-    // Foreground messages.
-    _foregroundSub = FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-
-    // When user taps a notification that opened the app from background.
-    FirebaseMessaging.onMessageOpenedApp.listen(_onNotificationTap);
-
-    // Check if app was opened from a terminated state via notification.
-    final initial = await _messaging.getInitialMessage();
-    if (initial != null) _onNotificationTap(initial);
+/// Lazy adapter: constructing providers never touches Firebase/plugin state.
+class FirebaseFcmGateway implements FcmGateway {
+  FirebaseMessaging get _sdk => FirebaseMessaging.instance;
+  @override
+  bool get supported =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  @override
+  Future<void> initialize() async {
+    if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   }
 
-  /// Send the FCM token to the backend so it can push to this device.
-  Future<void> _registerToken(String token) async {
-    final client = ref.read(apiClientProvider);
-    if (client == null) return;
+  @override
+  Future<bool> permission({required bool request}) async {
+    final settings = request
+        ? await _sdk.requestPermission(alert: true, badge: true, sound: true)
+        : await _sdk.getNotificationSettings();
+    return settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
+  }
+
+  @override
+  // Keep Firebase auto-init off across restarts; token acquisition is explicit.
+  Future<void> activate() => _sdk.setAutoInitEnabled(false);
+  @override
+  Future<String?> token() => _sdk.getToken();
+  @override
+  Future<void> deactivate() async {
     try {
-      await client.post(
-        '/devices/register',
-        body: {'fcm_token': token, 'platform': defaultTargetPlatform.name},
-      );
-      debugPrint('[FCM] Token registered with backend');
-    } catch (e) {
-      debugPrint('[FCM] Token registration unavailable');
-    }
-  }
-
-  /// Unregister this device's token on logout.
-  Future<void> unregisterToken() async {
-    final client = ref.read(apiClientProvider);
-    final token = await _messaging.getToken();
-    if (client == null || token == null) return;
+      await _sdk.setAutoInitEnabled(false);
+    } catch (_) {}
     try {
-      await client.post('/devices/unregister', body: {'fcm_token': token});
-      debugPrint('[FCM] Token unregistered');
-    } catch (e) {
-      debugPrint('[FCM] Token unregister unavailable');
-    }
+      await _sdk.deleteToken();
+    } catch (_) {}
   }
 
-  // Delivery presentation and authorized tap navigation belong to the reviewed
-  // push batch. This scaffold is not initialized by authentication or startup.
-  void _onForegroundMessage(RemoteMessage message) {}
-
-  void _onNotificationTap(RemoteMessage message) {}
-
-  void dispose() {
-    _foregroundSub?.cancel();
-    _tokenRefreshSub?.cancel();
-  }
+  @override
+  Stream<String> get tokenChanges => _sdk.onTokenRefresh;
+  @override
+  Stream<Map<String, dynamic>> get foreground =>
+      FirebaseMessaging.onMessage.map((m) => m.data);
+  @override
+  Stream<Map<String, dynamic>> get opened =>
+      FirebaseMessaging.onMessageOpenedApp.map((m) => m.data);
+  @override
+  Future<Map<String, dynamic>?> initialMessage() async =>
+      (await _sdk.getInitialMessage())?.data;
 }
 
-/// Global FCM service provider.
-final fcmServiceProvider = Provider<FcmService>((ref) {
-  final service = FcmService(ref: ref);
-  ref.onDispose(service.dispose);
-  return service;
-});
+final fcmGatewayProvider = Provider<FcmGateway>((ref) => FirebaseFcmGateway());
