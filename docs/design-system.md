@@ -230,3 +230,11 @@ The screen inventory (A1–I3), key flows and required states are in README §4.
 - Golden tests load bundled Plus Jakarta Sans and Material Icons at a fixed viewport.
 - Baselines are provisional until human review. They're generated on the CI platform (**Windows**), so Linux/macOS runs show pixel differences; regenerate goldens on Windows only.
 - Native screenshot approval is separate.
+
+## You screen — personal profile and saved Memories
+
+The signed-in shell shows CIRCLE and the current screen title, without a server address. Its avatar follows the signed-in display name. Connection details remain available under Account → Connection. Preview mode retains its explicit CIRCLE • PREVIEW label.
+
+You starts with a raised lavender profile card using the shared CircleDepth.profilePanel lighting, complete name wrapping, and working Edit profile / Your groups actions. Editing a display name uses the existing reviewed PATCH /me operation through the API client and session notifier. Success updates session identity and stored account details; validation and save failures preserve the previous name and keep the form available for retry.
+
+The introductory paragraph is removed. Saved Memories uses a bookmark illustration, concise explanation and Browse Memories action when empty. Populated saved items retain their existing navigation. Settings rows remain simple; unsupported live features are not invented to fill empty space. Verify narrow phones at 200% text, dark mode, error recovery and name persistence.

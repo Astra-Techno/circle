@@ -66,6 +66,17 @@ class AuthApi {
     return account;
   }
 
+  Future<ApiAccount> updateDisplayName(String name) async {
+    final account = ApiAccount.fromJson(
+      await client.patch('/me', body: {'display_name': name.trim()}),
+    );
+    final tokens = await client.currentTokens();
+    if (tokens?.account?.id == account.id) {
+      await client.saveTokens(tokens!.copyWith(account: account.stored));
+    }
+    return account;
+  }
+
   /// Revokes the session on the server when possible, then forgets the
   /// tokens on this device either way.
   Future<void> logout() async {

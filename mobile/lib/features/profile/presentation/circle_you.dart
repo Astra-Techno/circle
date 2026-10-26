@@ -41,34 +41,66 @@ class CircleYou extends ConsumerWidget {
         child: ListView(
           padding: CircleInsets.page,
           children: [
-            const CircleHeading(
-              title: 'A little space\nthat’s yours.',
-              subtitle: 'Your circles. Your preferences. Your peace of mind.',
-            ),
-            if (account == null)
-              const ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleInitialAvatar(
-                  name: 'You',
-                  size: CircleAvatarSize.large,
-                ),
-                title: Text('You · Fictional preview'),
-                subtitle: Text('No real account or phone number is saved.'),
-              )
-            else
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleInitialAvatar(
-                  name: account.displayName.isEmpty
-                      ? 'You'
-                      : account.displayName,
-                  size: CircleAvatarSize.large,
-                ),
-                title: Text(
-                  account.displayName.isEmpty ? 'You' : account.displayName,
-                ),
-                subtitle: Text('Signed in on ${features.host}'),
+            Container(
+              key: const ValueKey('you-profile-card'),
+              padding: const EdgeInsets.all(Space.section),
+              decoration: CircleDepth.profilePanel(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleInitialAvatar(
+                        name: account?.displayName.isNotEmpty == true
+                            ? account!.displayName
+                            : 'You',
+                        size: CircleAvatarSize.large,
+                      ),
+                      const SizedBox(width: Space.lg),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              account == null
+                                  ? 'You · Fictional preview'
+                                  : account.displayName.isEmpty
+                                  ? 'You'
+                                  : account.displayName,
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
+                            const SizedBox(height: Space.xs),
+                            Text(
+                              account == null
+                                  ? 'No real account or phone number is saved.'
+                                  : 'Your people. Your private circles.',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: Space.lg),
+                  if (account != null)
+                    FilledButton.icon(
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit profile'),
+                      onPressed: () => showDialog<void>(
+                        context: context,
+                        builder: (_) =>
+                            _EditProfileDialog(name: account.displayName),
+                      ),
+                    ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.groups_outlined),
+                    label: const Text('Your groups'),
+                    onPressed: () => context.go('/groups'),
+                  ),
+                ],
               ),
+            ),
+            const SizedBox(height: Space.section),
             if (waiting > 0)
               CircleRow(
                 child: ListTile(
@@ -123,13 +155,47 @@ class CircleYou extends ConsumerWidget {
               icon: Icons.manage_accounts_outlined,
               title: 'Account',
               subtitle: features.server
-                  ? 'Appearance and logging out'
+                  ? 'Appearance, connection and sign out'
                   : 'Appearance and ending this preview',
               location: '/you/account',
             ),
             const SizedBox(height: Space.md),
             const CircleSectionTitle('Saved Memories'),
-            if (saved.isEmpty) const Text('Save a Memory to keep it close.'),
+            if (saved.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(Space.section),
+                decoration: CircleDepth.panel(
+                  context,
+                  radius: CircleRadius.card,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: CircleInitialAvatar(
+                        icon: Icons.bookmarks_outlined,
+                        size: CircleAvatarSize.large,
+                      ),
+                    ),
+                    const SizedBox(height: Space.lg),
+                    Text(
+                      'Keep a Memory close',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: Space.sm),
+                    const Text(
+                      'Save a Memory from your circles and find it here whenever you want.',
+                    ),
+                    const SizedBox(height: Space.lg),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: const Text('Browse Memories'),
+                      onPressed: () => context.go('/home'),
+                    ),
+                  ],
+                ),
+              ),
             for (final memory in saved)
               CircleRow(
                 child: ListTile(
@@ -183,6 +249,12 @@ class AccountScreen extends ConsumerWidget {
               if (mode != null) ref.read(themeProvider.notifier).change(mode);
             },
           ),
+          if (server) ...[
+            const CircleSectionTitle('Connection'),
+            const Text('Connected server'),
+            const SizedBox(height: Space.sm),
+            SelectableText(ref.watch(circleFeaturesProvider).host!),
+          ],
           const CircleSectionTitle('Comes before launch'),
           Text(
             server
@@ -217,4 +289,94 @@ class AccountScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _EditProfileDialog extends ConsumerStatefulWidget {
+  const _EditProfileDialog({required this.name});
+  final String name;
+  @override
+  ConsumerState<_EditProfileDialog> createState() => _EditProfileDialogState();
+}
+
+class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
+  late final _name = TextEditingController(text: widget.name);
+  final _form = GlobalKey<FormState>();
+  bool _saving = false;
+  String? _error;
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_saving || !_form.currentState!.validate()) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    final error = await ref
+        .read(serverSessionProvider.notifier)
+        .updateDisplayName(_name.text.trim());
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.of(context).pop();
+    } else {
+      setState(() {
+        _saving = false;
+        _error = error;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    scrollable: true,
+    title: const Text('Edit profile'),
+    content: Form(
+      key: _form,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextFormField(
+            key: const ValueKey('profile-display-name'),
+            controller: _name,
+            enabled: !_saving,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.name],
+            decoration: const InputDecoration(labelText: 'Display name'),
+            maxLength: 100,
+            validator: (value) {
+              final name = value?.trim() ?? '';
+              if (name.isEmpty) return 'Enter the name people know you by.';
+              if (name.runes.length > 100) {
+                return 'Use 100 characters or fewer.';
+              }
+              return null;
+            },
+            onFieldSubmitted: (_) => _save(),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: Space.md),
+            Text(
+              _error!,
+              semanticsLabel: _error,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: _saving ? null : () => Navigator.of(context).pop(),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: _saving ? null : _save,
+        child: Text(_saving ? 'Saving…' : 'Save changes'),
+      ),
+    ],
+  );
 }

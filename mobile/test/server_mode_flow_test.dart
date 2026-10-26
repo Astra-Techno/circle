@@ -73,10 +73,7 @@ void main() {
     );
     expect((await tokens.read())?.accessToken, startsWith('access-'));
     expect(currentUri(container).path, '/home');
-    expect(
-      find.text('CIRCLE • circle.test', findRichText: true),
-      findsOneWidget,
-    );
+    expect(find.text('CIRCLE', findRichText: true), findsOneWidget);
     expect(find.text('CIRCLE • PREVIEW', findRichText: true), findsNothing);
     expect(find.text('A little space for your people'), findsOneWidget);
 
@@ -137,10 +134,7 @@ void main() {
       password,
     );
     await tap(tester, find.widgetWithText(FilledButton, 'Log in'));
-    expect(
-      find.text('CIRCLE • circle.test', findRichText: true),
-      findsOneWidget,
-    );
+    expect(find.text('CIRCLE', findRichText: true), findsOneWidget);
   });
 
   testWidgets('features the server lacks say so, calmly, once', (tester) async {

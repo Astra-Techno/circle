@@ -58,6 +58,22 @@ abstract final class CircleDepth {
     );
   }
 
+  static BoxDecoration profilePanel(BuildContext context) =>
+      panel(
+        context,
+        radius: CircleRadius.sheet,
+        tint: CircleAccents.of(context).calmContainer,
+      ).copyWith(
+        boxShadow: [
+          BoxShadow(
+            color: shadow(Theme.of(context).brightness),
+            offset: const Offset(0, 10),
+            blurRadius: 24,
+            spreadRadius: -6,
+          ),
+        ],
+      );
+
   static WidgetStateProperty<double> get buttonLift =>
       WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) return 0;

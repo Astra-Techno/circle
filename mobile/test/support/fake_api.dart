@@ -332,6 +332,9 @@ class FakeCircleServer {
       return FakeResponse.ok(null);
     }
     if (path == '/me') {
+      if (r.method == 'PATCH' && body.containsKey('display_name')) {
+        users[me]!['display_name'] = body['display_name'];
+      }
       return FakeResponse.ok({
         ...users[me]!,
         'about': '',

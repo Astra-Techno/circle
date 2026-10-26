@@ -686,7 +686,10 @@ class CircleAppShell extends ConsumerWidget {
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: () => shell.goBranch(4),
-                  child: const CircleInitialAvatar(name: 'You'),
+                  child: CircleInitialAvatar(
+                    name:
+                        ref.watch(serverAccountProvider)?.displayName ?? 'You',
+                  ),
                 ),
               ),
               const SizedBox(width: Space.md),
@@ -696,21 +699,12 @@ class CircleAppShell extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text.rich(
-                    TextSpan(
-                      text: 'CIRCLE • ',
-                      children: [
-                        TextSpan(
-                          // "PREVIEW", or the connected server's host.
-                          text: features.label,
-                          style: TextStyle(color: accents.calmText),
-                        ),
-                      ],
-                    ),
+                  Text(
+                    features.server ? 'CIRCLE' : 'CIRCLE • PREVIEW',
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: accents.calmText,
                     ),
                   ),
                   Text(

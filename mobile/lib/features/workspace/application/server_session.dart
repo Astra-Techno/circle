@@ -118,6 +118,20 @@ class ServerSession extends Notifier<ServerSessionState> {
     }
   }
 
+  Future<String?> updateDisplayName(String name) async {
+    final accountId = state.account?.id;
+    if (accountId == null) return 'Please log in again to edit your profile.';
+    try {
+      final account = await _auth.updateDisplayName(name);
+      if (ref.mounted && state.account?.id == accountId) {
+        state = ServerSessionState(account: account);
+      }
+      return null;
+    } on ApiError catch (error) {
+      return error.message;
+    }
+  }
+
   /// Ends the session on the server and forgets it on this device. Use
   /// [CircleWorkspaceController.logOut], which first sends deletions still
   /// waiting for their Undo window.
