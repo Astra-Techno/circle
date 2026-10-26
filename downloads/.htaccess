@@ -1,8 +1,3 @@
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteRule ^circle\.apk$ circle-1.0.2-3.apk [R=302,L]
-</IfModule>
-
 <IfModule mod_headers.c>
     <FilesMatch "^(index\.html|release\.json|circle\.apk)$">
         Header set Cache-Control "no-store, max-age=0"
