@@ -2,14 +2,64 @@
 
 > **Current branch policy (owner instruction):** Use `main` only for all work and pushes. Do not create feature/topic branches. This supersedes older branching/PR workflow recommendations below and in the startup prompt. Preserve user changes and never force-push.
 
-> **Project status (23 Oct 2026):**
-> - **UI-1 is done.** The default app is the new 5-tab shell with fictional, session-local data.
-> - **UI-2** (membership workflows) is in progress.
-> - **A draft PHP backend** exists for M2 scope (accounts, groups, members, invites, Memories). It is frozen to fixes and tests until `docs/api-contracts/openapi.yaml` is reviewed (ADR 0006).
+> **Required reading for Codex, Claude Code and other coding agents:** follow [§0: shared implementation and release rules](#0-shared-implementation-and-release-rules) and [AGENTS.md](AGENTS.md) before making changes. [CLAUDE.md](CLAUDE.md) imports these shared instructions for Claude Code. Current owner instructions take precedence; older status snapshots and examples do not override the current rules.
 >
-> See §12 and `docs/validation.md` for what has actually been verified.
+> **Status distinction:** account/group/Memory APIs and private Memory media have been implemented and live-tested. The broader chat/events/albums UI includes local previews. Firebase source files and enabled feature flags alone do not establish working push delivery or server feature support. See §12 and the release/validation records for evidence.
 >
 > **Product scope:** CIRCLE is for **any close-knit private group**: families, offices, schools, colleges, friend circles and clubs. Anyone can create a group, nest subgroups inside it, and share memories, chat, plan events and run polls with only the people who belong there.
+
+## 0. Shared implementation and release rules
+
+These rules apply equally to Claude Code, local Codex and Codex Web. They take precedence over conflicting older workflow examples or status descriptions elsewhere in this repository. Keep the product and privacy rules in §2–4 and the current ADRs. Existing code that violates a rule is a defect to fix, not permission to repeat it.
+
+### 0.1 Safe collaboration and Git
+
+- Inspect `git status`, the current branch and recent commits, then pull `origin/main` safely before starting. Work and push on `main` only; never create feature branches or pull requests, force-push, discard unrelated edits or automatically stash someone else's work.
+- If a pull would overwrite unfinished work, preserve it. Review the incoming changes in an isolated checkout, or finish and verify the existing work before integration. Report which checkout/commit was updated; a successful fetch is not a completed pull of the primary checkout.
+- Coordinate ownership of shared files, migrations and lockfiles before parallel Web/local changes. Reconcile both implementations when merging; preserve session/account guards, authorization checks and working error handling.
+- Commit only the intended, verified changes. Fetch and reconcile safely before pushing. Publish shared documentation changes so the other machine can read them; uncommitted files are not synchronized through GitHub.
+
+### 0.2 Real server support versus preview
+
+- Enable a server capability only after its reviewed API contract, backend persistence/authorization, client repository and relevant tests are implemented. Do not enable a whole feature set merely because screens exist.
+- A mock repository, empty local fallback or `notOnServerYet` implementation does not count as server support. Keep those capabilities gated and explain their availability accurately.
+- Never pass real accounts or private group data into preview repositories. Preview data must remain clearly labelled, fictional and isolated from authenticated server state.
+- Chat, events, polls, albums, privacy controls, moderation and notification preferences each need actual service behavior. A visible setting must not imply enforcement that the backend does not provide.
+- Update `docs/api-contracts/openapi.yaml` and get frontend/backend track review for API changes, including device-token and notification endpoints. Use distinct migration filenames and sequence numbers; never edit an already-applied migration to change deployed behavior.
+
+### 0.3 Firebase and push notifications
+
+- Treat Firebase as optional infrastructure: missing configuration, denied permission, SDK/plugin errors or token-registration failure must not prevent app startup, login, session restoration or logout. Auth revocation, local token cleanup and private-image cleanup must run independently of push deregistration success.
+- Ask for notification permission in context after an explained user action, following §4.0. Do not prompt on every login or restored session.
+- Scope initialization, registration, pending callbacks and listeners to the account, API server and session. Make initialization idempotent; cancel listeners on logout/account changes and dispose. Reject stale completions and prevent an old session from reassigning a device to the wrong account.
+- Validate device-token types/lengths and platform values before SQL. Document the endpoints and test authenticated registration, reassignment, deregistration, validation, logout and account switching.
+- Wiring is required: business events must call the delivery path, foreground behavior must be implemented, and notification taps must navigate to an allowed internal destination with normal access checks. Android foreground notifications are not automatically displayed merely because the device runs Android 13+.
+- Implement and honor persistent notification preferences, membership/access checks and quiet hours before claiming those controls govern real push. Follow the calm rules; never invent delivery or claim a successful device test from source inspection or mocks.
+- Use existing logging APIs and redacted error handling. Never log private notification titles/bodies, credentials, bearer tokens or device tokens. Only remove invalid FCM tokens for a confirmed provider error such as `UNREGISTERED`, not every HTTP 404.
+- Keep server service-account keys private and outside the web root/source control. Android client configuration does not configure the server sender or iOS. Supply the correct platform configuration, or keep push unavailable on that platform without breaking the app.
+
+### 0.4 Android signing and release identity
+
+- Keep the same application id and established signing key for updates to the existing beta. Compare the candidate certificate against the last validated immutable release, not a recently overwritten `circle.apk`.
+- Established beta signing certificate SHA-256: `6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c`. A candidate signed by another key cannot update those installations. Never silently generate a replacement debug keystore and call it update-compatible. If the key is unavailable, report the signing blocker. Never commit a keystore, its password or private signing configuration.
+- Increment `versionCode` for every changed application release, including a rebuild that changes runtime behavior. Keep `versionName`/build values consistent with the APK and metadata. Never replace an already published immutable versioned APK with different bytes.
+- Build production APKs with the intended HTTPS API and `CIRCLE_PREVIEW=false`; label any preview APK explicitly. Verify package id, version, minimum SDK and certificate from the built artifact. Keep release builds separate from concurrent Flutter test tooling that can regenerate Android plugin registration files.
+
+### 0.5 Download publication and deployment
+
+- A release consists of one verified APK copied to `downloads/circle.apk` and a new immutable `downloads/circle-<version>-<build>.apk`, plus matching `downloads/release.json`, `downloads/index.html` and `website/index.html` links. Preserve earlier immutable releases.
+- Generate byte size and SHA-256 from the final APK. Both APK paths and metadata must agree. Do not update only the stable filename, reuse an old build number or leave the site button pointing at an earlier artifact.
+- Stable APK/metadata/download pages should use non-stale caching; immutable versioned APKs may use long-lived immutable caching. Verify hosted metadata, the download button and the full hosted artifact's checksum after deployment.
+- A commit or successful push is not proof that hosting updated. Record deployment separately. The deployed `deploy.php` does not update itself; changes to that script require replacing its hosted copy. Preserve `.env`, private storage and hosting PHP handler settings.
+- Check the current web runtime when diagnosing PHP extensions; CLI settings and an old captured error do not prove the hosting runtime is still broken. Never claim that a deployment script automatically switches the hosting PHP version.
+
+### 0.6 Verification and accurate reporting
+
+- For runtime changes, run Dart format, Flutter analysis and relevant unit/widget/integration regressions. For backend changes, run `composer test` against the dedicated `circle_test` database only and run `composer analyse`. Add coverage for new endpoints and error paths; an unchanged passing suite does not establish coverage of a new feature.
+- Functional or static-analysis failures must be addressed before claiming a runtime change is verified or ready to publish. Report exact results and remaining failures; never describe a clean analyzer as proof that authentication, delivery or persistence works.
+- Render meaningful UI states in light/dark mode, narrow/tablet widths and at 200% text. Keep Windows golden comparisons and human approval separate; do not regenerate approved Windows baselines on Linux to hide differences.
+- Use fictional test data only. Never claim physical Android/iOS installation, push delivery, tenant security or approved visual equivalence from widget tests, screenshots or a successful build.
+- Documentation-only changes need a focused diff, reference and whitespace review; do not claim that runtime test failures were fixed by a documentation update.
 
 ## 1. Product vision
 
@@ -383,6 +433,7 @@ Each phase delivers working mock state, tests and goldens, and is labeled as moc
 circle/
 ├── README.md                  # Product, UI plan and engineering requirements (this file)
 ├── AGENTS.md                  # Executable engineering rules
+├── CLAUDE.md                  # Claude Code entry point; imports the shared rules
 ├── .github/workflows/         # CI, added incrementally
 ├── docs/
 │   ├── architecture.md
@@ -526,16 +577,19 @@ Rules:
 - **UI-6** (23 Oct): albums, activity inbox, search, member profiles, notification settings, reporting and moderation, tablet two-pane layouts. **All six UI phases are done as a fictional, session-local mock.**
 - **Follow-ups** (23 Oct): skeleton loading, events month calendar, @mentions, message forwarding, photos in chat, album cover and captions.
 
-**In progress:**
-- **M4 private media** is implemented in the backend (contract 0.3.1, ADR 0007). Real image processing needs `php8.3-gd`.
-- **App ↔ backend connected (server mode):** build with `--dart-define=CIRCLE_API_BASE_URL=…` for accounts, groups, members, invite links, join requests, Memories (comments, reactions, saves) and photos. Features the server doesn't have yet show "Not on the server yet". As of 26 Oct, release builds default to the deployed HTTPS API; debug/tests remain local previews. Use `CIRCLE_PREVIEW=true` for an explicitly fictional release.
+**Implemented server scope:**
+- Accounts, groups/subgroups, membership, invite links, join approvals, Memories, comments, reactions, saves and private Memory photo processing. The owner approved the initial API contract on 23 Oct; later reviewed additions include independent group/Saved pagination and server search. Keep the current contract and release records as the source of evidence.
+- Server release builds use the deployed HTTPS API. Explicit preview releases require `CIRCLE_PREVIEW=true`; fictional preview workflows are not persistent live services.
 
-**Known gaps:** server mode covers only the M2–M4 features; preview mode has no persistence; no real-time chat delivery or albums, no real photo upload or member tagging, and no maps, calendar export or reminders (these need a device or backend). It has never been validated on a native Android/iOS device.
+**In progress / gaps:**
+- Firebase/device-token infrastructure was added on 26 Oct, but source review found incomplete event dispatch, foreground/tap handling and lifecycle/error handling. It must satisfy §0.3 before being described as working end-to-end push delivery.
+- Real-time chat, live events/polls/albums, server notification preferences and privacy/moderation services are not established by enabling their capability flags. Keep unsupported controls gated under §0.2.
+- Recovery/number changes, account deletion/export, additional profile features and other planned families need their reviewed contracts and acceptance checks. Work existing only in another machine's uncommitted checkout is not part of this repository release.
+- Physical-device validation and Windows visual approval remain separate from successful cloud tests and widget renders.
 
-**Next:**
-1. Owner review of `docs/api-contracts/openapi.yaml`.
-2. Owner review of the complete mock (task tests with real people, §4.0), regenerate goldens on Windows, run on an Android device.
-3. Connect the app to the backend for M2 (Dio + secure token storage), one feature at a time.
+**Release correction needed:** the Firebase replacement of `downloads/circle.apk` in commit `8c1f677` reused `1.0.6+7`, changed the signing certificate and left the immutable APK/metadata/site links unchanged. This is a known release defect, not an approved distribution pattern. Correct it using §0.4–0.5 before publishing another runtime release.
+
+**Next:** preserve and reconcile concurrent work, restore truthful capabilities, complete/test the relevant server integration, and package a coherent update with the established signing key. Record actual checks in the release notes and `docs/validation.md`.
 
 Requirements for every UI phase:
 - Material 3, responsive phone/tablet, light/dark, accessible contrast, semantic labels, loading/empty/error/offline states.
@@ -557,6 +611,8 @@ Requirements for every UI phase:
 - OTP verification, account recovery, deployment, backup, moderation workflow and privacy notice are documented and in place before inviting real users.
 
 ## 14. Roadmap
+
+This is a milestone scope inventory, not proof of live availability. Use §12, the reviewed contract and release validation records for current implementation status; §0 governs feature gates and completion claims.
 
 - **M1 (done, old scope)** and **UI-1 (done)**. **UI-2…UI-6:** rework to the current model with mocks.
 - **M2:** OpenAPI contract review, MySQL schema, mobile + password accounts, groups with 10-level nesting, roles, invite links, approval, join requests, direct invitations, cascade removal. *(Draft backend exists; hardening in progress.)*
@@ -729,7 +785,7 @@ All claims of passing tests must be backed by actual command execution. CI shoul
 
 ## 20. First-run setup and execution order
 
-1. Check `git status`, the repository structure and available toolchain (`flutter doctor -v`, `dart --version`, `php -v`, `node -v`).
+1. Read §0 and `AGENTS.md` (`CLAUDE.md` is the Claude entry point), then check `git status`, the repository structure and available toolchain (`flutter doctor -v`, `dart --version`, `php -v`, `node -v`).
 2. Check the MCP list; set up only MCP servers the user authorizes. Credentials, OAuth login and device/emulator interactions require the user's participation when prompted.
 3. If no Figma design exists, follow `docs/design-system.md` (§4.5/§16) and create original in-app designs; do not claim a Figma-derived pixel-perfect result.
 4. Continue the UI phases (§4.6) with fictional local data; backend work follows the reviewed OpenAPI contract.
