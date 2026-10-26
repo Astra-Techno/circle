@@ -20,6 +20,7 @@ final class Diagnostics
                 return;
             }
 
+            Log::record(['context' => 'fatal', 'type' => 'PHP fatal ' . $error['type'], 'message' => Log::redact($error['message']), 'file' => basename($error['file']), 'line' => $error['line']]);
             error_log(sprintf(
                 '[CIRCLE] fatal: PHP=%s SAPI=%s type=%d %s at %s:%d',
                 PHP_VERSION,
