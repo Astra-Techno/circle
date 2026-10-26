@@ -410,7 +410,8 @@ enum CircleAvatarSize {
   small(32),
   medium(44),
   large(56),
-  hero(72);
+  hero(72),
+  profile(96);
 
   const CircleAvatarSize(this.diameter);
   final double diameter;

@@ -31,6 +31,8 @@ import '../features/memories/presentation/circle_memories.dart';
 import '../features/notifications/presentation/activity_screen.dart';
 import '../features/notifications/presentation/notification_settings.dart';
 import '../features/profile/presentation/circle_you.dart';
+import '../features/profile/presentation/profile_photo.dart';
+import '../features/profile/presentation/profile_edit.dart';
 import '../features/profile/presentation/person_profile.dart';
 import '../features/search/presentation/search_screen.dart';
 import '../features/workspace/application/workspace_providers.dart';
@@ -547,6 +549,10 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                 builder: (_, _) => const CircleYou(),
                 routes: [
                   GoRoute(
+                    path: 'edit',
+                    builder: (_, _) => const ProfileEditScreen(),
+                  ),
+                  GoRoute(
                     path: 'privacy',
                     builder: (_, _) =>
                         _gate(CircleFeature.privacy, const ChatPrivacyScreen()),
@@ -702,7 +708,9 @@ class CircleAppShell extends ConsumerWidget {
                 child: InkWell(
                   customBorder: const CircleBorder(),
                   onTap: () => shell.goBranch(4),
-                  child: CircleInitialAvatar(
+                  child: ProfilePhotoSurface(
+                    kind: ProfilePhotoKind.avatar,
+                    version: ref.watch(serverAccountProvider)?.avatarVersion,
                     name:
                         ref.watch(serverAccountProvider)?.displayName ?? 'You',
                   ),

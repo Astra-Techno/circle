@@ -63,7 +63,7 @@ void main() {
     await tester.enterText(field, '  Fictional தமிழ்  ');
     await tester.tap(find.text('Save changes'));
     await settle(tester);
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(currentUri(container).path, '/you');
     expect(find.text('Fictional தமிழ்'), findsOneWidget);
     expect(
       container.read(serverAccountProvider)?.displayName,
@@ -104,7 +104,7 @@ void main() {
     );
     await tester.tap(find.text('Save changes'));
     await settle(tester);
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(currentUri(container).path, '/you/edit');
     expect(find.textContaining('Raw server text'), findsNothing);
     expect(
       container.read(serverAccountProvider)?.displayName,
@@ -113,7 +113,7 @@ void main() {
     fail = false;
     await tester.tap(find.text('Save changes'));
     await settle(tester);
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(currentUri(container).path, '/you');
     expect(
       container.read(serverAccountProvider)?.displayName,
       'Fictional Updated',

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.2
+  version: 0.3.3
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -277,6 +277,10 @@ paths:
               properties:
                 display_name: { type: string, minLength: 1, maxLength: 100 }
                 about: { type: string, maxLength: 500 }
+                current_city: { type: string, maxLength: 100 }
+                hometown: { type: string, maxLength: 100 }
+                work: { type: string, maxLength: 100 }
+                education: { type: string, maxLength: 150 }
       responses:
         '200':
           description: Updated profile.
@@ -289,6 +293,154 @@ paths:
                     properties:
                       data: { $ref: '#/components/schemas/Me' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /me/photos/{kind}:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string, enum: [avatar, cover] }
+    get:
+      operationId: getMyProfilePhoto
+      tags: [Profile]
+      summary: Read my profile or cover photo
+      description: |
+        Bearer-authenticated bytes, never a public or signed storage URL. Owner access
+        is allowed. Other viewers must currently share at least one exact group with
+        the active photo owner, with both memberships active. Ancestor membership
+        alone does not qualify. Missing, inactive and inaccessible owners/photos all
+        return 404. Authorization is checked on every read; Cache-Control is private,
+        no-store. The optional personal detail fields remain owner-only.
+      parameters:
+        - name: size
+          in: query
+          schema: { type: string, enum: [thumb, medium, full], default: medium }
+      responses:
+        '200':
+          description: Re-encoded image bytes, metadata stripped; no-store and nosniff.
+          content:
+            image/webp:
+              schema: { type: string, format: binary }
+            image/jpeg:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    put:
+      operationId: replaceMyProfilePhoto
+      tags: [Profile]
+      summary: Replace my profile or cover photo
+      description: |
+        Owner-only. These account photos are visible to authenticated members of
+        any exact group shared with the owner, not publicly. They are separate from
+        exact-group Memory assets. No storage paths or URLs leave the server.
+        Input maximum 5 MiB (5242880 bytes), 2048 pixels per side and 4194304 pixels.
+        The real type must match Content-Type. JPEG, PNG and WebP are decoded and
+        re-encoded (metadata removed) into thumb 320, medium 1080 and full 2048
+        maximum long-edge variants without upscaling. HEIC/SVG/GIF are not accepted.
+        A failed replacement leaves the previous photo unchanged.
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema: { type: string, format: binary }
+          image/png:
+            schema: { type: string, format: binary }
+          image/webp:
+            schema: { type: string, format: binary }
+      responses:
+        '200':
+          description: Full updated owner profile; the corresponding version changes or becomes null.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413':
+          description: Upload exceeds 5 MiB (media_too_large).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '415':
+          description: Unsupported real image type (media_type_not_allowed).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/MediaRejected' }
+        '503':
+          description: Image processor unavailable (server_error).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      operationId: deleteMyProfilePhoto
+      tags: [Profile]
+      summary: Remove my profile or cover photo
+      description: |
+        Owner-only. These account photos are visible to authenticated members of
+        any exact group shared with the owner, not publicly. They are separate from
+        exact-group Memory assets. No storage paths or URLs leave the server.
+        Idempotent: removing an already absent photo also succeeds. Old references
+        become inaccessible immediately; storage cleanup is best-effort after commit.
+      responses:
+        '200':
+          description: Full updated owner profile; the corresponding version changes or becomes null.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /profiles/{userId}/photos/{kind}:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string, enum: [avatar, cover] }
+      - name: userId
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      operationId: getSharedProfilePhoto
+      tags: [Profile]
+      summary: Read a profile photo shared with my groups
+      description: |
+        Bearer-authenticated bytes, never a public or signed storage URL. Owner access
+        is allowed. Other viewers must currently share at least one exact group with
+        the active photo owner, with both memberships active. Ancestor membership
+        alone does not qualify. Missing, inactive and inaccessible owners/photos all
+        return 404. Authorization is checked on every read; Cache-Control is private,
+        no-store. The optional personal detail fields remain owner-only.
+      parameters:
+        - name: size
+          in: query
+          schema: { type: string, enum: [thumb, medium, full], default: medium }
+      responses:
+        '200':
+          description: Re-encoded image bytes, metadata stripped; no-store and nosniff.
+          content:
+            image/webp:
+              schema: { type: string, format: binary }
+            image/jpeg:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /groups:
@@ -1491,12 +1643,19 @@ components:
         expires_in: { type: integer, description: Access token lifetime in seconds. }
     Me:
       type: object
+      description: Owner-only account details. Display name and bio also appear in existing group member views; other personal fields are private.
       properties:
         id: { type: integer }
-        mobile: { type: string }
-        display_name: { type: string }
-        about: { type: string }
-        avatar_path: { type: [string, 'null'] }
+        mobile: { type: string, readOnly: true, description: 'Own mobile only; number changes require a separate verified flow.' }
+        display_name: { type: string, maxLength: 100 }
+        about: { type: string, maxLength: 500 }
+        current_city: { type: string, maxLength: 100 }
+        hometown: { type: string, maxLength: 100 }
+        work: { type: string, maxLength: 100 }
+        education: { type: string, maxLength: 150 }
+        avatar_path: { type: 'null', deprecated: true, description: 'Legacy field; always null. Private storage paths are never returned.' }
+        avatar_version: { type: [string, 'null'], format: uuid, description: 'Opaque current avatar revision, not a URL or authorization credential.' }
+        cover_version: { type: [string, 'null'], format: uuid, description: 'Opaque current cover revision, not a URL or authorization credential.' }
         created_at: { type: string }
     Role:
       type: string

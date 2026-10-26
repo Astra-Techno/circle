@@ -94,6 +94,7 @@ final class Router
                 'token' => '(?P<token>[A-Za-z0-9_-]{16,128})',
                 'mediaId', 'uploadId' => '(?P<' . $m[1] . '>[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})',
                 'size' => '(?P<size>thumb|medium|full)',
+                'kind' => '(?P<kind>avatar|cover)',
                 default => '(?P<' . $m[1] . '>[0-9]{1,19})',
             },
             $path

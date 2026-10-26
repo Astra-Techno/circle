@@ -75,7 +75,9 @@ final class Request
 
         $body = [];
         if ($method !== 'GET' && $method !== 'HEAD') {
-            if (str_contains($contentType, 'application/json')) {
+            // Every implemented PUT is a raw image upload. Do not eagerly buffer
+            // a MIME-mismatched JSON body before the controller's bounded reader.
+            if ($method !== 'PUT' && str_contains($contentType, 'application/json')) {
                 $raw = file_get_contents('php://input');
                 if ($raw !== false && $raw !== '') {
                     $decoded = json_decode($raw, true);

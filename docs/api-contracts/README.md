@@ -2,8 +2,8 @@
 
 **`openapi.yaml` (OpenAPI 3.1) is the source of truth for `/api/v1`.**
 
-**Approved by the owner for implementation on 23 Oct 2026 (0.3.0); now at 0.3.2 with M4 media and reviewed Memory query filters implemented.** It describes the implemented operations the draft backend implements today (ADR 0006):
-- accounts and sessions;
+**Approved by the owner for implementation on 23 Oct 2026 (0.3.0); now at 0.3.3 with M4 media, reviewed Memory query filters and account-profile expansion implemented.** It describes the implemented operations the draft backend implements today (ADR 0006):
+- accounts and sessions, editable personal details and private profile/cover photos;
 - groups and nested subgroups;
 - members, roles, bans and ownership transfer;
 - invite links: create, list, revoke, reset, preview, join;
@@ -50,3 +50,9 @@ Implement the Dio client only against the reviewed contract.
 ## 0.3.2: independent saved/group timelines and complete Memory search
 
 Both the mobile and backend tracks reviewed additive `GET /memories` filters: `saved=true` selects only the current viewer's bookmarks; `saved=false`/omitted is unfiltered. `q` searches literal body/place substrings, trimmed, valid UTF-8, at most 200 Unicode code points, with empty/whitespace-only unfiltered. `%`, `_` and `!` are literal. Both combine with existing `group_id`, `cursor` and `limit`; active exact-group membership still governs every result. The existing response shape and opaque newest-first cursor are unchanged.
+
+## Account profile expansion — 0.3.3
+
+Backend and Flutter tracks reviewed the additive account-profile contract together. `/me` supports optional current city, hometown, work and education with strict Unicode length limits and string types; empty text clears optional fields. The mobile number remains owner-only/read-only. Name and bio retain existing exact-group member visibility; other personal details are owner-only.
+
+Owner `PUT/GET/DELETE /me/photos/{kind}` handles avatar/cover images without a group upload ticket. Shared `GET /profiles/{userId}/photos/{kind}` requires authentication plus current active membership in at least one exact common group (or ownership). Missing/inaccessible photos return 404. Profile photos are deliberately account-level identity, distinct from group Memory media; no public URL or private storage path is returned. Bytes are re-encoded, bounded to 5 MiB/2048px per side, metadata stripped and served no-store. Versions in Me are opaque UUID revisions, not credentials. See ADR 0008.

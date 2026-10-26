@@ -22,11 +22,13 @@ Updated: 26 October 2026. This file is a short handoff, not a substitute for ins
 - Cross-feature push is required for relevant recipient-facing events; matrix and delivery/privacy/device acceptance are in the canonical backlog. No notifications for every tap/private edit.
 - Do not start another implementation batch before recording which acceptance criteria it owns.
 
-## Last checks on remote `8c1f677` (not proof of current/live behavior)
-- Backend: 129 tests / 1,959 assertions passed on dedicated `circle_test`; PHPStan failed with 10 errors, including nonexistent `Log::info()`.
-- Flutter analysis passed; focused server flows: 3 passed / 8 failed, chiefly Firebase initialization/injection and capability expectations.
-- Known 13 Windows golden differences need platform/human review; do not replace baselines on Linux.
-- Native push delivery/device validation remains unverified.
+## Current source integration checkpoint (not a deployed release)
+- Working checkout: `/workspace/circle-docs-sync`, branch main; primary `/workspace/circle` remains preserved with its original unfinished edits. Do not blindly reapply that patch to the integrated source.
+- B1 integrated routes/profile/session guards, serialized profile writes and migration 008; B2 gates corrected. Core Firebase failures isolated; full push remains disabled and unfinished.
+- Backend: 134 tests / 2,093 assertions passed on circle_test; separate FCM invalid-token classification test: 1 test / 7 assertions passed; PHPStan clean.
+- Flutter: format/analyze clean; broader suite 507 passed / 1 skipped / 13 golden failures; additional photo lifecycle widget test passed. Focused auth/profile flows: 27 passed (included in broader count).
+- The 13 golden failures match previously recorded Windows-baseline cases; approval remains unresolved, baselines unchanged. Native picker/push, hosted profile checks and new APK publication remain unverified.
+- See `docs/integration-checkpoint.md` for exact scope and remaining acceptance checks. No new APK built or deployment triggered.
 
 ## Validation commands
 - Mobile: `dart format --output=none --set-exit-if-changed lib test`, `flutter analyze`, focused `flutter test test/<relevant_test>.dart`; required broader suite at integration/release.

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'api_config.dart';
@@ -161,6 +162,29 @@ class ApiClient {
         dio.get<Object?>(path, queryParameters: query, options: _options(auth)),
   );
 
+  /// Authenticated private bytes. Error bodies are decoded by the auth
+  /// interceptor before refresh/error mapping, even with ResponseType.bytes.
+  Future<Uint8List> getBytes(String path, {Map<String, Object?>? query}) async {
+    final response = await _raw(
+      () => dio.get<Object?>(
+        path,
+        queryParameters: query,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {'Accept': 'image/webp,image/jpeg,image/png'},
+        ),
+      ),
+    );
+    final bytes = response.data;
+    if (bytes is List<int> && bytes.isNotEmpty) {
+      return Uint8List.fromList(bytes);
+    }
+    throw const ApiError(
+      'This photo could not be loaded. Try again.',
+      code: ApiError.badResponse,
+    );
+  }
+
   Future<ApiPage> getPage(String path, {Map<String, Object?>? query}) async {
     final response = await _raw(
       () => dio.get<Object?>(path, queryParameters: query),
@@ -262,6 +286,15 @@ class _AuthInterceptor extends Interceptor {
   ) async {
     final options = err.requestOptions;
     final response = err.response;
+    // Dio preserves raw error bytes for binary requests. Convert only error
+    // JSON so expired sessions retain the usual single-flight refresh path.
+    if (response?.data is List<int>) {
+      try {
+        response!.data = jsonDecode(utf8.decode(response.data as List<int>));
+      } on FormatException {
+        // Non-JSON errors use the existing generic, redacted error mapping.
+      }
+    }
     if (response == null ||
         options.extra[ApiClient._noAuth] == true ||
         options.extra[ApiClient._retried] == true) {

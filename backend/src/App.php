@@ -6,6 +6,7 @@ namespace Circle;
 
 use Circle\Controllers\AuthController;
 use Circle\Controllers\DeviceController;
+use Circle\Controllers\ProfilePhotoController;
 use Circle\Controllers\GroupController;
 use Circle\Controllers\MediaController;
 use Circle\Controllers\MemberController;
@@ -69,6 +70,10 @@ final class App
             // Profile
             $r->get('/me', AuthController::me(...));
             $r->patch('/me', AuthController::updateMe(...));
+            $r->put('/me/photos/{kind}', ProfilePhotoController::put(...));
+            $r->delete('/me/photos/{kind}', ProfilePhotoController::delete(...));
+            $r->get('/me/photos/{kind}', ProfilePhotoController::show(...));
+            $r->get('/profiles/{userId}/photos/{kind}', ProfilePhotoController::show(...));
 
             // Groups
             $r->get('/groups', GroupController::index(...));

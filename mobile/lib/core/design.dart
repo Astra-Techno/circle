@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+abstract final class CircleProfileLayout {
+  static const coverAspectRatio = 2.6;
+  static const minCoverHeight = 112.0, maxCoverHeight = 200.0;
+}
+
 abstract final class CircleLayout {
   static const largeTextThreshold = 1.4;
 }

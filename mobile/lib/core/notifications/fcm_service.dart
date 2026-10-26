@@ -10,7 +10,7 @@ import '../api/api_providers.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  debugPrint('[FCM] Background message: ${message.messageId}');
+  // Never log private message identifiers or payloads.
 }
 
 /// Manages Firebase Cloud Messaging: permission, token registration,
@@ -19,7 +19,7 @@ class FcmService {
   FcmService({required this.ref});
   final Ref ref;
 
-  final _messaging = FirebaseMessaging.instance;
+  FirebaseMessaging get _messaging => FirebaseMessaging.instance;
   StreamSubscription<RemoteMessage>? _foregroundSub;
   StreamSubscription<String>? _tokenRefreshSub;
 
@@ -64,7 +64,7 @@ class FcmService {
       );
       debugPrint('[FCM] Token registered with backend');
     } catch (e) {
-      debugPrint('[FCM] Token registration failed: $e');
+      debugPrint('[FCM] Token registration unavailable');
     }
   }
 
@@ -77,25 +77,15 @@ class FcmService {
       await client.post('/devices/unregister', body: {'fcm_token': token});
       debugPrint('[FCM] Token unregistered');
     } catch (e) {
-      debugPrint('[FCM] Token unregister failed: $e');
+      debugPrint('[FCM] Token unregister unavailable');
     }
   }
 
-  void _onForegroundMessage(RemoteMessage message) {
-    final notification = message.notification;
-    if (notification == null) return;
-    debugPrint('[FCM] Foreground: ${notification.title} — ${notification.body}');
-    // The notification is already shown by the system on Android 13+.
-    // For older Android, a local notification channel would be needed.
-  }
+  // Delivery presentation and authorized tap navigation belong to the reviewed
+  // push batch. This scaffold is not initialized by authentication or startup.
+  void _onForegroundMessage(RemoteMessage message) {}
 
-  void _onNotificationTap(RemoteMessage message) {
-    final route = message.data['route'] as String?;
-    if (route != null) {
-      debugPrint('[FCM] Tapped notification, route: $route');
-      // Navigation will be handled by the router when we wire deep links.
-    }
-  }
+  void _onNotificationTap(RemoteMessage message) {}
 
   void dispose() {
     _foregroundSub?.cancel();

@@ -38,21 +38,9 @@ class CircleFeatures {
     available: {...CircleFeature.values},
   );
 
-  /// Signed in to a CIRCLE server at [host]. Features that the backend
-  /// supports or that fall back gracefully to local-only behaviour.
-  const CircleFeatures.server(String this.host)
-      : available = const {
-          CircleFeature.events,
-          CircleFeature.chat,
-          CircleFeature.albums,
-          CircleFeature.activity,
-          CircleFeature.notificationSettings,
-          CircleFeature.privacy,
-          CircleFeature.moderation,
-          CircleFeature.directInvitations,
-          CircleFeature.joinListedSubgroups,
-          CircleFeature.commentDeletion,
-        };
+  /// Enable each family only after its real server implementation is verified.
+  /// Chats and Events remain required work in docs/pending-work.md.
+  const CircleFeatures.server(String this.host) : available = const {};
 
   /// Null in the preview; the server's host in server mode.
   final String? host;

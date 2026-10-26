@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_providers.dart';
 import '../../../core/api/auth_api.dart';
 import '../../../core/local_settings.dart';
-import '../../../core/notifications/fcm_service.dart';
 
-export '../../../core/api/auth_api.dart' show ApiAccount;
+export '../../../core/api/auth_api.dart'
+    show ApiAccount, ProfilePhotoKind, ProfilePickedPhoto;
 
 /// The signed-in account on a CIRCLE server (server builds only).
 class ServerSessionState {
@@ -30,16 +30,25 @@ final serverAccountProvider = Provider<ApiAccount?>(
 /// Real registration and log-in against the API (ADR 0005). Passwords are
 /// passed straight through, never stored, trimmed or logged.
 class ServerSession extends Notifier<ServerSessionState> {
+  int _sessionEpoch = 0, _profileRevision = 0;
+  Future<void> _profileMutationTail = Future.value();
   @override
   ServerSessionState build() {
+    _sessionEpoch++;
+    _profileRevision++;
     final api = ref.watch(apiClientProvider);
     if (api == null) return const ServerSessionState();
-    api.onSessionEnded = _ended;
+    api.onSessionEnded = (message) {
+      if (ref.mounted && identical(ref.read(apiClientProvider), api)) {
+        _ended(message);
+      }
+    };
     Future.microtask(_restore);
     return const ServerSessionState(restoring: true);
   }
 
-  AuthApi get _auth => AuthApi(ref.read(apiClientProvider)!);
+  AuthApi get _auth =>
+      AuthApi(ref.read(apiClientProvider)!, persistAccount: false);
 
   /// Opens the stored session, if any: `/me` validates it (refreshing the
   /// access token when needed). Offline, the last known account opens and
@@ -47,20 +56,33 @@ class ServerSession extends Notifier<ServerSessionState> {
   Future<void> _restore() async {
     final api = ref.read(apiClientProvider);
     if (api == null) return;
+    final epoch = _sessionEpoch;
     final tokens = await api.currentTokens();
-    if (!ref.mounted) return;
+    if (!ref.mounted ||
+        epoch != _sessionEpoch ||
+        !identical(ref.read(apiClientProvider), api)) {
+      return;
+    }
     if (tokens == null) {
       state = const ServerSessionState();
       return;
     }
     try {
       final account = await _auth.me();
-      if (ref.mounted) {
+      if (ref.mounted &&
+          epoch == _sessionEpoch &&
+          state.restoring &&
+          identical(ref.read(apiClientProvider), api)) {
         state = ServerSessionState(account: account);
-        ref.read(fcmServiceProvider).init();
+        await _rememberAccount(api, account, epoch);
       }
     } on ApiError catch (error) {
-      if (!ref.mounted || !state.restoring) return;
+      if (!ref.mounted ||
+          epoch != _sessionEpoch ||
+          !state.restoring ||
+          !identical(ref.read(apiClientProvider), api)) {
+        return;
+      }
       final stored = tokens.account;
       final ended =
           error.code == ApiError.sessionExpired ||
@@ -79,6 +101,8 @@ class ServerSession extends Notifier<ServerSessionState> {
 
   void _ended(String message) {
     if (!ref.mounted) return;
+    _sessionEpoch++;
+    _profileRevision++;
     _forgetImages();
     state = ServerSessionState(notice: message);
   }
@@ -114,27 +138,105 @@ class ServerSession extends Notifier<ServerSessionState> {
     required String mobile,
     required String password,
   }) async {
+    final epoch = ++_sessionEpoch;
+    _profileRevision++;
     try {
       final account = await _auth.login(mobile: mobile, password: password);
+      if (!ref.mounted || epoch != _sessionEpoch) {
+        return 'Your session changed. Please try again.';
+      }
       state = ServerSessionState(account: account);
-      ref.read(fcmServiceProvider).init();
       return null;
     } on ApiError catch (error) {
       return error.message;
     }
   }
 
-  Future<String?> updateDisplayName(String name) async {
+  Future<String?> updateDisplayName(String name) =>
+      updateProfile({'display_name': name.trim()});
+
+  Future<String?> refreshProfile() =>
+      _profileChange((auth) => auth.me(), readOnly: true);
+
+  Future<String?> updateProfile(Map<String, String> fields) =>
+      _queueProfileChange((auth) => auth.updateProfile(fields));
+
+  Future<String?> uploadProfilePhoto(
+    ProfilePhotoKind kind,
+    ProfilePickedPhoto photo,
+  ) => _queueProfileChange((auth) => auth.uploadProfilePhoto(kind, photo));
+
+  Future<String?> deleteProfilePhoto(ProfilePhotoKind kind) =>
+      _queueProfileChange((auth) => auth.deleteProfilePhoto(kind));
+
+  /// Profile changes are serialized so one complete Me response cannot lose
+  /// a concurrent photo/details change that is still committing on the server.
+  Future<String?> _queueProfileChange(
+    Future<ApiAccount> Function(AuthApi auth) operation,
+  ) {
+    final epoch = _sessionEpoch;
     final accountId = state.account?.id;
-    if (accountId == null) return 'Please log in again to edit your profile.';
-    try {
-      final account = await _auth.updateDisplayName(name);
-      if (ref.mounted && state.account?.id == accountId) {
-        state = ServerSessionState(account: account);
+    final api = ref.read(apiClientProvider);
+    final result = _profileMutationTail.then((_) {
+      if (!ref.mounted ||
+          epoch != _sessionEpoch ||
+          state.account?.id != accountId ||
+          !identical(ref.read(apiClientProvider), api)) {
+        return Future<String?>.value('Your session changed. Please try again.');
       }
+      return _profileChange(operation);
+    });
+    _profileMutationTail = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
+
+  Future<String?> _profileChange(
+    Future<ApiAccount> Function(AuthApi auth) operation, {
+    bool readOnly = false,
+  }) async {
+    final accountId = state.account?.id;
+    final api = ref.read(apiClientProvider);
+    if (accountId == null || api == null) {
+      return 'Please log in again to edit your profile.';
+    }
+    final epoch = _sessionEpoch;
+    final revision = readOnly ? _profileRevision : ++_profileRevision;
+    try {
+      final account = await operation(AuthApi(api, persistAccount: false));
+      if (!ref.mounted ||
+          epoch != _sessionEpoch ||
+          revision != _profileRevision ||
+          state.account?.id != accountId ||
+          account.id != accountId ||
+          !identical(ref.read(apiClientProvider), api)) {
+        return 'Your session changed. Please try again.';
+      }
+      // Invalidate any read started while a mutation was in flight, so its
+      // old response cannot replace the newly saved details or photo version.
+      if (!readOnly) _profileRevision++;
+      state = ServerSessionState(account: account);
+      await _rememberAccount(api, account, epoch);
       return null;
     } on ApiError catch (error) {
       return error.message;
+    }
+  }
+
+  Future<void> _rememberAccount(
+    ApiClient api,
+    ApiAccount account,
+    int epoch,
+  ) async {
+    final tokens = await api.currentTokens();
+    if (ref.mounted &&
+        epoch == _sessionEpoch &&
+        identical(state.account, account) &&
+        identical(ref.read(apiClientProvider), api) &&
+        tokens != null) {
+      await api.saveTokens(tokens.copyWith(account: account.stored));
     }
   }
 
@@ -142,6 +244,9 @@ class ServerSession extends Notifier<ServerSessionState> {
   /// [CircleWorkspaceController.logOut], which first sends deletions still
   /// waiting for their Undo window.
   Future<void> logOut() async {
+    _sessionEpoch++;
+    _profileRevision++;
+    final auth = _auth;
     final account = state.account;
     final config = ref.read(apiConfigProvider);
     if (account != null && config != null) {
@@ -151,8 +256,7 @@ class ServerSession extends Notifier<ServerSessionState> {
             DraftScope(server: config.baseUrl.toString(), account: account.id),
           );
     }
-    await ref.read(fcmServiceProvider).unregisterToken();
-    await _auth.logout();
+    await auth.logout();
     _forgetImages();
     state = const ServerSessionState();
   }

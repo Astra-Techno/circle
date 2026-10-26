@@ -8,6 +8,7 @@ import 'package:mobile/core/api/api_providers.dart';
 import 'package:mobile/core/local_settings.dart';
 import 'package:mobile/features/memories/application/media_providers.dart';
 import 'fake_api.dart';
+import 'package:mobile/features/profile/application/profile_providers.dart';
 
 final testServer = ApiConfig.parse('http://circle.test/api/v1')!;
 
@@ -29,6 +30,7 @@ Future<ProviderContainer> openServerCircle(
   FakeCircleServer server, {
   TokenStore? tokens,
   PhotoPicker? picker,
+  ProfilePhotoPicker? profilePicker,
   LocalSettingsStore? settings,
   Size size = const Size(393, 852),
 }) async {
@@ -47,6 +49,8 @@ Future<ProviderContainer> openServerCircle(
       tokenStoreProvider.overrideWithValue(tokens ?? MemoryTokenStore()),
       apiHttpAdapterProvider.overrideWithValue(server.adapter),
       photoPickerProvider.overrideWithValue(picker ?? FakePhotoPicker()),
+      if (profilePicker != null)
+        profilePhotoPickerProvider.overrideWithValue(profilePicker),
     ],
   );
   addTearDown(container.dispose);

@@ -110,7 +110,9 @@ class FakeHttpAdapter implements HttpClientAdapter {
       throw DioException(requestOptions: options, type: response.network!);
     }
     return ResponseBody.fromBytes(
-      utf8.encode(jsonEncode(response.body)),
+      response.body is Uint8List
+          ? response.body as Uint8List
+          : utf8.encode(jsonEncode(response.body)),
       response.status,
       headers: {
         Headers.contentTypeHeader: ['application/json; charset=utf-8'],
@@ -152,7 +154,8 @@ class FakeCircleServer {
   final Map<int, List<Map<String, Object?>>> joinRequests = {};
   final Map<String, Map<String, Object?>> links = {};
   final Map<String, Map<String, Object?>> uploads = {};
-  int _ids = 0, _tokens = 0;
+  final Map<String, ({Uint8List bytes, String mime})> profilePhotos = {};
+  int _ids = 0, _tokens = 0, _profileVersions = 0;
 
   static const now = '2026-10-23 10:00:00';
 
@@ -161,7 +164,18 @@ class FakeCircleServer {
   /// Adds an account directly (as if registered earlier).
   int addUser(String mobile, String password, String name) {
     final id = _next();
-    users[id] = {'id': id, 'mobile': mobile, 'display_name': name};
+    users[id] = {
+      'id': id,
+      'mobile': mobile,
+      'display_name': name,
+      'about': '',
+      'current_city': '',
+      'hometown': '',
+      'work': '',
+      'education': '',
+      'avatar_version': null,
+      'cover_version': null,
+    };
     passwords[mobile] = password;
     return id;
   }
@@ -331,13 +345,83 @@ class FakeCircleServer {
       refresh.removeWhere((_, user) => user == me);
       return FakeResponse.ok(null);
     }
+    final profilePhoto = RegExp(
+      r'^/me/photos/(avatar|cover)$',
+    ).firstMatch(path);
+    if (profilePhoto != null) {
+      final kind = profilePhoto[1]!;
+      final key = '$me:$kind';
+      if (r.method == 'GET') {
+        if (!const {
+          'thumb',
+          'medium',
+          'full',
+        }.contains(r.query['size'] ?? 'medium')) {
+          return FakeResponse.error(422, 'validation_error');
+        }
+        final photo = profilePhotos[key];
+        if (photo == null) return FakeResponse.error(404, 'not_found');
+        return FakeResponse(200, photo.bytes, {
+          'content-type': photo.mime,
+          'cache-control': 'private, no-store',
+        });
+      }
+      if (r.method == 'PUT') {
+        if (!mediaAvailable) return FakeResponse.error(503, 'server_error');
+        final mime = r.headers['content-type']?.toString().split(';').first;
+        if (!const {'image/jpeg', 'image/png', 'image/webp'}.contains(mime)) {
+          return FakeResponse.error(415, 'media_type_not_allowed');
+        }
+        if (r.bytes.isEmpty || r.bytes.length > 5 * 1024 * 1024) {
+          return FakeResponse.error(413, 'media_too_large');
+        }
+        profilePhotos[key] = (bytes: r.bytes, mime: mime!);
+        users[me]!['${kind}_version'] =
+            '00000000-0000-4000-8000-${(++_profileVersions).toString().padLeft(12, '0')}';
+        return FakeResponse.ok({
+          ...users[me]!,
+          'avatar_path': null,
+          'created_at': now,
+        });
+      }
+      if (r.method == 'DELETE') {
+        profilePhotos.remove(key);
+        users[me]!['${kind}_version'] = null;
+        return FakeResponse.ok({
+          ...users[me]!,
+          'avatar_path': null,
+          'created_at': now,
+        });
+      }
+    }
     if (path == '/me') {
-      if (r.method == 'PATCH' && body.containsKey('display_name')) {
-        users[me]!['display_name'] = body['display_name'];
+      if (r.method == 'PATCH') {
+        const lengths = {
+          'display_name': 100,
+          'about': 500,
+          'current_city': 100,
+          'hometown': 100,
+          'work': 100,
+          'education': 150,
+        };
+        for (final entry in body.entries) {
+          final max = lengths[entry.key];
+          if (max != null &&
+              (entry.value is! String ||
+                  (entry.value as String).runes.length > max ||
+                  (entry.key == 'display_name' &&
+                      (entry.value as String).trim().isEmpty))) {
+            return FakeResponse.error(422, 'validation_error');
+          }
+        }
+        for (final entry in body.entries) {
+          if (lengths.containsKey(entry.key)) {
+            users[me]![entry.key] = (entry.value as String).trim();
+          }
+        }
       }
       return FakeResponse.ok({
         ...users[me]!,
-        'about': '',
         'avatar_path': null,
         'created_at': now,
       });

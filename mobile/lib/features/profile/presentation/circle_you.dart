@@ -1,19 +1,41 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../../core/theme_controller.dart';
+import 'profile_photo.dart';
 import '../../notifications/application/notification_providers.dart';
 import '../../memories/presentation/scoped_memory_list.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
 
 /// H1: your profile, invitations, Activity, settings and saved Memories.
-class CircleYou extends ConsumerWidget {
+class CircleYou extends ConsumerStatefulWidget {
   const CircleYou({super.key});
   @override
-  Widget build(BuildContext context, WidgetRef ref) => WorkspaceView(
+  ConsumerState<CircleYou> createState() => _CircleYouState();
+}
+
+class _CircleYouState extends ConsumerState<CircleYou> {
+  String? _loadError;
+  @override
+  void initState() {
+    super.initState();
+    unawaited(Future.microtask(_refreshProfile));
+  }
+
+  Future<void> _refreshProfile() async {
+    if (ref.read(serverAccountProvider) == null) return;
+    final error = await ref
+        .read(serverSessionProvider.notifier)
+        .refreshProfile();
+    if (mounted) setState(() => _loadError = error);
+  }
+
+  @override
+  Widget build(BuildContext context) => WorkspaceView(
     builder: (workspace) {
       final waiting = workspace.invitations.length;
       final badge = ref.watch(activityBadgeProvider);
@@ -41,65 +63,63 @@ class CircleYou extends ConsumerWidget {
         child: ListView(
           padding: CircleInsets.page,
           children: [
-            Container(
-              key: const ValueKey('you-profile-card'),
-              padding: const EdgeInsets.all(Space.section),
-              decoration: CircleDepth.profilePanel(context),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleInitialAvatar(
-                        name: account?.displayName.isNotEmpty == true
-                            ? account!.displayName
-                            : 'You',
-                        size: CircleAvatarSize.large,
-                      ),
-                      const SizedBox(width: Space.lg),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              account == null
-                                  ? 'You · Fictional preview'
-                                  : account.displayName.isEmpty
-                                  ? 'You'
-                                  : account.displayName,
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            const SizedBox(height: Space.xs),
-                            Text(
-                              account == null
-                                  ? 'No real account or phone number is saved.'
-                                  : 'Your people. Your private circles.',
-                            ),
-                          ],
+            if (account != null)
+              ProfileHeader(
+                key: const ValueKey('you-profile-card'),
+                account: account,
+              )
+            else
+              Container(
+                key: const ValueKey('you-profile-card'),
+                padding: const EdgeInsets.all(Space.section),
+                decoration: CircleDepth.profilePanel(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleInitialAvatar(
+                          name: account?.displayName.isNotEmpty == true
+                              ? account!.displayName
+                              : 'You',
+                          size: CircleAvatarSize.large,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: Space.lg),
-                  if (account != null)
-                    FilledButton.icon(
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit profile'),
-                      onPressed: () => showDialog<void>(
-                        context: context,
-                        builder: (_) =>
-                            _EditProfileDialog(name: account.displayName),
-                      ),
+                        const SizedBox(width: Space.lg),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                account == null
+                                    ? 'You · Fictional preview'
+                                    : account.displayName.isEmpty
+                                    ? 'You'
+                                    : account.displayName,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineSmall,
+                              ),
+                              const SizedBox(height: Space.xs),
+                              Text(
+                                account == null
+                                    ? 'No real account or phone number is saved.'
+                                    : 'Your people. Your private circles.',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  TextButton.icon(
-                    icon: const Icon(Icons.groups_outlined),
-                    label: const Text('Your groups'),
-                    onPressed: () => context.go('/groups'),
-                  ),
-                ],
+                    const SizedBox(height: Space.lg),
+                    TextButton.icon(
+                      icon: const Icon(Icons.groups_outlined),
+                      label: const Text('Your groups'),
+                      onPressed: () => context.go('/groups'),
+                    ),
+                  ],
+                ),
               ),
-            ),
             const SizedBox(height: Space.section),
             if (waiting > 0)
               CircleRow(
@@ -160,6 +180,41 @@ class CircleYou extends ConsumerWidget {
               location: '/you/account',
             ),
             const SizedBox(height: Space.md),
+            if (account != null) ...[
+              if (_loadError != null)
+                TextButton.icon(
+                  onPressed: _refreshProfile,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry loading profile details'),
+                ),
+              const CircleSectionTitle('Personal details'),
+              const CirclePill('Only you', icon: Icons.lock_outline),
+              const SizedBox(height: Space.sm),
+              if ([
+                account.currentCity,
+                account.hometown,
+                account.work,
+                account.education,
+              ].every((value) => value.isEmpty))
+                const Text(
+                  'Add your city, hometown, work and education in Edit profile.',
+                ),
+              for (final detail in [
+                (Icons.location_city_outlined, 'Lives in', account.currentCity),
+                (Icons.home_outlined, 'From', account.hometown),
+                (Icons.work_outline, 'Work', account.work),
+                (Icons.school_outlined, 'Education', account.education),
+              ])
+                if (detail.$3.isNotEmpty)
+                  CircleRow(
+                    child: ListTile(
+                      leading: Icon(detail.$1),
+                      title: Text(detail.$2),
+                      subtitle: Text(detail.$3),
+                    ),
+                  ),
+              const SizedBox(height: Space.section),
+            ],
             const CircleSectionTitle('Saved Memories'),
             ScopedMemoryList(
               query: const MemoryQuery(saved: true),
@@ -290,94 +345,4 @@ class AccountScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _EditProfileDialog extends ConsumerStatefulWidget {
-  const _EditProfileDialog({required this.name});
-  final String name;
-  @override
-  ConsumerState<_EditProfileDialog> createState() => _EditProfileDialogState();
-}
-
-class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
-  late final _name = TextEditingController(text: widget.name);
-  final _form = GlobalKey<FormState>();
-  bool _saving = false;
-  String? _error;
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (_saving || !_form.currentState!.validate()) return;
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-    final error = await ref
-        .read(serverSessionProvider.notifier)
-        .updateDisplayName(_name.text.trim());
-    if (!mounted) return;
-    if (error == null) {
-      Navigator.of(context).pop();
-    } else {
-      setState(() {
-        _saving = false;
-        _error = error;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    scrollable: true,
-    title: const Text('Edit profile'),
-    content: Form(
-      key: _form,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextFormField(
-            key: const ValueKey('profile-display-name'),
-            controller: _name,
-            enabled: !_saving,
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.done,
-            autofillHints: const [AutofillHints.name],
-            decoration: const InputDecoration(labelText: 'Display name'),
-            maxLength: 100,
-            validator: (value) {
-              final name = value?.trim() ?? '';
-              if (name.isEmpty) return 'Enter the name people know you by.';
-              if (name.runes.length > 100) {
-                return 'Use 100 characters or fewer.';
-              }
-              return null;
-            },
-            onFieldSubmitted: (_) => _save(),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: Space.md),
-            Text(
-              _error!,
-              semanticsLabel: _error,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
-        ],
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: _saving ? null : () => Navigator.of(context).pop(),
-        child: const Text('Cancel'),
-      ),
-      FilledButton(
-        onPressed: _saving ? null : _save,
-        child: Text(_saving ? 'Saving…' : 'Save changes'),
-      ),
-    ],
-  );
 }

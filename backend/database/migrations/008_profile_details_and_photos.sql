@@ -1,0 +1,17 @@
+ALTER TABLE users
+    ADD COLUMN current_city VARCHAR(100) NOT NULL DEFAULT '',
+    ADD COLUMN hometown VARCHAR(100) NOT NULL DEFAULT '',
+    ADD COLUMN work VARCHAR(100) NOT NULL DEFAULT '',
+    ADD COLUMN education VARCHAR(150) NOT NULL DEFAULT '';
+
+CREATE TABLE profile_photos (
+    user_id BIGINT UNSIGNED NOT NULL,
+    kind ENUM('avatar', 'cover') NOT NULL,
+    version CHAR(36) NOT NULL,
+    storage_prefix VARCHAR(250) NOT NULL,
+    mime_type VARCHAR(50) NOT NULL,
+    extension VARCHAR(10) NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, kind),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

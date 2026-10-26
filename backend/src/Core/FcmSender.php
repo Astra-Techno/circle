@@ -24,7 +24,7 @@ final class FcmSender
      * @param int[]  $userIds  Target user IDs
      * @param string $title    Notification title
      * @param string $body     Notification body text
-     * @param array  $data     Optional data payload (key-value strings)
+     * @param array<string, string> $data     Optional data payload (key-value strings)
      */
     public static function sendToUsers(array $userIds, string $title, string $body, array $data = []): int
     {
@@ -49,12 +49,13 @@ final class FcmSender
 
     /**
      * Send a notification to a single FCM token.
+     * @param array<string, string> $data
      */
     public static function send(string $fcmToken, string $title, string $body, array $data = []): bool
     {
         $projectId = Env::get('FCM_PROJECT_ID', '');
         if ($projectId === '') {
-            Log::info('fcm', 'FCM_PROJECT_ID not set, skipping push notification');
+            self::log('FCM_PROJECT_ID not set, skipping push notification');
             return false;
         }
 
@@ -98,17 +99,38 @@ final class FcmSender
             return true;
         }
 
-        // Token expired or invalid — remove it from the database.
-        if ($httpCode === 404 || ($httpCode === 400 && str_contains((string) $response, 'UNREGISTERED'))) {
+        // A project/route 404 does not establish that a device token expired.
+        if (self::isUnregistered($httpCode, (string) $response)) {
             $db = Database::connection();
             $stmt = $db->prepare('DELETE FROM device_tokens WHERE fcm_token = ?');
             $stmt->execute([$fcmToken]);
-            Log::info('fcm', "Removed stale FCM token");
+            self::log("Removed stale FCM token");
         } else {
-            Log::info('fcm', "FCM send failed (HTTP {$httpCode}): " . substr((string) $response, 0, 200));
+            self::log("FCM send failed (HTTP {$httpCode})");
         }
 
         return false;
+    }
+
+    public static function isUnregistered(int $status, string $response): bool
+    {
+        if ($status !== 404) return false;
+        $payload = json_decode($response, true);
+        if (!is_array($payload)) return false;
+        $details = $payload['error']['details'] ?? [];
+        if (!is_array($details)) return false;
+        foreach ($details as $detail) {
+            if (is_array($detail)
+                && ($detail['@type'] ?? '') === 'type.googleapis.com/google.firebase.fcm.v1.FcmError'
+                && ($detail['errorCode'] ?? '') === 'UNREGISTERED') return true;
+        }
+        return false;
+    }
+
+    private static function log(string $message): void
+    {
+        // Callers supply static operational messages, never provider payloads.
+        error_log('[CIRCLE] fcm: ' . $message);
     }
 
     /**
@@ -123,13 +145,13 @@ final class FcmSender
 
         $keyPath = Env::get('FCM_SERVICE_ACCOUNT_PATH', '');
         if ($keyPath === '' || !file_exists($keyPath)) {
-            Log::info('fcm', 'FCM_SERVICE_ACCOUNT_PATH not set or file missing');
+            self::log('FCM_SERVICE_ACCOUNT_PATH not set or file missing');
             return null;
         }
 
         $key = json_decode(file_get_contents($keyPath), true);
         if (!$key || !isset($key['private_key'], $key['client_email'], $key['token_uri'])) {
-            Log::info('fcm', 'Invalid service account key file');
+            self::log('Invalid service account key file');
             return null;
         }
 
@@ -147,7 +169,7 @@ final class FcmSender
         $signature = '';
         $pkeyId = openssl_pkey_get_private($key['private_key']);
         if (!$pkeyId || !openssl_sign($unsigned, $signature, $pkeyId, OPENSSL_ALGO_SHA256)) {
-            Log::info('fcm', 'Failed to sign JWT with service account key');
+            self::log('Failed to sign JWT with service account key');
             return null;
         }
 
@@ -169,13 +191,13 @@ final class FcmSender
         curl_close($ch);
 
         if ($httpCode !== 200) {
-            Log::info('fcm', "OAuth2 token request failed (HTTP {$httpCode})");
+            self::log("OAuth2 token request failed (HTTP {$httpCode})");
             return null;
         }
 
         $token = json_decode((string) $response, true);
         if (!isset($token['access_token'])) {
-            Log::info('fcm', 'OAuth2 response missing access_token');
+            self::log('OAuth2 response missing access_token');
             return null;
         }
 

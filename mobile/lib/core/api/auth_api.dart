@@ -1,19 +1,62 @@
+import 'dart:typed_data';
 import 'api_client.dart';
 import 'api_json.dart';
 
 /// The signed-in person (`GET /me`). Mobile numbers are only ever the
 /// person's own.
+enum ProfilePhotoKind { avatar, cover }
+
+class ProfilePickedPhoto {
+  const ProfilePickedPhoto({required this.bytes, required this.mimeType});
+  final Uint8List bytes;
+  final String mimeType;
+  static const maxBytes = 5 * 1024 * 1024;
+}
+
 class ApiAccount {
-  const ApiAccount({required this.id, required this.displayName});
-  final String id, displayName;
+  const ApiAccount({
+    required this.id,
+    required this.displayName,
+    this.mobile = '',
+    this.about = '',
+    this.currentCity = '',
+    this.hometown = '',
+    this.work = '',
+    this.education = '',
+    this.avatarVersion,
+    this.coverVersion,
+  });
+  final String id,
+      displayName,
+      mobile,
+      about,
+      currentCity,
+      hometown,
+      work,
+      education;
+  final String? avatarVersion, coverVersion;
+
+  String? photoVersion(ProfilePhotoKind kind) =>
+      kind == ProfilePhotoKind.avatar ? avatarVersion : coverVersion;
 
   factory ApiAccount.fromJson(Object? json) {
     final map = ApiJson.map(json);
     return ApiAccount(
       id: ApiJson.id(map['id']),
       displayName: ApiJson.string(map['display_name']),
+      mobile: ApiJson.string(map['mobile']),
+      about: ApiJson.string(map['about']),
+      currentCity: ApiJson.string(map['current_city']),
+      hometown: ApiJson.string(map['hometown']),
+      work: ApiJson.string(map['work']),
+      education: ApiJson.string(map['education']),
+      avatarVersion: _version(map['avatar_version']),
+      coverVersion: _version(map['cover_version']),
     );
   }
+
+  static String? _version(Object? value) =>
+      value is String && value.isNotEmpty ? value : null;
 
   StoredAccount get stored => StoredAccount(id: id, displayName: displayName);
 }
@@ -21,8 +64,9 @@ class ApiAccount {
 /// Accounts and sessions (ADR 0005). Passwords are sent exactly as typed
 /// and are never stored, logged or trimmed.
 class AuthApi {
-  AuthApi(this.client);
+  AuthApi(this.client, {this.persistAccount = true});
   final ApiClient client;
+  final bool persistAccount;
 
   /// `202` for new and already-registered numbers alike; no tokens.
   Future<void> register({
@@ -57,22 +101,54 @@ class AuthApi {
     return account;
   }
 
-  Future<ApiAccount> me() async {
-    final account = ApiAccount.fromJson(await client.get('/me'));
-    final tokens = await client.currentTokens();
-    if (tokens != null) {
-      await client.saveTokens(tokens.copyWith(account: account.stored));
+  Future<ApiAccount> me() async => _rememberAccount(await client.get('/me'));
+
+  Future<ApiAccount> updateDisplayName(String name) =>
+      updateProfile({'display_name': name.trim()});
+
+  Future<ApiAccount> updateProfile(Map<String, String> fields) async =>
+      _rememberAccount(await client.patch('/me', body: fields));
+
+  Future<ApiAccount> uploadProfilePhoto(
+    ProfilePhotoKind kind,
+    ProfilePickedPhoto photo,
+  ) async {
+    if (photo.bytes.isEmpty ||
+        photo.bytes.length > ProfilePickedPhoto.maxBytes) {
+      throw const ApiError(
+        'Choose a photo smaller than 5 MB.',
+        code: 'media_too_large',
+      );
     }
-    return account;
+    if (!const {
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    }.contains(photo.mimeType)) {
+      throw const ApiError(
+        'Choose a JPEG, PNG or WebP photo.',
+        code: 'media_type_not_allowed',
+      );
+    }
+    return _rememberAccount(
+      await client.putBytes(
+        '/me/photos/${kind.name}',
+        photo.bytes,
+        contentType: photo.mimeType,
+      ),
+    );
   }
 
-  Future<ApiAccount> updateDisplayName(String name) async {
-    final account = ApiAccount.fromJson(
-      await client.patch('/me', body: {'display_name': name.trim()}),
-    );
+  Future<ApiAccount> deleteProfilePhoto(ProfilePhotoKind kind) async =>
+      _rememberAccount(await client.delete('/me/photos/${kind.name}'));
+
+  Future<ApiAccount> _rememberAccount(Object? data) async {
+    final account = ApiAccount.fromJson(data);
     final tokens = await client.currentTokens();
-    if (tokens?.account?.id == account.id) {
-      await client.saveTokens(tokens!.copyWith(account: account.stored));
+    if (persistAccount &&
+        tokens != null &&
+        (tokens.account == null || tokens.account!.id == account.id)) {
+      await client.saveTokens(tokens.copyWith(account: account.stored));
     }
     return account;
   }

@@ -198,7 +198,11 @@ final class AuthController
     public static function me(Request $request): void
     {
         $user = Database::queryOne(
-            'SELECT id, mobile, display_name, about, avatar_path, created_at FROM users WHERE id = :id AND status = :s',
+            "SELECT u.id, u.mobile, u.display_name, u.about, u.current_city, u.hometown, u.work, u.education, u.created_at,
+                a.version AS avatar_version, c.version AS cover_version
+             FROM users u LEFT JOIN profile_photos a ON a.user_id = u.id AND a.kind = 'avatar'
+             LEFT JOIN profile_photos c ON c.user_id = u.id AND c.kind = 'cover'
+             WHERE u.id = :id AND u.status = :s",
             ['id' => $request->userId(), 's' => 'active']
         );
 
@@ -207,6 +211,7 @@ final class AuthController
         }
 
         $user['id'] = (int) $user['id'];
+        $user['avatar_path'] = null; // Legacy field: private storage paths never leave the server.
 
         Response::ok($user);
     }
@@ -216,18 +221,19 @@ final class AuthController
         $sets = [];
         $params = ['id' => $request->userId()];
 
-        if ($request->has('display_name')) {
-            $displayName = $request->string('display_name');
-            (new Validator())->string('display_name', $displayName, 1, 100, 'Display name')->bail();
-            $sets[] = 'display_name = :name';
-            $params['name'] = $displayName;
-        }
-
-        if ($request->has('about')) {
-            $about = $request->string('about');
-            (new Validator())->string('about', $about, 0, 500, 'About')->bail();
-            $sets[] = 'about = :about';
-            $params['about'] = $about;
+        foreach (['display_name' => 100, 'about' => 500, 'current_city' => 100,
+            'hometown' => 100, 'work' => 100, 'education' => 150] as $field => $max) {
+            if (!$request->has($field)) {
+                continue;
+            }
+            if (!is_string($request->input($field))) {
+                Response::validationError($field . ' must be text.');
+            }
+            $value = $request->string($field);
+            (new Validator())->string($field, $value, $field === 'display_name' ? 1 : 0, $max, $field)->bail();
+            // Field names come only from the fixed allowlist above.
+            $sets[] = $field . ' = :' . $field;
+            $params[$field] = $value;
         }
 
         if ($sets === []) {
