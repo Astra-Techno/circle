@@ -1,6 +1,6 @@
 <?php
 /**
- * CIRCLE â€” One-Click Deployer for Shared Hosting
+ * CIRCLE — One-Click Deployer for Shared Hosting
  *
  * Place this file at the subdomain root (circle.cloudkart24.com/deploy.php).
  * Run: curl -H "X-Deploy-Key: YOUR_DEPLOY_KEY" https://circle.cloudkart24.com/deploy.php
@@ -15,10 +15,10 @@
  * NEVER overwrites: .env, storage/, vendor/composer/, deploy.php
  *
  * Required .env keys:
- *   DEPLOY_KEY      â€” random secret (at least 32 chars)
- *   GITHUB_REPO     â€” e.g. Astra-Techno/circle (default)
- *   GITHUB_BRANCH   â€” e.g. main (default)
- *   GITHUB_TOKEN    â€” only for private repos
+ *   DEPLOY_KEY      — random secret (at least 32 chars)
+ *   GITHUB_REPO     — e.g. Astra-Techno/circle (default)
+ *   GITHUB_BRANCH   — e.g. main (default)
+ *   GITHUB_TOKEN    — only for private repos
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ set_time_limit(120);
 define('BASE_DIR',   __DIR__);
 define('START_TIME', microtime(true));
 
-// â”€â”€ Load .env â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Load .env ────────────────────────────────────────────────
 $envFile = BASE_DIR . '/.env';
 $envVars = [];
 if (file_exists($envFile)) {
@@ -44,7 +44,7 @@ if (file_exists($envFile)) {
     }
 }
 
-// â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Auth ─────────────────────────────────────────────────────
 $deployKey = $envVars['DEPLOY_KEY'] ?? '';
 $givenKey  = $_SERVER['HTTP_X_DEPLOY_KEY'] ?? $_GET['key'] ?? '';
 
@@ -52,15 +52,15 @@ header('Content-Type: text/html; charset=UTF-8');
 
 if (strlen($deployKey) < 32 || $givenKey === '' || !hash_equals($deployKey, $givenKey)) {
     http_response_code(403);
-    die(page('Access Denied', '<div class="err">403 â€” Invalid or missing deployment key.</div>'));
+    die(page('Access Denied', '<div class="err">403 — Invalid or missing deployment key.</div>'));
 }
 
-// â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Config ───────────────────────────────────────────────────
 $repo   = $envVars['GITHUB_REPO']   ?? 'Astra-Techno/circle';
 $branch = $envVars['GITHUB_BRANCH'] ?? 'main';
 $token  = $envVars['GITHUB_TOKEN']  ?? '';
 
-// â”€â”€ Run â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Run ──────────────────────────────────────────────────────
 $log = [];
 
 function log_step(string $icon, string $msg, string $type = 'info'): void {
@@ -69,15 +69,15 @@ function log_step(string $icon, string $msg, string $type = 'info'): void {
 }
 
 function abort(string $msg): never {
-    log_step('âœ—', $msg, 'err');
+    log_step('✗', $msg, 'err');
     echo page('Deploy Failed', render_log() . render_banner(false, $msg));
     exit;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// STEP 1 â€” Download repo ZIP from GitHub
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-log_step('â¬‡', "Downloading <strong>{$repo}@{$branch}</strong> from GitHubâ€¦");
+// ══════════════════════════════════════════════════════════════
+// STEP 1 — Download repo ZIP from GitHub
+// ══════════════════════════════════════════════════════════════
+log_step('⬇', "Downloading <strong>{$repo}@{$branch}</strong> from GitHub…");
 
 $zipUrl  = "https://github.com/{$repo}/archive/refs/heads/{$branch}.zip";
 $zipData = false;
@@ -118,12 +118,12 @@ if (function_exists('curl_init')) {
 if ($zipData === false || $zipData === '') {
     abort('Failed to download ZIP. Enable cURL or allow_url_fopen on this server.');
 }
-log_step('âœ“', 'Download complete (' . round(strlen($zipData) / 1024) . ' KB)', 'ok');
+log_step('✓', 'Download complete (' . round(strlen($zipData) / 1024) . ' KB)', 'ok');
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// STEP 2 â€” Extract to temp dir
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-log_step('ðŸ“¦', 'Extracting ZIPâ€¦');
+// ══════════════════════════════════════════════════════════════
+// STEP 2 — Extract to temp dir
+// ══════════════════════════════════════════════════════════════
+log_step('📦', 'Extracting ZIP…');
 
 $tmpZip = sys_get_temp_dir() . '/circle_deploy_' . time() . '.zip';
 $tmpDir = sys_get_temp_dir() . '/circle_extract_' . time();
@@ -144,16 +144,16 @@ $zip->close();
 $extractedDirs = glob($tmpDir . '/*', GLOB_ONLYDIR);
 if (empty($extractedDirs)) {
     rrmdir($tmpDir);
-    abort('ZIP extraction failed â€” no directories found.');
+    abort('ZIP extraction failed — no directories found.');
 }
 $repoRoot = $extractedDirs[0];
 
-log_step('âœ“', 'Extracted to temp directory', 'ok');
+log_step('✓', 'Extracted to temp directory', 'ok');
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// STEP 3 â€” Update backend files
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-log_step('ðŸ”§', 'Updating backend filesâ€¦');
+// ══════════════════════════════════════════════════════════════
+// STEP 3 — Update backend files
+// ══════════════════════════════════════════════════════════════
+log_step('🔧', 'Updating backend files…');
 
 $srcBackend = $repoRoot . '/backend';
 if (!is_dir($srcBackend)) {
@@ -162,11 +162,11 @@ if (!is_dir($srcBackend)) {
 }
 
 // Files/dirs in the REPO backend/ to deploy:
-//   src/         â†’ src/          (application code)
-//   database/    â†’ database/     (migration SQL files)
-//   public/index.php â†’ index.php (front controller, adapted path)
-//   public/.htaccess  â†’ skipped  (we use our own root .htaccess)
-//   composer.json     â†’ composer.json
+//   src/         → src/          (application code)
+//   database/    → database/     (migration SQL files)
+//   public/index.php → index.php (front controller, adapted path)
+//   public/.htaccess  → skipped  (we use our own root .htaccess)
+//   composer.json     → composer.json
 
 $copied = [];
 
@@ -198,18 +198,18 @@ if (file_exists($srcBackend . '/composer.json')) {
     $copied[] = BASE_DIR . '/composer.json';
 }
 
-log_step('âœ“', 'Backend updated â€” ' . count($copied) . ' file(s)', 'ok');
-log_step('ðŸ“‹', render_file_list($copied, BASE_DIR), 'muted');
+log_step('✓', 'Backend updated — ' . count($copied) . ' file(s)', 'ok');
+log_step('📋', render_file_list($copied, BASE_DIR), 'muted');
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// STEP 3b â€” Update landing page & downloads (APK)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════════════════════
+// STEP 3b — Update landing page & downloads (APK)
+// ══════════════════════════════════════════════════════════════
 
-// Copy website/ assets â†’ site root (landing page + logo)
+// Copy website/ assets → site root (landing page + logo)
 $srcWebsiteDir = $repoRoot . '/website';
 if (is_dir($srcWebsiteDir)) {
     $websiteCopied = [];
-    // index.html â†’ home.html (landing page at site root)
+    // index.html → home.html (landing page at site root)
     if (file_exists($srcWebsiteDir . '/index.html')) {
         copy($srcWebsiteDir . '/index.html', BASE_DIR . '/home.html');
         $websiteCopied[] = BASE_DIR . '/home.html';
@@ -223,61 +223,61 @@ if (is_dir($srcWebsiteDir)) {
             $websiteCopied[] = BASE_DIR . '/' . $name;
         }
     }
-    log_step('âœ“', 'Landing page updated â€” ' . count($websiteCopied) . ' file(s)', 'ok');
-    log_step('ðŸ“‹', render_file_list($websiteCopied, BASE_DIR), 'muted');
+    log_step('✓', 'Landing page updated — ' . count($websiteCopied) . ' file(s)', 'ok');
+    log_step('📋', render_file_list($websiteCopied, BASE_DIR), 'muted');
 } else {
-    log_step('Â·', 'No website/ folder in repo â€” skipping landing page', 'muted');
+    log_step('·', 'No website/ folder in repo — skipping landing page', 'muted');
 }
 
 // Copy downloads/ folder (APK + download page)
 $srcDownloads = $repoRoot . '/downloads';
 if (is_dir($srcDownloads)) {
-    log_step('ðŸ“±', 'Updating downloads (APK)â€¦');
+    log_step('📱', 'Updating downloads (APK)…');
     $dlCopied = [];
     rcopy($srcDownloads, BASE_DIR . '/downloads', [], $dlCopied);
-    log_step('âœ“', 'Downloads updated â€” ' . count($dlCopied) . ' file(s)', 'ok');
-    log_step('ðŸ“‹', render_file_list($dlCopied, BASE_DIR), 'muted');
+    log_step('✓', 'Downloads updated — ' . count($dlCopied) . ' file(s)', 'ok');
+    log_step('📋', render_file_list($dlCopied, BASE_DIR), 'muted');
 } else {
-    log_step('Â·', 'No downloads/ folder in repo â€” skipping', 'muted');
+    log_step('·', 'No downloads/ folder in repo — skipping', 'muted');
 }
 
 // Copy .htaccess from deploy template (keeps routing rules up to date)
 $srcHtaccess = $repoRoot . '/backend/deploy/.htaccess';
 if (file_exists($srcHtaccess)) {
     copy($srcHtaccess, BASE_DIR . '/.htaccess');
-    log_step('âœ“', '.htaccess updated', 'ok');
+    log_step('✓', '.htaccess updated', 'ok');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// STEP 4 â€” Regenerate PSR-4 autoloader classmap
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-log_step('ðŸ”„', 'Regenerating autoloaderâ€¦');
+// ══════════════════════════════════════════════════════════════
+// STEP 4 — Regenerate PSR-4 autoloader classmap
+// ══════════════════════════════════════════════════════════════
+log_step('🔄', 'Regenerating autoloader…');
 
 $classmapCount = regenerateAutoloader();
-log_step('âœ“', "Autoloader rebuilt â€” {$classmapCount} classes mapped", 'ok');
+log_step('✓', "Autoloader rebuilt — {$classmapCount} classes mapped", 'ok');
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// STEP 5 â€” Run DB migrations
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-log_step('ðŸ—‚', 'Running database migrationsâ€¦');
+// ══════════════════════════════════════════════════════════════
+// STEP 5 — Run DB migrations
+// ══════════════════════════════════════════════════════════════
+log_step('🗂', 'Running database migrations…');
 
 $migrationLog = runMigrations();
 $migrationErrors = false;
 foreach ($migrationLog as $m) {
-    $icon = match ($m['status']) { 'done' => 'âœ“', 'skip' => 'Â·', default => 'âœ—' };
+    $icon = match ($m['status']) { 'done' => '✓', 'skip' => '·', default => '✗' };
     $type = match ($m['status']) { 'done' => 'ok', 'fail' => 'err', default => 'muted' };
     log_step($icon, $m['name'] . ($m['error'] ?? ''), $type);
     if ($m['status'] === 'fail') $migrationErrors = true;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════════════════════
 // Cleanup & report
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════════════════════
 cleanup($tmpDir);
 
 $elapsed = round(microtime(true) - START_TIME, 1);
 $hasError = $migrationErrors || count(array_filter($log, fn($l) => $l['type'] === 'err')) > 0;
-log_step('ðŸ', "Deployment completed in {$elapsed}s", $hasError ? 'warn' : 'ok');
+log_step('🏁', "Deployment completed in {$elapsed}s", $hasError ? 'warn' : 'ok');
 
 echo page('Deploy', render_log() . render_banner(
     !$hasError,
@@ -285,9 +285,9 @@ echo page('Deploy', render_log() . render_banner(
 ));
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 // Helpers
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * Runs migrations using Circle's schema: database/migrations/*.sql
@@ -351,7 +351,7 @@ function runMigrations(): array {
                 $ins->execute(['name' => $name]);
                 $log[] = ['status' => 'done', 'name' => $name];
             } catch (PDOException $e) {
-                $log[] = ['status' => 'fail', 'name' => $name, 'error' => ' â€” ' . $e->getMessage()];
+                $log[] = ['status' => 'fail', 'name' => $name, 'error' => ' — ' . $e->getMessage()];
                 break; // stop on first failure
             }
         }
@@ -360,7 +360,7 @@ function runMigrations(): array {
             $log[] = ['status' => 'skip', 'name' => 'No migration files found'];
         }
     } catch (Throwable $e) {
-        $log[] = ['status' => 'fail', 'name' => 'DB connection', 'error' => ' â€” ' . $e->getMessage()];
+        $log[] = ['status' => 'fail', 'name' => 'DB connection', 'error' => ' — ' . $e->getMessage()];
     }
 
     return $log;
@@ -375,7 +375,7 @@ function regenerateAutoloader(): int {
     $composerDir = BASE_DIR . '/vendor/composer';
 
     if (!is_dir($composerDir)) {
-        log_step('âš ', 'vendor/composer/ missing â€” autoloader not rebuilt. Upload vendor/ first.', 'warn');
+        log_step('⚠', 'vendor/composer/ missing — autoloader not rebuilt. Upload vendor/ first.', 'warn');
         return 0;
     }
 
@@ -435,7 +435,7 @@ function regenerateAutoloader(): int {
 /** Recursive copy, skipping listed names. Returns list of copied file paths. */
 function rcopy(string $src, string $dst, array $skip = [], array &$copied = []): array {
     if (!is_dir($dst) && !@mkdir($dst, 0755, true) && !is_dir($dst)) {
-        log_step('âš ', "Could not create directory: {$dst}", 'warn');
+        log_step('⚠', "Could not create directory: {$dst}", 'warn');
         return $copied;
     }
     foreach (new DirectoryIterator($src) as $item) {
@@ -462,7 +462,7 @@ function render_file_list(array $files, string $baseDir): string {
         $items .= '<li style="font-family:monospace;font-size:.78rem;color:#475569">' . htmlspecialchars($rel) . '</li>';
     }
     return '<details style="cursor:pointer"><summary style="font-size:.82rem;color:#64748b">'
-         . count($files) . ' files â€” click to expand</summary>'
+         . count($files) . ' files — click to expand</summary>'
          . '<ul style="margin:6px 0 0 16px;padding:0;list-style:disc">' . $items . '</ul>'
          . '</details>';
 }
@@ -492,7 +492,7 @@ function render_log(): string {
 
 function render_banner(bool $ok, string $msg): string {
     $cls = $ok ? 'ok' : 'err';
-    $icon = $ok ? 'âœ“' : 'âœ—';
+    $icon = $ok ? '✓' : '✗';
     return "<div class=\"banner {$cls}\">{$icon} {$msg}</div>";
 }
 
@@ -502,7 +502,7 @@ function page(string $title, string $body): string {
     return <<<HTML
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CIRCLE Deploy â€” {$title}</title>
+<title>CIRCLE Deploy — {$title}</title>
 <style>
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:680px;margin:36px auto;padding:0 20px;background:#f8fafc;color:#1e293b}
   h1{font-size:1.3rem;margin:0 0 4px;color:#312e81}
@@ -518,8 +518,8 @@ function page(string $title, string $body): string {
   .banner.err{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
   details summary{cursor:pointer}
 </style></head><body>
-<h1>âŠ™ CIRCLE Deployer</h1>
-<p class="sub">{$host} &nbsp;Â·&nbsp; {$now}</p>
+<h1>⊙ CIRCLE Deployer</h1>
+<p class="sub">{$host} &nbsp;·&nbsp; {$now}</p>
 {$body}
 </body></html>
 HTML;
