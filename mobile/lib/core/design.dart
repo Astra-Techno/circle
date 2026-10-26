@@ -11,6 +11,65 @@ abstract final class Space {
       large = 40;
 }
 
+/// Shared soft-depth lighting: bright upper edge, tinted lower surface,
+/// and a restrained downward shadow. Text and fields retain clear borders.
+abstract final class CircleDepth {
+  static const cardElevation = 3.0;
+  static const buttonElevation = 4.0;
+  static const pressedElevation = 1.0;
+  static const floatingElevation = 6.0;
+  static const _ink = Color(0xFF262047);
+
+  static Color shadow(Brightness brightness) => brightness == Brightness.light
+      ? _ink.withValues(alpha: 0.18)
+      : Colors.black.withValues(alpha: 0.48);
+
+  static BoxDecoration panel(
+    BuildContext context, {
+    required double radius,
+    Color? tint,
+  }) {
+    final theme = Theme.of(context);
+    final light = theme.brightness == Brightness.light;
+    final surface = tint ?? theme.colorScheme.surfaceContainer;
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(radius),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color.lerp(surface, theme.colorScheme.surface, light ? 0.72 : 0.12)!,
+          surface,
+        ],
+      ),
+      border: Border.all(
+        color: light
+            ? Colors.white.withValues(alpha: 0.9)
+            : theme.colorScheme.outlineVariant,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: shadow(theme.brightness),
+          offset: const Offset(0, 6),
+          blurRadius: 16,
+          spreadRadius: -5,
+        ),
+      ],
+    );
+  }
+
+  static WidgetStateProperty<double> get buttonLift =>
+      WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.disabled)) return 0;
+        if (states.contains(WidgetState.pressed)) return pressedElevation;
+        if (states.contains(WidgetState.hovered) ||
+            states.contains(WidgetState.focused)) {
+          return floatingElevation;
+        }
+        return buttonElevation;
+      });
+}
+
 /// Warm Keepsake on White: indigo structure, lavender selection, coral
 /// reactions and sage confirmations. Semantic roles keep colour consistent
 /// across every feature; group identity also always has an icon and name.
@@ -220,9 +279,9 @@ ThemeData circleTheme(Brightness brightness) {
       ),
     ),
     cardTheme: CardThemeData(
-      // Hairline edge on white; the design's micro-shadow is too faint to
-      // matter on screen and renders as a hard ring in goldens.
-      elevation: 0,
+      elevation: CircleDepth.cardElevation,
+      shadowColor: CircleDepth.shadow(brightness),
+      surfaceTintColor: Colors.transparent,
       color: colors.surfaceContainerLowest,
       margin: const EdgeInsets.only(bottom: Space.lg),
       shape: rounded(CircleRadius.card, side: hairline),
@@ -239,15 +298,19 @@ ThemeData circleTheme(Brightness brightness) {
       padding: const EdgeInsets.symmetric(horizontal: Space.sm),
     ),
     filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(48, 48),
-        shape: rounded(CircleRadius.button),
-        textStyle: text.labelLarge?.copyWith(fontSize: 16),
-        padding: const EdgeInsets.symmetric(
-          horizontal: Space.section,
-          vertical: Space.md,
-        ),
-      ),
+      style:
+          FilledButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            shape: rounded(CircleRadius.button),
+            textStyle: text.labelLarge?.copyWith(fontSize: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Space.section,
+              vertical: Space.md,
+            ),
+          ).copyWith(
+            elevation: CircleDepth.buttonLift,
+            shadowColor: WidgetStatePropertyAll(CircleDepth.shadow(brightness)),
+          ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
@@ -274,14 +337,15 @@ ThemeData circleTheme(Brightness brightness) {
       backgroundColor: colors.primary,
       foregroundColor: colors.onPrimary,
       shape: rounded(CircleRadius.card),
-      // Flat: tinted shadows render as hard rings in goldens.
-      elevation: 0,
-      focusElevation: 0,
-      hoverElevation: 0,
-      highlightElevation: 0,
+      elevation: CircleDepth.floatingElevation,
+      focusElevation: CircleDepth.floatingElevation,
+      hoverElevation: CircleDepth.floatingElevation,
+      highlightElevation: CircleDepth.pressedElevation,
       extendedTextStyle: text.labelLarge?.copyWith(fontSize: 16),
     ),
     navigationBarTheme: NavigationBarThemeData(
+      elevation: CircleDepth.cardElevation,
+      shadowColor: CircleDepth.shadow(brightness),
       backgroundColor: colors.surface,
       surfaceTintColor: Colors.transparent,
       // The selected indicator pill is solid indigo with a white icon.

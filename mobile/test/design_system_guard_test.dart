@@ -38,9 +38,9 @@ final rules = <({String name, RegExp pattern, Set<String> allowedIn})>[
     allowedIn: tokenFiles,
   ),
   (
-    name: 'gradient (the design uses flat tonal fills)',
+    name: 'gradient (use shared CircleDepth tokens)',
     pattern: RegExp(r'\b(Linear|Radial|Sweep)Gradient\('),
-    allowedIn: const {},
+    allowedIn: tokenFiles,
   ),
   (
     name: 'raw CircleAvatar (use CircleInitialAvatar)',

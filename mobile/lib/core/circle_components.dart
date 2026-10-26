@@ -23,11 +23,9 @@ class CircleCover extends StatelessWidget {
         child: Container(
           width: double.infinity,
           padding: EdgeInsets.all(compact ? Space.xl : Space.hero),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(
-              compact ? CircleRadius.inner : CircleRadius.sheet,
-            ),
-            color: colors.surfaceContainer,
+          decoration: CircleDepth.panel(
+            context,
+            radius: compact ? CircleRadius.inner : CircleRadius.sheet,
           ),
           child: Column(
             children: [
@@ -88,46 +86,52 @@ class CircleSceneTile extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       excludeSemantics: true,
-      child: Material(
-        color: colors.surfaceContainer,
-        borderRadius: radius,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(Space.sm),
-                // Decorative: scales down instead of overflowing small tiles.
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        icon,
-                        size: large ? 96 : 40,
-                        color: colors.secondary,
-                      ),
-                      const SizedBox(height: Space.sm),
-                      // On the last tile, "+N more" takes the label's place
-                      // so the two never overlap.
-                      if (more != null)
-                        CirclePill(more!, tone: CircleTone.strong)
-                      else
-                        Text(
-                          label,
-                          textAlign: TextAlign.center,
-                          style: (large ? text.titleLarge : text.titleSmall)
-                              ?.copyWith(color: colors.onSurface),
+      child: DecoratedBox(
+        decoration: CircleDepth.panel(
+          context,
+          radius: large ? CircleRadius.card : CircleRadius.tile,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: radius,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            onLongPress: onLongPress,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(Space.sm),
+                  // Decorative: scales down instead of overflowing small tiles.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          icon,
+                          size: large ? 96 : 40,
+                          color: colors.secondary,
                         ),
-                    ],
+                        const SizedBox(height: Space.sm),
+                        // On the last tile, "+N more" takes the label's place
+                        // so the two never overlap.
+                        if (more != null)
+                          CirclePill(more!, tone: CircleTone.strong)
+                        else
+                          Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            style: (large ? text.titleLarge : text.titleSmall)
+                                ?.copyWith(color: colors.onSurface),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -357,20 +361,27 @@ class CircleInitialAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = circleToneColors(context, tone);
     final diameter = size.diameter;
-    final avatar = CircleAvatar(
-      radius: diameter / 2,
-      backgroundColor: palette.fill,
-      foregroundColor: palette.text,
-      child: icon != null
-          ? Icon(icon, size: diameter * 0.5, color: palette.text)
-          : Text(
-              name!.trim().isEmpty ? '?' : name!.trim().characters.first,
-              style:
-                  (diameter >= 56
-                          ? Theme.of(context).textTheme.headlineSmall
-                          : Theme.of(context).textTheme.titleMedium)
-                      ?.copyWith(color: palette.text),
-            ),
+    final avatar = DecoratedBox(
+      decoration: CircleDepth.panel(
+        context,
+        radius: diameter / 2,
+        tint: palette.fill,
+      ),
+      child: CircleAvatar(
+        radius: diameter / 2,
+        backgroundColor: Colors.transparent,
+        foregroundColor: palette.text,
+        child: icon != null
+            ? Icon(icon, size: diameter * 0.5, color: palette.text)
+            : Text(
+                name!.trim().isEmpty ? '?' : name!.trim().characters.first,
+                style:
+                    (diameter >= 56
+                            ? Theme.of(context).textTheme.headlineSmall
+                            : Theme.of(context).textTheme.titleMedium)
+                        ?.copyWith(color: palette.text),
+              ),
+      ),
     );
     if (!active) return ExcludeSemantics(child: avatar);
     final dot = diameter * 0.3;

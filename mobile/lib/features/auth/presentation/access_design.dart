@@ -172,9 +172,10 @@ class _PhotoCollage extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(Space.lg),
-      decoration: BoxDecoration(
-        color: accents.recessed,
-        borderRadius: BorderRadius.circular(CircleRadius.card),
+      decoration: CircleDepth.panel(
+        context,
+        radius: CircleRadius.card,
+        tint: accents.recessed,
       ),
       child: Column(
         children: [
@@ -643,7 +644,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
     back: true,
     children: [
       const _Brand(),
-      const SizedBox(height: Space.hero),
+      const SizedBox(height: Space.lg),
       Text(
         widget.registering
             ? 'Make room for\nyour people.'
@@ -891,7 +892,7 @@ class _AccessPage extends StatelessWidget {
 class _Brand extends StatelessWidget {
   const _Brand();
   @override
-  Widget build(BuildContext context) => const CircleBrand(compact: true);
+  Widget build(BuildContext context) => const CircleBrand.access();
 }
 
 class _PreviewNote extends StatelessWidget {

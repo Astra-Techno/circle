@@ -1,5 +1,15 @@
 # CIRCLE design system
 
+## Current depth treatment — Soft 3D (26 October 2026)
+
+The owner requested 3D effects. This adds a shared soft-depth layer to Warm Keepsake on White and supersedes the older flat-only/shadow-free rules below. Preserve the supplied brand artwork, readable typography, white canvas and indigo/lavender/coral/sage palette.
+
+`CircleDepth` in `mobile/lib/core/design.dart` owns all lighting: gentle top-left highlights, tonal gradients, restrained downward shadows and consistent elevations. Gradients may only be defined in that token file; feature widgets consume the shared panel decoration. Cards lift above the canvas; primary buttons and floating actions lower when pressed, and disabled primary buttons have no elevation. Avatar and illustration surfaces share the same lighting. Dark mode uses dark surfaces and shadow colours. Inputs retain explicit borders and focus outlines; neither depth nor colour is the sole indication of an interactive state. No continuous tilt/parallax animation or additional animation controller is introduced.
+
+Access forms use a compact 128px complete brand lockup and shorter spacing so the form is reached sooner. The logo image is never cropped, redrawn or recoloured. Welcome retains its branded composition with a dimensional photo-collage panel. Keep list rows light rather than giving every row a floating card.
+
+Validate populated/empty states, small phones, large text, dark mode and screen-reader labels. Existing Windows golden baselines must be reviewed for this deliberate visual change; do not regenerate them on Linux or describe new visual differences as approved baselines.
+
 ## Current direction — Warm Keepsake on White (26 October 2026)
 
 The owner supplied `stitch_circle_private_social_network/{screen.png,code.html,DESIGN.md}` and requested a colourful app with a white background. This supersedes the monochrome direction below. The initial appearance is **light**, independent of device dark mode; the existing appearance setting can still select dark or system.
