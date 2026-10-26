@@ -25,6 +25,6 @@ The internal sender now requires an explicit category and optional exact group, 
 
 No production fixtures, provider messages, credentials or devices were used. No deployment or APK build was performed. These checks establish source behavior, not Firebase/device delivery.
 
-## Next subtask N1b
+## N1b source implementation and next client work
 
-Implement the durable outbox and CLI worker, an injectable provider transport with retry classification/deduplication, send-time eligibility and quiet-hour deferral, and hooks for the first supported Memory/group events. Complete SDK session ownership, contextual opt-in UI, foreground presentation and authorized tap routing in subsequent focused steps. Verify scheduler/private server credentials and real Android delivery before enabling notification capabilities. Each future feature family adds its reviewed events to the same delivery pipeline.
+The durable outbox/CLI worker, injectable transport, retry classification, send-time eligibility and quiet-hour deferral are implemented for initial Memory/comment/reply events in [notification-worker.md](notification-worker.md). Group/reaction hooks remain future work. Complete SDK session ownership, contextual opt-in UI, foreground presentation and authorized tap routing in subsequent focused steps. Verify scheduler/private server credentials and real Android delivery before enabling notification capabilities. Each future feature family adds its reviewed events to the same delivery pipeline.

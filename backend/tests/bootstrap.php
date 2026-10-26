@@ -33,6 +33,9 @@ $pass = getenv('CIRCLE_TEST_DB_PASSWORD') ?: '';
 
 $settings = [
     'APP_ENV' => 'testing',
+    'PUSH_QUEUE_ENABLED' => 'false',
+    'PUSH_DELIVERY_ENABLED' => 'false',
+    'PUSH_API_BASE_URL' => '',
     'DB_HOST' => $host,
     'DB_PORT' => $port,
     'DB_DATABASE' => CIRCLE_TEST_DATABASE,

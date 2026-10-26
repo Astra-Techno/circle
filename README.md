@@ -588,6 +588,7 @@ Current pending tasks, dependencies and next-release scope: [execution backlog](
 - Server release builds use the deployed HTTPS API. Explicit preview releases require `CIRCLE_PREVIEW=true`; fictional preview workflows are not persistent live services.
 
 **In progress / gaps:**
+- Source checkpoint N1b adds a default-off transactional queue/CLI worker for Memory/comment/reply events, with retries and quiet-hour deferral; see [worker scope and prerequisites](docs/notification-worker.md). No hosted scheduling or native delivery claim.
 - Source checkpoint N1a adds session-bound device registration, persistent opt-in category preferences and timezone-aware quiet-hour filtering; see [push foundation](docs/push-foundation.md). Event dispatch, live settings UI and native delivery remain disabled/unverified.
 - Firebase/device-token infrastructure was added on 26 Oct, but source review found incomplete event dispatch, foreground/tap handling and lifecycle/error handling. It must satisfy §0.3 before being described as working end-to-end push delivery.
 - Real-time chat, live events/polls/albums, server notification preferences and privacy/moderation services are not established by enabling their capability flags. Keep unsupported controls gated under §0.2.

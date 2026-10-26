@@ -13,110 +13,69 @@ namespace Circle\Core;
  * Legacy API (server key) is deprecated; this uses OAuth2 access tokens
  * from the service account for the v1 endpoint.
  */
-final class FcmSender
+final class FcmSender implements \Circle\Notifications\PushTransport
 {
     private static ?string $accessToken = null;
     private static int $tokenExpiry = 0;
 
-    /**
-     * Send a notification to specific user(s) by their user IDs.
-     *
-     * @param int[]  $userIds  Target user IDs
-     * @param string $title    Notification title
-     * @param string $body     Notification body text
-     * @param array<string, string> $data     Optional data payload (key-value strings)
-     */
-    public static function sendToUsers(array $userIds, string $title, string $body, string $category, ?int $groupId, array $data = []): int
+    public function isReady(): bool
     {
-        $at = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $userIds = array_values(array_filter(array_unique($userIds),
-            static fn (int $id): bool => NotificationPreferences::allows($id, $category, $groupId, $at)));
-        if (empty($userIds)) return 0;
-
-        $db = Database::connection();
-        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
-        $stmt = $db->prepare(
-            "SELECT DISTINCT dt.fcm_token FROM device_tokens dt
-             JOIN users u ON u.id = dt.user_id AND u.status = 'active'
-             WHERE dt.user_id IN ($placeholders) AND dt.session_id IS NOT NULL
-             AND EXISTS (SELECT 1 FROM refresh_tokens rt WHERE rt.user_id = dt.user_id
-                 AND rt.session_id = dt.session_id AND rt.revoked_at IS NULL AND rt.expires_at > NOW())"
-        );
-        $stmt->execute($userIds);
-        $tokens = $stmt->fetchAll(\PDO::FETCH_COLUMN);
-
-        $sent = 0;
-        foreach ($tokens as $token) {
-            if (self::send($token, $title, $body, $data)) {
-                $sent++;
-            }
-        }
-        return $sent;
+        return Env::get('FCM_PROJECT_ID') !== '' && function_exists('curl_init') && self::credentials() !== null;
     }
 
-    /**
-     * Send a notification to a single FCM token.
-     * @param array<string, string> $data
-     */
-    private static function send(string $fcmToken, string $title, string $body, array $data = []): bool
+    /** @param array<string, string> $data */
+    public function send(string $token, array $data): \Circle\Notifications\PushResult
     {
-        $projectId = Env::get('FCM_PROJECT_ID', '');
-        if ($projectId === '') {
-            self::log('FCM_PROJECT_ID not set, skipping push notification');
-            return false;
-        }
-
+        if (!$this->isReady()) return \Circle\Notifications\PushResult::retry();
         $accessToken = self::getAccessToken();
-        if ($accessToken === null) return false;
-
-        $message = [
-            'message' => [
-                'token' => $fcmToken,
-                'notification' => [
-                    'title' => $title,
-                    'body'  => $body,
-                ],
-            ],
-        ];
-
-        if (!empty($data)) {
-            // FCM data values must all be strings.
-            $message['message']['data'] = array_map('strval', $data);
-        }
-
-        $url = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
-
-        $ch = curl_init($url);
+        if ($accessToken === null) return \Circle\Notifications\PushResult::retry();
+        $ttl = min(86400, (int) ($data['expires_at'] ?? 0) - time());
+        if ($ttl <= 0) return \Circle\Notifications\PushResult::permanent();
+        $project = rawurlencode(Env::get('FCM_PROJECT_ID'));
+        $retryAfter = '';
+        $ch = curl_init("https://fcm.googleapis.com/v1/projects/{$project}/messages:send");
         curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_HTTPHEADER     => [
-                'Authorization: Bearer ' . $accessToken,
-                'Content-Type: application/json',
-            ],
-            CURLOPT_POSTFIELDS     => json_encode($message),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $accessToken, 'Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => json_encode(['message' => ['token' => $token, 'data' => $data,
+                'android' => ['priority' => 'normal', 'ttl' => $ttl . 's']]], JSON_THROW_ON_ERROR),
+            CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 10,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_HEADERFUNCTION => static function ($handle, string $line) use (&$retryAfter): int {
+                if (stripos($line, 'Retry-After:') === 0) $retryAfter = trim(substr($line, 12));
+                return strlen($line);
+            },
         ]);
-
         $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+        if ($status === 401) self::$accessToken = null;
+        return self::classify($status, is_string($response) ? $response : '', $retryAfter);
+    }
 
-        if ($httpCode === 200) {
-            return true;
+    public static function classify(int $status, string $body, string $retryAfter = ''): \Circle\Notifications\PushResult
+    {
+        $json = json_decode($body, true);
+        if ($status === 200 && is_array($json) && is_string($json['name'] ?? null) && $json['name'] !== '') return \Circle\Notifications\PushResult::sent();
+        if (self::isUnregistered($status, $body)) return \Circle\Notifications\PushResult::invalid();
+        if ($status === 0 || in_array($status, [200, 401, 403, 408, 429], true) || $status >= 500) {
+            $after = ctype_digit($retryAfter) ? min(604800, (int) $retryAfter) : max(0, (strtotime($retryAfter) ?: time()) - time());
+            return \Circle\Notifications\PushResult::retry($after);
         }
+        return \Circle\Notifications\PushResult::permanent();
+    }
 
-        // A project/route 404 does not establish that a device token expired.
-        if (self::isUnregistered($httpCode, (string) $response)) {
-            $db = Database::connection();
-            $stmt = $db->prepare('DELETE FROM device_tokens WHERE fcm_token = ?');
-            $stmt->execute([$fcmToken]);
-            self::log("Removed stale FCM token");
-        } else {
-            self::log("FCM send failed (HTTP {$httpCode})");
-        }
-
-        return false;
+    /** @return array{private_key: string, client_email: string, token_uri: string}|null */
+    private static function credentials(): ?array
+    {
+        $path = Env::get('FCM_SERVICE_ACCOUNT_PATH');
+        if ($path === '' || !is_file($path) || !is_readable($path)) return null;
+        $raw = @file_get_contents($path);
+        $key = is_string($raw) ? json_decode($raw, true) : null;
+        if (!is_array($key) || !is_string($key['private_key'] ?? null) || !is_string($key['client_email'] ?? null)
+            || ($key['token_uri'] ?? '') !== 'https://oauth2.googleapis.com/token'
+            || openssl_pkey_get_private($key['private_key']) === false) return null;
+        return ['private_key' => $key['private_key'], 'client_email' => $key['client_email'], 'token_uri' => $key['token_uri']];
     }
 
     public static function isUnregistered(int $status, string $response): bool
@@ -150,17 +109,8 @@ final class FcmSender
             return self::$accessToken;
         }
 
-        $keyPath = Env::get('FCM_SERVICE_ACCOUNT_PATH', '');
-        if ($keyPath === '' || !file_exists($keyPath)) {
-            self::log('FCM_SERVICE_ACCOUNT_PATH not set or file missing');
-            return null;
-        }
-
-        $key = json_decode(file_get_contents($keyPath), true);
-        if (!$key || !isset($key['private_key'], $key['client_email'], $key['token_uri'])) {
-            self::log('Invalid service account key file');
-            return null;
-        }
+        $key = self::credentials();
+        if ($key === null) return null;
 
         $now = time();
         $header = base64url_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
@@ -191,6 +141,8 @@ final class FcmSender
             ]),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_PROTOCOLS      => CURLPROTO_HTTPS,
         ]);
 
         $response = curl_exec($ch);
@@ -203,7 +155,7 @@ final class FcmSender
         }
 
         $token = json_decode((string) $response, true);
-        if (!isset($token['access_token'])) {
+        if (!is_array($token) || !is_string($token['access_token'] ?? null) || $token['access_token'] === '') {
             self::log('OAuth2 response missing access_token');
             return null;
         }

@@ -30,7 +30,8 @@
         "analyse": "phpstan analyse --no-progress",
         "migrate": "php src/Core/migrate.php",
         "serve": "php -S localhost:8080 -t public",
-        "media:cleanup": "php src/Core/media_cleanup.php"
+        "media:cleanup": "php src/Core/media_cleanup.php",
+        "notifications:work": "php src/Core/notifications_work.php"
     },
     "config": {
         "sort-packages": true,

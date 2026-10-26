@@ -29,6 +29,13 @@ final class NotificationPreferences
     /** Group-based delivery is always subject to current exact membership. */
     public static function allows(int $userId, string $category, ?int $groupId, \DateTimeImmutable $at): bool
     {
+        if (!self::eligible($userId, $category, $groupId)) return false;
+        return self::quietUntil($userId, $at) === null;
+    }
+
+    /** Eligibility without the time gate, so workers can defer instead of drop. */
+    public static function eligible(int $userId, string $category, ?int $groupId): bool
+    {
         if (!in_array($category, self::CATEGORIES, true)) return false;
         $user = Database::queryOne('SELECT status FROM users WHERE id = :uid', ['uid' => $userId]);
         if (($user['status'] ?? '') !== 'active') return false;
@@ -38,13 +45,30 @@ final class NotificationPreferences
             ['uid' => $userId, 'gid' => $groupId]
         ) === null) return false;
         $preferences = self::get($userId);
-        if (!$preferences['enabled'] || !$preferences['categories'][$category]) return false;
-        if (!$preferences['quiet_hours']) return true;
+        return $preferences['enabled'] && $preferences['categories'][$category];
+    }
+
+    public static function quietUntil(int $userId, \DateTimeImmutable $at): ?\DateTimeImmutable
+    {
+        $preferences = self::get($userId);
+        if (!$preferences['quiet_hours'] || !self::isQuiet($preferences, $at)) return null;
+        // Step in absolute minutes, not local wall-clock arithmetic: repeated
+        // or skipped hours during DST must not shorten the quiet interval.
+        $timestamp = $at->getTimestamp();
+        for ($offset = 60 - ($timestamp % 60); $offset <= 172800; $offset += 60) {
+            $candidate = $at->setTimestamp($timestamp + $offset);
+            if (!self::isQuiet($preferences, $candidate)) return $candidate;
+        }
+        return $at->setTimestamp($timestamp + 172800); // Fail closed for unusual historical transitions.
+    }
+
+    /** @param array<string, mixed> $preferences */
+    private static function isQuiet(array $preferences, \DateTimeImmutable $at): bool
+    {
         $local = $at->setTimezone(new \DateTimeZone($preferences['timezone']));
         $minute = (int) $local->format('G') * 60 + (int) $local->format('i');
         $start = $preferences['quiet_start'];
         $end = $preferences['quiet_end'];
-        $quiet = $start < $end ? $minute >= $start && $minute < $end : $minute >= $start || $minute < $end;
-        return !$quiet;
+        return $start < $end ? $minute >= $start && $minute < $end : $minute >= $start || $minute < $end;
     }
 }

@@ -137,6 +137,7 @@ final class PushFoundationTest extends ApiTestCase
         self::assertFalse(NotificationPreferences::allows($user['id'], 'memories', $group, $at('2026-11-01 05:30')));
         self::assertFalse(NotificationPreferences::allows($user['id'], 'memories', $group, $at('2026-11-01 06:30')));
         self::assertTrue(NotificationPreferences::allows($user['id'], 'memories', $group, $at('2026-11-01 07:00')));
+        self::assertSame('2026-11-01 07:00', NotificationPreferences::quietUntil($user['id'], $at('2026-11-01 05:30'))?->format('Y-m-d H:i'));
         Database::execute("UPDATE group_members SET status = 'left' WHERE user_id = :uid", ['uid' => $user['id']]);
         self::assertFalse(NotificationPreferences::allows($user['id'], 'memories', $group, $at('2026-10-26 10:00')));
         Database::execute("UPDATE group_members SET status = 'active' WHERE user_id = :uid", ['uid' => $user['id']]);

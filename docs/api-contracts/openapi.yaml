@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.4
+  version: 0.3.5
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -54,6 +54,16 @@ info:
     - When the server cannot process images (no image library installed) upload
       requests fail closed with `503 server_error`; when the media signing secret is
       not configured, media requests return `500 server_error`.
+
+    ## Notification capture (0.3.5, gated)
+    With PUSH_QUEUE_ENABLED=true, committed Memory/comment/reply mutations capture
+    current opted-in exact members' registered Android login sessions in a transactional outbox.
+    The actor is excluded; comments notify the Memory owner and reply target only.
+    No provider network call occurs inside these HTTP mutations. Rolled-back mutations
+    produce no outbox entries. Capture/delivery default off; native client acceptance is pending.
+    Worker envelopes follow PushMemoryEnvelope. This does not introduce a public queue endpoint.
+    Retries are at-least-once: client event-id deduplication and account/server/session checks
+    are mandatory before presentation. API mutation idempotency is still not implemented.
 
     ## Not yet implemented (planned, not part of this contract)
     Direct add with consent, events, polls, chat (and chat attachments), albums,
@@ -1687,6 +1697,31 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
+    PushMemoryEnvelope:
+      type: object
+      additionalProperties: false
+      description: |
+        FCM data-only payload. Contains references, never private text, names, media URLs,
+        bearer tokens or a provider-controlled route. Client must verify canonical API URL,
+        current recipient and SHA-256 of its JWT sid against session_scope, expiry,
+        supported type and deduplication before displaying or routing. Dedup keys must
+        include the trusted API base URL, recipient, session_scope and event_id; IDs
+        can repeat across recipients/deployments. Compare with the configured API URL
+        first; never send credentials to a URL selected by an incoming payload.
+        Fetch the Memory through its authorized API; inaccessible/deleted content gets a
+        calm fallback. Data-only normal-priority Android delivery is not a guarantee of
+        background/terminated delivery or visible notification display. No native validation claimed.
+      required: [event_id, type, api_base_url, recipient_id, session_scope, group_id, memory_id, comment_id, expires_at]
+      properties:
+        event_id: { type: string, pattern: '^[a-f0-9]{64}$', description: Stable SHA-256 of the committed event key, unchanged across device retries. }
+        type: { type: string, enum: [memory.created, comment.created, comment.reply] }
+        api_base_url: { type: string, format: uri, maxLength: 512, pattern: '^https://' }
+        recipient_id: { type: string, pattern: '^[1-9][0-9]*$' }
+        session_scope: { type: string, pattern: '^[a-f0-9]{64}$', description: SHA-256 of login session id; not an authentication credential. }
+        group_id: { type: string, pattern: '^[1-9][0-9]*$' }
+        memory_id: { type: string, pattern: '^[1-9][0-9]*$' }
+        comment_id: { type: string, pattern: '^([1-9][0-9]*)?$' }
+        expires_at: { type: string, pattern: '^[0-9]+$', description: UTC Unix expiry in seconds; ignore after this time. }
     PushDeviceToken:
       type: object
       required: [fcm_token]

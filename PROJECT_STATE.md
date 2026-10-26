@@ -9,7 +9,7 @@ Updated: 26 October 2026. This file is a short handoff, not a substitute for ins
 - Preview implementations do not establish live chat/events/albums/moderation or push preference enforcement.
 
 ## Repository versus live release
-- Recent runtime commits: `374e02f` Firebase infrastructure/feature flags; `8c1f677` stable APK replacement.
+- Downloadable artifact history includes `8c1f677` stable APK replacement; later source checkpoints add profiles and gated push foundations without a new APK.
 - Review found incompatible APK signing, reused build7 and inconsistent stable/versioned artifacts/metadata. Fix before another runtime release; README §0.4–0.5.
 - Last read-only live check still identified the previously verified 1.0.6+7 artifact: 63,085,188 bytes, SHA-256 `8ab534bd2aa0b33cce92d3ee9d091549567062d11944d02bcaeb52ba47a9c15a`.
 - Recheck current Git and hosted metadata before assuming deployment state has changed.
@@ -25,12 +25,12 @@ Updated: 26 October 2026. This file is a short handoff, not a substitute for ins
 ## Current source checkpoint (not a deployed release)
 - Working checkout: `/workspace/circle-docs-sync`, main; primary `/workspace/circle` still preserves original WIP. Do not reapply that old patch to integrated source.
 - B1/B2 integrated in fd3a327: private profiles, session guards, migration 008 and truthful capability gates. Profile visual/native/live acceptance and coherent APK publication remain open.
-- N1a complete in source: strict session-bound devices/logout cleanup, migration 009, owner-only persistent opt-in categories/quiet hours, sender policy filtering and typed client API; OpenAPI 0.3.4. Push/settings UI remain gated.
-- Backend full suite: 143 tests / 2,222 assertions passed on circle_test; final focused foundation suite after added DST cases: 8 tests / 125 assertions passed; PHPStan clean.
-- Flutter full suite: 513 passed / 1 skipped / 13 existing golden failures. Focused auth/profile/design/API: 28 passed; final preference API checks: 5 passed. Analysis/format clean.
+- N1a (265fcd2) and N1b complete in source: session-safe devices/preferences plus migration 010 transactional Memory/comment/reply outbox, injectable FCM transport and bounded CLI worker. OpenAPI 0.3.5. Capture/delivery/settings UI remain off; worker is Android-only.
+- Backend full suite: 159 tests / 2,673 assertions passed on circle_test; focused queue/policy: 24 tests / 573 assertions passed; PHPStan and Composer validation clean.
+- This backend-only batch: Flutter format/analyze clean and 11 server-mode checks passed. Prior full Flutter run: 513 passed / 1 skipped / 13 existing golden failures; no baselines changed or new visual approval claimed.
 - Windows golden approval, native picker/push, hosted profile checks and new APK publication remain unresolved. No deployment/build in this batch.
-- Evidence: `docs/integration-checkpoint.md`, `docs/push-foundation.md`. Static frontend/backend contract review completed; 306 OpenAPI references resolve.
-- Next N1b: durable notification outbox/worker and provider retry/deduplication; then SDK lifecycle/contextual opt-in and foreground/tap handling. Each feature's eligible events join this pipeline before enablement.
+- Evidence: `docs/integration-checkpoint.md`, `docs/push-foundation.md`, `docs/notification-worker.md`. Scoped contract/worker review found no blockers; 306 OpenAPI refs and minimal envelope schema fixtures validated.
+- Next N1c: SDK lifecycle/contextual opt-in UI, trusted origin/account/session/expiry validation and scoped deduplication; then authorized foreground/tap behavior and device checks. Reaction/group hooks and remaining families stay tracked; hosting cron/credentials/retention require verification before enablement.
 
 ## Validation commands
 - Mobile: `dart format --output=none --set-exit-if-changed lib test`, `flutter analyze`, focused `flutter test test/<relevant_test>.dart`; required broader suite at integration/release.

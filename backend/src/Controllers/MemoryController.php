@@ -8,6 +8,7 @@ use Circle\Core\Database;
 use Circle\Core\Request;
 use Circle\Core\Response;
 use Circle\Core\Validator;
+use Circle\Notifications\NotificationOutbox;
 use Circle\Media\Uuid;
 use Circle\Repositories\MediaRepository;
 use Circle\Repositories\MemberRepository;
@@ -221,6 +222,7 @@ final class MemoryController
             );
             $memoryId = Database::lastInsertId();
             MediaRepository::attachToMemory($memoryId, $mediaIds);
+            NotificationOutbox::memoryCreated($memoryId);
             return $memoryId;
         });
 
@@ -362,18 +364,24 @@ final class MemoryController
             }
         }
 
-        Database::execute(
-            'INSERT INTO comments (memory_id, parent_id, author_id, body)
-             VALUES (:mid, :pid, :uid, :body)',
-            ['mid' => $memoryId, 'pid' => $pid, 'uid' => $userId, 'body' => $body]
-        );
+        $commentId = Database::transaction(static function () use ($memoryId, $pid, $userId, $body): int {
+            Database::execute(
+                'INSERT INTO comments (memory_id, parent_id, author_id, body)
+                 VALUES (:mid, :pid, :uid, :body)',
+                ['mid' => $memoryId, 'pid' => $pid, 'uid' => $userId, 'body' => $body]
+            );
+
+            $id = Database::lastInsertId();
+            NotificationOutbox::commentCreated($memoryId, $id);
+            return $id;
+        });
 
         $comment = Database::queryOne(
             'SELECT c.id, c.parent_id, c.author_id, c.body, c.created_at,
                     u.display_name AS author_name
              FROM comments c JOIN users u ON c.author_id = u.id
              WHERE c.id = :id',
-            ['id' => Database::lastInsertId()]
+            ['id' => $commentId]
         );
 
         Response::created($comment, 'Comment added.');

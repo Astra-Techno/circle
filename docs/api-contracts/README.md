@@ -2,7 +2,7 @@
 
 **`openapi.yaml` (OpenAPI 3.1) is the source of truth for `/api/v1`.**
 
-**Approved by the owner for implementation on 23 Oct 2026 (0.3.0); now at 0.3.4 with M4 media, reviewed Memory query filters and account-profile expansion implemented.** It describes the implemented operations the draft backend implements today (ADR 0006):
+**Approved by the owner for implementation on 23 Oct 2026 (0.3.0); now at 0.3.5 with M4 media, reviewed Memory query filters and account-profile expansion implemented.** It describes the implemented operations the draft backend implements today (ADR 0006):
 - accounts and sessions, editable personal details and private profile/cover photos;
 - groups and nested subgroups;
 - members, roles, bans and ownership transfer;
@@ -60,3 +60,7 @@ Owner `PUT/GET/DELETE /me/photos/{kind}` handles avatar/cover images without a g
 ## Push foundation — 0.3.4
 
 The owner approved sequential cross-feature notification work. N1a adds strict session-bound device registration/unregistration and owner-only persistent notification preferences. See the OpenAPI operations and `docs/push-foundation.md` for the backend/client review, acceptance evidence and remaining delivery work. This API does not turn on Firebase dispatch or claim working foreground/tap behavior. Existing preview Activity/settings remain isolated and server capability-gated.
+
+## Transactional notification queue — 0.3.5
+
+Memory/comment/reply mutations can capture opted-in device/session snapshots in the same database transaction, behind default-off capture/delivery flags. PushMemoryEnvelope specifies minimal data-only references and mandatory future-client scope/expiry/deduplication checks. No new public HTTP operation or changed success response. Mutations have no provider I/O. CLI scheduling, provider/device delivery, notification UI and chat/events remain separate acceptance work. See `docs/notification-worker.md`.
