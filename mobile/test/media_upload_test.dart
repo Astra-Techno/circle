@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:dio/dio.dart';
@@ -323,8 +324,18 @@ void main() {
       expect(uploads.items.last.retryable, isFalse);
       expect(uploads.firstError, contains('HEIC'));
       uploads.remove(uploads.items.last);
+      final completed = Completer<void>();
+      void onUploadChanged() {
+        if (!uploads.busy && !completed.isCompleted) completed.complete();
+      }
+
+      uploads.addListener(onUploadChanged);
       uploads.target('$group');
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      try {
+        await completed.future.timeout(const Duration(seconds: 5));
+      } finally {
+        uploads.removeListener(onUploadChanged);
+      }
       expect(uploads.items.single.status, UploadStatus.ready);
       expect(uploads.readyIds, hasLength(1));
       expect(uploads.busy, isFalse);

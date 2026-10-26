@@ -1,0 +1,15 @@
+# CIRCLE Android test release ? 26 October 2026
+
+Version 1.0.1, build 2. Release configuration connects to https://circle.cloudkart24.com/api/v1 with CIRCLE_PREVIEW=false. Registration/login are the existing HTTP client flows, with secure token storage, restored sessions, refresh and logout; no mock credentials are substituted. The latest white/colourful welcome and access screens, bundled logo/photos, India calling-code default and opt-in country lookup are included.
+
+The supported API scope includes accounts, private/nested groups, invite links, approvals, membership and Memories/media. Chat, events, polls, albums and other features marked unavailable by CircleFeatures remain unavailable in a real server session. This package does not claim the whole product backlog is implemented.
+
+Before this build, health returned HTTP 200 on PHP 8.3.36. Fictional registration returned HTTP 500 with the generic server_error response. That server problem remains unresolved without the host's redacted error log; installing a new APK cannot repair it. No native device was connected for installation/location testing. This test release uses the project's existing debug signing configuration.
+
+Distribution: downloads/circle.apk is the repository artifact consumed by the shared-host deployer. The hosting download URL is https://circle.cloudkart24.com/downloads/circle.apk. A Git push does not by itself establish that the host has deployed it. The public URL served the prior 62,142,629-byte APK and deploy.php returned HTTP 403 during preparation. No deployment key was configured in the local backend environment, and the hosting browser helper failed to initialise.
+
+Deployment steps: update the host's deploy.php from backend/deploy/deploy.php if it is older than the diagnostics change, then invoke it through the existing authenticated deployment flow. It copies downloads/ from main, including the new APK. After deployment, compare the hosted APK's size and SHA-256 with downloads/release.json. Preserve the domain's generated PHP handler configuration when updating .htaccess.
+
+Validation: `flutter pub get --enforce-lockfile` passed; Dart format checked 154 files with zero changes; `flutter analyze` reported no issues. The first full run found a fixed-20ms upload-test race (496 passed, 1 failed, 1 skipped). The test now waits for the upload completion notification with a bounded timeout; all 11 upload tests passed. The final full rerun passed 497 tests with 1 opt-in live HTTP smoke test skipped. Existing golden comparisons passed without regeneration. Tests and native packaging ran sequentially.
+
+APK build passed (`flutter build apk --release --dart-define=CIRCLE_API_BASE_URL=https://circle.cloudkart24.com/api/v1 --dart-define=CIRCLE_PREVIEW=false`). Manifest verified package com.circlecommunity.mobile, versionName 1.0.1, versionCode 2, minimum SDK 24 / Android 7.0. Distribution APK: 62740380 bytes; SHA-256 e4393cda55edd7f33899412c7b1a39bcbc54fe73b9156d60c973835e866dc0b7.
