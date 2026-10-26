@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+// Load diagnostics without Composer: its platform check may fail first.
+require_once __DIR__ . '/../src/Core/Log.php';
+require_once __DIR__ . '/../src/Core/Diagnostics.php';
+\Circle\Core\Diagnostics::enable();
+
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Circle\App;

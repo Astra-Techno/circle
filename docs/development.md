@@ -93,3 +93,13 @@ API reference: `docs/api-contracts/openapi.yaml` (draft for review).
 3. **Commit shared docs as well.** Uncommitted docs on one machine look like a revert everywhere else.
 4. Validate completed work, commit it directly to `main`, fetch and safely reconcile any remote changes, then push `origin/main`.
 5. Never force-push or use destructive Git commands.
+
+## Hosting PHP error diagnostics (26 October 2026)
+
+The API entry point now enables `E_ALL` and `log_errors` before Composer loads, including when its PHP platform check fails. Public `display_errors` and `display_startup_errors` remain off. Check cPanel **Metrics → Errors** or the hosting-configured PHP error log after requesting `/api/v1/health`. A fatal failure adds a `[CIRCLE] fatal: PHP=… SAPI=…` entry with a redacted message and source basename/line. This identifies the runtime actually serving the request, independently of the panel's selected version. PHP also writes its normal error entries to the host's configured log; keep that log private and do not share credentials or unredacted request data.
+
+Deploy the updated `public/index.php` as the hosting root `index.php` **and** `src/Core/Diagnostics.php` (alongside the existing `src/Core/Log.php`). The Git push alone does not update the hosting files. No new public diagnostic endpoint or API contract change is introduced. Errors occurring before PHP can execute the entry point still require the hosting error log. Reapply the domain's PHP handler after extracting deployment files if `.htaccess` was replaced; do not bypass Composer's platform check.
+
+### Protected version/config page
+
+Upload `backend/public/diagnostics.php` as `/diagnostics.php` in the hosting root (the repository's `deploy.php` now copies it and updates the root entry point). Set a fresh random `DIAGNOSTICS_TOKEN` of at least 32 characters in the server `.env`; never commit it or reuse JWT/database/migration secrets. Visit `https://circle.cloudkart24.com/diagnostics.php` and submit that token in the password form over HTTPS. The token is sent by POST, never in the URL. Unset/short tokens disable the page with 404; unauthenticated access shows only the access form. The allowlisted report works without Composer and shows PHP version/SAPI, PHP 8.3 compatibility, selected limits/error settings and required extension availability. It does not call `phpinfo()` or expose credentials, environment dumps, full filesystem paths, cookies or request headers. Remove the token after diagnosis to disable the page. Update the hosted `deploy.php` from this commit before using it to pull these changes; an older copy does not copy these new entry points.

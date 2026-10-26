@@ -38,7 +38,7 @@ final class AuthTest extends ApiTestCase
 
     public function testRegisterValidatesPasswordLengthWithoutTrimming(): void
     {
-        $short = $this->request('POST', '/api/v1/auth/register', ['mobile' => $this->nextMobile(), 'password' => '  short  ']);
+        $short = $this->request('POST', '/api/v1/auth/register', ['mobile' => $this->nextMobile(), 'password' => '  x  ']);
         self::assertSame(422, $short->status());
 
         // Leading/trailing spaces are part of the password.
