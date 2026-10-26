@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.3
+  version: 0.3.4
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -63,6 +63,8 @@ servers:
   - url: http://localhost:8080/api/v1
     description: Local development (`composer serve`)
 tags:
+  - name: Notifications
+    description: Session-bound devices and persistent opt-in delivery policy; dispatch remains disabled.
   - name: System
     description: Service health.
   - name: Auth
@@ -88,6 +90,104 @@ security:
   - bearerAuth: []
 
 paths:
+  /devices/register:
+    post:
+      operationId: registerPushDevice
+      tags: [Notifications]
+      summary: Bind an opaque FCM token to the authenticated login session.
+      description: |
+        Idempotent registration; a token is reassigned to the current account/session.
+        Tokens are case-sensitive, never trimmed or returned. Platforms are android or ios.
+        A revoked/expired session cannot register, even if revocation raced middleware.
+        Existing unscoped registrations are ineligible until authenticated re-registration.
+        Server logout removes registrations for that login session independently of SDK cleanup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PushDeviceRegistration' }
+      responses:
+        '200':
+          description: Bound to this session.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [registered]
+                        properties:
+                          registered: { type: boolean, const: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /devices/unregister:
+    post:
+      operationId: unregisterPushDevice
+      tags: [Notifications]
+      summary: Idempotently remove only this session's matching device token.
+      description: An older login or another account cannot unregister a token reassigned to a newer session. The response does not disclose token ownership.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PushDeviceToken' }
+      responses:
+        '200':
+          description: Removed if owned by this account and login session.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [unregistered]
+                        properties:
+                          unregistered: { type: boolean, const: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /me/notification-preferences:
+    get:
+      operationId: getNotificationPreferences
+      tags: [Notifications]
+      summary: Read owner-only persistent delivery policy, with opt-in defaults.
+      responses:
+        '200': { $ref: '#/components/responses/NotificationPreferences' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    patch:
+      operationId: updateNotificationPreferences
+      tags: [Notifications]
+      summary: Atomically merge selected preference fields and category switches.
+      description: |
+        Unknown fields/categories, nulls, coercible strings and non-boolean switches are rejected.
+        Category updates are partial; omitted switches and fields retain their stored values.
+        Quiet times are local minutes in the IANA timezone. Start and end must differ.
+        Start is inclusive and end exclusive, across midnight and daylight-saving changes.
+        Defaults disable push globally and all categories, with quiet hours 22:00–07:00 UTC.
+        This foundation does not schedule or dispatch events or expose live settings UI.
+        The delivery worker must defer quiet-hour events; filtering alone does not schedule them.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationPreferencePatch' }
+      responses:
+        '200': { $ref: '#/components/responses/NotificationPreferences' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
   /health:
     get:
       operationId: getHealth
@@ -1501,6 +1601,19 @@ components:
       schema: { type: string, pattern: '^[A-Za-z0-9_-]{16,128}$' }
 
   responses:
+    NotificationPreferences:
+      description: Owner policy. Push delivery and native support are separate capabilities.
+      headers:
+        Cache-Control:
+          schema: { type: string, const: 'private, no-store' }
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Success'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/NotificationPreferences' }
     OkNull:
       description: Done.
       content:
@@ -1574,6 +1687,55 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
+    PushDeviceToken:
+      type: object
+      required: [fcm_token]
+      properties:
+        fcm_token: { type: string, minLength: 1, maxLength: 512, pattern: '^[A-Za-z0-9:_-]+$' }
+    PushDeviceRegistration:
+      allOf:
+        - $ref: '#/components/schemas/PushDeviceToken'
+        - type: object
+          required: [platform]
+          properties:
+            platform: { type: string, enum: [android, ios] }
+    PushCategories:
+      type: object
+      additionalProperties: false
+      properties:
+        memories: { type: boolean, default: false }
+        replies_reactions: { type: boolean, default: false }
+        groups: { type: boolean, default: false }
+        chats: { type: boolean, default: false }
+        events: { type: boolean, default: false }
+        polls: { type: boolean, default: false }
+        albums: { type: boolean, default: false }
+        security: { type: boolean, default: false }
+    CompletePushCategories:
+      allOf:
+        - $ref: '#/components/schemas/PushCategories'
+        - type: object
+          required: [memories, replies_reactions, groups, chats, events, polls, albums, security]
+    NotificationPreferencePatch:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled: { type: boolean, default: false }
+        categories: { $ref: '#/components/schemas/PushCategories' }
+        quiet_hours: { type: boolean, default: true }
+        quiet_start: { type: integer, minimum: 0, maximum: 1439, default: 1320 }
+        quiet_end: { type: integer, minimum: 0, maximum: 1439, default: 420 }
+        timezone: { type: string, maxLength: 64, default: UTC, description: Valid IANA timezone identifier. }
+    NotificationPreferences:
+      type: object
+      required: [enabled, categories, quiet_hours, quiet_start, quiet_end, timezone]
+      properties:
+        enabled: { type: boolean, default: false }
+        categories: { $ref: '#/components/schemas/CompletePushCategories' }
+        quiet_hours: { type: boolean, default: true }
+        quiet_start: { type: integer, minimum: 0, maximum: 1439, default: 1320 }
+        quiet_end: { type: integer, minimum: 0, maximum: 1439, default: 420 }
+        timezone: { type: string, maxLength: 64, default: UTC, description: Valid IANA timezone identifier. }
     Success:
       type: object
       required: [success]

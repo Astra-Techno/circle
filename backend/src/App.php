@@ -6,6 +6,7 @@ namespace Circle;
 
 use Circle\Controllers\AuthController;
 use Circle\Controllers\DeviceController;
+use Circle\Controllers\NotificationPreferenceController;
 use Circle\Controllers\ProfilePhotoController;
 use Circle\Controllers\GroupController;
 use Circle\Controllers\MediaController;
@@ -74,6 +75,9 @@ final class App
             $r->delete('/me/photos/{kind}', ProfilePhotoController::delete(...));
             $r->get('/me/photos/{kind}', ProfilePhotoController::show(...));
             $r->get('/profiles/{userId}/photos/{kind}', ProfilePhotoController::show(...));
+
+            $r->get('/me/notification-preferences', NotificationPreferenceController::show(...));
+            $r->patch('/me/notification-preferences', NotificationPreferenceController::update(...));
 
             // Groups
             $r->get('/groups', GroupController::index(...));

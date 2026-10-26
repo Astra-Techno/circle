@@ -31,6 +31,10 @@ The owner approved sequential completion of this backlog, restoration of Chats a
 | 5 | Live polls | Memory/chat/event container permissions, named/anonymous votes, results visibility, closure and safe repeat requests | Container APIs must exist; deliver supported containers incrementally. |
 | 6 | Live albums | Exact-group private photos, create/edit permissions, covers/captions, pagination and cleanup | Existing media lifecycle plus reviewed album API; event albums after event integration. |
 
+## Completed source batch N1a: secure device registrations and saved policy
+
+Owns strict token/platform validation; session-scoped registration/unregistration and logout cleanup; persistent owner-only category switches, IANA timezone and quiet hours; fail-closed policy filtering in the sender; reviewed backend/client contracts and automated regressions. This is the first foundation subtask. Outbox/scheduler/event wiring, group/conversation mute UI, contextual SDK lifecycle and native delivery remain N1b onward. No notification capability or push switch is enabled by N1a. Source validation and the explicit next subtask are recorded in [push-foundation.md](push-foundation.md).
+
 ## Cross-feature notification delivery — required in each family
 
 “Every feature” means relevant recipient-facing actions, not a push for every tap, private edit or read. Implement the shared delivery foundation first, then add each feature's events with that feature. Maintain one reviewed event/recipient matrix and test it with the API contract.

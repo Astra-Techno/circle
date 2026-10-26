@@ -2,7 +2,7 @@
 
 **`openapi.yaml` (OpenAPI 3.1) is the source of truth for `/api/v1`.**
 
-**Approved by the owner for implementation on 23 Oct 2026 (0.3.0); now at 0.3.3 with M4 media, reviewed Memory query filters and account-profile expansion implemented.** It describes the implemented operations the draft backend implements today (ADR 0006):
+**Approved by the owner for implementation on 23 Oct 2026 (0.3.0); now at 0.3.4 with M4 media, reviewed Memory query filters and account-profile expansion implemented.** It describes the implemented operations the draft backend implements today (ADR 0006):
 - accounts and sessions, editable personal details and private profile/cover photos;
 - groups and nested subgroups;
 - members, roles, bans and ownership transfer;
@@ -56,3 +56,7 @@ Both the mobile and backend tracks reviewed additive `GET /memories` filters: `s
 Backend and Flutter tracks reviewed the additive account-profile contract together. `/me` supports optional current city, hometown, work and education with strict Unicode length limits and string types; empty text clears optional fields. The mobile number remains owner-only/read-only. Name and bio retain existing exact-group member visibility; other personal details are owner-only.
 
 Owner `PUT/GET/DELETE /me/photos/{kind}` handles avatar/cover images without a group upload ticket. Shared `GET /profiles/{userId}/photos/{kind}` requires authentication plus current active membership in at least one exact common group (or ownership). Missing/inaccessible photos return 404. Profile photos are deliberately account-level identity, distinct from group Memory media; no public URL or private storage path is returned. Bytes are re-encoded, bounded to 5 MiB/2048px per side, metadata stripped and served no-store. Versions in Me are opaque UUID revisions, not credentials. See ADR 0008.
+
+## Push foundation — 0.3.4
+
+The owner approved sequential cross-feature notification work. N1a adds strict session-bound device registration/unregistration and owner-only persistent notification preferences. See the OpenAPI operations and `docs/push-foundation.md` for the backend/client review, acceptance evidence and remaining delivery work. This API does not turn on Firebase dispatch or claim working foreground/tap behavior. Existing preview Activity/settings remain isolated and server capability-gated.

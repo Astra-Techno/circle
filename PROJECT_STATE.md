@@ -22,13 +22,15 @@ Updated: 26 October 2026. This file is a short handoff, not a substitute for ins
 - Cross-feature push is required for relevant recipient-facing events; matrix and delivery/privacy/device acceptance are in the canonical backlog. No notifications for every tap/private edit.
 - Do not start another implementation batch before recording which acceptance criteria it owns.
 
-## Current source integration checkpoint (not a deployed release)
-- Working checkout: `/workspace/circle-docs-sync`, branch main; primary `/workspace/circle` remains preserved with its original unfinished edits. Do not blindly reapply that patch to the integrated source.
-- B1 integrated routes/profile/session guards, serialized profile writes and migration 008; B2 gates corrected. Core Firebase failures isolated; full push remains disabled and unfinished.
-- Backend: 134 tests / 2,093 assertions passed on circle_test; separate FCM invalid-token classification test: 1 test / 7 assertions passed; PHPStan clean.
-- Flutter: format/analyze clean; broader suite 507 passed / 1 skipped / 13 golden failures; additional photo lifecycle widget test passed. Focused auth/profile flows: 27 passed (included in broader count).
-- The 13 golden failures match previously recorded Windows-baseline cases; approval remains unresolved, baselines unchanged. Native picker/push, hosted profile checks and new APK publication remain unverified.
-- See `docs/integration-checkpoint.md` for exact scope and remaining acceptance checks. No new APK built or deployment triggered.
+## Current source checkpoint (not a deployed release)
+- Working checkout: `/workspace/circle-docs-sync`, main; primary `/workspace/circle` still preserves original WIP. Do not reapply that old patch to integrated source.
+- B1/B2 integrated in fd3a327: private profiles, session guards, migration 008 and truthful capability gates. Profile visual/native/live acceptance and coherent APK publication remain open.
+- N1a complete in source: strict session-bound devices/logout cleanup, migration 009, owner-only persistent opt-in categories/quiet hours, sender policy filtering and typed client API; OpenAPI 0.3.4. Push/settings UI remain gated.
+- Backend full suite: 143 tests / 2,222 assertions passed on circle_test; final focused foundation suite after added DST cases: 8 tests / 125 assertions passed; PHPStan clean.
+- Flutter full suite: 513 passed / 1 skipped / 13 existing golden failures. Focused auth/profile/design/API: 28 passed; final preference API checks: 5 passed. Analysis/format clean.
+- Windows golden approval, native picker/push, hosted profile checks and new APK publication remain unresolved. No deployment/build in this batch.
+- Evidence: `docs/integration-checkpoint.md`, `docs/push-foundation.md`. Static frontend/backend contract review completed; 306 OpenAPI references resolve.
+- Next N1b: durable notification outbox/worker and provider retry/deduplication; then SDK lifecycle/contextual opt-in and foreground/tap handling. Each feature's eligible events join this pipeline before enablement.
 
 ## Validation commands
 - Mobile: `dart format --output=none --set-exit-if-changed lib test`, `flutter analyze`, focused `flutter test test/<relevant_test>.dart`; required broader suite at integration/release.

@@ -26,16 +26,23 @@ final class FcmSender
      * @param string $body     Notification body text
      * @param array<string, string> $data     Optional data payload (key-value strings)
      */
-    public static function sendToUsers(array $userIds, string $title, string $body, array $data = []): int
+    public static function sendToUsers(array $userIds, string $title, string $body, string $category, ?int $groupId, array $data = []): int
     {
+        $at = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $userIds = array_values(array_filter(array_unique($userIds),
+            static fn (int $id): bool => NotificationPreferences::allows($id, $category, $groupId, $at)));
         if (empty($userIds)) return 0;
 
         $db = Database::connection();
         $placeholders = implode(',', array_fill(0, count($userIds), '?'));
         $stmt = $db->prepare(
-            "SELECT DISTINCT fcm_token FROM device_tokens WHERE user_id IN ($placeholders)"
+            "SELECT DISTINCT dt.fcm_token FROM device_tokens dt
+             JOIN users u ON u.id = dt.user_id AND u.status = 'active'
+             WHERE dt.user_id IN ($placeholders) AND dt.session_id IS NOT NULL
+             AND EXISTS (SELECT 1 FROM refresh_tokens rt WHERE rt.user_id = dt.user_id
+                 AND rt.session_id = dt.session_id AND rt.revoked_at IS NULL AND rt.expires_at > NOW())"
         );
-        $stmt->execute(array_values($userIds));
+        $stmt->execute($userIds);
         $tokens = $stmt->fetchAll(\PDO::FETCH_COLUMN);
 
         $sent = 0;
@@ -51,7 +58,7 @@ final class FcmSender
      * Send a notification to a single FCM token.
      * @param array<string, string> $data
      */
-    public static function send(string $fcmToken, string $title, string $body, array $data = []): bool
+    private static function send(string $fcmToken, string $title, string $body, array $data = []): bool
     {
         $projectId = Env::get('FCM_PROJECT_ID', '');
         if ($projectId === '') {

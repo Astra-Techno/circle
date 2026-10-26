@@ -74,11 +74,13 @@ final class Request
         }
 
         $body = [];
+        $rawBody = null;
         if ($method !== 'GET' && $method !== 'HEAD') {
             // Every implemented PUT is a raw image upload. Do not eagerly buffer
             // a MIME-mismatched JSON body before the controller's bounded reader.
-            if ($method !== 'PUT' && str_contains($contentType, 'application/json')) {
+            if ($method !== 'PUT' && strtolower(trim(explode(';', $contentType)[0])) === 'application/json') {
                 $raw = file_get_contents('php://input');
+                $rawBody = $raw === false ? '' : $raw;
                 if ($raw !== false && $raw !== '') {
                     $decoded = json_decode($raw, true);
                     $body = is_array($decoded) ? $decoded : [];
@@ -95,6 +97,7 @@ final class Request
             $_GET,
             $headers,
             (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'),
+            $rawBody,
         );
     }
 
@@ -105,6 +108,22 @@ final class Request
             return '/';
         }
         return rtrim($path, '/') ?: '/';
+    }
+
+    /** In-process callers supply object-shaped arrays; HTTP keeps raw JSON shape. */
+    public function jsonIsObject(): bool
+    {
+        return $this->rawBody === null || json_decode($this->rawBody) instanceof \stdClass;
+    }
+
+    public function jsonFieldIsObject(string $key): bool
+    {
+        if ($this->rawBody !== null) {
+            $root = json_decode($this->rawBody);
+            return $root instanceof \stdClass && ($root->{$key} ?? null) instanceof \stdClass;
+        }
+        $value = $this->input($key);
+        return is_array($value) && ($value === [] || !array_is_list($value));
     }
 
     public function input(string $key, mixed $default = null): mixed

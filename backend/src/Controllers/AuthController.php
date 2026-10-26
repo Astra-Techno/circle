@@ -190,7 +190,9 @@ final class AuthController
     public static function logout(Request $request): void
     {
         $sessionId = $request->attr('session_id');
-        self::revokeSession($request->userId(), is_string($sessionId) ? $sessionId : '');
+        Database::transaction(static function () use ($request, $sessionId): void {
+            self::revokeSession($request->userId(), is_string($sessionId) ? $sessionId : '');
+        });
 
         Response::ok(null, 'Logged out.');
     }
@@ -267,6 +269,10 @@ final class AuthController
         Database::execute(
             'UPDATE refresh_tokens SET revoked_at = NOW()
              WHERE user_id = :uid AND session_id = :sid AND revoked_at IS NULL',
+            ['uid' => $userId, 'sid' => $sessionId]
+        );
+        Database::execute(
+            'DELETE FROM device_tokens WHERE user_id = :uid AND session_id = :sid',
             ['uid' => $userId, 'sid' => $sessionId]
         );
     }
