@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_providers.dart';
 import '../../../core/api/auth_api.dart';
 import '../../../core/local_settings.dart';
+import '../../../core/notifications/fcm_service.dart';
 
 export '../../../core/api/auth_api.dart' show ApiAccount;
 
@@ -54,7 +55,10 @@ class ServerSession extends Notifier<ServerSessionState> {
     }
     try {
       final account = await _auth.me();
-      if (ref.mounted) state = ServerSessionState(account: account);
+      if (ref.mounted) {
+        state = ServerSessionState(account: account);
+        ref.read(fcmServiceProvider).init();
+      }
     } on ApiError catch (error) {
       if (!ref.mounted || !state.restoring) return;
       final stored = tokens.account;
@@ -113,6 +117,7 @@ class ServerSession extends Notifier<ServerSessionState> {
     try {
       final account = await _auth.login(mobile: mobile, password: password);
       state = ServerSessionState(account: account);
+      ref.read(fcmServiceProvider).init();
       return null;
     } on ApiError catch (error) {
       return error.message;
@@ -146,6 +151,7 @@ class ServerSession extends Notifier<ServerSessionState> {
             DraftScope(server: config.baseUrl.toString(), account: account.id),
           );
     }
+    await ref.read(fcmServiceProvider).unregisterToken();
     await _auth.logout();
     _forgetImages();
     state = const ServerSessionState();

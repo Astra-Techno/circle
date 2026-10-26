@@ -3,6 +3,7 @@
          system photo picker, which needs no storage or camera permission. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- allowBackup is off so session tokens (encrypted with a device-bound
          key by flutter_secure_storage) are never restored onto another
          device, where they could not be decrypted. -->
@@ -40,6 +41,13 @@
                 <data android:scheme="circle" android:host="invite" />
             </intent-filter>
         </activity>
+        <!-- FCM default notification channel for background messages -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="circle_notifications" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/circle_foreground" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

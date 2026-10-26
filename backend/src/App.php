@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Circle;
 
 use Circle\Controllers\AuthController;
+use Circle\Controllers\DeviceController;
 use Circle\Controllers\GroupController;
 use Circle\Controllers\MediaController;
 use Circle\Controllers\MemberController;
@@ -113,6 +114,10 @@ final class App
             $r->put('/media/uploads/{uploadId}/content', MediaController::uploadContent(...));
             $r->get('/media/{mediaId}', MediaController::link(...));
             $r->delete('/media/{mediaId}', MediaController::discard(...));
+
+            // Device tokens (FCM push notifications)
+            $r->post('/devices/register', DeviceController::register(...));
+            $r->post('/devices/unregister', DeviceController::unregister(...));
         });
 
         return self::$router = $router;
