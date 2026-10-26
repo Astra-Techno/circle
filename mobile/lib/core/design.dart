@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+abstract final class CircleLayout {
+  static const largeTextThreshold = 1.4;
+}
+
 abstract final class Space {
   static const double xs = 4,
       sm = 8,
@@ -14,10 +18,10 @@ abstract final class Space {
 /// Shared soft-depth lighting: bright upper edge, tinted lower surface,
 /// and a restrained downward shadow. Text and fields retain clear borders.
 abstract final class CircleDepth {
-  static const cardElevation = 3.0;
-  static const buttonElevation = 4.0;
+  static const cardElevation = 2.0;
+  static const buttonElevation = 2.0;
   static const pressedElevation = 1.0;
-  static const floatingElevation = 6.0;
+  static const floatingElevation = 4.0;
   static const _ink = Color(0xFF262047);
 
   static Color shadow(Brightness brightness) => brightness == Brightness.light
@@ -73,6 +77,13 @@ abstract final class CircleDepth {
           ),
         ],
       );
+
+  /// Quiet perimeter around the navigation dock and grouped list surfaces.
+  static BoxDecoration dock(BuildContext context) => panel(
+    context,
+    radius: CircleRadius.sheet,
+    tint: Theme.of(context).colorScheme.surface,
+  ).copyWith(border: Border.all(color: CircleAccents.of(context).hairline));
 
   static WidgetStateProperty<double> get buttonLift =>
       WidgetStateProperty.resolveWith((states) {
@@ -216,12 +227,12 @@ ThemeData circleTheme(Brightness brightness) {
   final light = brightness == Brightness.light;
   final accents = light ? CircleAccents.light : CircleAccents.dark;
   final generated = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF1B223C),
+    seedColor: const Color(0xFF46369C),
     brightness: brightness,
   );
   final body = light ? const Color(0xFF475467) : const Color(0xFFC3C9D5);
   final colors = generated.copyWith(
-    primary: light ? const Color(0xFF1B223C) : const Color(0xFFDCE1FF),
+    primary: light ? const Color(0xFF46369C) : const Color(0xFFDCE1FF),
     onPrimary: light ? Colors.white : const Color(0xFF131A34),
     primaryContainer: accents.calmContainer,
     onPrimaryContainer: accents.calmText,
@@ -364,12 +375,12 @@ ThemeData circleTheme(Brightness brightness) {
       shadowColor: CircleDepth.shadow(brightness),
       backgroundColor: colors.surface,
       surfaceTintColor: Colors.transparent,
-      // The selected indicator pill is solid indigo with a white icon.
-      indicatorColor: colors.primary,
+      // Lavender selection keeps the dock quiet; icon and weight carry state.
+      indicatorColor: accents.calmContainer,
       iconTheme: WidgetStateProperty.resolveWith(
         (states) => IconThemeData(
           color: states.contains(WidgetState.selected)
-              ? colors.onPrimary
+              ? accents.calmText
               : accents.caption,
         ),
       ),

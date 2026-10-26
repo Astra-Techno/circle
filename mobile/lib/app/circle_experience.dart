@@ -641,6 +641,9 @@ class CircleAppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final index = shell.currentIndex;
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) >
+        CircleLayout.largeTextThreshold;
     final textScale = math.min(
       MediaQuery.textScalerOf(context).scale(1),
       navigationMaxTextScale,
@@ -743,47 +746,82 @@ class CircleAppShell extends ConsumerWidget {
             : null,
       ),
       body: SafeArea(child: shell),
-      floatingActionButton: fab == null
+      floatingActionButton: fab == null || largeText
           ? null
           : FloatingActionButton.extended(
               onPressed: () => context.push(fab.location),
               icon: const Icon(Icons.add),
               label: Text(fab.label),
             ),
-      bottomNavigationBar: MediaQuery.withClampedTextScaling(
-        maxScaleFactor: navigationMaxTextScale,
-        child: NavigationBar(
-          height: 60 + 12 * textScale,
-          selectedIndex: branches.contains(index) ? branches.indexOf(index) : 0,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          onDestinationSelected: (target) => shell.goBranch(
-            branches[target],
-            initialLocation: branches[target] == index,
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(Space.md, 0, Space.md, Space.sm),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (largeText && fab != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Space.sm),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => context.push(fab.location),
+                      icon: const Icon(Icons.add),
+                      label: Text(fab.label),
+                    ),
+                  ),
+                ),
+              DecoratedBox(
+                decoration: CircleDepth.dock(context),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(CircleRadius.sheet),
+                  child: MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: navigationMaxTextScale,
+                    child: NavigationBar(
+                      height: 60 + 12 * textScale,
+                      selectedIndex: branches.contains(index)
+                          ? branches.indexOf(index)
+                          : 0,
+                      labelBehavior:
+                          NavigationDestinationLabelBehavior.alwaysShow,
+                      onDestinationSelected: (target) => shell.goBranch(
+                        branches[target],
+                        initialLocation: branches[target] == index,
+                      ),
+                      destinations: [
+                        NavigationDestination(
+                          icon: Icon(Icons.home_outlined),
+                          selectedIcon: Icon(Icons.home_rounded),
+                          label: 'Home',
+                        ),
+                        if (features.has(CircleFeature.chat))
+                          NavigationDestination(
+                            icon: Icon(Icons.forum_outlined),
+                            label: 'Chats',
+                          ),
+                        NavigationDestination(
+                          icon: Icon(Icons.groups_outlined),
+                          selectedIcon: Icon(Icons.groups_rounded),
+                          label: 'Groups',
+                        ),
+                        if (features.has(CircleFeature.events))
+                          NavigationDestination(
+                            icon: Icon(Icons.event_outlined),
+                            label: 'Events',
+                          ),
+                        NavigationDestination(
+                          icon: Icon(Icons.person_outline),
+                          selectedIcon: Icon(Icons.person_rounded),
+                          label: 'You',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          destinations: [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              label: 'Home',
-            ),
-            if (features.has(CircleFeature.chat))
-              NavigationDestination(
-                icon: Icon(Icons.forum_outlined),
-                label: 'Chats',
-              ),
-            NavigationDestination(
-              icon: Icon(Icons.groups_outlined),
-              label: 'Groups',
-            ),
-            if (features.has(CircleFeature.events))
-              NavigationDestination(
-                icon: Icon(Icons.event_outlined),
-                label: 'Events',
-              ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              label: 'You',
-            ),
-          ],
         ),
       ),
     );

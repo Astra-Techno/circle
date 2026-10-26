@@ -140,7 +140,26 @@ class CircleMemoryCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(memory.author, style: theme.textTheme.titleMedium),
+                      Wrap(
+                        spacing: Space.sm,
+                        runSpacing: Space.xs,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            memory.author,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          Text(
+                            [
+                              memoryTimeLabel(memory.createdAt, DateTime.now()),
+                              if (memory.edited) 'Edited',
+                            ].join(' · '),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: Space.xs),
                       CirclePill(
                         audience ?? group.name,
@@ -148,14 +167,6 @@ class CircleMemoryCard extends ConsumerWidget {
                         tone: circleTypeTone(group.type),
                         semanticsLabel:
                             'Shared with ${audience ?? group.name} only',
-                      ),
-                      const SizedBox(height: Space.xs),
-                      Text(
-                        [
-                          memoryTimeLabel(memory.createdAt, DateTime.now()),
-                          if (memory.edited) 'Edited',
-                        ].join(' · '),
-                        style: caption,
                       ),
                     ],
                   ),

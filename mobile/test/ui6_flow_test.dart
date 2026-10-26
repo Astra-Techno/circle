@@ -506,6 +506,8 @@ void main() {
             find.byType(ListView).first,
             const Offset(0, -200),
           );
+          // Centre the complete row above the rounded dock before tapping.
+          await reveal(tester, find.text('Studio North'));
           await tester.tap(find.text('Studio North'));
           await tester.pumpAndSettle();
           expect(currentUri(container).path, '/groups');
@@ -518,6 +520,7 @@ void main() {
             find.byType(ListView).first,
             const Offset(0, -200),
           );
+          await reveal(tester, find.text('A Sunday well spent'));
           await tester.tap(find.text('A Sunday well spent'));
           await tester.pumpAndSettle();
           expect(currentUri(container).path, '/events');

@@ -13,7 +13,7 @@ class CircleBrand extends StatelessWidget {
   const CircleBrand({super.key, bool compact = false})
     : _maxWidth = compact ? 240 : 480;
   const CircleBrand.access({super.key}) : _maxWidth = 128;
-  const CircleBrand.home({super.key}) : _maxWidth = 160;
+  const CircleBrand.home({super.key}) : _maxWidth = 96;
   final double _maxWidth;
 
   @override

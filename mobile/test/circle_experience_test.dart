@@ -384,8 +384,18 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Invitations for you'), findsOneWidget);
       expect(
+        find.bySemanticsLabel('Accept invitation to Board games'),
+        findsNothing,
+      );
+      await tester.tap(find.text('Invitations for you'));
+      await tester.pumpAndSettle();
+      expect(
         find.text('Dev invited you · 2 members · in Studio North'),
         findsOneWidget,
+      );
+      await reveal(
+        tester,
+        find.bySemanticsLabel('Accept invitation to Board games'),
       );
       await tester.tap(
         find.bySemanticsLabel('Accept invitation to Board games'),
@@ -393,6 +403,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('You joined Board games.'), findsOneWidget);
       expect(workspaceOf(container).group('board'), isNotNull);
+      await reveal(
+        tester,
+        find.bySemanticsLabel('Decline invitation to Cousins’ corner'),
+      );
       await tester.tap(
         find.bySemanticsLabel('Decline invitation to Cousins’ corner'),
       );

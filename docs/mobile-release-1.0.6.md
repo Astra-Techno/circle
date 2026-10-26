@@ -1,0 +1,13 @@
+# Android beta 1.0.6 (build 7): visual refinement
+
+The app uses a richer indigo accent, a rounded navigation dock with lavender selection, softer elevations and compact dimensional introductions. Home places the original brand artwork beside a short heading; Groups keeps invitations in an expandable summary and distinguishes root cards from nested rows. Memory headers combine author and timestamp while keeping the audience visible. All colour, lighting and sizing decisions remain in shared core tokens/components.
+
+The four local skills under `.codex/skills/` were activated from the repository's existing bootstrap templates: Flutter UI, design-system, visual-QA and accessibility. The existing brand asset is preserved. No Figma design or external design plugin was used.
+
+Verification: final functional suite passed 500 tests with one opt-in smoke skipped. Flutter analysis is clean and Dart format passed. Seven signed-in render checks and six populated preview renders passed; the tablet two-pane interaction tests passed after centring list rows before taps. Thirteen existing golden comparisons differ from the Windows references; they were run and not regenerated on Linux. Release artifact details and hosted-download evidence follow when packaging completes. Windows golden review and physical Android/iOS checks are separate from widget renders and remain pending.
+
+Widget renders with fictional API data are available in [visual review](design-previews/1.0.6/README.md). Large-text layouts use compact decorative headers and a fixed create-action footer. Selected token contrast checks passed: primary/white 9.26:1 and selected navigation text/lavender 7.30:1. Seven signed-in and six populated preview-mode render checks passed.
+
+APK build passed in 92.3 seconds using Flutter 3.44.8, the production HTTPS API and `CIRCLE_PREVIEW=false`. Package `com.circlecommunity.mobile`, version `1.0.6+7`, min SDK 24, target SDK 36. Signature verification passed with the existing beta certificate (`6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c`), preserving the update path from previous beta builds. This remains a development-signed beta.
+
+Artifact: 63,085,188 bytes; SHA-256 `8ab534bd2aa0b33cce92d3ee9d091549567062d11944d02bcaeb52ba47a9c15a`. Both `downloads/circle.apk` and immutable `downloads/circle-1.0.6-7.apk` match. Earlier immutable APKs are retained. Publication and live-download verification are pending.

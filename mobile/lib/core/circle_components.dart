@@ -2,6 +2,84 @@ import 'package:flutter/material.dart';
 import 'circle_failure.dart';
 import 'design.dart';
 
+/// A compact, dimensional opening with one readable message and a quiet motif.
+/// No fixed height: names and larger text can always wrap.
+class CircleIntroPanel extends StatelessWidget {
+  const CircleIntroPanel({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    this.artwork,
+    this.icon = Icons.auto_awesome_outlined,
+  });
+  final String title, subtitle;
+  final Widget? artwork;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) >
+        CircleLayout.largeTextThreshold;
+    final size = largeText ? Space.lg * 3 : Space.hero * 3;
+    return Container(
+      padding: const EdgeInsets.all(Space.lg),
+      decoration: CircleDepth.panel(
+        context,
+        radius: CircleRadius.sheet,
+        tint: accents.calmContainer,
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: size,
+            child:
+                artwork ??
+                ExcludeSemantics(
+                  child: Container(
+                    height: size,
+                    decoration: CircleDepth.panel(
+                      context,
+                      radius: CircleRadius.pill,
+                      tint: theme.colorScheme.surface,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: Space.large,
+                      color: accents.calmText,
+                    ),
+                  ),
+                ),
+          ),
+          const SizedBox(width: Space.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Semantics(
+                  header: true,
+                  child: Text(
+                    title,
+                    style: largeText
+                        ? theme.textTheme.titleLarge
+                        : theme.textTheme.headlineMedium,
+                  ),
+                ),
+                if (!largeText) ...[
+                  const SizedBox(height: Space.sm),
+                  Text(subtitle, style: theme.textTheme.bodySmall),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class CircleCover extends StatelessWidget {
   const CircleCover({
     super.key,

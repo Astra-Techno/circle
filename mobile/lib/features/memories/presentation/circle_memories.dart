@@ -51,9 +51,14 @@ class CircleHome extends ConsumerWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const CircleBrand.home(),
+                    const CircleIntroPanel(
+                      title: 'Life, kept close.',
+                      subtitle: 'Your people. Your memories.',
+                      artwork: CircleBrand.home(),
+                    ),
                     const SizedBox(height: Space.lg),
                     if (workspace.groups.isNotEmpty) ...[
+                      const CircleSectionTitle('Your circles'),
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(

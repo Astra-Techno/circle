@@ -1,5 +1,15 @@
 # CIRCLE design system
 
+## Visual refinement — 26 October 2026
+
+The current pass applies the repository's Flutter UI, design-system, accessibility and visual-QA skills, activated from `CODEX_SOCIAL_APP_SKILLS_BOOTSTRAP.md` under `.codex/skills/`. This section supersedes earlier sizes and navigation treatments where they differ.
+
+Use the richer indigo primary `#46369C` on a white canvas, with the existing lavender/coral/sage families. Keep soft depth restrained: cards and primary buttons use 2px elevation, floating actions 4px. The rounded navigation dock has a shared perimeter and lavender selection indicator, with filled selected icons and readable labels. Keep safe-area handling and at least 48px targets. Above the shared large-text threshold, create actions move from a floating overlay into a full-width footer above navigation.
+
+`CircleIntroPanel` is a reusable, naturally sized lavender introduction. Home places the unchanged full original brand asset at up to 96px beside a short heading; at large text the illustration shrinks and the nonessential decorative subtitle is omitted while the heading continues wrapping. Groups uses a decorative dimensional emblem, a clear search path and root group cards; nested rows retain their ancestry guides. Invitations use a labelled expandable summary, initially open for an account with no groups; existing members can browse their groups without scrolling through invitation cards. Memory headers let author and timestamp wrap on the same line while retaining a separate audience pill. Never crop brand assets, shrink reading text, invent counts, animate continuously or weaken audience visibility to achieve a visual effect.
+
+Validate renders in light/dark mode, empty/populated workspaces, at narrow and tablet widths and with 200% text. Native-device review and Windows golden approval remain separate gates.
+
 ## Current depth treatment — Soft 3D (26 October 2026)
 
 The owner requested 3D effects. This adds a shared soft-depth layer to Warm Keepsake on White and supersedes the older flat-only/shadow-free rules below. Preserve the supplied brand artwork, readable typography, white canvas and indigo/lavender/coral/sage palette.

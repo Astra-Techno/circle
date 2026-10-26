@@ -39,20 +39,36 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
         child: ListView(
           padding: CircleInsets.page,
           children: [
-            const CircleHeading(
-              title: 'Your kind\nof company.',
-              subtitle: 'Every circle has a place here.',
+            const CircleIntroPanel(
+              title: 'Your kind of company.',
+              subtitle: 'A little closer to the people who matter.',
+              icon: Icons.diversity_2_outlined,
             ),
+            const SizedBox(height: Space.section),
             if (workspace.invitations.isNotEmpty) ...[
-              const CircleSectionTitle('Invitations for you'),
-              for (final invitation in workspace.invitations)
-                InvitationCard(invitation: invitation),
+              ExpansionTile(
+                key: const PageStorageKey('group-invitations'),
+                initiallyExpanded: workspace.groups.isEmpty,
+                tilePadding: const EdgeInsets.symmetric(horizontal: Space.lg),
+                childrenPadding: const EdgeInsets.all(Space.sm),
+                leading: const CircleInitialAvatar(
+                  icon: Icons.mark_email_unread_outlined,
+                ),
+                title: const Text('Invitations for you'),
+                subtitle: Text(
+                  '${workspace.invitations.length} waiting to be reviewed',
+                ),
+                children: [
+                  for (final invitation in workspace.invitations)
+                    InvitationCard(invitation: invitation),
+                ],
+              ),
               const SizedBox(height: Space.lg),
             ],
             if (workspace.groups.isNotEmpty)
               TextField(
                 decoration: const InputDecoration(
-                  labelText: 'Find one of your groups',
+                  labelText: 'Search groups',
                   prefixIcon: Icon(Icons.search),
                 ),
                 onChanged: (value) =>
@@ -82,6 +98,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                       )
                     : null,
               ),
+            if (entries.isNotEmpty) const CircleSectionTitle('Your groups'),
             for (final entry in entries)
               CircleGroupTile(
                 group: entry.group,
@@ -160,9 +177,12 @@ class CircleGroupTile extends ConsumerWidget {
       if (group.depth > 1) 'Level ${group.depth}',
       if (where != null) 'in $where',
     ].join(' · ');
-    return Padding(
+    return Container(
       padding: EdgeInsetsDirectional.only(start: indent),
+      margin: EdgeInsets.only(bottom: level == 0 ? Space.sm : 0),
+      decoration: level == 0 ? CircleDepth.dock(context) : null,
       child: CircleRow(
+        divider: level > 0,
         child: DecoratedBox(
           // A start-edge guide marks nested groups.
           decoration: level == 0
