@@ -61,7 +61,7 @@ final class App
                 $db = Database::connection();
 
                 $tokens = $db->query(
-                    'SELECT dt.fcm_token, dt.platform, dt.user_id, u.name, dt.created_at
+                    'SELECT dt.fcm_token, dt.platform, dt.user_id, u.display_name, dt.created_at
                      FROM device_tokens dt JOIN users u ON u.id = dt.user_id
                      ORDER BY dt.created_at DESC LIMIT 20'
                 )->fetchAll(\PDO::FETCH_ASSOC);
@@ -80,7 +80,7 @@ final class App
                     ];
                     $result = $sender->send($row['fcm_token'], $data);
                     $results[] = [
-                        'user'     => $row['name'],
+                        'user'     => $row['display_name'],
                         'platform' => $row['platform'],
                         'token'    => substr($row['fcm_token'], 0, 20) . '...',
                         'status'   => $result->status,
