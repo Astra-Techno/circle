@@ -31,6 +31,10 @@ The owner approved sequential completion of this backlog, restoration of Chats a
 | 5 | Live polls | Memory/chat/event container permissions, named/anonymous votes, results visibility, closure and safe repeat requests | Container APIs must exist; deliver supported containers incrementally. |
 | 6 | Live albums | Exact-group private photos, create/edit permissions, covers/captions, pagination and cleanup | Existing media lifecycle plus reviewed album API; event albums after event integration. |
 
+## Completed source batch N1c2: settings and foreground presentation
+
+Owns supported-category preferences and explicit OS consent, quiet hours/timezone controls, account-bound requests, durable foreground handoff and authorized in-app banners/tap destinations. Client capability stays default-off; background/terminated display and real-device acceptance remain N1d. No new live chat/event family is enabled here. Evidence: [push-settings-checkpoint.md](push-settings-checkpoint.md). Next: N1d Android background/terminated handling, native channels/taps and physical-device delivery/permission acceptance before enablement.
+
 ## Completed source batch N1c1: scoped client reception and SDK lifecycle
 
 Owns strict envelope validation against active server/account/session/expiry, bounded persistent foreground deduplication, serialized SDK registration/rotation/cleanup, cancelled stale callbacks and nonblocking authentication integration. No UI opt-in, foreground notification display, background-isolate presentation or tap navigation is enabled in this subtask. Evidence: [push-client-lifecycle.md](push-client-lifecycle.md). The following N1c2 task connects contextual preferences/permission UI, durable presentation handoff and authorized display/taps; background and real-device checks remain required.

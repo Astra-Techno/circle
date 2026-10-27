@@ -1,5 +1,7 @@
 # Client push foundation N1c1 — 27 October 2026
 
+Historical N1c1 checkpoint. The subsequent gated settings/foreground implementation is documented in [push-settings-checkpoint.md](push-settings-checkpoint.md); its pending handoff supersedes claiming delivery before presentation.
+
 This source checkpoint implements locally scoped reception and SDK lifecycle. It does not enable push, add an opt-in screen, render notifications or implement tap navigation. The live downloadable APK remains 1.0.7+8; no build or deployment is part of this checkpoint.
 
 ## Session and SDK ownership

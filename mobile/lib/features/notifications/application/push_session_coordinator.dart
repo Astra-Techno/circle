@@ -4,20 +4,18 @@ import '../../../core/api/api_providers.dart';
 import '../../../core/local_settings.dart';
 import '../../../core/notifications/fcm_service.dart';
 import '../../../core/notifications/push_lifecycle.dart';
+import '../../../core/notifications/push_config.dart';
 import '../../workspace/application/server_session.dart';
 import '../domain/push_envelope.dart';
 import 'push_ledger.dart';
 
+export '../domain/push_envelope.dart' show PushReception;
+
 class PushBinding {
-  const PushBinding(this.api, this.scope);
+  PushBinding(this.api, this.scope) : sessionRevision = api.sessionRevision;
+  final int sessionRevision;
   final ApiClient api;
   final PushScope scope;
-}
-
-class PushReception {
-  const PushReception(this.envelope, this.action);
-  final PushEnvelope envelope;
-  final PushAction action;
 }
 
 /// Session changes invalidate callbacks immediately. SDK/network operations
@@ -38,6 +36,7 @@ class PushSessionCoordinator {
   final _accepted = StreamController<PushReception>.broadcast();
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   Stream<PushReception> get accepted => _accepted.stream;
+  bool get active => enabled && !_disposed && _healthy && _binding != null;
   Future<void> _tail = Future.value();
   Future<bool>? _starting;
   int _epoch = 0;
@@ -178,6 +177,8 @@ class PushSessionCoordinator {
       await binding.api.post(
         '/devices/register',
         body: {'fcm_token': token, 'platform': 'android'},
+        expectedAccount: binding.scope.account,
+        expectedSession: binding.sessionRevision,
       );
       if (!await _valid(binding, epoch)) return false;
       _healthy = true;
@@ -188,6 +189,8 @@ class PushSessionCoordinator {
           await binding.api.post(
             '/devices/unregister',
             body: {'fcm_token': previous},
+            expectedAccount: binding.scope.account,
+            expectedSession: binding.sessionRevision,
           );
           _knownTokens.remove(previous);
         } catch (_) {}
@@ -210,7 +213,7 @@ class PushSessionCoordinator {
         if (!await _valid(binding, epoch)) return;
         final envelope = PushEnvelope.parse(data, binding.scope, clock());
         if (envelope == null ||
-            !await ledger.claim(envelope, action, clock())) {
+            !await ledger.stage(envelope, action, clock())) {
           return;
         }
         if (await _valid(binding, epoch) &&
@@ -221,6 +224,24 @@ class PushSessionCoordinator {
         }
       }),
     );
+  }
+
+  Future<PushBinding?> bindingFor(PushEnvelope envelope) async {
+    final binding = _binding, epoch = _epoch;
+    if (!active || binding == null || !await _valid(binding, epoch)) {
+      return null;
+    }
+    return active &&
+            epoch == _epoch &&
+            envelope.belongsTo(binding.scope, clock())
+        ? binding
+        : null;
+  }
+
+  Future<List<PushReception>> pending() async {
+    final binding = _binding, epoch = _epoch;
+    if (!active || binding == null || !await _valid(binding, epoch)) return [];
+    return ledger.pending(binding.scope, clock());
   }
 
   void _cancelListeners() {
@@ -262,6 +283,8 @@ class PushSessionCoordinator {
             await old.api.post(
               '/devices/unregister',
               body: {'fcm_token': token},
+              expectedAccount: old.scope.account,
+              expectedSession: old.sessionRevision,
             );
           } catch (_) {}
         }
@@ -282,7 +305,7 @@ final pushSessionCoordinatorProvider = Provider<PushSessionCoordinator>((ref) {
   final coordinator = PushSessionCoordinator(
     gateway: ref.watch(fcmGatewayProvider),
     ledger: PushLedger(ref.watch(localSettingsStoreProvider)),
-    enabled: const bool.fromEnvironment('CIRCLE_PUSH_ENABLED'),
+    enabled: ref.watch(pushClientEnabledProvider),
     current: () async {
       if (!ref.mounted) return null;
       final api = ref.read(apiClientProvider),

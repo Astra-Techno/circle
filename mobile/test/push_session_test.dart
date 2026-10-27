@@ -4,61 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/api/api_providers.dart';
 import 'package:mobile/features/workspace/application/server_session.dart';
 import 'package:mobile/core/local_settings.dart';
+import 'support/fake_fcm.dart';
 import 'package:mobile/core/notifications/fcm_service.dart';
 import 'package:mobile/core/notifications/push_lifecycle.dart';
 import 'package:mobile/features/notifications/application/push_ledger.dart';
 import 'package:mobile/features/notifications/application/push_session_coordinator.dart';
 import 'package:mobile/features/notifications/domain/push_envelope.dart';
 import 'support/fake_api.dart';
-
-class Gateway implements FcmGateway {
-  @override
-  bool supported = true;
-  bool allowed = true, failInit = false;
-  int initialized = 0, activated = 0, deactivated = 0, requests = 0;
-  Completer<void>? initGate;
-  final tokens = StreamController<String>.broadcast(sync: true);
-  final messages = StreamController<Map<String, dynamic>>.broadcast(sync: true);
-  final taps = StreamController<Map<String, dynamic>>.broadcast(sync: true);
-  @override
-  Future<void> initialize() async {
-    initialized++;
-    if (failInit) throw StateError('Fictional SDK unavailable');
-    if (initGate != null) await initGate!.future;
-  }
-
-  @override
-  Future<bool> permission({required bool request}) async {
-    if (request) requests++;
-    return allowed;
-  }
-
-  @override
-  Future<void> activate() async {
-    activated++;
-  }
-
-  @override
-  Future<void> deactivate() async {
-    deactivated++;
-  }
-
-  @override
-  Future<String?> token() async => 'fictional-device';
-  @override
-  Stream<String> get tokenChanges => tokens.stream;
-  @override
-  Stream<Map<String, dynamic>> get foreground => messages.stream;
-  @override
-  Stream<Map<String, dynamic>> get opened => taps.stream;
-  @override
-  Future<Map<String, dynamic>?> initialMessage() async => null;
-  Future<void> close() async {
-    await tokens.close();
-    await messages.close();
-    await taps.close();
-  }
-}
 
 Future<void> flush() async {
   for (var i = 0; i < 30; i++) {
@@ -85,6 +37,7 @@ PushBinding binding(String account, FakeHandler handler) {
       config: config,
       tokens: MemoryTokenStore(
         TokenPair(
+          account: StoredAccount(id: account, displayName: 'Fictional Person'),
           accessToken: 'fictional-$account',
           refreshToken: 'fictional-refresh',
           server: config.baseUrl.toString(),

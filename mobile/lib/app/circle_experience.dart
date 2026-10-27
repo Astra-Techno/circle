@@ -30,6 +30,8 @@ import '../features/memories/application/home_filter.dart';
 import '../features/memories/presentation/circle_memories.dart';
 import '../features/notifications/presentation/activity_screen.dart';
 import '../features/notifications/presentation/notification_settings.dart';
+import '../features/notifications/presentation/server_push_settings.dart';
+import '../features/notifications/presentation/push_presentation_host.dart';
 import '../features/profile/presentation/circle_you.dart';
 import '../features/profile/presentation/profile_photo.dart';
 import '../features/profile/presentation/profile_edit.dart';
@@ -561,7 +563,9 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                     path: 'notifications',
                     builder: (_, _) => _gate(
                       CircleFeature.notificationSettings,
-                      const NotificationSettingsScreen(),
+                      ref.read(circleFeaturesProvider).server
+                          ? const ServerPushSettingsScreen()
+                          : const NotificationSettingsScreen(),
                     ),
                   ),
                   GoRoute(
@@ -630,6 +634,10 @@ class CircleExperience extends ConsumerWidget {
     darkTheme: circleTheme(Brightness.dark),
     themeMode: ref.watch(themeProvider),
     routerConfig: ref.watch(circleRouterProvider),
+    builder: (context, child) => PushPresentationHost(
+      onOpen: (id) => ref.read(circleRouterProvider).go('/home/memory/$id'),
+      child: child!,
+    ),
   );
 }
 

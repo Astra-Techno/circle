@@ -59,32 +59,60 @@ class ApiClient {
 
   TokenPair? _tokens;
   bool _tokensLoaded = false;
+  int _tokenRevision = 0, _sessionRevision = 0;
+  Future<void> _tokenWrites = Future.value();
+  int get sessionRevision => _sessionRevision;
   Future<String?>? _refreshing;
 
-  static const _noAuth = 'circle.noAuth', _retried = 'circle.retried';
+  static const _noAuth = 'circle.noAuth',
+      _retried = 'circle.retried',
+      _expectedAccount = 'circle.expectedAccount',
+      _expectedSession = 'circle.expectedSession';
 
   // ── Tokens ─────────────────────────────────────────────────────────
 
   /// The stored session for this server, if any.
   Future<TokenPair?> currentTokens() async {
     if (!_tokensLoaded) {
+      final revision = _tokenRevision;
       final stored = await _store.read();
-      _tokens = stored?.server == config.baseUrl.toString() ? stored : null;
-      _tokensLoaded = true;
+      if (revision == _tokenRevision && !_tokensLoaded) {
+        _tokens = stored?.server == config.baseUrl.toString() ? stored : null;
+        _tokensLoaded = true;
+      }
     }
     return _tokens;
   }
 
-  Future<void> saveTokens(TokenPair tokens) async {
+  bool _sameCredentials(TokenPair? a, TokenPair b) =>
+      a != null &&
+      a.server == b.server &&
+      a.accessToken == b.accessToken &&
+      a.refreshToken == b.refreshToken;
+
+  Future<void> _persist(Future<void> Function() operation) {
+    final result = _tokenWrites.then((_) => operation());
+    _tokenWrites = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
+
+  Future<void> saveTokens(TokenPair tokens, {bool refresh = false}) async {
+    if (!refresh && !_sameCredentials(_tokens, tokens)) _sessionRevision++;
+    _tokenRevision++;
     _tokens = tokens;
     _tokensLoaded = true;
-    await _store.write(tokens);
+    await _persist(() => _store.write(tokens));
   }
 
   Future<void> clearTokens() async {
+    _sessionRevision++;
+    _tokenRevision++;
     _tokens = null;
     _tokensLoaded = true;
-    await _store.clear();
+    await _persist(_store.clear);
   }
 
   /// Turns a login/refresh `TokenPair` response into stored tokens.
@@ -106,10 +134,14 @@ class ApiClient {
   }
 
   /// Ends the session: tokens are cleared and [onSessionEnded] is told.
-  Future<void> endSession(String message) async {
+  Future<void> endSession(String message, {int? expectedSession}) async {
+    if (expectedSession != null && expectedSession != _sessionRevision) return;
+    final endedRevision = _sessionRevision + 1;
     final hadSession = _tokens != null;
     await clearTokens();
-    if (hadSession) onSessionEnded?.call(message);
+    if (hadSession && _sessionRevision == endedRevision) {
+      onSessionEnded?.call(message);
+    }
   }
 
   /// Single-flight refresh. Concurrent 401s share one `/auth/refresh`
@@ -135,11 +167,16 @@ class ApiClient {
         options: Options(extra: {_noAuth: true}),
       );
       final data = _unwrap(response);
-      final fresh = tokensFrom(data, account: current.account);
-      await saveTokens(fresh);
+      final live = await currentTokens();
+      if (!_sameCredentials(live, current)) return live?.accessToken;
+      final fresh = tokensFrom(data, account: live?.account ?? current.account);
+      await saveTokens(fresh, refresh: true);
       return fresh.accessToken;
     } on DioException catch (error) {
       final failure = ApiError.fromDio(error);
+      if (!_sameCredentials(await currentTokens(), current)) {
+        return (await currentTokens())?.accessToken;
+      }
       // Offline, busy or rate limited: keep the session and try later.
       if (failure.isNetwork ||
           failure.code == 'rate_limited' ||
@@ -157,14 +194,22 @@ class ApiClient {
     String path, {
     Map<String, Object?>? query,
     bool auth = true,
+    String? expectedAccount,
   }) => _send(
-    () =>
-        dio.get<Object?>(path, queryParameters: query, options: _options(auth)),
+    () => dio.get<Object?>(
+      path,
+      queryParameters: query,
+      options: _options(auth, expectedAccount),
+    ),
   );
 
   /// Authenticated private bytes. Error bodies are decoded by the auth
   /// interceptor before refresh/error mapping, even with ResponseType.bytes.
-  Future<Uint8List> getBytes(String path, {Map<String, Object?>? query}) async {
+  Future<Uint8List> getBytes(
+    String path, {
+    Map<String, Object?>? query,
+    String? expectedAccount,
+  }) async {
     final response = await _raw(
       () => dio.get<Object?>(
         path,
@@ -172,6 +217,7 @@ class ApiClient {
         options: Options(
           responseType: ResponseType.bytes,
           headers: {'Accept': 'image/webp,image/jpeg,image/png'},
+          extra: {_expectedAccount: ?expectedAccount},
         ),
       ),
     );
@@ -199,20 +245,47 @@ class ApiClient {
     return ApiPage(List<Object?>.of(items), pagination);
   }
 
-  Future<Object?> post(String path, {Object? body, bool auth = true}) =>
-      _send(() => dio.post<Object?>(path, data: body, options: _options(auth)));
+  Future<Object?> post(
+    String path, {
+    Object? body,
+    bool auth = true,
+    String? expectedAccount,
+    int? expectedSession,
+  }) => _send(
+    () => dio.post<Object?>(
+      path,
+      data: body,
+      options: _options(auth, expectedAccount, expectedSession),
+    ),
+  );
 
-  Future<Object?> patch(String path, {Object? body}) =>
-      _send(() => dio.patch<Object?>(path, data: body));
+  Future<Object?> patch(String path, {Object? body, String? expectedAccount}) =>
+      _send(
+        () => dio.patch<Object?>(
+          path,
+          data: body,
+          options: _options(true, expectedAccount),
+        ),
+      );
 
-  Future<Object?> delete(String path, {Map<String, Object?>? query}) =>
-      _send(() => dio.delete<Object?>(path, queryParameters: query));
+  Future<Object?> delete(
+    String path, {
+    Map<String, Object?>? query,
+    String? expectedAccount,
+  }) => _send(
+    () => dio.delete<Object?>(
+      path,
+      queryParameters: query,
+      options: _options(true, expectedAccount),
+    ),
+  );
 
   /// Sends raw bytes (photo uploads). [onProgress] gets sent/total bytes.
   Future<Object?> putBytes(
     String path,
     Uint8List bytes, {
     required String contentType,
+    String? expectedAccount,
     void Function(int sent, int total)? onProgress,
   }) => _send(
     () => dio.put<Object?>(
@@ -220,6 +293,7 @@ class ApiClient {
       data: bytes,
       options: Options(
         contentType: contentType,
+        extra: {_expectedAccount: ?expectedAccount},
         headers: {Headers.contentLengthHeader: '${bytes.length}'},
         sendTimeout: const Duration(minutes: 2),
       ),
@@ -227,7 +301,19 @@ class ApiClient {
     ),
   );
 
-  Options? _options(bool auth) => auth ? null : Options(extra: {_noAuth: true});
+  Options? _options(
+    bool auth, [
+    String? expectedAccount,
+    int? expectedSession,
+  ]) => auth && expectedAccount == null && expectedSession == null
+      ? null
+      : Options(
+          extra: {
+            if (!auth) _noAuth: true,
+            _expectedAccount: ?expectedAccount,
+            _expectedSession: ?expectedSession,
+          },
+        );
 
   Future<Object?> _send(Future<Response<Object?>> Function() call) async =>
       _unwrap(await _raw(call));
@@ -271,12 +357,39 @@ class _AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     if (options.extra[ApiClient._noAuth] != true) {
+      options.extra.putIfAbsent(
+        ApiClient._expectedSession,
+        () => client.sessionRevision,
+      );
       final tokens = await client.currentTokens();
+      if (options.extra[ApiClient._expectedSession] != client.sessionRevision) {
+        return handler.reject(_changed(options));
+      }
+      final expected = options.extra[ApiClient._expectedAccount];
+      if (expected != null && tokens?.account?.id != expected) {
+        return handler.reject(_changed(options));
+      }
       if (tokens != null) {
         options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
       }
     }
     handler.next(options);
+  }
+
+  DioException _changed(RequestOptions options) => DioException(
+    requestOptions: options,
+    error: const ApiError(
+      'Your session changed. Please try again.',
+      code: 'session_changed',
+    ),
+  );
+
+  Future<bool> _matches(RequestOptions options) async {
+    final expected = options.extra[ApiClient._expectedAccount];
+    final tokens = await client.currentTokens();
+    return options.extra[ApiClient._expectedSession] ==
+            client.sessionRevision &&
+        (expected == null || tokens?.account?.id == expected);
   }
 
   @override
@@ -300,9 +413,13 @@ class _AuthInterceptor extends Interceptor {
         options.extra[ApiClient._retried] == true) {
       return handler.next(err);
     }
+    if (!await _matches(options)) return handler.next(_changed(options));
     final code = ApiClient._code(response.data);
     if (response.statusCode == 403 && code == 'account_inactive') {
-      await client.endSession(ApiError.messageFor('account_inactive'));
+      await client.endSession(
+        ApiError.messageFor('account_inactive'),
+        expectedSession: options.extra[ApiClient._expectedSession] as int?,
+      );
       return handler.next(err);
     }
     if (response.statusCode != 401 ||
@@ -325,8 +442,7 @@ class _AuthInterceptor extends Interceptor {
         ),
       );
     }
-    if (fresh == null) {
-      await client.endSession(ApiError.messageFor(ApiError.sessionExpired));
+    if (fresh == null && await client.currentTokens() == null) {
       return handler.next(
         DioException(
           requestOptions: options,
@@ -339,6 +455,7 @@ class _AuthInterceptor extends Interceptor {
         ),
       );
     }
+    if (!await _matches(options)) return handler.next(_changed(options));
     options
       ..headers['Authorization'] = 'Bearer $fresh'
       ..extra[ApiClient._retried] = true;

@@ -64,7 +64,8 @@ class ApiAccount {
 /// Accounts and sessions (ADR 0005). Passwords are sent exactly as typed
 /// and are never stored, logged or trimmed.
 class AuthApi {
-  AuthApi(this.client, {this.persistAccount = true});
+  AuthApi(this.client, {this.persistAccount = true, this.canCommitSession});
+  final bool Function()? canCommitSession;
   final ApiClient client;
   final bool persistAccount;
 
@@ -97,6 +98,12 @@ class AuthApi {
       body: {'mobile': mobile, 'password': password},
     );
     final account = ApiAccount.fromJson(ApiJson.map(data)['user']);
+    if (canCommitSession?.call() == false) {
+      throw const ApiError(
+        'Your session changed. Please try again.',
+        code: 'session_changed',
+      );
+    }
     await client.saveTokens(client.tokensFrom(data, account: account.stored));
     return account;
   }
@@ -107,7 +114,13 @@ class AuthApi {
       updateProfile({'display_name': name.trim()});
 
   Future<ApiAccount> updateProfile(Map<String, String> fields) async =>
-      _rememberAccount(await client.patch('/me', body: fields));
+      _rememberAccount(
+        await client.patch(
+          '/me',
+          body: fields,
+          expectedAccount: (await client.currentTokens())?.account?.id,
+        ),
+      );
 
   Future<ApiAccount> uploadProfilePhoto(
     ProfilePhotoKind kind,
@@ -135,12 +148,18 @@ class AuthApi {
         '/me/photos/${kind.name}',
         photo.bytes,
         contentType: photo.mimeType,
+        expectedAccount: (await client.currentTokens())?.account?.id,
       ),
     );
   }
 
   Future<ApiAccount> deleteProfilePhoto(ProfilePhotoKind kind) async =>
-      _rememberAccount(await client.delete('/me/photos/${kind.name}'));
+      _rememberAccount(
+        await client.delete(
+          '/me/photos/${kind.name}',
+          expectedAccount: (await client.currentTokens())?.account?.id,
+        ),
+      );
 
   Future<ApiAccount> _rememberAccount(Object? data) async {
     final account = ApiAccount.fromJson(data);
@@ -156,14 +175,20 @@ class AuthApi {
   /// Revokes the session on the server when possible, then forgets the
   /// tokens on this device either way.
   Future<void> logout() async {
+    final revision = client.sessionRevision;
+    final before = await client.currentTokens();
     try {
       if (await client.currentTokens() != null) {
-        await client.post('/auth/logout');
+        await client.post(
+          '/auth/logout',
+          expectedAccount: before?.account?.id,
+          expectedSession: revision,
+        );
       }
     } on ApiError {
       // Offline or already ended: the tokens are forgotten below anyway.
     } finally {
-      await client.clearTokens();
+      if (client.sessionRevision == revision) await client.clearTokens();
     }
   }
 }

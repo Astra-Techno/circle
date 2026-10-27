@@ -142,8 +142,26 @@ class PushEnvelope {
     );
   }
 
+  Map<String, String> toData() => {
+    'event_id': eventId,
+    'type': type,
+    'api_base_url': scope.server,
+    'recipient_id': scope.account,
+    'session_scope': scope.sessionHash,
+    'group_id': groupId,
+    'memory_id': memoryId,
+    'comment_id': commentId,
+    'expires_at': '$expiresAt',
+  };
+
   /// Presentation must recheck this after any asynchronous authorization fetch.
   bool belongsTo(PushScope current, DateTime now) =>
       scope.key == current.key &&
       expiresAt > now.toUtc().millisecondsSinceEpoch ~/ 1000;
+}
+
+class PushReception {
+  const PushReception(this.envelope, this.action);
+  final PushEnvelope envelope;
+  final PushAction action;
 }

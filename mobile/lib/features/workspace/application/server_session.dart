@@ -143,8 +143,16 @@ class ServerSession extends Notifier<ServerSessionState> {
     ref.read(pushLifecycleProvider).invalidate();
     final epoch = ++_sessionEpoch;
     _profileRevision++;
+    final api = ref.read(apiClientProvider)!;
     try {
-      final account = await _auth.login(mobile: mobile, password: password);
+      final account = await AuthApi(
+        api,
+        persistAccount: false,
+        canCommitSession: () =>
+            ref.mounted &&
+            epoch == _sessionEpoch &&
+            identical(ref.read(apiClientProvider), api),
+      ).login(mobile: mobile, password: password);
       if (!ref.mounted || epoch != _sessionEpoch) {
         return 'Your session changed. Please try again.';
       }

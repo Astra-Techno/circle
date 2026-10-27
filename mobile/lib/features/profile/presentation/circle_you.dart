@@ -161,7 +161,9 @@ class _CircleYouState extends ConsumerState<CircleYou> {
               entry(
                 icon: Icons.tune,
                 title: 'Notifications',
-                subtitle: 'What reaches you, quiet hours, muted chats',
+                subtitle: features.server
+                    ? 'Your updates and quiet hours'
+                    : 'What reaches you, quiet hours, muted chats',
                 location: '/you/notifications',
               ),
             if (features.has(CircleFeature.privacy))
@@ -277,7 +279,8 @@ class AccountScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final server = ref.watch(circleFeaturesProvider).server;
+    final features = ref.watch(circleFeaturesProvider);
+    final server = features.server;
     return ReadingPane(
       child: ListView(
         padding: CircleInsets.form,
@@ -326,7 +329,9 @@ class AccountScreen extends ConsumerWidget {
           CircleEmpty(
             title: 'Quiet by design',
             message: server
-                ? 'CIRCLE sends no notifications and never uploads your contacts. Logging out removes your session from this device.'
+                ? (features.has(CircleFeature.notificationSettings)
+                      ? 'Choose which updates reach you in Notifications. CIRCLE never uploads your contacts. Logging out removes your session from this device.'
+                      : 'CIRCLE sends no notifications and never uploads your contacts. Logging out removes your session from this device.')
                 : 'No notifications, contact uploads or real accounts are used in this preview. All changes disappear when you end the session.',
           ),
           const SizedBox(height: Space.md),

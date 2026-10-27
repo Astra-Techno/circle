@@ -40,7 +40,10 @@ class CircleFeatures {
 
   /// Enable each family only after its real server implementation is verified.
   /// Chats and Events remain required work in docs/pending-work.md.
-  const CircleFeatures.server(String this.host) : available = const {};
+  const CircleFeatures.server(String this.host, {bool notifications = false})
+    : available = notifications
+          ? const {CircleFeature.notificationSettings}
+          : const {};
 
   /// Null in the preview; the server's host in server mode.
   final String? host;

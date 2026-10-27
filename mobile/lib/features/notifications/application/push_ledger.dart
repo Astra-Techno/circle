@@ -42,6 +42,116 @@ class PushLedger {
     return result;
   }
 
+  static const _pendingKey = 'circle.push.v2.pending';
+  String _id(PushEnvelope envelope, PushAction action) =>
+      '${envelope.scope.key}:${action.name}:${envelope.eventId}';
+
+  Future<Map<String, dynamic>> _read(String key) async {
+    final raw = await store.read(key);
+    final value = raw == null ? <String, dynamic>{} : jsonDecode(raw);
+    if (value is! Map<String, dynamic>) {
+      throw StateError('Notification history is unavailable.');
+    }
+    return value;
+  }
+
+  Future<Map<String, dynamic>> _history(DateTime now) async {
+    final history = await _read('circle.push.v1.history');
+    if (history.values.any((value) => value is! int)) {
+      throw StateError('Notification history is unavailable.');
+    }
+    history.removeWhere(
+      (_, value) => value <= now.toUtc().millisecondsSinceEpoch ~/ 1000,
+    );
+    return history;
+  }
+
+  void _prune(Map<String, dynamic> pending, PushScope scope, DateTime now) {
+    final seconds = now.toUtc().millisecondsSinceEpoch ~/ 1000;
+    pending.removeWhere(
+      (key, value) =>
+          !key.startsWith('${scope.key}:') ||
+          value is! Map ||
+          value['data'] is! Map ||
+          (int.tryParse('${value['data']['expires_at']}') ?? 0) <= seconds,
+    );
+  }
+
+  Future<T> _serialized<T>(Future<T> Function() action) {
+    final result = _tail.then((_) => action());
+    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return result;
+  }
+
+  /// Persist before emission; no presentation/handled claim is made here.
+  Future<bool> stage(PushEnvelope envelope, PushAction action, DateTime now) =>
+      _serialized(() async {
+        try {
+          final history = await _history(now),
+              pending = await _read(_pendingKey);
+          _prune(pending, envelope.scope, now);
+          final id = _id(envelope, action);
+          if (history.containsKey(id) ||
+              pending.containsKey(id) ||
+              pending.length >= 64 ||
+              history.length + pending.length >= capacity ||
+              !envelope.belongsTo(envelope.scope, now)) {
+            return false;
+          }
+          pending[id] = {'data': envelope.toData(), 'action': action.name};
+          await store.write(_pendingKey, jsonEncode(pending));
+          return true;
+        } catch (_) {
+          return false;
+        }
+      });
+
+  Future<List<PushReception>> pending(PushScope scope, DateTime now) =>
+      _serialized(() async {
+        try {
+          final history = await _history(now),
+              pending = await _read(_pendingKey);
+          _prune(pending, scope, now);
+          final result = <PushReception>[];
+          pending.removeWhere((key, value) => history.containsKey(key));
+          for (final value in pending.values) {
+            final data = Map<String, dynamic>.from(value['data'] as Map);
+            final envelope = PushEnvelope.parse(data, scope, now);
+            final action = switch (value['action']) {
+              'display' => PushAction.display,
+              'open' => PushAction.open,
+              _ => null,
+            };
+            if (envelope != null && action != null) {
+              result.add(PushReception(envelope, action));
+            }
+          }
+          await store.write(_pendingKey, jsonEncode(pending));
+          return result;
+        } catch (_) {
+          return [];
+        }
+      });
+
+  /// Acknowledge only after a successful handoff or permanent authorization denial.
+  Future<bool> complete(
+    PushReception reception,
+    DateTime now,
+  ) => _serialized(() async {
+    try {
+      final history = await _history(now), pending = await _read(_pendingKey);
+      final id = _id(reception.envelope, reception.action);
+      if (!history.containsKey(id) && history.length >= capacity) return false;
+      history[id] = reception.envelope.expiresAt;
+      await store.write('circle.push.v1.history', jsonEncode(history));
+      pending.remove(id);
+      await store.write(_pendingKey, jsonEncode(pending));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  });
+
   /// Explicit account-data cleanup only, never an ordinary transport stop.
   Future<void> clear(PushScope scope) {
     final result = _tail.then((_) async {

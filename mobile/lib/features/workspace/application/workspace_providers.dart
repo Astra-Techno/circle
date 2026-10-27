@@ -1,3 +1,4 @@
+import '../../../core/notifications/push_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_providers.dart';
 import '../data/api/api_circle_repository.dart';
@@ -45,7 +46,10 @@ final circleFeaturesProvider = Provider<CircleFeatures>((ref) {
   final signedIn = ref.watch(serverAccountProvider) != null;
   final config = ref.watch(apiConfigProvider);
   return signedIn && config != null
-      ? CircleFeatures.server(config.host)
+      ? CircleFeatures.server(
+          config.host,
+          notifications: ref.watch(pushClientEnabledProvider),
+        )
       : CircleFeatures.preview;
 });
 

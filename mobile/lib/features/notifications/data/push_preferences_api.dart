@@ -7,11 +7,13 @@ export '../domain/push_preferences.dart';
 /// Does not initialize Firebase or request permissions. Session-scoped API
 /// instances are supplied by the application layer during push integration.
 class PushPreferencesApi {
-  PushPreferencesApi(this.client);
+  PushPreferencesApi(this.client, {this.accountId});
+  final String? accountId;
   final ApiClient client;
   static const path = '/me/notification-preferences';
 
-  Future<PushPreferences> load() async => _decode(await client.get(path));
+  Future<PushPreferences> load() async =>
+      _decode(await client.get(path, expectedAccount: accountId));
 
   Future<PushPreferences> update({
     bool? enabled,
@@ -23,6 +25,7 @@ class PushPreferencesApi {
   }) async => _decode(
     await client.patch(
       path,
+      expectedAccount: accountId,
       body: {
         'enabled': ?enabled,
         if (categories != null)

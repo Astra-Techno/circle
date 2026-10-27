@@ -155,6 +155,7 @@ class FakeCircleServer {
   final Map<String, Map<String, Object?>> links = {};
   final Map<String, Map<String, Object?>> uploads = {};
   final Map<String, ({Uint8List bytes, String mime})> profilePhotos = {};
+  final Map<int, Map<String, Object?>> notificationPreferences = {};
   int _ids = 0, _tokens = 0, _profileVersions = 0;
 
   static const now = '2026-10-23 10:00:00';
@@ -313,6 +314,55 @@ class FakeCircleServer {
       return FakeResponse.error(401, 'invalid_token');
     }
     final me = access[token]!;
+    if (path == '/me/notification-preferences') {
+      final preferences = notificationPreferences.putIfAbsent(
+        me,
+        () => {
+          'enabled': false,
+          'categories': <String, bool>{
+            for (final type in [
+              'memories',
+              'replies_reactions',
+              'groups',
+              'chats',
+              'events',
+              'polls',
+              'albums',
+              'security',
+            ])
+              type: false,
+          },
+          'quiet_hours': true,
+          'quiet_start': 1320,
+          'quiet_end': 420,
+          'timezone': 'UTC',
+        },
+      );
+      if (r.method == 'PATCH') {
+        final start = body['quiet_start'] ?? preferences['quiet_start'],
+            end = body['quiet_end'] ?? preferences['quiet_end'];
+        if (start == end) {
+          return FakeResponse.error(
+            422,
+            'validation_error',
+            message: 'Choose different quiet-hours start and end times.',
+          );
+        }
+        for (final entry in body.entries) {
+          if (entry.key == 'categories') {
+            (preferences['categories'] as Map<String, bool>).addAll(
+              Map<String, bool>.from(entry.value as Map),
+            );
+          } else {
+            preferences[entry.key] = entry.value;
+          }
+        }
+      }
+      return FakeResponse.ok(preferences);
+    }
+    if (path == '/devices/register' || path == '/devices/unregister') {
+      return FakeResponse.ok({'registered': true, 'unregistered': true});
+    }
     final join = RegExp(r'^/invites/([A-Za-z0-9_-]+)/join$').firstMatch(path);
     if (r.method == 'POST' && join != null) {
       final link = links[join[1]];
