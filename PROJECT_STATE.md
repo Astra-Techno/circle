@@ -9,19 +9,19 @@ Updated: 27 October 2026. Inspect Git status before work; source, deployment and
 - Server core includes auth, private profiles/media, nested groups/membership/invite links, Memories/comments/reactions/saves/search. Chat/events/albums remain isolated previews, pending actual service batches.
 
 ## Current batch
-- S1b plus owner-requested active-device/session controls. Pulled main safely through5e38ce5; contact-first invitations remain in place.
-- OpenAPI0.3.8/migration013: owner-only active session list, separate public handles, device/OS/app labels, login/activity/IP timestamps and individual current/remote revocation. User-first locks serialize credential changes; revoked access/refresh/device registrations cannot survive.
-- Android device details update optionally after login, without delaying authentication. Optional one-shot foreground location stores only a removable city/region/country label and timestamp. No background tracking, coordinates or hardware IDs are sent to CIRCLE.
-- You → Account exposes Your devices and Change password. Password mutation uses no-replay, explicit success, raw current/new/confirm fields and safe ambiguous-outcome guidance. Auth/drafts/images/push cleanup is independent and guarded against newer sessions. Normal logout keeps the existing welcome navigation.
-- Evidence and phone acceptance: docs/account-security-sessions.md. Recovery/security alert channels, registration policy alignment and broader privacy controls remain pending.
+- Fix shared profile/banner visibility: owner uploads worked, but another member’s profile only rendered initials. Main pulled safely through9017286 before changes.
+- PersonProfileScreen now fetches avatar+banner through existing private /profiles/{userId}/photos/{kind}; scoped by viewer/target/API/session and active exact shared membership. No public URLs, new backend API or migration.
+- Refresh photos reloads replacements/removals; absent/inaccessible photos fall back calmly. Preview/own-photo behavior stays separate. The receiving person must update the APK; no re-upload is needed.
+- Account/session/password controls from build13 remain in place. Device/location/two-phone acceptance is still pending. Current evidence: docs/mobile-release-1.0.13.md.
 
 ## Validation
-- Dedicated circle_test:190 tests /3,167 assertions; PHPStan clean. Contract YAML parses and all internal references resolve.
-- Flutter full:632 passed /1 skipped /13 known Windows-baseline golden failures on Linux. Final focused login/security/design/guards:45 passed, including storage-failure cleanup added after full run. Format/analyze clean; eight security phone/tablet light/dark200% renders inspected.
+- Backend unchanged this batch; focused ProfileTest on circle_test:5 tests /134 assertions pass. Prior full190 tests /3,167 assertions and PHPStan clean. Contract0.3.8 unchanged.
+- Shared-photo/own-photo/profile/account/design focused29 passed; format/analyze clean, four phone/tablet light/dark200% profile renders inspected. Full regression640 passed /1 skipped /13 known Windows-baseline golden failures; no functional failures.
 - Existing thirteen Windows-baseline golden comparisons fail on Linux; preserve approved baselines. One known skipped test. No Android device attached.
 
 ## Release versus live
-- Verified live main download: Android1.0.12+13, production HTTPS API/previewfalse/client pushtrue;65,129,974 bytes, SHA256668516107c74d4005c988bb9e62688bbfeecfb0127ae43eeb292fc41b3263bfe. Stable/versioned APKs, JSON and both buttons align; earlier immutable artifacts preserved.
+- Candidate1.0.13+14 packaged: 65,129,974 bytes, SHA256 b9a7f88636dc5617b677a43633e3c948b4a263553212b4ee4437af0e7aa2c730; production API/previewfalse/client pushtrue, established certificate verified, minSdk24. Stable/versioned/JSON/both buttons align; deployment pending.
+- Prior verified live main download: Android1.0.12+13, production HTTPS API/previewfalse/client pushtrue;65,129,974 bytes, SHA256668516107c74d4005c988bb9e62688bbfeecfb0127ae43eeb292fc41b3263bfe. Stable/versioned APKs, JSON and both buttons align; earlier immutable artifacts preserved.
 - Source/release81006ef pushed. Deployment completed (125s response/123s script), migration013 applied. Complete hosted stable+immutable APK hashes, metadata/buttons and expected cache headers verified. API healthy; session list/update/revoke routes reject unauthenticated access.
 - Established certificate SHA256:6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c; verified. Existing coarse-location only, no fine/background location, hardware-ID, broad contacts or automatic SMS permission added. Build127.5s.
 - Deployer preserves hosted .env, storage, PHP handlers and deploy.php itself. Source push alone is not deployment evidence.

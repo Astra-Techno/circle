@@ -1,3 +1,5 @@
+import '../application/profile_providers.dart';
+import 'profile_photo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -90,12 +92,53 @@ class PersonProfileScreen extends ConsumerWidget {
         child: ListView(
           padding: CircleInsets.form,
           children: [
-            Center(
-              child: CircleInitialAvatar(
-                name: name,
-                size: CircleAvatarSize.hero,
+            if (features.server) ...[
+              AspectRatio(
+                aspectRatio: CircleProfileLayout.coverAspectRatio,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(CircleRadius.card),
+                  child: SharedProfilePhotoSurface(
+                    person: person,
+                    kind: ProfilePhotoKind.cover,
+                    name: name,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: Space.md),
+              Center(
+                child: SharedProfilePhotoSurface(
+                  person: person,
+                  kind: ProfilePhotoKind.avatar,
+                  name: name,
+                ),
+              ),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    ref.invalidate(
+                      sharedProfilePhotoBytesProvider((
+                        person: person,
+                        kind: ProfilePhotoKind.avatar,
+                      )),
+                    );
+                    ref.invalidate(
+                      sharedProfilePhotoBytesProvider((
+                        person: person,
+                        kind: ProfilePhotoKind.cover,
+                      )),
+                    );
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Refresh photos'),
+                ),
+              ),
+            ] else
+              Center(
+                child: CircleInitialAvatar(
+                  name: name,
+                  size: CircleAvatarSize.hero,
+                ),
+              ),
             const SizedBox(height: Space.md),
             Semantics(
               header: true,

@@ -216,6 +216,7 @@ class ApiClient {
     String path, {
     Map<String, Object?>? query,
     String? expectedAccount,
+    int? expectedSession,
   }) async {
     final response = await _raw(
       () => dio.get<Object?>(
@@ -224,7 +225,10 @@ class ApiClient {
         options: Options(
           responseType: ResponseType.bytes,
           headers: {'Accept': 'image/webp,image/jpeg,image/png'},
-          extra: {_expectedAccount: ?expectedAccount},
+          extra: {
+            _expectedAccount: ?expectedAccount,
+            _expectedSession: ?expectedSession,
+          },
         ),
       ),
     );

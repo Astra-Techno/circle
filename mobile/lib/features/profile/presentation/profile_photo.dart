@@ -97,6 +97,75 @@ class ProfilePhotoSurface extends ConsumerWidget {
   }
 }
 
+/// Public-looking presentation backed only by authenticated shared-member bytes.
+class SharedProfilePhotoSurface extends ConsumerWidget {
+  const SharedProfilePhotoSurface({
+    super.key,
+    required this.person,
+    required this.kind,
+    required this.name,
+  });
+  final String person, name;
+  final ProfilePhotoKind kind;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final avatar = kind == ProfilePhotoKind.avatar;
+    final fallback = avatar
+        ? Center(
+            child: CircleInitialAvatar(name: name, size: CircleAvatarSize.hero),
+          )
+        : DecoratedBox(
+            decoration: CircleDepth.profilePanel(context),
+            child: const Center(
+              child: Icon(Icons.landscape_outlined, size: Space.large),
+            ),
+          );
+    final query = (person: person, kind: kind);
+    final content = ref
+        .watch(sharedProfilePhotoBytesProvider(query))
+        .when(
+          data: (bytes) => bytes == null
+              ? fallback
+              : Image.memory(
+                  bytes,
+                  key: ValueKey('shared-${kind.name}-$person'),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  excludeFromSemantics: true,
+                  errorBuilder: (_, _, _) => fallback,
+                ),
+          loading: () => fallback,
+          error: (_, _) => Stack(
+            fit: StackFit.expand,
+            children: [
+              fallback,
+              Center(
+                child: IconButton.filledTonal(
+                  tooltip:
+                      'Retry loading ${avatar ? 'profile' : 'cover'} photo',
+                  onPressed: () =>
+                      ref.invalidate(sharedProfilePhotoBytesProvider(query)),
+                  icon: const Icon(Icons.refresh),
+                ),
+              ),
+            ],
+          ),
+        );
+    final image = Semantics(
+      image: true,
+      label: '${avatar ? 'Profile' : 'Cover'} photo for $name',
+      child: content,
+    );
+    return avatar
+        ? SizedBox.square(
+            dimension: CircleAvatarSize.hero.diameter,
+            child: ClipOval(child: image),
+          )
+        : image;
+  }
+}
+
 class ProfileHeader extends ConsumerStatefulWidget {
   const ProfileHeader({super.key, required this.account});
   final ApiAccount account;

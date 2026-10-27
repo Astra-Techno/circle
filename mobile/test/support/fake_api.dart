@@ -395,6 +395,22 @@ class FakeCircleServer {
       refresh.removeWhere((_, user) => user == me);
       return FakeResponse.ok(null);
     }
+    final sharedPhoto = RegExp(
+      r'^/profiles/([0-9]+)/photos/(avatar|cover)$',
+    ).firstMatch(path);
+    if (r.method == 'GET' && sharedPhoto != null) {
+      final target = int.parse(sharedPhoto[1]!);
+      final shared = members.values.any(
+        (group) => group.containsKey(me) && group.containsKey(target),
+      );
+      if (target != me && !shared) return FakeResponse.error(404, 'not_found');
+      final photo = profilePhotos['$target:${sharedPhoto[2]}'];
+      if (photo == null) return FakeResponse.error(404, 'not_found');
+      return FakeResponse(200, photo.bytes, {
+        'content-type': photo.mime,
+        'cache-control': 'private, no-store',
+      });
+    }
     final profilePhoto = RegExp(
       r'^/me/photos/(avatar|cover)$',
     ).firstMatch(path);
