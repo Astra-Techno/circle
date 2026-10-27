@@ -10,7 +10,7 @@ Updated: 27 October 2026. This file is a short handoff, not a substitute for ins
 
 ## Repository versus live release
 - Owner requested promoting existing verified build10 to the main online download. Published runtime is Android1.0.9+10, production API/preview false, explicit opt-in push true, original beta certificate. No rebuild or runtime changes in this publication batch.
-- Repository circle.apk, immutable circle-1.0.9-10.apk, release.json and both site buttons align: 64,785,682 bytes, SHA-256 9f3b2507f350be8f3c8a93b03d5f67fc40d5fcea76122317963dd683e4a35f13. Earlier immutable/test artifacts retained. Hosted verification pending.
+- Repository circle.apk, immutable circle-1.0.9-10.apk, release.json and both site buttons align: 64,785,682 bytes, SHA-256 9f3b2507f350be8f3c8a93b03d5f67fc40d5fcea76122317963dd683e4a35f13. Earlier immutable/test artifacts retained. Deployment succeeded (95.9s); both complete hosted APK hashes, root/download buttons, labels and metadata verified. Stable alias/metadata return no-store; versioned APK is immutable. API healthy.
 - Build10 contacts/WhatsApp/SMS and real push delivery still require owner device acceptance; promotion does not establish those results. Backend sender configuration/flags unchanged by this batch.
 
 ## Current work and priorities
@@ -21,19 +21,19 @@ Updated: 27 October 2026. This file is a short handoff, not a substitute for ins
 - Cross-feature push is required for relevant recipient-facing events; matrix and delivery/privacy/device acceptance are in the canonical backlog. No notifications for every tap/private edit.
 - Do not start another implementation batch before recording which acceptance criteria it owns.
 
-## Current source checkpoint (not a deployed release)
+## Source checkpoints and remaining device acceptance
 - Working checkout: `/workspace/circle-docs-sync`, main; primary `/workspace/circle` still preserves original WIP. Do not reapply that old patch to integrated source.
 - B1/B2 integrated in fd3a327: private profiles, session guards, migration 008 and truthful capability gates. Profile visual/native/live acceptance remains open; owner-requested build8 is packaged for installation testing.
-- N1a (265fcd2) and N1b complete in source: session-safe devices/preferences plus migration 010 transactional Memory/comment/reply outbox, injectable FCM transport and bounded CLI worker. OpenAPI 0.3.5. Capture/delivery/settings UI remain off; worker is Android-only.
+- N1a (265fcd2) and N1b complete in source: session-safe devices/preferences plus migration 010 transactional Memory/comment/reply outbox, injectable FCM transport and bounded CLI worker. OpenAPI 0.3.5. Capture/delivery source defaults remain off; settings UI is included in build10; worker is Android-only.
 - Backend full suite: 159 tests / 2,673 assertions passed on circle_test; focused queue/policy: 24 tests / 573 assertions passed; PHPStan and Composer validation clean.
-- N1c1/N1c2 source in 9fa0625: scoped envelopes, saved supported-category settings, explained consent/quiet hours/timezones and authorized foreground/tap handling. Client defaults remain false; stable live APK remains build8.
+- N1c1/N1c2 source in 9fa0625: scoped envelopes, saved supported-category settings, explained consent/quiet hours/timezones and authorized foreground/tap handling. Client source defaults remain false; owner-promoted build10 explicitly enables client opt-in.
 - N1d source adds shared foreground/headless native display/dedup/cancellation, a process mutex for encrypted ledger transactions, read-only background API authorization with no real credential refresh/write, and encrypted persistent native tap handoff/acknowledgement. Scope switching preserves other sessions' bounded pending entries until expiry.
 - Android invite sharing source: WhatsApp/Business recipient chooser; SMS system single-number picker or manual composer; system share; HTTPS fragment invite browser fallback. No contacts enumeration/upload or automatic sending. Rechecks current viewer/API/session/link before external composition; preview stays isolated.
 - Current Flutter: 580 passed / 1 skipped / 13 existing Windows-baseline golden failures; final sharing/real-route/design subset 22 passed (includes an API-instance test added after full run). Format/analyze clean; four static browser script cases pass. No native-device approval claimed.
 - Test build 1.0.9+10 compiled (96.8s), original beta certificate verified; merged manifest contains no READ_CONTACTS/WRITE_CONTACTS/SEND_SMS. 64,785,682 bytes, SHA-256 9f3b2507f350be8f3c8a93b03d5f67fc40d5fcea76122317963dd683e4a35f13. Separate candidate published in e909649; deployment succeeded (85.9s). Complete hosted APK hash, invite HTML, candidate/stable/build9 metadata and stable buttons verified; API healthy. Earlier immutable build8 and test build9 retained; owner now requested build10 on main download links.
 - Owner confirmed hosting configuration ready and willingness to test an APK. No Android device is attached and private hosting sender/cron cannot be inspected here. Actual provider acceptance, device delivery/permission/channel/cold-tap results are pending; do not mark push verified yet.
 - Evidence: `docs/contact-invite-sharing.md`, `docs/mobile-invite-test-build10.md`, `docs/push-device-acceptance.md`. Backend files/contracts unchanged; prior 159 tests / 2,673 assertions and PHPStan evidence retained.
-- Next: complete build10 contacts/composer and push device/hosting checks, then stable enablement only after acceptance. Reaction/group hooks and later feature families remain tracked. Profile/native/Windows golden acceptance stays open. Primary `/workspace/circle` still preserves original WIP; do not reapply it.
+- Next: complete build10 contacts/composer and push device/hosting checks, verify real delivery before further push rollout. Reaction/group hooks and later feature families remain tracked. Profile/native/Windows golden acceptance stays open. Primary `/workspace/circle` still preserves original WIP; do not reapply it.
 
 ## Validation commands
 - Mobile: `dart format --output=none --set-exit-if-changed lib test`, `flutter analyze`, focused `flutter test test/<relevant_test>.dart`; required broader suite at integration/release.
