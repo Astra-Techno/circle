@@ -48,6 +48,50 @@ final class App
             Response::ok(['status' => 'healthy', 'time' => gmdate('c')]);
         });
 
+        // ── Push test (deploy-key protected, remove after testing) ──
+        $router->get('/api/v1/push-test', static function (Request $request): void {
+            $key = $request->query('key');
+            if (!is_string($key) || $key === '' || !hash_equals(\Circle\Core\Env::get('DEPLOY_KEY'), $key)) {
+                Response::unauthorized('Invalid key.');
+            }
+
+            $sender = new \Circle\Core\FcmSender();
+            $db = Database::connection();
+
+            $tokens = $db->query(
+                'SELECT dt.fcm_token, dt.platform, dt.user_id, u.name, dt.created_at
+                 FROM device_tokens dt JOIN users u ON u.id = dt.user_id
+                 ORDER BY dt.created_at DESC LIMIT 20'
+            )->fetchAll(\PDO::FETCH_ASSOC);
+
+            $results = [];
+            $now = time();
+            foreach ($tokens as $row) {
+                $data = [
+                    'type'       => 'test',
+                    'title'      => 'Circle Push Test',
+                    'body'       => 'Push notifications are working!',
+                    'event'      => 'push_test',
+                    'scope'      => 'system',
+                    'expires_at' => (string) ($now + 300),
+                    'sent_at'    => (string) $now,
+                ];
+                $result = $sender->send($row['fcm_token'], $data);
+                $results[] = [
+                    'user'     => $row['name'],
+                    'platform' => $row['platform'],
+                    'token'    => substr($row['fcm_token'], 0, 20) . '...',
+                    'status'   => $result->status->name,
+                ];
+            }
+
+            Response::ok([
+                'fcm_ready'   => $sender->isReady(),
+                'devices'     => count($tokens),
+                'results'     => $results,
+            ]);
+        });
+
         // ── Auth (public, rate-limited) ──────────────────────────
         $router->group('/api/v1/auth', ['rate:auth'], static function (Router $r): void {
             $r->post('/register', AuthController::register(...));
