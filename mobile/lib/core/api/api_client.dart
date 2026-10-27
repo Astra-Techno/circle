@@ -197,11 +197,12 @@ class ApiClient {
     Map<String, Object?>? query,
     bool auth = true,
     String? expectedAccount,
+    int? expectedSession,
   }) => _send(
     () => dio.get<Object?>(
       path,
       queryParameters: query,
-      options: _options(auth, expectedAccount),
+      options: _options(auth, expectedAccount, expectedSession),
     ),
   );
 
@@ -233,9 +234,18 @@ class ApiClient {
     );
   }
 
-  Future<ApiPage> getPage(String path, {Map<String, Object?>? query}) async {
+  Future<ApiPage> getPage(
+    String path, {
+    Map<String, Object?>? query,
+    String? expectedAccount,
+    int? expectedSession,
+  }) async {
     final response = await _raw(
-      () => dio.get<Object?>(path, queryParameters: query),
+      () => dio.get<Object?>(
+        path,
+        queryParameters: query,
+        options: _options(true, expectedAccount, expectedSession),
+      ),
     );
     final body = response.data;
     final items = body is Map && body['data'] is List

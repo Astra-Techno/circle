@@ -100,3 +100,7 @@ Accounts/groups/membership/invite links; Memory create/read/edit/delete, comment
 Take one batch and 3–5 observable acceptance checks at a time. Read only relevant files/contracts; use one agent by default. Keep the short PROJECT_STATE.md handoff current. Run focused checks during edits, required broader checks at integration, and one verified release build. Report implemented/tested/deployed/device-verified states separately.
 
 Open decisions are deferred to the batch that needs them: recovery/SMS provider and number verification; deletion/export retention and policy text; chat transport/history rules; native test access and iOS credentials. Never fill these with pretend services or bypasses. This document sets the recommended work order; it does not claim the larger families are finished.
+
+## Contact-first invitation batch — 27 October 2026
+
+Owner requested selected-contact invitations and a compact Copy link action. Implemented with OpenAPI0.3.7, migrations011/012, explicit recipient consent/approval, persistent inbox, bounded per-sender attempts and scoped invitation push capture/delivery/client handling. Native picker/composer and actual Android delivery remain owner acceptance checks. See [contact-invite-sharing.md](contact-invite-sharing.md). This batch takes priority over the previously queued S1b password form; that form and later chat/events families remain pending.

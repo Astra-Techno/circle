@@ -16,7 +16,7 @@ class PushPresentationHost extends ConsumerStatefulWidget {
     required this.onOpen,
   });
   final Widget child;
-  final void Function(String memoryId) onOpen;
+  final void Function(String destination) onOpen;
   @override
   ConsumerState<PushPresentationHost> createState() =>
       _PushPresentationHostState();
@@ -96,7 +96,7 @@ class _PushPresentationHostState extends ConsumerState<PushPresentationHost>
       },
       open: (reception) async {
         if (!mounted || !_foreground || !coordinator.active) return false;
-        widget.onOpen(reception.envelope.memoryId);
+        widget.onOpen(reception.envelope.destination);
         _dismiss();
         return true;
       },

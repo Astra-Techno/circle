@@ -176,9 +176,21 @@ void main() {
             image.dispose();
           });
         }
+        final groupChoice = find.byKey(const ValueKey('push-groups'));
+        await tester.scrollUntilVisible(groupChoice, 300);
+        expect(find.text('Group invitations'), findsOneWidget);
+        await tester.tap(groupChoice);
+        await tester.pumpAndSettle();
+        expect(
+          container
+              .read(pushSettingsProvider)
+              .requireValue
+              .categories[PushCategory.groups],
+          isTrue,
+        );
         expect(choices.permissions, 0);
         final enable = find.text('Enable notifications');
-        await tester.ensureVisible(enable);
+        await tester.scrollUntilVisible(enable, -300);
         await tester.tap(enable);
         await tester.pumpAndSettle();
         expect(find.text('Choose what reaches you'), findsOneWidget);

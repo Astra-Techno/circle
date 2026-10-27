@@ -72,7 +72,9 @@ class BackgroundPushProcessor {
           api,
           accountId: scope.account,
         ).load();
-        final category = envelope.type == 'memory.created'
+        final category = envelope.isInvitation
+            ? PushCategory.groups
+            : envelope.type == 'memory.created'
             ? PushCategory.memories
             : PushCategory.repliesReactions;
         if (!preferences.enabled || preferences.categories[category] != true) {
@@ -82,16 +84,13 @@ class BackgroundPushProcessor {
         if (pushQuietNow(preferences, clock())) return;
         final memory = ApiJson.map(
           await api.get(
-            '/memories/${envelope.memoryId}',
+            envelope.isInvitation
+                ? '/group-invitations/${envelope.invitationId}'
+                : '/memories/${envelope.memoryId}',
             expectedAccount: scope.account,
           ),
         );
-        if ('${memory['id']}' != envelope.memoryId ||
-            '${memory['group_id']}' != envelope.groupId ||
-            (envelope.commentId.isNotEmpty &&
-                !ApiJson.list(
-                  memory['comments'],
-                ).any((c) => c is Map && '${c['id']}' == envelope.commentId))) {
+        if (!envelope.authorizes(memory, clock())) {
           await ledger.complete(reception, clock());
           return;
         }

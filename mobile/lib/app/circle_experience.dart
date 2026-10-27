@@ -23,6 +23,8 @@ import '../features/groups/domain/membership_rules.dart';
 import '../features/groups/presentation/circle_groups.dart';
 import '../features/groups/presentation/group_detail.dart';
 import '../features/groups/presentation/group_invite.dart';
+import '../features/groups/presentation/contact_invite_screen.dart';
+import '../features/groups/presentation/contact_invitation_inbox.dart';
 import '../features/groups/presentation/group_reports.dart';
 import '../features/groups/presentation/group_settings.dart';
 import '../features/groups/presentation/invite_link_screen.dart';
@@ -67,12 +69,15 @@ String? circleReturnDestination(String? input) {
         '/you/privacy',
         '/you/notifications',
         '/you/account',
+        '/you/invitations',
         '/activity',
         '/search',
       }.contains(path) ||
       RegExp(
         r'^/(home/memory|chats/g|chats/c|chats/reply|groups/g|invite|events/e)/[A-Za-z0-9_-]+$',
       ).hasMatch(path) ||
+      RegExp(r'^/you/invitations/[A-Za-z0-9_-]+$').hasMatch(path) ||
+      RegExp(r'^/groups/g/[A-Za-z0-9_-]+/invite/link$').hasMatch(path) ||
       RegExp(r'^/chats/c/[A-Za-z0-9_-]+/details$').hasMatch(path) ||
       RegExp(
         r'^/chats/c/[A-Za-z0-9_-]+/photos/[A-Za-z0-9_-]+$',
@@ -499,9 +504,20 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                       ),
                       GoRoute(
                         path: 'invite',
+                        routes: [
+                          GoRoute(
+                            path: 'link',
+                            builder: (_, state) => _idRoute(
+                              state,
+                              (id) => GroupInviteScreen(groupId: id),
+                            ),
+                          ),
+                        ],
                         builder: (_, state) => _idRoute(
                           state,
-                          (id) => GroupInviteScreen(groupId: id),
+                          (id) => ref.read(circleFeaturesProvider).server
+                              ? ContactInviteScreen(groupId: id)
+                              : GroupInviteScreen(groupId: id),
                         ),
                       ),
                     ],
@@ -550,6 +566,18 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                 path: '/you',
                 builder: (_, _) => const CircleYou(),
                 routes: [
+                  GoRoute(
+                    path: 'invitations',
+                    builder: (_, _) => const ContactInvitationInbox(),
+                    routes: [
+                      GoRoute(
+                        path: ':invitationId',
+                        builder: (_, state) => ContactInvitationInbox(
+                          invitationId: state.pathParameters['invitationId'],
+                        ),
+                      ),
+                    ],
+                  ),
                   GoRoute(
                     path: 'edit',
                     builder: (_, _) => const ProfileEditScreen(),
@@ -635,7 +663,7 @@ class CircleExperience extends ConsumerWidget {
     themeMode: ref.watch(themeProvider),
     routerConfig: ref.watch(circleRouterProvider),
     builder: (context, child) => PushPresentationHost(
-      onOpen: (id) => ref.read(circleRouterProvider).go('/home/memory/$id'),
+      onOpen: (path) => ref.read(circleRouterProvider).go(path),
       child: child!,
     ),
   );

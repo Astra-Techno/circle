@@ -44,7 +44,9 @@ class PushPresentation {
             binding.api,
             accountId: binding.scope.account,
           ).load();
-          final category = reception.envelope.type == 'memory.created'
+          final category = reception.envelope.isInvitation
+              ? PushCategory.groups
+              : reception.envelope.type == 'memory.created'
               ? PushCategory.memories
               : PushCategory.repliesReactions;
           if (!preferences.enabled ||
@@ -103,7 +105,9 @@ class PushPresentation {
         binding.api,
         accountId: binding.scope.account,
       ).load();
-      final category = reception.envelope.type == 'memory.created'
+      final category = reception.envelope.isInvitation
+          ? PushCategory.groups
+          : reception.envelope.type == 'memory.created'
           ? PushCategory.memories
           : PushCategory.repliesReactions;
       if (!preferences.enabled ||
@@ -114,22 +118,13 @@ class PushPresentation {
     }
     final data = ApiJson.map(
       await binding.api.get(
-        '/memories/${reception.envelope.memoryId}',
+        reception.envelope.isInvitation
+            ? '/group-invitations/${reception.envelope.invitationId}'
+            : '/memories/${reception.envelope.memoryId}',
         expectedAccount: binding.scope.account,
       ),
     );
-    if ('${data['id']}' != reception.envelope.memoryId ||
-        '${data['group_id']}' != reception.envelope.groupId) {
-      return false;
-    }
-    if (reception.envelope.commentId.isNotEmpty &&
-        !ApiJson.list(data['comments']).any(
-          (comment) =>
-              comment is Map &&
-              '${comment['id']}' == reception.envelope.commentId,
-        )) {
-      return false;
-    }
+    if (!reception.envelope.authorizes(data, clock())) return false;
     final live = await coordinator.bindingFor(reception.envelope);
     return !_disposed && live != null;
   }

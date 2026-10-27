@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Circle\Notifications;
 
+use Circle\Controllers\GroupInvitationController;
 use Circle\Core\Database;
 use Circle\Core\Env;
 
@@ -18,6 +19,30 @@ final class NotificationOutbox
     public static function commentCreated(int $memoryId, int $commentId): void
     {
         self::capture($memoryId, $commentId);
+    }
+
+    /** Invitation consent precedes membership; never reuse member-only capture. */
+    public static function groupInvitationCreated(int $invitationId): void
+    {
+        if (Env::get('PUSH_QUEUE_ENABLED', 'false') !== 'true') return;
+        if (!Database::connection()->inTransaction()) throw new \LogicException('Notification capture requires the mutation transaction.');
+        $invitation = Database::queryOne('SELECT recipient_id FROM group_invitations WHERE id = :id', ['id' => $invitationId]);
+        if ($invitation === null || !GroupInvitationController::eligible($invitationId, (int) $invitation['recipient_id'])) return;
+        Database::execute(
+            "INSERT INTO notification_outbox (event_key, kind, user_id, device_id, session_id, group_id, memory_id, invitation_id, expires_at)
+             SELECT :key, 'group.invitation', gi.recipient_id, dt.id, dt.session_id, gi.group_id, NULL, gi.id,
+                 LEAST(gi.expires_at, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 24 HOUR))
+             FROM group_invitations gi
+             JOIN users u ON u.id = gi.recipient_id AND u.status = 'active'
+             JOIN notification_preferences np ON np.user_id = u.id AND np.enabled = 1
+             JOIN device_tokens dt ON dt.user_id = u.id AND dt.session_id IS NOT NULL AND dt.platform = 'android'
+             WHERE gi.id = :id AND gi.status = 'pending' AND gi.expires_at > UTC_TIMESTAMP()
+             AND JSON_UNQUOTE(JSON_EXTRACT(np.categories, '$.groups')) = 'true'
+             AND EXISTS (SELECT 1 FROM refresh_tokens rt WHERE rt.user_id = dt.user_id AND rt.session_id = dt.session_id
+                 AND rt.revoked_at IS NULL AND rt.expires_at > UTC_TIMESTAMP())
+             ON DUPLICATE KEY UPDATE event_key = notification_outbox.event_key",
+            ['key' => 'group.invitation:' . $invitationId, 'id' => $invitationId]
+        );
     }
 
     private static function capture(int $memoryId, ?int $commentId): void

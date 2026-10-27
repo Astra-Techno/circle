@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.6
+  version: 0.3.7
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -61,7 +61,9 @@ info:
     The actor is excluded; comments notify the Memory owner and reply target only.
     No provider network call occurs inside these HTTP mutations. Rolled-back mutations
     produce no outbox entries. Capture/delivery default off; native client acceptance is pending.
-    Worker envelopes follow PushMemoryEnvelope. This does not introduce a public queue endpoint.
+    Worker Memory envelopes follow PushMemoryEnvelope; group invitations follow
+    PushGroupInvitationEnvelope (0.3.7) with recipient-consent authorization. This
+    does not introduce a public queue endpoint.
     Retries are at-least-once: client event-id deduplication and account/server/session checks
     are mandatory before presentation. API mutation idempotency is still not implemented.
 
@@ -100,6 +102,150 @@ security:
   - bearerAuth: []
 
 paths:
+  /groups/{id}/contact-invitations:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    post:
+      operationId: inviteGroupContact
+      tags: [Groups]
+      summary: Invite one explicitly confirmed contact without granting membership.
+      description: |
+        Requires active exact membership and admin role or member link-sharing permission.
+        Only the selected E164 number is submitted; no address-book upload or public lookup.
+        Unknown/inactive accounts return share_link without account details. Invited recipients
+        must accept. Pending invitations last seven days; duplicate live invitations reuse the
+        same id. Terminal invitations have a 24-hour cooldown; later invitations get new ids.
+        Each sender has 20 attempts/hour including misses and forbidden attempts after validation.
+        Bans, removed membership and parent membership are enforced server-side.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [mobile]
+              properties:
+                mobile: {type: string, pattern: '^\+[1-9][0-9]{7,14}$'}
+      responses:
+        '200':
+          description: Outcome only; no recipient profile or phone is returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: {const: true}
+                  data:
+                    type: object
+                    required: [outcome]
+                    properties:
+                      outcome: {type: string, enum: [invited, already_pending, share_link, already_member, unavailable]}
+                      invitation_id: {type: integer, description: Present only for invited or already_pending.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /me/group-invitations:
+    get:
+      operationId: listMyGroupInvitations
+      tags: [Groups]
+      summary: Recipient-owned invitation history, newest updates first.
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 50}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0, maximum: 1000000, default: 0}}
+      responses:
+        '200':
+          description: Pending and terminal invitations, paginated by offset.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: {const: true}
+                  data: {type: array, items: {$ref: '#/components/schemas/GroupInvitation'}}
+                  pagination:
+                    type: object
+                    required: [total, limit, offset]
+                    properties:
+                      total: {type: integer}
+                      limit: {type: integer}
+                      offset: {type: integer}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /group-invitations/{invitationId}:
+    parameters:
+      - {name: invitationId, in: path, required: true, schema: {type: integer}}
+    get:
+      operationId: getMyGroupInvitation
+      tags: [Groups]
+      summary: Preview an invitation owned by the authenticated recipient.
+      responses:
+        '200':
+          description: Authorized minimal preview.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GroupInvitationResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /group-invitations/{invitationId}/accept:
+    parameters:
+      - {name: invitationId, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: acceptMyGroupInvitation
+      tags: [Groups]
+      summary: Accept an invitation with explicit recipient consent.
+      description: |
+        Requires recipient ownership; missing and non-owned ids both return 404.
+        Acceptance rechecks current inviter permission, parent membership and bans.
+        Admin invitations join after consent; member invitations obey manual approval.
+        Repeated acceptance never restores subsequently removed membership.
+        Expired acceptance returns 410 invitation_expired; unavailable returns 403 invitation_unavailable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, maxProperties: 0}
+      responses:
+        '200':
+          description: Updated invitation and status (joined, pending_approval, accepted, declined or expired).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GroupInvitationResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '410': {description: Invitation expired.}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /group-invitations/{invitationId}/decline:
+    parameters:
+      - {name: invitationId, in: path, required: true, schema: {type: integer}}
+    post:
+      operationId: declineMyGroupInvitation
+      tags: [Groups]
+      summary: Decline an invitation with explicit recipient consent.
+      description: |
+        Requires recipient ownership; missing and non-owned ids both return 404.
+        Acceptance rechecks current inviter permission, parent membership and bans.
+        Admin invitations join after consent; member invitations obey manual approval.
+        Repeated acceptance never restores subsequently removed membership.
+        Expired acceptance returns 410 invitation_expired; unavailable returns 403 invitation_unavailable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, maxProperties: 0}
+      responses:
+        '200':
+          description: Updated invitation and status (joined, pending_approval, accepted, declined or expired).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GroupInvitationResponse'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '410': {description: Invitation expired.}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /devices/register:
     post:
       operationId: registerPushDevice
@@ -1746,6 +1892,47 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
+    GroupInvitation:
+      type: object
+      required: [id, group_id, recipient_id, group_name, inviter_name, status, expires_at, approval_required]
+      properties:
+        id: {type: integer}
+        group_id: {type: integer}
+        recipient_id: {type: integer}
+        group_name: {type: string}
+        inviter_name: {type: string}
+        status: {type: string, enum: [pending, accepted, declined, expired]}
+        expires_at: {type: string, description: UTC MySQL datetime, optionally with microseconds.}
+        approval_required: {type: boolean}
+    GroupInvitationResponse:
+      type: object
+      properties:
+        success: {const: true}
+        data:
+          type: object
+          required: [invitation]
+          properties:
+            invitation: {$ref: '#/components/schemas/GroupInvitation'}
+            status: {type: string, enum: [joined, pending_approval, accepted, declined, expired]}
+    PushGroupInvitationEnvelope:
+      type: object
+      additionalProperties: false
+      description: |
+        Data-only reference envelope with no contact details or private text. Same trusted API,
+        recipient/session/expiry/dedup checks as PushMemoryEnvelope. Resolve through recipient-owned
+        invitation API before display or navigation. Non-members may receive invitations, never
+        Memory access. Worker rechecks pending state, expiry, permission, bans, parent membership,
+        session and saved groups notification preferences. Native delivery remains device-dependent.
+      required: [event_id, type, api_base_url, recipient_id, session_scope, group_id, invitation_id, expires_at]
+      properties:
+        event_id: {type: string, pattern: '^[a-f0-9]{64}$'}
+        type: {type: string, const: group.invitation}
+        api_base_url: {type: string, format: uri, pattern: '^https://'}
+        recipient_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        session_scope: {type: string, pattern: '^[a-f0-9]{64}$'}
+        group_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        invitation_id: {type: string, pattern: '^[1-9][0-9]*$'}
+        expires_at: {type: string, pattern: '^[0-9]+$'}
     PushMemoryEnvelope:
       type: object
       additionalProperties: false

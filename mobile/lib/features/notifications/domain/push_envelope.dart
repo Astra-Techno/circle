@@ -72,10 +72,14 @@ class PushEnvelope {
     required this.memoryId,
     required this.groupId,
     required this.commentId,
+    required this.invitationId,
     required this.expiresAt,
     required this.scope,
   });
-  final String eventId, type, memoryId, groupId, commentId;
+  final String eventId, type, memoryId, groupId, commentId, invitationId;
+  bool get isInvitation => type == 'group.invitation';
+  String get destination =>
+      isInvitation ? '/you/invitations' : '/home/memory/$memoryId';
   final int expiresAt;
   final PushScope scope;
 
@@ -84,15 +88,15 @@ class PushEnvelope {
     PushScope scope,
     DateTime now,
   ) {
-    const keys = {
+    final invitation = data['type'] == 'group.invitation';
+    final keys = {
       'event_id',
       'type',
       'api_base_url',
       'recipient_id',
       'session_scope',
       'group_id',
-      'memory_id',
-      'comment_id',
+      if (invitation) 'invitation_id' else ...['memory_id', 'comment_id'],
       'expires_at',
     };
     if (data.length != keys.length ||
@@ -106,11 +110,12 @@ class PushEnvelope {
       return null;
     }
     final event = data['event_id'] as String, type = data['type'] as String;
-    final memory = data['memory_id'] as String,
+    final memory = invitation ? '' : data['memory_id'] as String,
         group = data['group_id'] as String,
-        comment = data['comment_id'] as String;
+        comment = invitation ? '' : data['comment_id'] as String,
+        invitationId = invitation ? data['invitation_id'] as String : '';
     if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(event) ||
-        !_id(memory) ||
+        (invitation ? !_id(invitationId) : !_id(memory)) ||
         !_id(group)) {
       return null;
     }
@@ -118,10 +123,12 @@ class PushEnvelope {
       'memory.created',
       'comment.created',
       'comment.reply',
+      'group.invitation',
     }.contains(type)) {
       return null;
     }
-    if (type == 'memory.created' ? comment.isNotEmpty : !_id(comment)) {
+    if (!invitation &&
+        (type == 'memory.created' ? comment.isNotEmpty : !_id(comment))) {
       return null;
     }
     final expiryText = data['expires_at'] as String;
@@ -137,6 +144,7 @@ class PushEnvelope {
       memoryId: memory,
       groupId: group,
       commentId: comment,
+      invitationId: invitationId,
       expiresAt: expiry,
       scope: scope,
     );
@@ -149,10 +157,44 @@ class PushEnvelope {
     'recipient_id': scope.account,
     'session_scope': scope.sessionHash,
     'group_id': groupId,
-    'memory_id': memoryId,
-    'comment_id': commentId,
+    if (isInvitation)
+      'invitation_id': invitationId
+    else ...{
+      'memory_id': memoryId,
+      'comment_id': commentId,
+    },
     'expires_at': '$expiresAt',
   };
+
+  /// Content is fetched through the active account API, never a payload URL.
+  bool authorizes(Map<String, dynamic> data, DateTime now) {
+    if (isInvitation) {
+      final value = data['invitation'];
+      if (value is! Map) return false;
+      final expiryText = value['expires_at'];
+      if (expiryText is! String) return false;
+      final expiry = DateTime.tryParse(
+        RegExp(r'(Z|[+-]\d\d:\d\d)$').hasMatch(expiryText)
+            ? expiryText
+            : '${expiryText.replaceFirst(' ', 'T')}Z',
+      );
+      return '${value['id']}' == invitationId &&
+          '${value['group_id']}' == groupId &&
+          '${value['recipient_id']}' == scope.account &&
+          value['status'] == 'pending' &&
+          expiry != null &&
+          expiry.isAfter(now.toUtc());
+    }
+    if ('${data['id']}' != memoryId || '${data['group_id']}' != groupId) {
+      return false;
+    }
+    final comments = data['comments'];
+    return commentId.isEmpty ||
+        (comments is List &&
+            comments.any(
+              (comment) => comment is Map && '${comment['id']}' == commentId,
+            ));
+  }
 
   /// Presentation must recheck this after any asynchronous authorization fetch.
   bool belongsTo(PushScope current, DateTime now) =>

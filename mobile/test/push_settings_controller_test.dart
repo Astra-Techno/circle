@@ -7,6 +7,14 @@ import 'package:mobile/features/notifications/application/push_session_coordinat
 import 'support/fake_api.dart';
 import 'push_settings_ui_test.dart' show TrackingCoordinator;
 
+class AcceptingCoordinator extends TrackingCoordinator {
+  @override
+  Future<bool> start({bool requestPermission = false}) async {
+    starts++;
+    return true;
+  }
+}
+
 void main() {
   test(
     'real controller serializes partial writes and restores failed choices without permission',
@@ -53,7 +61,7 @@ void main() {
           return FakeResponse.ok(saved);
         }),
       );
-      final coordinator = TrackingCoordinator();
+      final coordinator = AcceptingCoordinator();
       final container = ProviderContainer(
         overrides: [
           apiClientProvider.overrideWithValue(api),
@@ -87,6 +95,20 @@ void main() {
         'Asia/Kolkata',
       );
       expect(container.read(pushSettingsProvider).isLoading, isFalse);
+      fail = false;
+      await controller.change(
+        categories: {PushCategory.memories: false, PushCategory.groups: true},
+      );
+      await controller.change(enabled: true, requestPermission: true);
+      expect(coordinator.starts, 1);
+      expect(container.read(pushSettingsProvider).requireValue.enabled, isTrue);
+      expect(
+        container
+            .read(pushSettingsProvider)
+            .requireValue
+            .categories[PushCategory.groups],
+        isTrue,
+      );
     },
   );
 }

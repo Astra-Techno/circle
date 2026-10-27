@@ -28,6 +28,7 @@ class FakePhotoPicker implements PhotoPicker {
 Future<ProviderContainer> openServerCircle(
   WidgetTester tester,
   FakeCircleServer server, {
+  ApiConfig? config,
   TokenStore? tokens,
   PhotoPicker? picker,
   ProfilePhotoPicker? profilePicker,
@@ -42,7 +43,7 @@ Future<ProviderContainer> openServerCircle(
   });
   final container = ProviderContainer(
     overrides: [
-      apiConfigProvider.overrideWithValue(testServer),
+      apiConfigProvider.overrideWithValue(config ?? testServer),
       localSettingsStoreProvider.overrideWithValue(
         settings ?? MemoryLocalSettingsStore(),
       ),
@@ -75,8 +76,9 @@ Future<void> settle(WidgetTester tester) async {
 /// A stored session for [server], as after an earlier log-in.
 Future<MemoryTokenStore> storedSession(
   FakeCircleServer server,
-  int user,
-) async {
+  int user, {
+  ApiConfig? config,
+}) async {
   final login = await server.handle(
     FakeRequest(
       'POST',
@@ -93,7 +95,7 @@ Future<MemoryTokenStore> storedSession(
     TokenPair(
       accessToken: data['access_token'] as String,
       refreshToken: data['refresh_token'] as String,
-      server: testServer.baseUrl.toString(),
+      server: (config ?? testServer).baseUrl.toString(),
     ),
   );
 }

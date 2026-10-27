@@ -11,6 +11,7 @@ import '../../workspace/presentation/workspace_view.dart';
 import '../domain/group_tree.dart';
 import '../domain/membership_rules.dart';
 import 'invite_link_screen.dart';
+import 'contact_invitation_entry.dart';
 
 /// Indentation steps stop growing after this many levels; deeper levels
 /// stay distinguishable through the "Level n · in Parent" hint.
@@ -45,7 +46,10 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
               icon: Icons.diversity_2_outlined,
             ),
             const SizedBox(height: Space.section),
-            if (workspace.invitations.isNotEmpty) ...[
+            if (ref.watch(circleFeaturesProvider).server)
+              const ContactInvitationEntry(),
+            if (!ref.watch(circleFeaturesProvider).server &&
+                workspace.invitations.isNotEmpty) ...[
               ExpansionTile(
                 key: const PageStorageKey('group-invitations'),
                 initiallyExpanded: workspace.groups.isEmpty,

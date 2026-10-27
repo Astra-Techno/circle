@@ -13,6 +13,7 @@ enum CircleFeature {
   notificationSettings('Notification settings', plural: true),
   privacy('Privacy settings', plural: true),
   moderation('Reports', plural: true),
+  contactInvitations('Contact invitations', plural: true),
   directInvitations('Direct invitations', plural: true),
   joinListedSubgroups('Asking to join from the subgroup list'),
   commentDeletion('Deleting comments');
@@ -42,8 +43,11 @@ class CircleFeatures {
   /// Chats and Events remain required work in docs/pending-work.md.
   const CircleFeatures.server(String this.host, {bool notifications = false})
     : available = notifications
-          ? const {CircleFeature.notificationSettings}
-          : const {};
+          ? const {
+              CircleFeature.notificationSettings,
+              CircleFeature.contactInvitations,
+            }
+          : const {CircleFeature.contactInvitations};
 
   /// Null in the preview; the server's host in server mode.
   final String? host;

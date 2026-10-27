@@ -172,6 +172,11 @@ class _Choices extends ConsumerWidget {
             'Comments and replies',
             'Comments on your Memories and replies to you',
           ),
+          category(
+            PushCategory.groups,
+            'Group invitations',
+            'When someone invites you to a group',
+          ),
           const SizedBox(height: Space.section),
           const CircleSectionTitle('Quiet hours'),
           CircleRow(

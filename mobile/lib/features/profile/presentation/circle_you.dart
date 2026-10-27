@@ -173,6 +173,13 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                 subtitle: 'Who can message you, close groups, blocked people',
                 location: '/you/privacy',
               ),
+            if (features.server)
+              entry(
+                icon: Icons.mark_email_unread_outlined,
+                title: 'Invitations',
+                subtitle: 'Choose which circles to join',
+                location: '/you/invitations',
+              ),
             entry(
               icon: Icons.manage_accounts_outlined,
               title: 'Account',

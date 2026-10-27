@@ -48,6 +48,15 @@ final class NotificationPreferences
         return $preferences['enabled'] && $preferences['categories'][$category];
     }
 
+    /** Only invitation delivery may precede exact-group membership. */
+    public static function invitationEligible(int $userId): bool
+    {
+        $user = Database::queryOne('SELECT status FROM users WHERE id = :uid', ['uid' => $userId]);
+        if (($user['status'] ?? '') !== 'active') return false;
+        $preferences = self::get($userId);
+        return $preferences['enabled'] && $preferences['categories']['groups'];
+    }
+
     public static function quietUntil(int $userId, \DateTimeImmutable $at): ?\DateTimeImmutable
     {
         $preferences = self::get($userId);

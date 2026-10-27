@@ -49,7 +49,7 @@ if (!$sender->isReady()) {
 // 3. Get registered device tokens
 $db = Database::connection();
 $tokens = $db->query(
-    'SELECT dt.id, dt.fcm_token, dt.platform, dt.user_id, u.name, dt.created_at
+    'SELECT dt.id, dt.fcm_token, dt.platform, dt.user_id, u.display_name, dt.created_at
      FROM device_tokens dt JOIN users u ON u.id = dt.user_id
      ORDER BY dt.created_at DESC LIMIT 20'
 )->fetchAll(\PDO::FETCH_ASSOC);
@@ -63,7 +63,7 @@ if (empty($tokens)) {
 echo "\n";
 foreach ($tokens as $i => $row) {
     $short = substr($row['fcm_token'], 0, 20) . '...';
-    echo ($i + 1) . ". {$row['name']} ({$row['platform']}) - token: {$short} - registered: {$row['created_at']}\n";
+    echo ($i + 1) . ". {$row['display_name']} ({$row['platform']}) - token: {$short} - registered: {$row['created_at']}\n";
 }
 
 // 4. Send test notification to each device
@@ -81,10 +81,10 @@ foreach ($tokens as $i => $row) {
         'sent_at'    => (string) $now,
     ];
 
-    echo ($i + 1) . ". Sending to {$row['name']}... ";
+    echo ($i + 1) . ". Sending to {$row['display_name']}... ";
     $result = $sender->send($row['fcm_token'], $data);
-    echo $result->status->name . "\n";
-    if ($result->status->name !== 'sent') {
+    echo $result->status . "\n";
+    if ($result->status !== 'sent') {
         echo "   retryAfter: {$result->retryAfter}s\n";
     }
 }

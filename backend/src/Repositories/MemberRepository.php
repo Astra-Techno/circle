@@ -150,6 +150,10 @@ final class MemberRepository
      */
     public static function removeMember(int $groupId, int $userId, string $reason = 'removed'): bool
     {
+        if (!Database::connection()->inTransaction()) {
+            return Database::transaction(static fn (): bool => self::removeMember($groupId, $userId, $reason));
+        }
+        Database::queryOne('SELECT id FROM `groups` WHERE id = :gid FOR UPDATE', ['gid' => $groupId]);
         $rejoinAfter = null;
         if ($reason !== 'left') {
             $row = Database::queryOne(
@@ -159,12 +163,17 @@ final class MemberRepository
             $rejoinAfter = (int) ($row['max_id'] ?? 0);
         }
 
-        return Database::execute(
+        $changed = Database::execute(
             'UPDATE group_members
              SET status = :status, left_at = NOW(), rejoin_after_link_id = :rejoin
              WHERE group_id = :gid AND user_id = :uid AND status = :active',
             ['status' => $reason, 'rejoin' => $rejoinAfter, 'gid' => $groupId, 'uid' => $userId, 'active' => 'active']
         ) > 0;
+        if ($changed) {
+            Database::execute("UPDATE group_invitations SET status = 'expired', updated_at = NOW(6) WHERE group_id = :gid AND (recipient_id = :recipient OR inviter_id = :inviter) AND status = 'pending'",
+                ['gid' => $groupId, 'recipient' => $userId, 'inviter' => $userId]);
+        }
+        return $changed;
     }
 
     /**
@@ -234,6 +243,13 @@ final class MemberRepository
              WHERE il.created_by = :uid AND il.revoked_at IS NULL',
             ['gid' => $groupId, 'by' => $userId, 'uid' => $userId]
         );
+
+        // Also invalidate pending child invitations where the exiting person
+        // had not joined yet; parent re-entry must not revive those old grants.
+        Database::execute("UPDATE group_invitations i JOIN group_closure gc ON gc.descendant_id = i.group_id AND gc.ancestor_id = :gid
+            SET i.status = 'expired', i.updated_at = NOW(6)
+            WHERE (i.recipient_id = :recipient OR i.inviter_id = :inviter) AND i.status = 'pending'",
+            ['gid' => $groupId, 'recipient' => $userId, 'inviter' => $userId]);
 
         return $ended;
     }

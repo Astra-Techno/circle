@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Circle\Notifications;
 
+use Circle\Controllers\GroupInvitationController;
 use Circle\Core\Database;
 use Circle\Core\Env;
 use Circle\Core\NotificationPreferences;
@@ -53,18 +54,27 @@ final class NotificationWorker
                 if (Database::execute("UPDATE notification_outbox SET state = 'sending', available_at = :lease
                     WHERE id = :id AND state = 'pending'", ['lease' => $this->clockAt()->modify('+5 minutes')->format('Y-m-d H:i:s'), 'id' => $row['id']]) !== 1) continue;
                 $counts['processed']++;
+                $invitation = $row['kind'] === 'group.invitation';
                 $category = $row['kind'] === 'memory.created' ? 'memories' : 'replies_reactions';
                 $device = Database::queryOne("SELECT dt.fcm_token FROM device_tokens dt
                     WHERE dt.id = :did AND dt.user_id = :uid AND dt.session_id = :sid AND dt.platform = 'android'
                     AND EXISTS (SELECT 1 FROM refresh_tokens rt WHERE rt.user_id = dt.user_id AND rt.session_id = dt.session_id
                         AND rt.revoked_at IS NULL AND rt.expires_at > :now)",
                     ['did' => $row['device_id'], 'uid' => $row['user_id'], 'sid' => $row['session_id'], 'now' => $now]);
-                $content = Database::queryOne("SELECT m.id FROM memories m WHERE m.id = :mid AND m.group_id = :gid AND m.status = 'active'",
-                    ['mid' => $row['memory_id'], 'gid' => $row['group_id']]);
-                if ($row['comment_id'] !== null && Database::queryOne("SELECT id FROM comments WHERE id = :cid AND memory_id = :mid AND status = 'active'",
-                    ['cid' => $row['comment_id'], 'mid' => $row['memory_id']]) === null) $content = null;
-                if ($row['expires_at'] <= $now || $device === null || $content === null
-                    || !NotificationPreferences::eligible((int) $row['user_id'], $category, (int) $row['group_id'])) {
+                if ($invitation) {
+                    $content = Database::queryOne('SELECT id FROM group_invitations WHERE id = :id AND recipient_id = :uid AND group_id = :gid',
+                        ['id' => $row['invitation_id'], 'uid' => $row['user_id'], 'gid' => $row['group_id']]);
+                    $eligible = $content !== null && $row['memory_id'] === null && $row['comment_id'] === null
+                        && GroupInvitationController::eligible((int) $row['invitation_id'], (int) $row['user_id'])
+                        && NotificationPreferences::invitationEligible((int) $row['user_id']);
+                } else {
+                    $content = Database::queryOne("SELECT m.id FROM memories m WHERE m.id = :mid AND m.group_id = :gid AND m.status = 'active'",
+                        ['mid' => $row['memory_id'], 'gid' => $row['group_id']]);
+                    if ($row['comment_id'] !== null && Database::queryOne("SELECT id FROM comments WHERE id = :cid AND memory_id = :mid AND status = 'active'",
+                        ['cid' => $row['comment_id'], 'mid' => $row['memory_id']]) === null) $content = null;
+                    $eligible = $content !== null && NotificationPreferences::eligible((int) $row['user_id'], $category, (int) $row['group_id']);
+                }
+                if ($row['expires_at'] <= $now || $device === null || !$eligible) {
                     $this->finish((int) $row['id'], 'cancelled', 'ineligible'); $counts['cancelled']++; continue;
                 }
                 $quietUntil = NotificationPreferences::quietUntil((int) $row['user_id'], $this->clockAt());
@@ -78,14 +88,19 @@ final class NotificationWorker
                 // transaction open during the provider request.
                 Database::execute('UPDATE notification_outbox SET attempts = attempts + 1 WHERE id = :id', ['id' => $row['id']]);
                 try {
-                    $result = $this->transport->send((string) $device['fcm_token'], [
+                    $data = [
                         'event_id' => hash('sha256', (string) $row['event_key']), 'type' => (string) $row['kind'],
                         'api_base_url' => $origin, 'recipient_id' => (string) $row['user_id'],
                         'session_scope' => hash('sha256', (string) $row['session_id']),
-                        'group_id' => (string) $row['group_id'], 'memory_id' => (string) $row['memory_id'],
-                        'comment_id' => $row['comment_id'] === null ? '' : (string) $row['comment_id'],
+                        'group_id' => (string) $row['group_id'],
                         'expires_at' => (string) (new \DateTimeImmutable((string) $row['expires_at'], new \DateTimeZone('UTC')))->getTimestamp(),
-                    ]);
+                    ];
+                    if ($invitation) $data['invitation_id'] = (string) $row['invitation_id'];
+                    else {
+                        $data['memory_id'] = (string) $row['memory_id'];
+                        $data['comment_id'] = $row['comment_id'] === null ? '' : (string) $row['comment_id'];
+                    }
+                    $result = $this->transport->send((string) $device['fcm_token'], $data);
                 } catch (\Throwable) { $result = PushResult::retry(); }
                 if ($result->status === 'sent') {
                     $this->finish((int) $row['id'], 'sent', null); $counts['sent']++;

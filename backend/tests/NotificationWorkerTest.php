@@ -65,6 +65,108 @@ final class NotificationWorkerTest extends ApiTestCase
 
     private function at(): \DateTimeImmutable { return new \DateTimeImmutable('now', new \DateTimeZone('UTC')); }
 
+    /** @return array<string, mixed> */
+    private function invitationFixture(): array
+    {
+        $owner = $this->user('Fictional inviter');
+        $recipient = $this->user('Fictional recipient');
+        $group = $this->createGroup($owner);
+        self::assertSame(200, $this->request('PATCH', '/api/v1/me/notification-preferences',
+            ['enabled' => true, 'quiet_hours' => false, 'categories' => ['groups' => true]], $recipient['token'])->status());
+        self::assertSame(200, $this->request('POST', '/api/v1/devices/register',
+            ['fcm_token' => 'fictional-invitation-device', 'platform' => 'android'], $recipient['token'])->status());
+        Database::transaction(static function () use ($owner, $recipient, $group): void {
+            Database::execute("INSERT INTO group_invitations (group_id, recipient_id, inviter_id, expires_at)
+                VALUES (:gid, :uid, :actor, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 DAY))",
+                ['gid' => $group, 'uid' => $recipient['id'], 'actor' => $owner['id']]);
+            NotificationOutbox::groupInvitationCreated(Database::lastInsertId());
+        });
+        $invitation = (int) Database::queryOne('SELECT id FROM group_invitations')['id'];
+        return compact('owner', 'recipient', 'group', 'invitation');
+    }
+
+    public function testInvitationCaptureIsTransactionalOptInAndDoesNotRequireMembership(): void
+    {
+        $f = $this->invitationFixture();
+        self::assertCount(1, Database::query('SELECT id FROM notification_outbox'));
+        self::assertFalse(\Circle\Core\NotificationPreferences::eligible($f['recipient']['id'], 'groups', $f['group']));
+        Database::transaction(static function () use ($f): void { NotificationOutbox::groupInvitationCreated($f['invitation']); });
+        self::assertCount(1, Database::query('SELECT id FROM notification_outbox'));
+        $transport = new FakePushTransport();
+        self::assertSame(1, (new NotificationWorker($transport))->run()['sent']);
+        $data = $transport->calls[0]['data'];
+        $keys = array_keys($data); sort($keys);
+        $expected = ['event_id', 'type', 'api_base_url', 'recipient_id', 'session_scope', 'group_id', 'invitation_id', 'expires_at']; sort($expected);
+        self::assertSame($expected, $keys);
+        self::assertSame('group.invitation', $data['type']);
+        self::assertSame((string) $f['invitation'], $data['invitation_id']);
+        self::assertSame((string) $f['recipient']['id'], $data['recipient_id']);
+        self::assertSame((string) $f['group'], $data['group_id']);
+        self::assertLessThanOrEqual(time() + 86400, (int) $data['expires_at']);
+        self::assertSame(0, (new NotificationWorker($transport))->run()['processed']);
+    }
+
+    public function testInvitationCaptureRespectsGroupOptInAndRollback(): void
+    {
+        $f = $this->invitationFixture();
+        Database::execute('DELETE FROM notification_outbox');
+        self::assertSame(200, $this->request('PATCH', '/api/v1/me/notification-preferences', ['categories' => ['groups' => false]], $f['recipient']['token'])->status());
+        Database::transaction(static function () use ($f): void { NotificationOutbox::groupInvitationCreated($f['invitation']); });
+        self::assertCount(0, Database::query('SELECT id FROM notification_outbox'));
+        self::assertSame(200, $this->request('PATCH', '/api/v1/me/notification-preferences', ['categories' => ['groups' => true]], $f['recipient']['token'])->status());
+        try {
+            Database::transaction(static function () use ($f): void {
+                NotificationOutbox::groupInvitationCreated($f['invitation']);
+                throw new \RuntimeException('Fictional rollback');
+            });
+        } catch (\RuntimeException) {}
+        self::assertCount(0, Database::query('SELECT id FROM notification_outbox'));
+    }
+
+    /** @return array<string, array{string}> */
+    public static function invitationCancellationModes(): array
+    {
+        $modes = ['accepted', 'declined', 'expired', 'recipient', 'group', 'opt_out', 'sender_removed', 'joined', 'logout'];
+        $cases = [];
+        foreach ($modes as $mode) $cases[$mode] = [$mode];
+        return $cases;
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('invitationCancellationModes')]
+    public function testInvitationWorkerCancelsChangedConsentExpiryIdentityAndSession(string $mode): void
+    {
+        $f = $this->invitationFixture();
+        if (in_array($mode, ['accepted', 'declined'], true)) Database::execute('UPDATE group_invitations SET status = :status', ['status' => $mode]);
+        if ($mode === 'expired') Database::execute('UPDATE group_invitations SET expires_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 SECOND)');
+        if ($mode === 'recipient') Database::execute('UPDATE notification_outbox SET user_id = :uid', ['uid' => $f['owner']['id']]);
+        if ($mode === 'group') {
+            $other = $this->createGroup($f['owner'], 'Fictional wrong group');
+            Database::execute('UPDATE notification_outbox SET group_id = :gid', ['gid' => $other]);
+        }
+        if ($mode === 'opt_out') $this->request('PATCH', '/api/v1/me/notification-preferences', ['categories' => ['groups' => false]], $f['recipient']['token']);
+        if ($mode === 'sender_removed') Database::execute("UPDATE group_members SET status = 'removed' WHERE user_id = :uid", ['uid' => $f['owner']['id']]);
+        if ($mode === 'joined') $this->join($f['owner'], $f['recipient'], $f['group']);
+        if ($mode === 'logout') $this->request('POST', '/api/v1/auth/logout', [], $f['recipient']['token']);
+        $transport = new FakePushTransport(); $counts = (new NotificationWorker($transport))->run();
+        self::assertSame(1, $counts['cancelled'], $mode); self::assertSame([], $transport->calls, $mode);
+    }
+
+    public function testInvitationWorkerDefersQuietHoursAndRetriesProvider(): void
+    {
+        $f = $this->invitationFixture();
+        $minute = (int) gmdate('G') * 60 + (int) gmdate('i');
+        $this->request('PATCH', '/api/v1/me/notification-preferences', ['quiet_hours' => true, 'quiet_start' => $minute, 'quiet_end' => ($minute + 60) % 1440, 'timezone' => 'UTC'], $f['recipient']['token']);
+        $transport = new FakePushTransport(); $worker = new NotificationWorker($transport);
+        self::assertSame(1, $worker->run()['deferred']); self::assertSame([], $transport->calls);
+        $this->request('PATCH', '/api/v1/me/notification-preferences', ['quiet_hours' => false], $f['recipient']['token']);
+        Database::execute('UPDATE notification_outbox SET available_at = UTC_TIMESTAMP()');
+        $transport->result = PushResult::retry();
+        self::assertSame(1, $worker->run()['retried']);
+        Database::execute('UPDATE notification_outbox SET available_at = UTC_TIMESTAMP()');
+        $transport->result = PushResult::sent();
+        self::assertSame(1, $worker->run()['sent']);
+    }
+
     public function testTransactionalCaptureExcludesActorAndDeduplicatesCommittedEvent(): void
     {
         $f = $this->fixture();

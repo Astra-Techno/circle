@@ -9,6 +9,7 @@ use Circle\Controllers\DeviceController;
 use Circle\Controllers\NotificationPreferenceController;
 use Circle\Controllers\ProfilePhotoController;
 use Circle\Controllers\GroupController;
+use Circle\Controllers\GroupInvitationController;
 use Circle\Controllers\MediaController;
 use Circle\Controllers\MemberController;
 use Circle\Controllers\MemoryController;
@@ -51,7 +52,7 @@ final class App
         // ── Push test (deploy-key protected, remove after testing) ──
         $router->get('/api/v1/push-test', static function (Request $request): void {
             $key = $request->query('key');
-            if (!is_string($key) || $key === '' || !hash_equals(\Circle\Core\Env::get('DEPLOY_KEY'), $key)) {
+            if ($key === '' || !hash_equals(\Circle\Core\Env::get('DEPLOY_KEY'), $key)) {
                 Response::unauthorized('Invalid key.');
             }
 
@@ -97,7 +98,7 @@ final class App
                     'success' => false,
                     'debug'   => $e->getMessage(),
                     'file'    => basename($e->getFile()) . ':' . $e->getLine(),
-                    'trace'   => array_slice(array_map(fn($f) => basename($f['file'] ?? '?') . ':' . ($f['line'] ?? '?') . ' ' . ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? ''), $e->getTrace()), 0, 8),
+                    'trace'   => array_slice(array_map(fn($f) => basename($f['file'] ?? '?') . ':' . ($f['line'] ?? '?') . ' ' . ($f['class'] ?? '') . ($f['type'] ?? '') . $f['function'], $e->getTrace()), 0, 8),
                 ], 500);
             }
         });
@@ -142,6 +143,12 @@ final class App
             $r->get('/groups/{id}/subgroups', GroupController::subgroups(...));
             $r->post('/groups/{id}/leave', GroupController::leave(...));
             $r->post('/groups/{id}/transfer-ownership', GroupController::transferOwnership(...));
+
+            $r->post('/groups/{id}/contact-invitations', GroupInvitationController::create(...));
+            $r->get('/me/group-invitations', GroupInvitationController::index(...));
+            $r->get('/group-invitations/{invitationId}', GroupInvitationController::show(...));
+            $r->post('/group-invitations/{invitationId}/accept', GroupInvitationController::accept(...));
+            $r->post('/group-invitations/{invitationId}/decline', GroupInvitationController::decline(...));
 
             // Members
             $r->get('/groups/{id}/members', MemberController::index(...));
