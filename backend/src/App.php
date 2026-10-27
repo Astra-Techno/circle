@@ -11,6 +11,7 @@ use Circle\Controllers\NotificationPreferenceController;
 use Circle\Controllers\ProfilePhotoController;
 use Circle\Controllers\GroupPhotoController;
 use Circle\Controllers\ModerationController;
+use Circle\Controllers\BlockController;
 use Circle\Controllers\GroupController;
 use Circle\Controllers\GroupInvitationController;
 use Circle\Controllers\MediaController;
@@ -132,6 +133,10 @@ final class App
 
         // ── Protected API ────────────────────────────────────────
         $router->group('/api/v1', ['rate', 'auth'], static function (Router $r): void {
+            $r->get('/me/blocks', BlockController::index(...));
+            $r->get('/me/blocks/{userId}', BlockController::show(...));
+            $r->put('/me/blocks/{userId}', BlockController::put(...));
+            $r->delete('/me/blocks/{userId}', BlockController::delete(...));
             // Profile
             $r->get('/me/sessions', SessionController::index(...));
             $r->delete('/me/sessions/{sessionId}', SessionController::revoke(...));

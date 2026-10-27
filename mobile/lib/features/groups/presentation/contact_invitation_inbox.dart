@@ -1,3 +1,4 @@
+import '../../profile/application/server_blocks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
@@ -20,10 +21,41 @@ class _ContactInvitationInboxState
   bool _busy = false, _more = false;
   Object? _error;
   int _revision = 0;
+  BlockScope? _itemsScope;
   @override
   void initState() {
     super.initState();
     Future.microtask(() => _load());
+  }
+
+  Future<void> _blockInviter(ContactInvitation item) async {
+    final person = item.inviterId;
+    if (person == null || _busy) return;
+    final actions = ref.read(blockActionsProvider);
+    final scope = _itemsScope;
+    if (scope == null || !_items.contains(item)) return;
+    if (!await confirmCircleAction(
+      context,
+      title: 'Block ${item.inviterName}?',
+      message:
+          'Stop direct Circle invitations and personal reply alerts. Shared-group profiles, photos, Memories and comments stay visible. This invitation will expire. No alert is sent.',
+      confirm: 'Block',
+    )) {
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _revision++;
+      _items.clear();
+      _itemsScope = null;
+      _message = null;
+    });
+    await runCalmly(
+      context,
+      () => actions.change(scope, person, blocked: true),
+      success: 'Blocked.',
+    );
+    if (mounted) await _load();
   }
 
   Future<void> _load({bool more = false}) async {
@@ -54,6 +86,7 @@ class _ContactInvitationInboxState
         return;
       }
       setState(() {
+        _itemsScope = BlockScope(client.api, client.account, client.session);
         _more = hasMore;
         if (!more) _items.clear();
         _items.addAll(items);
@@ -114,6 +147,7 @@ class _ContactInvitationInboxState
   Widget build(BuildContext context) {
     ref.listen(contactInvitationClientProvider, (_, next) {
       _revision++;
+      _itemsScope = null;
       _items.clear();
       _message = null;
       _busy = false;
@@ -156,6 +190,15 @@ class _ContactInvitationInboxState
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     Text('${item.inviterName} invited you'),
+                    if (item.inviterId != null &&
+                        ref
+                            .watch(circleFeaturesProvider)
+                            .has(CircleFeature.blocking))
+                      TextButton.icon(
+                        onPressed: _busy ? null : () => _blockInviter(item),
+                        icon: const Icon(Icons.block),
+                        label: const Text('Block inviter'),
+                      ),
                     if (item.status == 'pending') ...[
                       Text(
                         item.approvalRequired

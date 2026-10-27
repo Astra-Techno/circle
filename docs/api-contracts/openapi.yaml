@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.11
+  version: 0.3.12
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -55,6 +55,12 @@ info:
     - When the server cannot process images (no image library installed) upload
       requests fail closed with `503 server_error`; when the media signing secret is
       not configured, media requests return `500 server_error`.
+
+    ## Blocking (0.3.12)
+    Blocks stop direct invitations and personal reply alerts; shared-group content stays visible.
+    Exact admin moderation and structural group roles remain available. Outgoing
+    block state is private; no notification is emitted. Unsupported Chats/Events
+    remain gated and must integrate these checks before becoming live.
 
     ## Notification capture (0.3.5, gated)
     With PUSH_QUEUE_ENABLED=true, committed Memory/comment/reply mutations capture
@@ -859,6 +865,89 @@ paths:
         '422': { $ref: '#/components/responses/ValidationError' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
+  /me/blocks:
+    get:
+      operationId: listOwnBlocks
+      tags: [Auth]
+      summary: Own outgoing blocks; never who blocked the caller.
+      description: Private,no-store. Names are snapshots saved when blocking, not live profile data. Pagination by blocked account id; unblock remains available after shared membership ends.
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, default: 50, minimum: 1, maximum: 100}}
+        - {name: offset, in: query, schema: {type: integer, default: 0, minimum: 0, maximum: 1000000}}
+      responses:
+        '200':
+          description: Own outgoing block page.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: {const: true}
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: {type: integer}
+                            display_name: {type: string}
+                            created_at: {type: string}
+                      has_more: {type: boolean}
+                      limit: {type: integer}
+                      offset: {type: integer}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /me/blocks/{userId}:
+    parameters:
+      - {name: userId, in: path, required: true, schema: {type: integer, minimum: 1}}
+    get:
+      operationId: getOwnBlockState
+      tags: [Auth]
+      summary: Whether the caller blocked this id, without reverse-block/account lookup.
+      responses:
+        '200':
+          description: Own state, including false for unavailable/nonexistent targets.
+          content:
+            application/json:
+              schema: {type: object, properties: {success: {const: true}, data: {type: object, properties: {blocked: {type: boolean}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+    put:
+      operationId: blockSharedPerson
+      tags: [Auth]
+      summary: Idempotently block a shared person or received invitation sender.
+      description: |
+        New targets must be active and share an exact active group or have sent the caller an invitation.
+        Sent invitations alone do not qualify. No body fields. No self blocks.
+        Capture a name snapshot, recheck active session
+        under sorted user/session locks, and expire pending direct group invitations
+        in both directions atomically. No block/unblock notification is sent.
+        Owner selected direct-contact-only blocking: direct Circle invitations and
+        personal comment/reply alerts between the pair stop in both directions.
+        Shared-group profiles, photos, Memories/Saved/search, comments, reactions,
+        ordinary group updates, membership, branding and authorized moderation
+        stay available under existing group rules. No content/metadata redaction,
+        photo-link format/cache-policy change or member visibility filter is added.
+        Future live 1:1 services must enforce the same pair check; Chats remain gated.
+      responses:
+        '200': {description: Blocked or already blocked.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+    delete:
+      operationId: unblockPerson
+      tags: [Auth]
+      summary: Idempotently remove only the caller's own block.
+      description: No body fields. Does not remove the other person's block, restore expired invitations, send alerts or change group membership.
+      responses:
+        '200': {description: Unblocked or already absent.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
   /groups/{id}/reports:
     parameters:
       - {$ref: '#/components/parameters/GroupId'}
@@ -2236,6 +2325,7 @@ components:
       type: object
       required: [id, group_id, recipient_id, group_name, inviter_name, status, expires_at, approval_required]
       properties:
+        inviter_id: {type: integer, description: Sender id available only to the invitation recipient for direct-contact blocking.}
         id: {type: integer}
         group_id: {type: integer}
         recipient_id: {type: integer}

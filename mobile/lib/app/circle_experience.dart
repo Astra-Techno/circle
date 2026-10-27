@@ -18,6 +18,7 @@ import '../features/chat/presentation/chat_photos.dart';
 import '../features/chat/presentation/chat_inbox.dart';
 import '../features/chat/presentation/chat_new.dart';
 import '../features/chat/presentation/chat_privacy.dart';
+import '../features/profile/presentation/server_blocking.dart';
 import '../features/chat/presentation/chat_reply_privately.dart';
 import '../features/events/presentation/circle_events.dart';
 import '../features/groups/domain/membership_rules.dart';
@@ -587,8 +588,15 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'privacy',
-                    builder: (_, _) =>
-                        _gate(CircleFeature.privacy, const ChatPrivacyScreen()),
+                    builder: (_, _) => ref.read(circleFeaturesProvider).server
+                        ? _gate(
+                            CircleFeature.blocking,
+                            const ServerBlockingScreen(),
+                          )
+                        : _gate(
+                            CircleFeature.privacy,
+                            const ChatPrivacyScreen(),
+                          ),
                   ),
                   GoRoute(
                     path: 'notifications',

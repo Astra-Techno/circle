@@ -1,6 +1,7 @@
 import '../../groups/presentation/group_photos.dart';
 import '../application/profile_providers.dart';
 import 'profile_photo.dart';
+import 'server_blocking.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -199,6 +200,8 @@ class PersonProfileScreen extends ConsumerWidget {
                 ),
               ),
             const SizedBox(height: Space.lg),
+            if (features.server && features.has(CircleFeature.blocking))
+              ServerBlockButton(person: person, name: name),
             if (chat)
               CircleRow(
                 child: ListTile(

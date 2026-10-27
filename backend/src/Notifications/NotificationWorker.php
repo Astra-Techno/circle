@@ -74,11 +74,15 @@ final class NotificationWorker
                         && GroupInvitationController::eligible((int) $row['invitation_id'], (int) $row['user_id'])
                         && NotificationPreferences::invitationEligible((int) $row['user_id']);
                 } else {
-                    $content = Database::queryOne("SELECT m.id FROM memories m WHERE m.id = :mid AND m.group_id = :gid AND m.status = 'active'",
+                    $content = Database::queryOne("SELECT m.id,m.author_id FROM memories m WHERE m.id = :mid AND m.group_id = :gid AND m.status = 'active'",
                         ['mid' => $row['memory_id'], 'gid' => $row['group_id']]);
                     if ($row['comment_id'] !== null && Database::queryOne("SELECT id FROM comments WHERE id = :cid AND memory_id = :mid AND status = 'active'",
                         ['cid' => $row['comment_id'], 'mid' => $row['memory_id']]) === null) $content = null;
                     if ($row['comment_id'] !== null && !MemoryController::commentIsVisible((int)$row['comment_id'],(int)$row['user_id'])) $content = null;
+                    if ($row['comment_id']!==null) {
+                        $actor=Database::queryOne('SELECT author_id FROM comments WHERE id=:id',['id'=>$row['comment_id']]);
+                        if ($actor!==null && \Circle\Repositories\BlockRepository::either((int)$row['user_id'],(int)$actor['author_id']))$content=null;
+                    }
                     $eligible = $content !== null && NotificationPreferences::eligible((int) $row['user_id'], $category, (int) $row['group_id']);
                 }
                 if ($row['expires_at'] <= $now || $device === null || !$eligible) {

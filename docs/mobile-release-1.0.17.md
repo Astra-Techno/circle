@@ -1,0 +1,9 @@
+# Android 1.0.17 build18 — direct-contact blocking
+
+27 October 2026. Adds blocking from shared profiles and received invitations, a private outgoing list under You → Privacy and blocking, and unblock. Direct invitations and personal comment/reply alerts stop in both directions. As requested, shared-group profiles/photos, Memories, comments/reactions and ordinary group updates remain visible. Group membership and moderation continue. No block/unblock alert is sent.
+
+OpenAPI0.3.12/migration016. Private name snapshots, idempotent actions, current-session checks and sorted invitation/block locks protect the new endpoints. Dialogs and invitation cards retain their original account/session scope. Expired invitation cards clear even if their detail refresh fails. See [policy and enforcement matrix](safety-blocking.md).
+
+Dedicated circle_test206 tests/3,639 assertions pass; PHPStan and composer validation clean. Full Flutter684 passed/1 skipped/13 known Windows-baseline golden failures; no functional failures. Final blocking/server-mode/design24 tests pass after formatting; analyzer clean. Four light/dark narrow/tablet200% layouts inspected; approved goldens unchanged. OpenAPI389 references/67 unique operations validated. Final artifact and hosting evidence pending. Physical Android update and two-phone invitation/push acceptance remain owner tests. Broader profile-field privacy, deletion/export/retention, recovery and live Chats/Events remain separate work.
+
+Final artifact: 65,343,022 bytes; SHA256 `539701a9ddbf8bb8e47dada3bb618ca98a4a0b08cd9065a5462eae59e7ef589b`. Package com.circlecommunity.mobile; versionName1.0.17/versionCode18/minSdk24/targetSdk36. Established certificate matches immutable build17. Production API/previewfalse/pushtrue. Earlier immutable APKs preserved. Commit/deployment/full hosted-byte verification pending.

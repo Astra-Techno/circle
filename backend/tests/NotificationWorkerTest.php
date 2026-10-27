@@ -48,6 +48,20 @@ final class NotificationWorkerTest extends ApiTestCase
         parent::tearDown();
     }
 
+    public function testDirectContactBlockStopsPersonalAlertsButKeepsGroupUpdates(): void
+    {
+        $f=$this->fixture();
+        $this->request('POST',"/api/v1/memories/{$f['memory']}/comments",['body'=>'Personal reply'],$f['member']['token']);
+        self::assertSame(200,$this->request('PUT',"/api/v1/me/blocks/{$f['owner']['id']}",[],$f['member']['token'])->status());
+        $transport=new FakePushTransport(); $worker=new NotificationWorker($transport);$counts=$worker->run();
+        self::assertSame(1,$counts['cancelled']);self::assertSame(1,$counts['sent']);self::assertSame('memory.created',$transport->calls[0]['data']['type']);
+        $before=(int)Database::queryOne('SELECT COUNT(*) n FROM notification_outbox')['n'];
+        $this->request('POST',"/api/v1/memories/{$f['memory']}/comments",['body'=>'Another personal reply'],$f['member']['token']);
+        self::assertSame($before,(int)Database::queryOne('SELECT COUNT(*) n FROM notification_outbox')['n']);
+        $this->createMemory($f['owner'],$f['group'],'Group content stays visible');
+        self::assertSame($before+1,(int)Database::queryOne('SELECT COUNT(*) n FROM notification_outbox')['n']);
+    }
+
     public function testReportAlertsAreGenericDeduplicatedAndCancelAfterAdminDemotion(): void
     {
         $owner=$this->user('Owner'); $member=$this->user('Reporter'); $gid=$this->createGroup($owner); $this->join($owner,$member,$gid);

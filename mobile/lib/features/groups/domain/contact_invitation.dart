@@ -9,8 +9,10 @@ class ContactInvitation {
     required this.status,
     required this.approvalRequired,
     this.expiresAt,
+    this.inviterId,
   });
   final String id, groupId, groupName, inviterName, status;
+  final String? inviterId;
   final bool approvalRequired;
   final DateTime? expiresAt;
   factory ContactInvitation.fromJson(Object? value) {
@@ -29,6 +31,7 @@ class ContactInvitation {
       id: ApiJson.id(map['id']),
       groupId: ApiJson.id(map['group_id']),
       groupName: map['group_name'] as String? ?? 'Private circle',
+      inviterId: ApiJson.optionalId(map['inviter_id']),
       inviterName: map['inviter_name'] as String? ?? 'A circle member',
       status: map['status'] as String? ?? 'pending',
       approvalRequired: map['approval_required'] == true,

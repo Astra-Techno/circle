@@ -82,6 +82,12 @@ final class NotificationOutbox
             $params['parent_id'] = $comment['parent_id'];
             $params['parent_mid'] = $memoryId;
         }
+        $blockFilter='';
+        if($comment!==null) {
+            $params['block_actor']=(int)$comment['author_id'];
+            $params['reverse_actor']=(int)$comment['author_id'];
+            $blockFilter='AND NOT EXISTS(SELECT 1 FROM user_blocks b WHERE (b.blocker_id=gm.user_id AND b.blocked_id=:block_actor) OR (b.blocker_id=:reverse_actor AND b.blocked_id=gm.user_id))';
+        }
         Database::execute(
             "INSERT INTO notification_outbox (event_key, kind, user_id, device_id, session_id, group_id, memory_id, comment_id, expires_at)
              SELECT :key, :kind, gm.user_id, dt.id, dt.session_id, m.group_id, m.id, :cid, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 24 HOUR)
@@ -94,6 +100,7 @@ final class NotificationOutbox
              AND JSON_UNQUOTE(JSON_EXTRACT(np.categories, :category)) = 'true'
              AND EXISTS (SELECT 1 FROM refresh_tokens rt WHERE rt.user_id = dt.user_id AND rt.session_id = dt.session_id
                  AND rt.revoked_at IS NULL AND rt.expires_at > UTC_TIMESTAMP())
+             {$blockFilter}
              {$recipients}
              ON DUPLICATE KEY UPDATE event_key = notification_outbox.event_key",
             $params

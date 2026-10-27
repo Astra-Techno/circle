@@ -183,7 +183,6 @@ void main() {
       '/chats/c/g-1/photos/message-1',
       '/activity',
       '/you/notifications',
-      '/you/privacy',
     ]) {
       container.read(circleRouterProvider).go(location);
       await settle(tester);

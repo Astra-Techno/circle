@@ -166,11 +166,14 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                     : 'What reaches you, quiet hours, muted chats',
                 location: '/you/notifications',
               ),
-            if (features.has(CircleFeature.privacy))
+            if (features.has(CircleFeature.privacy) ||
+                features.has(CircleFeature.blocking))
               entry(
                 icon: Icons.lock_outline,
-                title: 'Privacy',
-                subtitle: 'Who can message you, close groups, blocked people',
+                title: features.server ? 'Privacy and blocking' : 'Privacy',
+                subtitle: features.server
+                    ? 'Manage blocked people'
+                    : 'Who can message you, close groups, blocked people',
                 location: '/you/privacy',
               ),
             if (features.server)

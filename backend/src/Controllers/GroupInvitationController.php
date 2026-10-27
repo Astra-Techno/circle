@@ -42,6 +42,7 @@ final class GroupInvitationController
             $users = self::users($request->userId(), $uid, true);
             if (($users[$request->userId()]['status'] ?? '') !== 'active') Response::forbidden('This account is not active.', 'account_inactive');
             if (($users[$uid]['status'] ?? '') !== 'active' || ($users[$uid]['mobile'] ?? '') !== $mobile) return ['outcome' => 'share_link'];
+            if (\Circle\Repositories\BlockRepository::either($uid,$request->userId())) return ['outcome'=>'unavailable'];
             $member = self::member($gid, $uid, true);
             if ($uid === $request->userId() || ($member['status'] ?? '') === 'active') return ['outcome' => 'already_member'];
             if (($member['status'] ?? '') === 'banned' || (($member['status'] ?? '') === 'removed' && $sender['role'] !== 'admin') || !self::parentOk($group, $uid, true)) {
@@ -70,8 +71,8 @@ final class GroupInvitationController
     {
         $limit = $request->queryInt('limit', 50, 1, 100);
         $offset = $request->queryInt('offset', 0, 0, 1_000_000);
-        $rows = Database::query(self::select() . ' WHERE i.recipient_id = :uid ORDER BY i.updated_at DESC, i.id DESC LIMIT :lim OFFSET :off', ['uid' => $request->userId(), 'lim' => $limit, 'off' => $offset]);
-        $total = Database::queryOne('SELECT COUNT(*) AS total FROM group_invitations WHERE recipient_id = :uid', ['uid' => $request->userId()]);
+        $rows = Database::query(self::select() . ' WHERE i.recipient_id = :uid AND NOT EXISTS(SELECT 1 FROM user_blocks b WHERE (b.blocker_id=i.inviter_id AND b.blocked_id=i.recipient_id) OR (b.blocker_id=i.recipient_id AND b.blocked_id=i.inviter_id)) ORDER BY i.updated_at DESC, i.id DESC LIMIT :lim OFFSET :off', ['uid' => $request->userId(), 'lim' => $limit, 'off' => $offset]);
+        $total = Database::queryOne('SELECT COUNT(*) AS total FROM group_invitations i WHERE recipient_id = :uid AND NOT EXISTS(SELECT 1 FROM user_blocks b WHERE (b.blocker_id=i.inviter_id AND b.blocked_id=i.recipient_id) OR (b.blocker_id=i.recipient_id AND b.blocked_id=i.inviter_id))', ['uid' => $request->userId()]);
         Response::paginated(array_map(self::payload(...), $rows), ['total' => (int) ($total['total'] ?? 0), 'limit' => $limit, 'offset' => $offset]);
     }
 
@@ -86,6 +87,7 @@ final class GroupInvitationController
         $initial = self::owned($request);
         $result = Database::transaction(static function () use ($request, $initial): array {
             $group = Database::queryOne('SELECT * FROM `groups` WHERE id = :gid FOR UPDATE', ['gid' => (int) $initial['group_id']]);
+            self::users((int)$initial['inviter_id'],$request->userId(),true);
             $row = Database::queryOne(self::select() . ' WHERE i.id = :id AND i.recipient_id = :uid FOR UPDATE', ['id' => (int) $initial['id'], 'uid' => $request->userId()]);
             if ($row === null || $group === null) Response::notFound('Invitation not found.');
             if ($row['status'] === 'accepted') return ['invitation' => self::payload($row), 'status' => 'accepted'];
@@ -149,6 +151,7 @@ final class GroupInvitationController
     private static function allowed(array $row, array $group, bool $lock): bool
     {
         $users = self::users((int) $row['inviter_id'], (int) $row['recipient_id'], $lock);
+        if (\Circle\Repositories\BlockRepository::either((int)$row['inviter_id'],(int)$row['recipient_id'])) return false;
         if (($users[(int) $row['inviter_id']]['status'] ?? '') !== 'active' || ($users[(int) $row['recipient_id']]['status'] ?? '') !== 'active') return false;
         $sender = self::member((int) $row['group_id'], (int) $row['inviter_id'], $lock);
         if ($sender === null || $sender['status'] !== 'active' || ($sender['role'] !== 'admin' && $group['link_sharing'] !== 'members')) return false;
@@ -188,7 +191,7 @@ final class GroupInvitationController
     private static function owned(Request $request): array
     {
         $row = Database::queryOne(self::select() . ' WHERE i.id = :id AND i.recipient_id = :uid', ['id' => (int) $request->param('invitationId'), 'uid' => $request->userId()]);
-        if ($row === null) Response::notFound('Invitation not found.');
+        if ($row === null || \Circle\Repositories\BlockRepository::either((int)$row['inviter_id'],$request->userId())) Response::notFound('Invitation not found.');
         return $row;
     }
 
@@ -198,7 +201,7 @@ final class GroupInvitationController
      */
     private static function payload(array $row): array
     {
-        return ['id' => (int) $row['id'], 'recipient_id' => (int) $row['recipient_id'], 'group_id' => (int) $row['group_id'], 'group_name' => $row['group_name'], 'inviter_name' => $row['inviter_name'], 'status' => $row['status'] === 'pending' && (bool) $row['expired'] ? 'expired' : $row['status'], 'expires_at' => $row['expires_at'], 'approval_required' => $row['approval_mode'] === 'manual' && $row['inviter_role'] !== 'admin'];
+        return ['id' => (int) $row['id'], 'recipient_id' => (int) $row['recipient_id'], 'group_id' => (int) $row['group_id'], 'group_name' => $row['group_name'], 'inviter_id'=>(int)$row['inviter_id'], 'inviter_name' => $row['inviter_name'], 'status' => $row['status'] === 'pending' && (bool) $row['expired'] ? 'expired' : $row['status'], 'expires_at' => $row['expires_at'], 'approval_required' => $row['approval_mode'] === 'manual' && $row['inviter_role'] !== 'admin'];
     }
 
     private static function emptyBody(Request $request): void

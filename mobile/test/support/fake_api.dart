@@ -150,6 +150,7 @@ class FakeCircleServer {
   final List<Map<String, Object?>> moderationCases = [];
   final List<Map<String, Object?>> moderationAudit = [];
   final Set<int> hiddenMemories = {};
+  final Map<int, Map<int, String>> blocks = {};
   final List<Map<String, Object?>> memories = [];
   final Map<int, List<Map<String, Object?>>> comments = {};
   final Map<int, Map<int, String>> reactions = {};
@@ -399,6 +400,47 @@ class FakeCircleServer {
       refresh.removeWhere((_, user) => user == me);
       return FakeResponse.ok(null);
     }
+    if (path == '/me/blocks' && r.method == 'GET') {
+      final all = (blocks[me] ?? {}).entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key));
+      final offset = int.tryParse(r.query['offset'] ?? '') ?? 0,
+          limit = int.tryParse(r.query['limit'] ?? '') ?? 50;
+      return FakeResponse.ok({
+        'items': [
+          for (final entry in all.skip(offset).take(limit))
+            {'id': entry.key, 'display_name': entry.value, 'created_at': now},
+        ],
+        'has_more': all.length > offset + limit,
+        'offset': offset,
+        'limit': limit,
+      });
+    }
+    final block = RegExp(r'^/me/blocks/(\d+)$').firstMatch(path);
+    if (block != null) {
+      final person = int.parse(block[1]!);
+      if (r.method == 'GET') {
+        return FakeResponse.ok({
+          'blocked': blocks[me]?.containsKey(person) == true,
+        });
+      }
+      if (r.method == 'PUT') {
+        if (person == me) return FakeResponse.error(422, 'validation_error');
+        if (!members.values.any(
+          (m) => m.containsKey(me) && m.containsKey(person),
+        )) {
+          return FakeResponse.error(404, 'not_found');
+        }
+        blocks
+            .putIfAbsent(me, () => {})
+            .putIfAbsent(
+              person,
+              () => users[person]!['display_name'] as String,
+            );
+      } else if (r.method == 'DELETE') {
+        blocks[me]?.remove(person);
+      }
+      return FakeResponse.ok(null);
+    }
     final sharedPhoto = RegExp(
       r'^/profiles/([0-9]+)/photos/(avatar|cover)$',
     ).firstMatch(path);
@@ -407,7 +449,9 @@ class FakeCircleServer {
       final shared = members.values.any(
         (group) => group.containsKey(me) && group.containsKey(target),
       );
-      if (target != me && !shared) return FakeResponse.error(404, 'not_found');
+      if (target != me && !shared) {
+        return FakeResponse.error(404, 'not_found');
+      }
       final photo = profilePhotos['$target:${sharedPhoto[2]}'];
       if (photo == null) return FakeResponse.error(404, 'not_found');
       return FakeResponse(200, photo.bytes, {

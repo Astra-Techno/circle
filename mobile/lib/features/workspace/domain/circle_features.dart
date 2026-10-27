@@ -11,6 +11,7 @@ enum CircleFeature {
   albums('Albums', plural: true),
   activity('Activity'),
   notificationSettings('Notification settings', plural: true),
+  blocking('Blocking'),
   privacy('Privacy settings', plural: true),
   moderation('Reports', plural: true),
   contactInvitations('Contact invitations', plural: true),
@@ -44,11 +45,16 @@ class CircleFeatures {
   const CircleFeatures.server(String this.host, {bool notifications = false})
     : available = notifications
           ? const {
+              CircleFeature.blocking,
               CircleFeature.moderation,
               CircleFeature.notificationSettings,
               CircleFeature.contactInvitations,
             }
-          : const {CircleFeature.contactInvitations, CircleFeature.moderation};
+          : const {
+              CircleFeature.contactInvitations,
+              CircleFeature.moderation,
+              CircleFeature.blocking,
+            };
 
   /// Null in the preview; the server's host in server mode.
   final String? host;

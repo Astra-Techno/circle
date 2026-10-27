@@ -300,6 +300,19 @@ class ApiClient {
     ),
   );
 
+  Future<Object?> put(
+    String path, {
+    Object? body,
+    String? expectedAccount,
+    int? expectedSession,
+  }) => _send(
+    () => dio.put<Object?>(
+      path,
+      data: body,
+      options: _options(true, expectedAccount, expectedSession),
+    ),
+  );
+
   Future<Object?> delete(
     String path, {
     Map<String, Object?>? query,
