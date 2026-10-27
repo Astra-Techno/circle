@@ -20,11 +20,10 @@ Updated: 27 October 2026. Inspect Git status before work; source, deployment and
 - Existing thirteen Windows-baseline golden comparisons fail on Linux; preserve approved baselines. One known skipped test. No Android device attached.
 
 ## Release versus live
-- Candidate1.0.13+14 packaged: 65,129,974 bytes, SHA256 b9a7f88636dc5617b677a43633e3c948b4a263553212b4ee4437af0e7aa2c730; production API/previewfalse/client pushtrue, established certificate verified, minSdk24. Stable/versioned/JSON/both buttons align; deployment pending.
-- Prior verified live main download: Android1.0.12+13, production HTTPS API/previewfalse/client pushtrue;65,129,974 bytes, SHA256668516107c74d4005c988bb9e62688bbfeecfb0127ae43eeb292fc41b3263bfe. Stable/versioned APKs, JSON and both buttons align; earlier immutable artifacts preserved.
-- Source/release81006ef pushed. Deployment completed (125s response/123s script), migration013 applied. Complete hosted stable+immutable APK hashes, metadata/buttons and expected cache headers verified. API healthy; session list/update/revoke routes reject unauthenticated access.
-- Established certificate SHA256:6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c; verified. Existing coarse-location only, no fine/background location, hardware-ID, broad contacts or automatic SMS permission added. Build127.5s.
-- Deployer preserves hosted .env, storage, PHP handlers and deploy.php itself. Source push alone is not deployment evidence.
+- Verified live main download: Android1.0.13+14, production API/previewfalse/client pushtrue;65,129,974 bytes, SHA256 b9a7f88636dc5617b677a43633e3c948b4a263553212b4ee4437af0e7aa2c730. Stable/versioned APKs, metadata and both buttons align; earlier immutable artifacts preserved.
+- Source/release8ee77c2 pushed; deployment completed (140.5s response/138.5s script). Full hosted stable+immutable hashes, metadata/buttons and expected cache headers verified. API healthy; private avatar/cover endpoints reject unauthenticated access. Backend/migrations unchanged this batch.
+- Established certificate SHA256:6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c verified; same package, versionCode14/minSdk24/targetSdk36. Build107.4s; AOT includes shared-photo implementation.
+- Deployer preserves hosted .env, storage, PHP handlers and deploy.php itself. Actual two-phone photo display remains owner acceptance; uploader need not re-upload existing photos.
 
 ## Remaining acceptance and next work
 - Owner confirmed private server sender/cron ready and can test APK. Real device update, native location/geocoder/permissions, two-device logout/password re-login, contacts/composers and actual push/tap results remain pending.
