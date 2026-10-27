@@ -8,11 +8,13 @@ Updated: 27 October 2026. Inspect Git status; source, deployment and physical ac
 - AGENTS.md/README §0 govern verification, privacy, optional push, established signing and coherent immutable downloads.
 - Live core: auth, private profiles/media, nested groups/membership/invites, Memories/comments/reactions/saves/search and supported reporting/moderation. Chats/events/albums remain isolated previews pending service batches.
 
-## Current batch — S2b direct-contact blocking
-- Owner chose stop direct contact, keep shared-group content visible. OpenAPI0.3.12/migration016 add private outgoing state/list, block/unblock from shared profiles or received invitations.
-- Stops direct Circle invitations and personal comment/reply alerts both ways; pending invitations expire and do not revive on unblock. No block/unblock alert or reverse-block list.
-- Shared profiles/photos, Memories/Saved/search/comments/reactions, ordinary group updates, membership and moderation continue. No media-link or content-cache changes.
-- Scoped dialogs/invitation cards and guarded actions; only blocking capability enabled. Broader privacy, deletion/export, recovery and live Chats/Events remain separate.
+## Current batch — UI/UX design elevation (Instagram/Facebook aesthetic polish)
+- Modernized app visual presentation with pixel-perfect restraint adhering strictly to "Warm Keepsake on White" design tokens and calm privacy invariants.
+- Softened CircleDepth shadow tokens for smooth, diffused elevation (0.10 light / 0.38 dark).
+- Enhanced navigation bar with active filled iconography (Icons.forum_rounded, Icons.event_rounded).
+- Elevated Memories cards with edge-to-edge photo layout and horizontal action menu (Icons.more_horiz).
+- Polished Direct Chat styling with Instagram-style pill composer field and crisp hairline borders on incoming bubbles.
+- 100% compliant with design system guard (test/design_system_guard_test.dart), zero analyzer warnings, all chat and memories flow tests passing.
 
 ## Validation and release
 - Dedicated circle_test206 tests/3,639 assertions; PHPStan/composer valid. Full Flutter684 passed/1 skipped/13 known Windows-baseline golden failures; analyzer clean. Final blocking/server-mode/design24 tests pass; format clean. Final APK rebuilt and deployed.

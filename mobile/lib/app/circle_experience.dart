@@ -877,6 +877,7 @@ class CircleAppShell extends ConsumerWidget {
                         if (features.has(CircleFeature.chat))
                           NavigationDestination(
                             icon: Icon(Icons.forum_outlined),
+                            selectedIcon: Icon(Icons.forum_rounded),
                             label: 'Chats',
                           ),
                         NavigationDestination(
@@ -887,6 +888,7 @@ class CircleAppShell extends ConsumerWidget {
                         if (features.has(CircleFeature.events))
                           NavigationDestination(
                             icon: Icon(Icons.event_outlined),
+                            selectedIcon: Icon(Icons.event_rounded),
                             label: 'Events',
                           ),
                         NavigationDestination(

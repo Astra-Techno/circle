@@ -608,6 +608,29 @@ class _ChatConversationScreenState
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     hintText: 'Message ${view.title}',
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: Space.lg,
+                      vertical: Space.md,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(CircleRadius.pill),
+                      borderSide: BorderSide(
+                        color: CircleAccents.of(context).hairline,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(CircleRadius.pill),
+                      borderSide: BorderSide(
+                        color: CircleAccents.of(context).hairline,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(CircleRadius.pill),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 1.5,
+                      ),
+                    ),
                   ),
                 ),
               ),

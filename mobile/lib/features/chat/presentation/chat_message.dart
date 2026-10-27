@@ -298,6 +298,7 @@ class _Bubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: mine ? colors.primary : colors.surfaceContainer,
             borderRadius: radius,
+            border: mine ? null : Border.all(color: accents.hairline),
           ),
           child: message.mentions.isEmpty
               ? Text(

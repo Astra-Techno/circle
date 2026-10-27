@@ -175,7 +175,7 @@ class CircleMemoryCard extends ConsumerWidget {
                 ),
                 PopupMenuButton<_MemoryAction>(
                   tooltip: 'More options for $about',
-                  icon: const Icon(Icons.more_vert),
+                  icon: const Icon(Icons.more_horiz),
                   onSelected: onMenu,
                   itemBuilder: (_) => [
                     PopupMenuItem(
@@ -237,12 +237,7 @@ class CircleMemoryCard extends ConsumerWidget {
             ),
           if (memory.photos.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Space.lg,
-                Space.md,
-                Space.lg,
-                0,
-              ),
+              padding: const EdgeInsets.only(top: Space.md),
               child: MemoryPhotoGrid(memory: memory),
             ),
           if (memory.poll != null)

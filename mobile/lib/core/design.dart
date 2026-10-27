@@ -30,8 +30,8 @@ abstract final class CircleDepth {
   static const _ink = Color(0xFF262047);
 
   static Color shadow(Brightness brightness) => brightness == Brightness.light
-      ? _ink.withValues(alpha: 0.18)
-      : Colors.black.withValues(alpha: 0.48);
+      ? _ink.withValues(alpha: 0.10)
+      : Colors.black.withValues(alpha: 0.38);
 
   static BoxDecoration panel(
     BuildContext context, {
