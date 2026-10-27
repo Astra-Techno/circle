@@ -2009,7 +2009,7 @@ components:
         ip_address: {type: string, description: Server-observed last connection address; may be a hosting proxy or VPN.}
         location_label: {type: [string, 'null']}
         location_updated_at: {type: [string, 'null'], description: UTC datetime of last explicit label update.}
-        created_at: {type: string, description: UTC login datetime.}
+        created_at: {type: string, description: "UTC session record datetime. New logins use actual login time; migrated sessions use the earliest surviving live refresh credential timestamp."}
         last_seen_at: {type: string, description: UTC activity datetime, throttled to one update/minute.}
     GroupInvitation:
       type: object

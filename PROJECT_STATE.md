@@ -21,13 +21,13 @@ Updated: 27 October 2026. Inspect Git status before work; source, deployment and
 - Existing thirteen Windows-baseline golden comparisons fail on Linux; preserve approved baselines. One known skipped test. No Android device attached.
 
 ## Release versus live
-- Candidate Android1.0.12+13 packaged: 65,129,974 bytes, SHA256 668516107c74d4005c988bb9e62688bbfeecfb0127ae43eeb292fc41b3263bfe; production API/previewfalse/client pushtrue, established certificate, existing coarse-location only. Stable/versioned/JSON/both buttons align; no deployment inferred. Older immutable releases preserved.
-- Packaged Android1.0.11+12, production HTTPS API/previewfalse/client pushtrue; 65,015,086 bytes, SHA256 8c1047e10c97c9e73914ab97fdaf88728a1b79d156bdc0359fd03e600976b59e. Stable/immutable APKs, metadata and both buttons align; original certificate and no broad contacts/SMS permission verified. Deployed successfully (117.1s response); complete hosted stable/immutable APK hashes match, metadata/both buttons verified, correct cache headers, API healthy and invitation routes reject unauthenticated access. Migrations011/012 applied.
-- Established beta certificate SHA256:6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c. Preserve earlier immutable APKs; never overwrite them.
-- Deployer preserves hosted .env, storage, PHP handlers and deploy.php itself. Successful push is not deployment evidence.
+- Verified live main download: Android1.0.12+13, production HTTPS API/previewfalse/client pushtrue;65,129,974 bytes, SHA256668516107c74d4005c988bb9e62688bbfeecfb0127ae43eeb292fc41b3263bfe. Stable/versioned APKs, JSON and both buttons align; earlier immutable artifacts preserved.
+- Source/release81006ef pushed. Deployment completed (125s response/123s script), migration013 applied. Complete hosted stable+immutable APK hashes, metadata/buttons and expected cache headers verified. API healthy; session list/update/revoke routes reject unauthenticated access.
+- Established certificate SHA256:6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c; verified. Existing coarse-location only, no fine/background location, hardware-ID, broad contacts or automatic SMS permission added. Build127.5s.
+- Deployer preserves hosted .env, storage, PHP handlers and deploy.php itself. Source push alone is not deployment evidence.
 
 ## Remaining acceptance and next work
-- Owner confirmed private server sender/cron ready and can test APK. Real device update, contact-provider/WhatsApp/SMS and foreground/minimized/closed push/tap results remain pending.
+- Owner confirmed private server sender/cron ready and can test APK. Real device update, native location/geocoder/permissions, two-device logout/password re-login, contacts/composers and actual push/tap results remain pending.
 - Later feature order and notification matrix: docs/pending-work.md. S1b/session controls are the current batch; safety/privacy, live Chats, live Events, polls/albums follow in verified batches.
 - Evidence: docs/contact-invite-sharing.md, docs/push-device-acceptance.md, docs/password-change-foundation.md.
 
