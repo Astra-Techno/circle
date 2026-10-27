@@ -15,10 +15,11 @@ Updated: 27 October 2026. Inspect Git status; source, deployment and physical ac
 - Scoped dialogs/invitation cards and guarded actions; only blocking capability enabled. Broader privacy, deletion/export, recovery and live Chats/Events remain separate.
 
 ## Validation and release
-- Dedicated circle_test206 tests/3,639 assertions; PHPStan/composer valid. Full Flutter684 passed/1 skipped/13 known Windows-baseline golden failures; analyzer clean. Final blocking/server-mode/design24 tests pass; format clean. Final APK rebuilt.
-- Build18 candidate: 65,343,022 bytes SHA256539701a9ddbf8bb8e47dada3bb618ca98a4a0b08cd9065a5462eae59e7ef589b; not yet pushed/deployed. See docs/mobile-release-1.0.17.md.
-- Previously verified live1.0.16+17: APK/source137ddc3, server3ce253f, proofee77090;65,261,102 bytes SHA2565da05df9bf69bccf781fcb293a7a4c36bad484ad999e3abdfc36d93eb2d61c35.
+- Dedicated circle_test206 tests/3,639 assertions; PHPStan/composer valid. Full Flutter684 passed/1 skipped/13 known Windows-baseline golden failures; analyzer clean. Final blocking/server-mode/design24 tests pass; format clean. Final APK rebuilt and deployed.
+- Live1.0.17+18/sourcee071227:65,343,022 bytes SHA256539701a9ddbf8bb8e47dada3bb618ca98a4a0b08cd9065a5462eae59e7ef589b. Full hosted stable/immutable hashes, metadata/both buttons/cache verified. See docs/mobile-release-1.0.17.md.
+- Previous immutable1.0.16+17: APK/source137ddc3, server3ce253f, proofee77090;65,261,102 bytes SHA2565da05df9bf69bccf781fcb293a7a4c36bad484ad999e3abdfc36d93eb2d61c35.
 - Established certificate SHA2566c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c. Preserve immutable releases and hosting settings.
+- Deployment176.0s response/173.9s script; migration016 applied. API healthy; private blocks/photos/reports unauth401. Hosting settings preserved.
 - No attached Android device; actual installation and two-phone notification acceptance remain pending.
 
 ## Remaining acceptance and next work
