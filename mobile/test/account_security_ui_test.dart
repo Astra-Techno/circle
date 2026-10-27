@@ -53,7 +53,7 @@ Future<ProviderContainer> open(
   final container = await openServerCircle(
     tester,
     server,
-    sessionDevice: device,
+    sessionDevice: device ?? FakeSessionDevice(),
     tokens: await storedSession(server, owner),
     size: size,
   );

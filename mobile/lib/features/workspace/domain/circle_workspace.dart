@@ -22,6 +22,7 @@ class CircleWorkspace {
     List<JoinRequest> joinRequests = const [],
     List<DirectInvitation> sentInvitations = const [],
     Map<String, String> people = const {},
+    Map<String, String> avatarVersions = const {},
     Set<String> hiddenByAdmins = const {},
     Set<String> reportedByMe = const {},
     Map<String, int> openReports = const {},
@@ -34,6 +35,7 @@ class CircleWorkspace {
        invitations = List.unmodifiable(invitations),
        joinRequests = List.unmodifiable(joinRequests),
        sentInvitations = List.unmodifiable(sentInvitations),
+       avatarVersions = Map.unmodifiable(avatarVersions),
        people = Map.unmodifiable(people),
        hiddenByAdmins = Set.unmodifiable(hiddenByAdmins),
        reportedByMe = Set.unmodifiable(reportedByMe),
@@ -41,6 +43,7 @@ class CircleWorkspace {
        groupsById = Map.unmodifiable({for (final g in groups) g.id: g});
 
   final String viewer;
+  final Map<String, String> avatarVersions;
 
   /// Groups the viewer is an active member of.
   final List<CircleGroup> groups;

@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -131,7 +132,8 @@ class CircleMemoryCard extends ConsumerWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleInitialAvatar(
+                PersonAvatar(
+                  person: memory.authorId,
                   name: memory.author,
                   tone: circleTypeTone(group.type),
                 ),
@@ -504,15 +506,15 @@ class _EditMemorySheetState extends ConsumerState<_EditMemorySheet> {
 }
 
 /// One comment as a recessed bubble: "**Name:** text".
-class CommentBubble extends StatelessWidget {
+class CommentBubble extends ConsumerWidget {
   const CommentBubble(this.comment, {super.key, this.onTap, this.maxLines});
   final MemoryComment comment;
   final VoidCallback? onTap;
   final int? maxLines;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final radius = BorderRadius.circular(CircleRadius.tile);
-    return Material(
+    final bubble = Material(
       color: CircleAccents.of(context).recessed,
       borderRadius: radius,
       child: InkWell(
@@ -536,6 +538,19 @@ class CommentBubble extends StatelessWidget {
           ),
         ),
       ),
+    );
+    if (!ref.watch(circleFeaturesProvider).server) return bubble;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        PersonAvatar(
+          person: comment.authorId,
+          name: comment.authorName,
+          size: CircleAvatarSize.small,
+        ),
+        const SizedBox(width: Space.sm),
+        Expanded(child: bubble),
+      ],
     );
   }
 }

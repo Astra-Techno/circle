@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,7 +23,7 @@ int _roleRank(CircleRole role) => switch (role) {
   CircleRole.member => 2,
 };
 
-class GroupMembersTab extends ConsumerWidget {
+class GroupMembersTab extends ConsumerStatefulWidget {
   const GroupMembersTab({
     super.key,
     required this.group,
@@ -32,7 +33,21 @@ class GroupMembersTab extends ConsumerWidget {
   final CircleWorkspace workspace;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GroupMembersTab> createState() => _GroupMembersState();
+}
+
+class _GroupMembersState extends ConsumerState<GroupMembersTab> {
+  int _visible = 30;
+  @override
+  void didUpdateWidget(covariant GroupMembersTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.group.id != widget.group.id) _visible = 30;
+  }
+
+  CircleGroup get group => widget.group;
+  CircleWorkspace get workspace => widget.workspace;
+  @override
+  Widget build(BuildContext context) {
     final viewer = workspace.viewer;
     final controller = ref.read(circleWorkspaceProvider.notifier);
     final canReview = MembershipRules.canReviewRequests(group, viewer).allowed;
@@ -105,12 +120,27 @@ class GroupMembersTab extends ConsumerWidget {
           const SizedBox(height: Space.md),
         ],
         CircleSectionTitle('Members (${members.length})'),
-        for (final member in members)
+        if (ref.watch(circleFeaturesProvider).server)
+          TextButton.icon(
+            onPressed: () => runCalmly(context, controller.refresh),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Refresh members'),
+          ),
+        for (final member
+            in ref.watch(circleFeaturesProvider).server
+                ? members.take(_visible)
+                : members)
           _MemberTile(
             group: group,
             workspace: workspace,
             person: member.key,
             role: member.value,
+          ),
+        if (ref.watch(circleFeaturesProvider).server &&
+            _visible < members.length)
+          TextButton(
+            onPressed: () => setState(() => _visible += 30),
+            child: const Text('Show more members'),
           ),
         if (invited.isNotEmpty) ...[
           const SizedBox(height: Space.md),
@@ -172,7 +202,7 @@ class _MemberTile extends ConsumerWidget {
           start: Space.lg,
           end: Space.sm,
         ),
-        leading: CircleInitialAvatar(name: name),
+        leading: PersonAvatar(person: person, name: name),
         title: Text(name),
         subtitle: role == CircleRole.member
             ? null

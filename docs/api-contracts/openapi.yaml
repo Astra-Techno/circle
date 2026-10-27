@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.8
+  version: 0.3.9
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -32,7 +32,8 @@ info:
 
     ## Rate limits (per client IP, fixed 60-second window)
     - `/auth/register`, `/auth/login`, `/auth/refresh`: `RATE_LIMIT_AUTH_PER_MINUTE` (default 10).
-    - Every other endpoint except `/health`, including `/invites/{token}` preview and
+    - Authenticated profile photo reads use a separate per-IP bucket `RATE_LIMIT_PROFILE_PHOTOS_PER_MINUTE` (default 240/minute), still requiring ownership/shared exact membership. They do not exhaust general mutation/list quota.
+    - Every other endpoint except profile photo reads and `/health`, including `/invites/{token}` preview and
       `/auth/logout`: `RATE_LIMIT_PER_MINUTE` (default 60).
     - Login and authenticated change-password share a per-mobile-number limit on failed credential attempts:
       `LOGIN_MAX_FAILURES_PER_MOBILE` (default 10) per 15 minutes, across all IPs.
@@ -737,6 +738,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
     put:
       operationId: replaceMyProfilePhoto
       tags: [Profile]
@@ -851,6 +853,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
 
   /groups:
     get:
@@ -2256,7 +2259,8 @@ components:
         id: { type: integer }
         display_name: { type: string }
         about: { type: string }
-        avatar_path: { type: [string, 'null'] }
+        avatar_path: { type: 'null', description: Legacy private paths are never exposed. }
+        avatar_version: { type: [string, 'null'], format: uuid, description: Optional opaque photo revision for active exact members; never a URL or credential. }
         role: { $ref: '#/components/schemas/Role' }
         is_owner: { type: boolean }
         joined_at: { type: [string, 'null'] }

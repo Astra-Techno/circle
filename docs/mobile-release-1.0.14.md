@@ -1,0 +1,13 @@
+# Android1.0.14 build15 — person avatars across the app
+
+27 October 2026. Fixes the wider list-avatar gap left after build14’s profile-page-only fix. See [complete audit and privacy/performance design](person-avatar-audit.md).
+
+Memories authors, comments/replies, group members, people/Memory search and mentions use one identity-based person avatar. Stable-id chat/event/invite surfaces are wired without enabling preview services or using real identities in fictional data. Group/category icons and name-only fictional poll/audit rows remain intentional placeholders; names are never matched to photos.
+
+OpenAPI0.3.9 adds an optional Member avatar_version; authorization/private paths unchanged. Version metadata avoids missing-photo requests; replacement/removal updates invalidate bytes. Shared requests deduplicate through Riverpod plus a64-entry45-second lazy in-memory LRU scoped by account/API/session, cleared on explicit photo refresh. No cache timers or persistent image files. Member lists show30 at a time and provide Refresh members. Authenticated private photo reads use their own bounded240/minute quota without spending general API budget. No migration/new permissions/private hosting config change.
+
+Backend dedicated circle_test192 tests /3,193 assertions, PHPStan clean. Focused client avatar/profile/device/design37 tests pass; format/analyze clean. Added checks include duplicate names, same-person cross-screen/cache dedup, comment avatars, scope/expiry/LRU, photo replacement/removal and large-member-list request bounds. Eight phone/tablet light/dark200% renders inspected. One device-screen fixture now mocks its native metadata dependency to eliminate an unrelated pending-timeout flake. Final full Flutter652 passed /1 skipped /13 existing Windows-baseline golden failures, no functional failures. Artifact/hosted results follow after packaging; approved Windows goldens unchanged.
+
+Install on both phones; no re-upload needed. Pull down Memories or use Refresh members after photo updates; Refresh photos remains on the profile page. Real Android/two-phone display and prior push/location acceptance remain owner checks, not established by widget tests.
+
+Packaged candidate: 65,211,890 bytes, SHA256 `4b154b4a3f1ddacd2dc091dc3f1679888f39f42f624790866b4245a859366b5e`; com.circlecommunity.mobile versionName1.0.14/versionCode15, minSdk24/targetSdk36. Original beta certificate verified (`6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c`); production API/previewfalse/client pushtrue. Build106.0s. AOT includes PersonAvatar/Refresh members. Stable/versioned APKs, JSON and both buttons align; older immutable files preserved. Hosted deployment not yet verified.

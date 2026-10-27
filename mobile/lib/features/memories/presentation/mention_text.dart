@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
@@ -146,7 +147,8 @@ class MentionSuggestions extends StatelessWidget {
                 for (final person in found)
                   ListTile(
                     key: ValueKey('mention-${person.id}'),
-                    leading: CircleInitialAvatar(
+                    leading: PersonAvatar(
+                      person: person.id,
                       name: person.name,
                       size: CircleAvatarSize.small,
                     ),

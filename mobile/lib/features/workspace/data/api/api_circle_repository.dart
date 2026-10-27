@@ -179,6 +179,7 @@ abstract class ApiRepositoryBase {
   /// Groups in the server's order (root, depth, name).
   final Map<String, _GroupEntry> _groups = {};
   final Map<String, String> _people = {};
+  final Map<String, String> _avatarVersions = {};
   final Map<String, _LinkEntry> _links = {};
   final Map<String, JoinRequest> _requests = {};
 
@@ -205,6 +206,7 @@ abstract class ApiRepositoryBase {
     _loaded = false;
     _groups.clear();
     _people.clear();
+    _avatarVersions.clear();
     _links.clear();
     _requests.clear();
     _memoryOrder.clear();
@@ -344,6 +346,7 @@ abstract class ApiRepositoryBase {
           if (_isAdmin(request.groupId)) request,
       ],
       people: {..._people, viewer: viewerName},
+      avatarVersions: {..._avatarVersions},
       hasMoreMemories: _hasMore,
     );
   }

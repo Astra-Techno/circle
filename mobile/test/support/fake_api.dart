@@ -546,6 +546,7 @@ class FakeCircleServer {
                 'display_name': users[entry.key]!['display_name'],
                 'about': '',
                 'avatar_path': null,
+                'avatar_version': users[entry.key]!['avatar_version'],
                 'role': entry.value,
                 'joined_at': now,
                 'is_owner': groups[id]!['owner_user_id'] == entry.key,

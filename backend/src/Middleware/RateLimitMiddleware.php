@@ -27,6 +27,12 @@ final class RateLimitMiddleware
         $next($request);
     }
 
+    public static function profilePhotoHandle(Request $request, callable $next): void
+    {
+        self::hit($request->ip(), 'profile_photo', Env::int('RATE_LIMIT_PROFILE_PHOTOS_PER_MINUTE', 240), self::WINDOW_SECONDS);
+        $next($request);
+    }
+
     public static function authHandle(Request $request, callable $next): void
     {
         self::hit(

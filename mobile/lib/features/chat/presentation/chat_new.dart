@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -134,7 +135,8 @@ class _ContactRow extends StatelessWidget {
     return CircleRow(
       child: ListTile(
         enabled: contact.canMessage,
-        leading: CircleInitialAvatar(
+        leading: PersonAvatar(
+          person: contact.personId,
           name: contact.name,
           tone: contact.canMessage ? CircleTone.calm : CircleTone.neutral,
         ),

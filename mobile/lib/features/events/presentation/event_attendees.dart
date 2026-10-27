@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
@@ -119,7 +120,8 @@ class _AttendeeList extends StatelessWidget {
         CircleRow(
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: CircleInitialAvatar(
+            leading: PersonAvatar(
+              person: entry.key,
               name: nameOf(entry.key),
               size: CircleAvatarSize.small,
             ),

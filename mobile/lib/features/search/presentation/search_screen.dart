@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -125,6 +126,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
               itemBuilder: (_, memory) => CircleRow(
                 child: ListTile(
+                  leading: PersonAvatar(
+                    person: memory.authorId,
+                    name: memory.author,
+                  ),
                   title: Text(
                     memory.summary,
                     maxLines: 2,
@@ -184,7 +189,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         CircleSectionTitle('People (${results.people.length})'),
         for (final hit in results.people)
           row(
-            leading: CircleInitialAvatar(name: hit.name),
+            leading: PersonAvatar(person: hit.id, name: hit.name),
             title: hit.name,
             subtitle: 'In ${hit.groups.join(', ')}',
             location: '/people/${hit.id}',
@@ -194,7 +199,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         CircleSectionTitle('Memories (${results.memories.length})'),
         for (final memory in results.memories)
           row(
-            leading: CircleInitialAvatar(
+            leading: PersonAvatar(
+              person: memory.authorId,
               name: memory.author,
               tone: CircleTone.neutral,
             ),

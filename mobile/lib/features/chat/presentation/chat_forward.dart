@@ -133,6 +133,7 @@ class _ForwardSheetState extends ConsumerState<_ForwardSheet> {
                           secondary: ConversationAvatar(
                             title: chat.title,
                             groupType: chat.groupType,
+                            person: chat.otherId,
                             size: CircleAvatarSize.small,
                           ),
                           title: Text(

@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
@@ -189,7 +190,8 @@ class MessageTile extends StatelessWidget {
               child: lastInRun
                   ? Align(
                       alignment: AlignmentDirectional.bottomStart,
-                      child: CircleInitialAvatar(
+                      child: PersonAvatar(
+                        person: message.authorId,
                         name: message.authorName,
                         size: CircleAvatarSize.small,
                       ),
@@ -593,7 +595,8 @@ class _SharedMemoryCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    CircleInitialAvatar(
+                    PersonAvatar(
+                      person: memory.authorId,
                       name: memory.author,
                       tone: circleTypeTone(group.type),
                       size: CircleAvatarSize.small,

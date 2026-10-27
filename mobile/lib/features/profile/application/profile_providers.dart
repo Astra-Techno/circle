@@ -77,6 +77,18 @@ final sharedProfilePhotoBytesProvider = FutureProvider.autoDispose
           !RegExp(r'^[1-9][0-9]*$').hasMatch(photo.person)) {
         throw const CircleFailure('This profile isn’t available.');
       }
+      final version = ref.watch(
+        circleWorkspaceProvider.select(
+          (state) => state.value?.avatarVersions[photo.person],
+        ),
+      );
+      final cache = ref.watch(personPhotoCacheProvider);
+      final key =
+          '${api.sessionRevision}:${photo.person}:${photo.kind.name}:${version ?? ''}';
+      if (photo.kind == ProfilePhotoKind.avatar) {
+        final cached = cache.read(key, api.sessionRevision);
+        if (cached != null) return cached.bytes;
+      }
       final revision = api.sessionRevision;
       try {
         final bytes = await api.getBytes(
@@ -93,10 +105,68 @@ final sharedProfilePhotoBytesProvider = FutureProvider.autoDispose
             ref.read(serverAccountProvider)?.id != account.id) {
           throw const CircleFailure('Your session changed.');
         }
+        if (photo.kind == ProfilePhotoKind.avatar) {
+          cache.put(key, bytes, revision);
+        }
         return bytes;
       } on ApiError catch (error) {
         // No photo and inaccessible photos deliberately have the same response.
-        if (error.status == 404) return null;
+        if (error.status == 404) {
+          if (photo.kind == ProfilePhotoKind.avatar &&
+              api.sessionRevision == revision) {
+            cache.put(key, null, revision);
+          }
+          return null;
+        }
         rethrow;
       }
     }, retry: (_, _) => null);
+
+class PersonPhotoCacheEntry {
+  PersonPhotoCacheEntry(this.bytes, this.at);
+  final Uint8List? bytes;
+  final DateTime at;
+}
+
+/// Bounded in-memory LRU; lazy expiry avoids timers/background work. Cache is
+/// isolated by API/account and cleared on session revision or explicit refresh.
+class PersonPhotoCache {
+  PersonPhotoCache(this.now);
+  final DateTime Function() now;
+  final _entries = <String, PersonPhotoCacheEntry>{};
+  int? _revision;
+  void _scope(int revision) {
+    if (_revision != revision) {
+      _entries.clear();
+      _revision = revision;
+    }
+  }
+
+  PersonPhotoCacheEntry? read(String key, int revision) {
+    _scope(revision);
+    final value = _entries.remove(key);
+    if (value == null ||
+        now().difference(value.at) >= const Duration(seconds: 45)) {
+      return null;
+    }
+    _entries[key] = value;
+    return value;
+  }
+
+  void put(String key, Uint8List? bytes, int revision) {
+    _scope(revision);
+    _entries.remove(key);
+    _entries[key] = PersonPhotoCacheEntry(bytes, now());
+    while (_entries.length > 64) {
+      _entries.remove(_entries.keys.first);
+    }
+  }
+
+  void clear() => _entries.clear();
+}
+
+final personPhotoCacheProvider = Provider<PersonPhotoCache>((ref) {
+  ref.watch(apiClientProvider);
+  ref.watch(serverAccountProvider.select((a) => a?.id));
+  return PersonPhotoCache(DateTime.now);
+});

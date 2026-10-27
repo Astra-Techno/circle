@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
@@ -16,9 +17,11 @@ class ConversationAvatar extends StatelessWidget {
     super.key,
     required this.title,
     this.groupType,
+    this.person,
     this.size = CircleAvatarSize.medium,
     this.active = false,
   });
+  final String? person;
   final String title;
 
   /// Set for group chats.
@@ -29,7 +32,12 @@ class ConversationAvatar extends StatelessWidget {
   final bool active;
   @override
   Widget build(BuildContext context) => groupType == null
-      ? CircleInitialAvatar(name: title, size: size, active: active)
+      ? PersonAvatar(
+          person: person ?? '',
+          name: title,
+          size: size,
+          active: active,
+        )
       : CircleInitialAvatar(
           icon: circleTypeIcon(groupType!),
           tone: circleTypeTone(groupType!),

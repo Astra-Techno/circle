@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -275,7 +276,8 @@ class GroupInviteScreen extends ConsumerWidget {
               for (final person in candidates)
                 CircleRow(
                   child: ListTile(
-                    leading: CircleInitialAvatar(
+                    leading: PersonAvatar(
+                      person: person,
                       name: workspace.nameOf(person),
                     ),
                     title: Text(workspace.nameOf(person)),

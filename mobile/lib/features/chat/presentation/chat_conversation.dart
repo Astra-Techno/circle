@@ -679,7 +679,11 @@ class _Header extends StatelessWidget {
           ),
           child: Row(
             children: [
-              ConversationAvatar(title: view.title, groupType: view.groupType),
+              ConversationAvatar(
+                title: view.title,
+                groupType: view.groupType,
+                person: view.otherId,
+              ),
               const SizedBox(width: Space.md),
               Expanded(
                 child: Column(

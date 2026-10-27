@@ -269,10 +269,11 @@ final class MemberRepository
     public static function getMembers(int $groupId, int $limit = 50, int $offset = 0): array
     {
         $rows = Database::query(
-            "SELECT u.id, u.display_name, u.about, u.avatar_path, gm.role, gm.joined_at,
+            "SELECT u.id, u.display_name, u.about, NULL AS avatar_path, p.version AS avatar_version, gm.role, gm.joined_at,
                     (g.owner_user_id = u.id) AS is_owner
              FROM group_members gm
              JOIN users u ON gm.user_id = u.id
+             LEFT JOIN profile_photos p ON p.user_id = u.id AND p.kind = 'avatar'
              JOIN `groups` g ON g.id = gm.group_id
              WHERE gm.group_id = :gid AND gm.status = :s
              ORDER BY FIELD(gm.role, 'admin', 'member'), u.display_name, u.id

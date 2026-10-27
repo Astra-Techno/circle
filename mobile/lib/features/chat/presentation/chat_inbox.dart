@@ -275,6 +275,7 @@ class ConversationRow extends ConsumerWidget {
           leading: ConversationAvatar(
             title: chat.title,
             groupType: chat.groupType,
+            person: chat.otherId,
             active: !chat.isGroup && chat.activeNow,
           ),
           title: Text(

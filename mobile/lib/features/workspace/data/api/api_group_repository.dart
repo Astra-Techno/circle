@@ -20,6 +20,7 @@ mixin ApiGroupRepository on ApiRepositoryBase implements GroupRepository {
       ..addAll(fresh);
     _requests.removeWhere((_, request) => !fresh.containsKey(request.groupId));
     _links.removeWhere((groupId, _) => !fresh.containsKey(groupId));
+    _avatarVersions.clear();
     await ApiRepositoryBase.pool(fresh.keys, _syncGroupDetails);
   }
 
@@ -73,6 +74,14 @@ mixin ApiGroupRepository on ApiRepositoryBase implements GroupRepository {
         final member = ApiMappers.member(item);
         roles[member.id] = member.role;
         _people[member.id] = member.name;
+        final version = ApiJson.optionalString(
+          ApiJson.map(item)['avatar_version'],
+        );
+        if (version != null) {
+          _avatarVersions[member.id] = version;
+        } else {
+          _avatarVersions.remove(member.id);
+        }
       }
       offset += page.items.length;
       final total = ApiJson.integer(page.pagination['total']) ?? offset;

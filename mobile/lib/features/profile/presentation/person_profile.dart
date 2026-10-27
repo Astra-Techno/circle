@@ -115,6 +115,7 @@ class PersonProfileScreen extends ConsumerWidget {
               Center(
                 child: TextButton.icon(
                   onPressed: () {
+                    ref.read(personPhotoCacheProvider).clear();
                     ref.invalidate(
                       sharedProfilePhotoBytesProvider((
                         person: person,

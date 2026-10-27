@@ -428,7 +428,9 @@ class CircleInitialAvatar extends StatelessWidget {
     this.tone = CircleTone.calm,
     this.size = CircleAvatarSize.medium,
     this.active = false,
+    this.image,
   }) : assert(name != null || icon != null);
+  final ImageProvider<Object>? image;
   final String? name;
   final IconData? icon;
   final CircleTone tone;
@@ -449,6 +451,8 @@ class CircleInitialAvatar extends StatelessWidget {
       child: CircleAvatar(
         radius: diameter / 2,
         backgroundColor: Colors.transparent,
+        foregroundImage: image,
+        onForegroundImageError: image == null ? null : (_, _) {},
         foregroundColor: palette.text,
         child: icon != null
             ? Icon(icon, size: diameter * 0.5, color: palette.text)

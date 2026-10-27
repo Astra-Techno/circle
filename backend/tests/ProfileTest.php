@@ -164,4 +164,30 @@ final class ProfileTest extends MediaTestCase
         }
     }
 
+    public function testMemberAvatarRevisionTracksReplacementAndRemovalWithoutPrivatePaths(): void
+    {
+        $owner = $this->user('Fictional Owner'); $viewer = $this->user('Fictional Viewer'); $stranger = $this->user('Fictional Stranger');
+        $group = $this->createGroup($owner); $this->addMember($group, $viewer['id']);
+        $read = fn (): mixed => array_values(array_filter($this->request('GET', "/api/v1/groups/$group/members", [], $viewer['token'])->data(), static fn (array $r): bool => $r['id'] === $owner['id']))[0];
+        self::assertNull($read()['avatar_version']);
+        $first = $this->requestRaw('PUT', '/api/v1/me/photos/avatar', ImageFixtures::png(), $owner['token'], 'image/png')->data()['avatar_version'];
+        self::assertSame($first, $read()['avatar_version']); self::assertNull($read()['avatar_path']);
+        $next = $this->requestRaw('PUT', '/api/v1/me/photos/avatar', ImageFixtures::png(), $owner['token'], 'image/png')->data()['avatar_version'];
+        self::assertNotSame($first, $next); self::assertSame($next, $read()['avatar_version']);
+        self::assertSame(403, $this->request('GET', "/api/v1/groups/$group/members", [], $stranger['token'])->status());
+        $this->request('DELETE', '/api/v1/me/photos/avatar', [], $owner['token']); self::assertNull($read()['avatar_version']);
+    }
+    public function testPhotoReadBudgetIsSeparateBoundedAndRequiresAuthentication(): void
+    {
+        $owner = $this->user();
+        $this->requestRaw('PUT', '/api/v1/me/photos/avatar', ImageFixtures::png(), $owner['token'], 'image/png');
+        \Circle\Core\Env::set('RATE_LIMIT_PROFILE_PHOTOS_PER_MINUTE', '2');
+        try {
+            self::assertSame(401, $this->request('GET', '/api/v1/me/photos/avatar')->status());
+            for ($i = 0; $i < 2; $i++) self::assertSame(200, $this->request('GET', '/api/v1/me/photos/avatar', [], $owner['token'])->status());
+            self::assertSame(429, $this->request('GET', '/api/v1/me/photos/avatar', [], $owner['token'])->status());
+            self::assertSame(200, $this->request('GET', '/api/v1/me', [], $owner['token'])->status());
+        } finally { \Circle\Core\Env::set('RATE_LIMIT_PROFILE_PHOTOS_PER_MINUTE', '240'); }
+    }
+
 }

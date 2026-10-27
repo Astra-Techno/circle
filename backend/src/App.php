@@ -44,6 +44,7 @@ final class App
 
         $router->registerMiddleware('auth', AuthMiddleware::handle(...));
         $router->registerMiddleware('rate', RateLimitMiddleware::handle(...));
+        $router->registerMiddleware('rate:profile_photo', RateLimitMiddleware::profilePhotoHandle(...));
         $router->registerMiddleware('rate:auth', RateLimitMiddleware::authHandle(...));
 
         $router->get('/api/v1/health', static function (): void {
@@ -120,7 +121,10 @@ final class App
         // ── Invite preview (public, rate-limited) ────────────────
         $router->get('/api/v1/invites/{token}', MemberController::previewInvite(...), ['rate']);
 
-        // ── Media bytes (no bearer: the HMAC-signed link is the credential) ──
+        // Authenticated private profile reads have a separate bounded budget.
+        $router->get('/api/v1/me/photos/{kind}', ProfilePhotoController::show(...), ['auth', 'rate:profile_photo']);
+        $router->get('/api/v1/profiles/{userId}/photos/{kind}', ProfilePhotoController::show(...), ['auth', 'rate:profile_photo']);
+        // Media bytes: the HMAC-signed link is the credential (no bearer).
         $router->get('/api/v1/media/files/{mediaId}/{size}', MediaController::file(...), ['rate']);
 
         // ── Protected API ────────────────────────────────────────
@@ -133,8 +137,6 @@ final class App
             $r->patch('/me', AuthController::updateMe(...));
             $r->put('/me/photos/{kind}', ProfilePhotoController::put(...));
             $r->delete('/me/photos/{kind}', ProfilePhotoController::delete(...));
-            $r->get('/me/photos/{kind}', ProfilePhotoController::show(...));
-            $r->get('/profiles/{userId}/photos/{kind}', ProfilePhotoController::show(...));
 
             $r->get('/me/notification-preferences', NotificationPreferenceController::show(...));
             $r->patch('/me/notification-preferences', NotificationPreferenceController::update(...));

@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -62,6 +63,7 @@ class _Details extends ConsumerWidget {
                 ConversationAvatar(
                   title: view.title,
                   groupType: view.groupType,
+                  person: view.otherId,
                   size: CircleAvatarSize.hero,
                 ),
                 const SizedBox(height: Space.md),
@@ -167,7 +169,8 @@ class _Details extends ConsumerWidget {
             for (final member in view.members)
               CircleRow(
                 child: ListTile(
-                  leading: CircleInitialAvatar(
+                  leading: PersonAvatar(
+                    person: member.id,
                     name: member.name,
                     size: CircleAvatarSize.small,
                   ),

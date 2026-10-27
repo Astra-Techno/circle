@@ -9,17 +9,18 @@ Updated: 27 October 2026. Inspect Git status before work; source, deployment and
 - Server core includes auth, private profiles/media, nested groups/membership/invite links, Memories/comments/reactions/saves/search. Chat/events/albums remain isolated previews, pending actual service batches.
 
 ## Current batch
-- Fix shared profile/banner visibility: owner uploads worked, but another member’s profile only rendered initials. Main pulled safely through9017286 before changes.
-- PersonProfileScreen now fetches avatar+banner through existing private /profiles/{userId}/photos/{kind}; scoped by viewer/target/API/session and active exact shared membership. No public URLs, new backend API or migration.
-- Refresh photos reloads replacements/removals; absent/inaccessible photos fall back calmly. Preview/own-photo behavior stays separate. The receiving person must update the APK; no re-upload is needed.
-- Account/session/password controls from build13 remain in place. Device/location/two-phone acceptance is still pending. Current evidence: docs/mobile-release-1.0.13.md.
+- Deep person-avatar audit after build14 connected profiles but left list initials. Main pulled safely throughde11883. See docs/person-avatar-audit.md for every surface and intentional placeholders.
+- New shared PersonAvatar wires Memories, comments/replies, group members, people/Memory search and mentions by stable user id. Chat/event/invite person-id surfaces are wired but remain gated fictional previews; group/category/name-only mock icons are not guessed into real photos.
+- OpenAPI0.3.9 adds nullable Member.avatar_version. Workspace metadata gates absent photos, replacements/removals invalidate bytes, and a session/API/account-scoped64-entry/45s lazy LRU deduplicates thumbnails without background timers or disk caching.
+- Server members render batches of30 with Show more/Refresh members. Private photo reads keep exact authorization with a separate bounded240/min per-IP quota, preserving general API budget. No migration/public image URL or permission change.
 
 ## Validation
-- Backend unchanged this batch; focused ProfileTest on circle_test:5 tests /134 assertions pass. Prior full190 tests /3,167 assertions and PHPStan clean. Contract0.3.8 unchanged.
-- Shared-photo/own-photo/profile/account/design focused29 passed; format/analyze clean, four phone/tablet light/dark200% profile renders inspected. Full regression640 passed /1 skipped /13 known Windows-baseline golden failures; no functional failures.
-- Existing thirteen Windows-baseline golden comparisons fail on Linux; preserve approved baselines. One known skipped test. No Android device attached.
+- Dedicated circle_test192 tests /3,193 assertions, PHPStan clean. Member version/replacement/removal/path privacy and isolated photo quota tests pass. Contract0.3.9 references verified.
+- Focused avatar/profile/device/design37 passed; format/analyze clean. Eight phone/tablet light/dark200% avatar renders inspected. Final full Flutter652 passed /1 skipped /13 known Windows-baseline golden failures, no functional failures. Approved goldens unchanged.
+- Existing thirteen Windows-baseline golden comparisons fail on Linux; one known skipped test. No Android device attached. Native display remains owner acceptance.
 
 ## Release versus live
+- Candidate Android1.0.14+15 packaged: 65,211,890 bytes, SHA256 4b154b4a3f1ddacd2dc091dc3f1679888f39f42f624790866b4245a859366b5e; original certificate, package/version/minSdk verified. Stable/versioned/JSON/buttons align; hosted deployment pending.
 - Verified live main download: Android1.0.13+14, production API/previewfalse/client pushtrue;65,129,974 bytes, SHA256 b9a7f88636dc5617b677a43633e3c948b4a263553212b4ee4437af0e7aa2c730. Stable/versioned APKs, metadata and both buttons align; earlier immutable artifacts preserved.
 - Source/release8ee77c2 pushed; deployment completed (140.5s response/138.5s script). Full hosted stable+immutable hashes, metadata/buttons and expected cache headers verified. API healthy; private avatar/cover endpoints reject unauthenticated access. Backend/migrations unchanged this batch.
 - Established certificate SHA256:6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c verified; same package, versionCode14/minSdk24/targetSdk36. Build107.4s; AOT includes shared-photo implementation.
