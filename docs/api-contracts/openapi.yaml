@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.7
+  version: 0.3.8
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -102,6 +102,106 @@ security:
   - bearerAuth: []
 
 paths:
+  /me/sessions:
+    get:
+      operationId: listMyLoginSessions
+      tags: [Auth]
+      summary: List only the authenticated account's active login sessions.
+      description: |
+        One row per login, not per refresh or FCM token. Rotating credentials retains
+        the public id. Expired/revoked sessions are excluded. Device/app/OS details
+        are client-reported labels, not verified identities. Last activity/IP are
+        captured server-side at most once per minute from the connection address;
+        untrusted forwarding headers are ignored. Location is an optional client-shared
+        city/region label with its own timestamp, not inferred from IP or tracked.
+        No raw JWT sid, refresh hash, bearer/FCM token or coordinates are returned.
+        Migrated sessions can show Unknown device until that client updates details.
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 30}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0, maximum: 1000000, default: 0}}
+      responses:
+        '200':
+          description: Owner-only active sessions ordered by last activity, then public id.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data, pagination]
+                properties:
+                  success: {const: true}
+                  data: {type: array, items: {$ref: '#/components/schemas/LoginSession'}}
+                  pagination:
+                    type: object
+                    properties:
+                      total: {type: integer}
+                      limit: {type: integer}
+                      offset: {type: integer}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /me/sessions/{sessionId}:
+    parameters:
+      - {name: sessionId, in: path, required: true, schema: {type: string, pattern: '^[a-f0-9]{32}$'}, description: Public session handle; never the JWT sid.}
+    delete:
+      operationId: revokeMyLoginSession
+      tags: [Auth]
+      summary: Log out a chosen session, including the current device.
+      description: |
+        Authenticated account must own the handle; nonexistent and non-owned handles
+        both return 404. User-first locking serializes with login/refresh/password change
+        and rechecks the caller's active session. Revokes all target refresh rows and
+        device registrations, invalidating its access tokens and future queued push.
+        An already revoked owned handle is idempotently successful. Other sessions,
+        accounts and memberships remain unchanged. Already delivered data/in-flight
+        requests cannot be recalled. Clients clear local state if the current session ends.
+      responses:
+        '200':
+          description: Chosen session revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: {const: true}
+                  data:
+                    type: object
+                    required: [current_session_revoked]
+                    properties:
+                      current_session_revoked: {type: boolean}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /me/session:
+    patch:
+      operationId: updateCurrentLoginSession
+      tags: [Auth]
+      summary: Update display metadata for the current session only.
+      description: |
+        Device details are optional labels; none participate in authentication.
+        Location is shared explicitly by the user, stored only as a city/region label,
+        and removable with null. Clients must not upload latitude/longitude, hardware
+        identifiers, address books or background location. Other sessions cannot be edited.
+        Values are trimmed UTF8 text, bounded in bytes and contain no control characters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                device_label: {type: string, minLength: 1, maxLength: 120}
+                os_version: {type: string, maxLength: 80}
+                app_version: {type: string, maxLength: 40}
+                location_label: {type: [string, 'null'], maxLength: 160}
+      responses:
+        '200': {description: Current session details updated; data is null.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
   /groups/{id}/contact-invitations:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -410,6 +510,10 @@ paths:
 
   /auth/login:
     post:
+      parameters:
+        - {name: X-Circle-Device, in: header, schema: {type: string, maxLength: 120}, description: Optional client-reported device label; malformed values are ignored.}
+        - {name: X-Circle-OS, in: header, schema: {type: string, maxLength: 80}}
+        - {name: X-Circle-App, in: header, schema: {type: string, maxLength: 40}}
       operationId: login
       tags: [Auth]
       summary: Sign in and open a session
@@ -1892,6 +1996,21 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
+    LoginSession:
+      type: object
+      additionalProperties: false
+      required: [id, is_current, device_label, os_version, app_version, ip_address, location_label, location_updated_at, created_at, last_seen_at]
+      properties:
+        id: {type: string, pattern: '^[a-f0-9]{32}$'}
+        is_current: {type: boolean}
+        device_label: {type: string}
+        os_version: {type: string}
+        app_version: {type: string}
+        ip_address: {type: string, description: Server-observed last connection address; may be a hosting proxy or VPN.}
+        location_label: {type: [string, 'null']}
+        location_updated_at: {type: [string, 'null'], description: UTC datetime of last explicit label update.}
+        created_at: {type: string, description: UTC login datetime.}
+        last_seen_at: {type: string, description: UTC activity datetime, throttled to one update/minute.}
     GroupInvitation:
       type: object
       required: [id, group_id, recipient_id, group_name, inviter_name, status, expires_at, approval_required]

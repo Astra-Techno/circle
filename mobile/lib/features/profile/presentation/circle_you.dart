@@ -316,6 +316,19 @@ class AccountScreen extends ConsumerWidget {
             },
           ),
           if (server) ...[
+            ListTile(
+              leading: const Icon(Icons.lock_outline),
+              title: const Text('Change password'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/you/account/password'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.devices_outlined),
+              title: const Text('Your devices'),
+              subtitle: const Text('Locations and session logout'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/you/account/sessions'),
+            ),
             const CircleSectionTitle('Connection'),
             const Text('Connected server'),
             const SizedBox(height: Space.sm),
@@ -324,7 +337,7 @@ class AccountScreen extends ConsumerWidget {
           const CircleSectionTitle('Comes before launch'),
           Text(
             server
-                ? 'Changing your password, choosing a language, exporting '
+                ? 'Choosing a language, exporting '
                       'your data and deleting your account come in a later '
                       'milestone.'
                 : 'Changing your password, choosing a language, exporting your '

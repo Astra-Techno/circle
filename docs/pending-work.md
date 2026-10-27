@@ -104,3 +104,7 @@ Open decisions are deferred to the batch that needs them: recovery/SMS provider 
 ## Contact-first invitation batch — 27 October 2026
 
 Owner requested selected-contact invitations and a compact Copy link action. Implemented with OpenAPI0.3.7, migrations011/012, explicit recipient consent/approval, persistent inbox, bounded per-sender attempts and scoped invitation push capture/delivery/client handling. Native picker/composer and actual Android delivery remain owner acceptance checks. See [contact-invite-sharing.md](contact-invite-sharing.md). This batch takes priority over the previously queued S1b password form; that form and later chat/events families remain pending.
+
+## S1b and active-session controls — 27 October 2026
+
+Owner added logged-device details/location and individual session logout. Implemented password current/new/confirmation with no-replay and scoped independent cleanup; owner-only active devices, public handles, one-minute activity/IP metadata, optional foreground city/region sharing/removal, atomic current/remote logout and push-token revocation. OpenAPI0.3.8/migration013; see [account-security-sessions.md](account-security-sessions.md). Build13 verification/publication is this batch's exit. Two-device/native location acceptance remains open. Registration password-policy alignment, independent recovery/security alerts, reports/block/privacy and later chat/events families remain pending.

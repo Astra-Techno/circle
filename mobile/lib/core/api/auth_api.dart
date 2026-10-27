@@ -1,3 +1,5 @@
+import 'dart:async';
+import '../platform/session_device.dart';
 import 'dart:typed_data';
 import 'api_client.dart';
 import 'api_json.dart';
@@ -92,6 +94,12 @@ class AuthApi {
     required String mobile,
     required String password,
   }) async {
+    if (canCommitSession?.call() == false) {
+      throw const ApiError(
+        'Your session changed. Please try again.',
+        code: 'session_changed',
+      );
+    }
     final data = await client.post(
       '/auth/login',
       auth: false,
@@ -105,7 +113,25 @@ class AuthApi {
       );
     }
     await client.saveTokens(client.tokensFrom(data, account: account.stored));
+    // Optional metadata is captured after successful authentication; no native
+    // channel or metadata request can delay/prevent a login.
+    unawaited(_captureDevice(account.id, client.sessionRevision));
     return account;
+  }
+
+  Future<void> _captureDevice(String account, int revision) async {
+    try {
+      final device = await const SessionDevice().details();
+      if (device.isEmpty || client.sessionRevision != revision) return;
+      await client.patch(
+        '/me/session',
+        body: device,
+        expectedAccount: account,
+        expectedSession: revision,
+      );
+    } catch (_) {
+      /* Display metadata is optional. */
+    }
   }
 
   Future<ApiAccount> me() async => _rememberAccount(await client.get('/me'));

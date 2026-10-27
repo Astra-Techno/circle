@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_providers.dart';
@@ -100,12 +101,29 @@ class ServerSession extends Notifier<ServerSessionState> {
     }
   }
 
-  void _ended(String message) {
+  void _ended(String? message) {
     if (!ref.mounted) return;
+    final account = state.account;
+    final config = ref.read(apiConfigProvider);
     ref.read(pushLifecycleProvider).invalidate();
     _sessionEpoch++;
     _profileRevision++;
     _forgetImages();
+    if (account != null && config != null) {
+      // Clear starts synchronously: invalidates old draft leases, then serializes
+      // deletion before any later login's writes. Storage failure cannot retain auth.
+      unawaited(
+        ref
+            .read(memoryDraftStoreProvider)
+            .clearScope(
+              DraftScope(
+                server: config.baseUrl.toString(),
+                account: account.id,
+              ),
+            )
+            .catchError((_) => false),
+      );
+    }
     state = ServerSessionState(notice: message);
   }
 
@@ -255,22 +273,46 @@ class ServerSession extends Notifier<ServerSessionState> {
   /// [CircleWorkspaceController.logOut], which first sends deletions still
   /// waiting for their Undo window.
   Future<void> logOut() async {
-    ref.read(pushLifecycleProvider).invalidate();
-    _sessionEpoch++;
-    _profileRevision++;
-    final auth = _auth;
+    final api = ref.read(apiClientProvider);
     final account = state.account;
-    final config = ref.read(apiConfigProvider);
-    if (account != null && config != null) {
-      await ref
-          .read(memoryDraftStoreProvider)
-          .clearScope(
-            DraftScope(server: config.baseUrl.toString(), account: account.id),
-          );
+    if (api == null || account == null) return;
+    final revision = api.sessionRevision;
+    final auth = _auth;
+    final epoch = ++_sessionEpoch;
+    try {
+      await auth.logout();
+    } finally {
+      // AuthApi may already increment revision while clearing its old tokens.
+      if (ref.mounted &&
+          epoch == _sessionEpoch &&
+          identical(ref.read(apiClientProvider), api) &&
+          state.account?.id == account.id &&
+          api.sessionRevision <= revision + 1) {
+        _ended(null);
+      }
     }
-    await auth.logout();
-    _forgetImages();
-    state = const ServerSessionState();
+  }
+
+  /// Used after password change/current-session revocation. Never touches a
+  /// newer login, and local cleanup does not depend on optional push/storage.
+  Future<void> finishSecuritySession(
+    ApiClient api,
+    String account,
+    int revision,
+    String notice,
+  ) async {
+    if (!ref.mounted ||
+        !identical(ref.read(apiClientProvider), api) ||
+        state.account?.id != account ||
+        api.sessionRevision != revision) {
+      return;
+    }
+    _ended(notice);
+    try {
+      await api.clearTokens();
+    } catch (_) {
+      /* Server credentials are already revoked. */
+    }
   }
 
   /// Photos already on screen stay in Flutter's image cache; drop them.

@@ -91,6 +91,7 @@ final class Router
         $regex = preg_replace_callback(
             '#\{([a-zA-Z_]+)\}#',
             static fn (array $m): string => match ($m[1]) {
+                'sessionId' => '(?P<sessionId>[a-f0-9]{32})',
                 'token' => '(?P<token>[A-Za-z0-9_-]{16,128})',
                 'mediaId', 'uploadId' => '(?P<' . $m[1] . '>[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})',
                 'size' => '(?P<size>thumb|medium|full)',

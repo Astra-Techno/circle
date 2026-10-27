@@ -27,6 +27,14 @@ class SlowStore extends MemoryTokenStore {
   }
 }
 
+class FailingClearStore extends MemoryTokenStore {
+  FailingClearStore(super.tokens);
+  @override
+  Future<void> clear() async {
+    throw StateError('Fictional storage unavailable');
+  }
+}
+
 class ReLoginBeforeLogout extends ApiClient {
   ReLoginBeforeLogout(FakeHandler handler, MemoryTokenStore store)
     : super(config: config, tokens: store, adapter: FakeHttpAdapter(handler));
@@ -37,6 +45,8 @@ class ReLoginBeforeLogout extends ApiClient {
     bool auth = true,
     String? expectedAccount,
     int? expectedSession,
+    bool replay = true,
+    Map<String, String>? headers,
   }) async {
     if (path == '/auth/logout') await saveTokens(pair('1', '-new-login'));
     return super.post(
@@ -45,11 +55,31 @@ class ReLoginBeforeLogout extends ApiClient {
       auth: auth,
       expectedAccount: expectedAccount,
       expectedSession: expectedSession,
+      replay: replay,
+      headers: headers,
     );
   }
 }
 
 void main() {
+  test(
+    'session expiry still notifies cleanup when token storage fails',
+    () async {
+      final api = client(
+        (r) async => FakeResponse.ok(null),
+        FailingClearStore(pair('1')),
+      );
+      await api.currentTokens();
+      var ended = false;
+      api.onSessionEnded = (_) {
+        ended = true;
+      };
+      await expectLater(api.endSession('Session ended.'), throwsStateError);
+      expect(await api.currentTokens(), isNull);
+      expect(ended, isTrue);
+    },
+  );
+
   test(
     'logout cannot revoke a newer same-account login before dispatch',
     () async {

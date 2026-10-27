@@ -1,3 +1,4 @@
+import '../features/profile/presentation/account_security_screens.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,6 +70,8 @@ String? circleReturnDestination(String? input) {
         '/you/privacy',
         '/you/notifications',
         '/you/account',
+        '/you/account/password',
+        '/you/account/sessions',
         '/you/invitations',
         '/activity',
         '/search',
@@ -598,6 +601,30 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'account',
+                    routes: [
+                      GoRoute(
+                        path: 'password',
+                        builder: (_, _) =>
+                            ref.read(circleFeaturesProvider).server
+                            ? const ChangePasswordScreen()
+                            : const CircleEmpty(
+                                title: 'Real accounts only',
+                                message:
+                                    'Password changes aren’t part of the fictional preview.',
+                              ),
+                      ),
+                      GoRoute(
+                        path: 'sessions',
+                        builder: (_, _) =>
+                            ref.read(circleFeaturesProvider).server
+                            ? const SessionsScreen()
+                            : const CircleEmpty(
+                                title: 'Real accounts only',
+                                message:
+                                    'Device sessions aren’t part of the fictional preview.',
+                              ),
+                      ),
+                    ],
                     builder: (_, _) => const AccountScreen(),
                   ),
                 ],

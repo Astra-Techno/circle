@@ -1,5 +1,6 @@
 package com.circlecommunity.mobile
 
+import android.os.Build
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.net.Uri
@@ -81,6 +82,17 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "circle/session_device")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "details") {
+                    val info = packageManager.getPackageInfo(packageName, 0)
+                    result.success(mapOf(
+                        "device_label" to "${Build.MANUFACTURER} ${Build.MODEL}",
+                        "os_version" to "Android ${Build.VERSION.RELEASE}",
+                        "app_version" to "${info.versionName} (${if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()})"
+                    ))
+                } else result.notImplemented()
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "circle/invite_share")
             .setMethodCallHandler { call, result ->
                 when (call.method) {

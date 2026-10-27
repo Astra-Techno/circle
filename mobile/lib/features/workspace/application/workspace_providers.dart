@@ -159,10 +159,13 @@ class CircleWorkspaceController extends AsyncNotifier<CircleWorkspace> {
   /// window are sent first, so nothing the person removed comes back.
   Future<void> logOut() async {
     final repository = _repository;
-    if (repository is ApiCircleRepository) {
-      await repository.flushPendingDeletes();
+    try {
+      if (repository is ApiCircleRepository) {
+        await repository.flushPendingDeletes();
+      }
+    } finally {
+      await ref.read(serverSessionProvider.notifier).logOut();
     }
-    await ref.read(serverSessionProvider.notifier).logOut();
   }
 
   /// Fetches the latest from the server (pull to refresh).

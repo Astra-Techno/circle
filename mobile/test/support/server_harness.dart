@@ -1,3 +1,4 @@
+import 'package:mobile/core/platform/session_device.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -28,6 +29,7 @@ class FakePhotoPicker implements PhotoPicker {
 Future<ProviderContainer> openServerCircle(
   WidgetTester tester,
   FakeCircleServer server, {
+  SessionDevice? sessionDevice,
   ApiConfig? config,
   TokenStore? tokens,
   PhotoPicker? picker,
@@ -43,6 +45,8 @@ Future<ProviderContainer> openServerCircle(
   });
   final container = ProviderContainer(
     overrides: [
+      if (sessionDevice != null)
+        sessionDeviceProvider.overrideWithValue(sessionDevice),
       apiConfigProvider.overrideWithValue(config ?? testServer),
       localSettingsStoreProvider.overrideWithValue(
         settings ?? MemoryLocalSettingsStore(),

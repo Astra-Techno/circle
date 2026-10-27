@@ -140,9 +140,13 @@ class ApiClient {
     if (expectedSession != null && expectedSession != _sessionRevision) return;
     final endedRevision = _sessionRevision + 1;
     final hadSession = _tokens != null;
-    await clearTokens();
-    if (hadSession && _sessionRevision == endedRevision) {
-      onSessionEnded?.call(message);
+    try {
+      await clearTokens();
+    } finally {
+      // A secure-storage failure must not retain the old account/private UI.
+      if (hadSession && _sessionRevision == endedRevision) {
+        onSessionEnded?.call(message);
+      }
     }
   }
 
@@ -263,32 +267,45 @@ class ApiClient {
     bool auth = true,
     String? expectedAccount,
     int? expectedSession,
+    bool replay = true,
+    Map<String, String>? headers,
   }) => _send(
     () => dio.post<Object?>(
       path,
       data: body,
-      options: _options(auth, expectedAccount, expectedSession),
+      options: Options(
+        headers: headers,
+        extra: {
+          ...?_options(auth, expectedAccount, expectedSession)?.extra,
+          if (!replay) 'circle.noReplay': true,
+        },
+      ),
     ),
   );
 
-  Future<Object?> patch(String path, {Object? body, String? expectedAccount}) =>
-      _send(
-        () => dio.patch<Object?>(
-          path,
-          data: body,
-          options: _options(true, expectedAccount),
-        ),
-      );
+  Future<Object?> patch(
+    String path, {
+    Object? body,
+    String? expectedAccount,
+    int? expectedSession,
+  }) => _send(
+    () => dio.patch<Object?>(
+      path,
+      data: body,
+      options: _options(true, expectedAccount, expectedSession),
+    ),
+  );
 
   Future<Object?> delete(
     String path, {
     Map<String, Object?>? query,
     String? expectedAccount,
+    int? expectedSession,
   }) => _send(
     () => dio.delete<Object?>(
       path,
       queryParameters: query,
-      options: _options(true, expectedAccount),
+      options: _options(true, expectedAccount, expectedSession),
     ),
   );
 
@@ -434,7 +451,8 @@ class _AuthInterceptor extends Interceptor {
       );
       return handler.next(err);
     }
-    if (!client.allowRefresh ||
+    if (options.extra['circle.noReplay'] == true ||
+        !client.allowRefresh ||
         response.statusCode != 401 ||
         (code != 'invalid_token' && code != 'unauthorized')) {
       return handler.next(err);

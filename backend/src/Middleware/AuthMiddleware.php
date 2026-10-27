@@ -44,6 +44,8 @@ final class AuthMiddleware
             Response::forbidden('This account is not active.', 'account_inactive');
         }
 
+        \Circle\Repositories\LoginSessionRepository::touch($claims['user_id'], $claims['session_id'], $request);
+
         $next($request
             ->withAttr('user_id', $claims['user_id'])
             ->withAttr('session_id', $claims['session_id']));

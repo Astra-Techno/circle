@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Circle\Controllers;
 
 use Circle\Core\Database;
+use Circle\Repositories\LoginSessionRepository;
 use Circle\Core\Env;
 use Circle\Core\JWT;
 use Circle\Core\Passwords;
@@ -110,7 +111,7 @@ final class AuthController
 
         // Serialize issuance with password changes, never issue an old-password
         // login after another request has changed/revoked this account.
-        $tokens = Database::transaction(static function () use ($userId, $hash, $password): ?array {
+        $tokens = Database::transaction(static function () use ($userId, $hash, $password, $request): ?array {
             $live = Database::queryOne('SELECT password_hash, status FROM users WHERE id = :id FOR UPDATE', ['id' => $userId]);
             if ($live === null || $live['status'] !== 'active' || $live['password_hash'] !== $hash) {
                 return null;
@@ -122,6 +123,7 @@ final class AuthController
             $sessionId = bin2hex(random_bytes(16));
             $tokens = JWT::issueTokens($userId, $sessionId);
             self::storeRefreshToken($userId, $sessionId, $tokens['refresh_token']);
+            LoginSessionRepository::start($userId, $sessionId, $request);
             return $tokens;
         });
         if ($tokens === null) {
@@ -258,6 +260,7 @@ final class AuthController
     {
         $sessionId = $request->attr('session_id');
         Database::transaction(static function () use ($request, $sessionId): void {
+            Database::queryOne('SELECT id FROM users WHERE id = :uid FOR UPDATE', ['uid' => $request->userId()]);
             self::revokeSession($request->userId(), is_string($sessionId) ? $sessionId : '');
         });
 

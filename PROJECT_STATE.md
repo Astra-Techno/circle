@@ -9,26 +9,26 @@ Updated: 27 October 2026. Inspect Git status before work; source, deployment and
 - Server core includes auth, private profiles/media, nested groups/membership/invite links, Memories/comments/reactions/saves/search. Chat/events/albums remain isolated previews, pending actual service batches.
 
 ## Current batch
-- Owner requested contact-first group invitations plus Copy link. Pulled main through ad0578d, preserving local invitation work and incoming design samples/build11/debugging additions.
-- OpenAPI0.3.7: one confirmed E164 contact, persistent recipient-owned list/detail/accept/decline, 20 attempts/hour, expiry/cooldown/immutable IDs, exact-group and parent/ban/removal enforcement. No automatic joining; member invitations obey approval.
-- Groups/You inbox persists independently of push. Invite opens single-record picker; unregistered contacts offer WhatsApp/SMS. Copy remains independently available; long link/settings moved to Manage invite link. No address-book upload or broad contacts/SMS permission.
-- Migrations011/012 persist invitations and transactional scoped group.invitation outbox. Worker/preferences/quiet hours/session checks plus foreground/background/taps implemented. Memory authorization/envelope remains separate. Source push retains explicit optional flag; production candidate enables it.
-- Backend S1a password API0.3.6 foundation is included in the deployed source; S1b client password form is still pending. This invitation batch takes priority at owner request.
+- S1b plus owner-requested active-device/session controls. Pulled main safely through5e38ce5; contact-first invitations remain in place.
+- OpenAPI0.3.8/migration013: owner-only active session list, separate public handles, device/OS/app labels, login/activity/IP timestamps and individual current/remote revocation. User-first locks serialize credential changes; revoked access/refresh/device registrations cannot survive.
+- Android device details update optionally after login, without delaying authentication. Optional one-shot foreground location stores only a removable city/region/country label and timestamp. No background tracking, coordinates or hardware IDs are sent to CIRCLE.
+- You → Account exposes Your devices and Change password. Password mutation uses no-replay, explicit success, raw current/new/confirm fields and safe ambiguous-outcome guidance. Auth/drafts/images/push cleanup is independent and guarded against newer sessions. Normal logout keeps the existing welcome navigation.
+- Evidence and phone acceptance: docs/account-security-sessions.md. Recovery/security alert channels, registration policy alignment and broader privacy controls remain pending.
 
 ## Validation
-- Dedicated circle_test:184 tests /3,087 assertions; PHPStan clean. Contract YAML parses and all internal references resolve.
-- Flutter full:613 passed /1 skipped /13 known Windows-baseline golden failures on Linux. Final focused invite/push/design:48 passed; format/analyze clean. Invite phone/tablet, light/dark at200% rendered and inspected; Copy works independently of contacts.
+- Dedicated circle_test:190 tests /3,167 assertions; PHPStan clean. Contract YAML parses and all internal references resolve.
+- Flutter full:632 passed /1 skipped /13 known Windows-baseline golden failures on Linux. Final focused login/security/design/guards:45 passed, including storage-failure cleanup added after full run. Format/analyze clean; eight security phone/tablet light/dark200% renders inspected.
 - Existing thirteen Windows-baseline golden comparisons fail on Linux; preserve approved baselines. One known skipped test. No Android device attached.
 
 ## Release versus live
-- Incoming build11 preserved as immutable; current verified live main download is Android1.0.11+12.
+- Candidate Android1.0.12+13 packaged: 65,129,974 bytes, SHA256 668516107c74d4005c988bb9e62688bbfeecfb0127ae43eeb292fc41b3263bfe; production API/previewfalse/client pushtrue, established certificate, existing coarse-location only. Stable/versioned/JSON/both buttons align; no deployment inferred. Older immutable releases preserved.
 - Packaged Android1.0.11+12, production HTTPS API/previewfalse/client pushtrue; 65,015,086 bytes, SHA256 8c1047e10c97c9e73914ab97fdaf88728a1b79d156bdc0359fd03e600976b59e. Stable/immutable APKs, metadata and both buttons align; original certificate and no broad contacts/SMS permission verified. Deployed successfully (117.1s response); complete hosted stable/immutable APK hashes match, metadata/both buttons verified, correct cache headers, API healthy and invitation routes reject unauthenticated access. Migrations011/012 applied.
 - Established beta certificate SHA256:6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c. Preserve earlier immutable APKs; never overwrite them.
 - Deployer preserves hosted .env, storage, PHP handlers and deploy.php itself. Successful push is not deployment evidence.
 
 ## Remaining acceptance and next work
 - Owner confirmed private server sender/cron ready and can test APK. Real device update, contact-provider/WhatsApp/SMS and foreground/minimized/closed push/tap results remain pending.
-- Later feature order and notification matrix: docs/pending-work.md. Resume S1b password client/cleanup, then safety/privacy, live Chats, live Events, polls/albums in verified batches.
+- Later feature order and notification matrix: docs/pending-work.md. S1b/session controls are the current batch; safety/privacy, live Chats, live Events, polls/albums follow in verified batches.
 - Evidence: docs/contact-invite-sharing.md, docs/push-device-acceptance.md, docs/password-change-foundation.md.
 
 ## Commands

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Circle;
 
 use Circle\Controllers\AuthController;
+use Circle\Controllers\SessionController;
 use Circle\Controllers\DeviceController;
 use Circle\Controllers\NotificationPreferenceController;
 use Circle\Controllers\ProfilePhotoController;
@@ -125,6 +126,9 @@ final class App
         // ── Protected API ────────────────────────────────────────
         $router->group('/api/v1', ['rate', 'auth'], static function (Router $r): void {
             // Profile
+            $r->get('/me/sessions', SessionController::index(...));
+            $r->delete('/me/sessions/{sessionId}', SessionController::revoke(...));
+            $r->patch('/me/session', SessionController::update(...));
             $r->get('/me', AuthController::me(...));
             $r->patch('/me', AuthController::updateMe(...));
             $r->put('/me/photos/{kind}', ProfilePhotoController::put(...));
