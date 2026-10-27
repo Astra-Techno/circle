@@ -13,7 +13,7 @@ Updated: 27 October 2026. Inspect Git status before work; source, deployment and
 - OpenAPI0.3.7: one confirmed E164 contact, persistent recipient-owned list/detail/accept/decline, 20 attempts/hour, expiry/cooldown/immutable IDs, exact-group and parent/ban/removal enforcement. No automatic joining; member invitations obey approval.
 - Groups/You inbox persists independently of push. Invite opens single-record picker; unregistered contacts offer WhatsApp/SMS. Copy remains independently available; long link/settings moved to Manage invite link. No address-book upload or broad contacts/SMS permission.
 - Migrations011/012 persist invitations and transactional scoped group.invitation outbox. Worker/preferences/quiet hours/session checks plus foreground/background/taps implemented. Memory authorization/envelope remains separate. Source push retains explicit optional flag; production candidate enables it.
-- Backend S1a password API0.3.6 foundation is included; S1b client password form is still pending. This invitation batch takes priority at owner request.
+- Backend S1a password API0.3.6 foundation is included in the deployed source; S1b client password form is still pending. This invitation batch takes priority at owner request.
 
 ## Validation
 - Dedicated circle_test:184 tests /3,087 assertions; PHPStan clean. Contract YAML parses and all internal references resolve.
@@ -21,8 +21,8 @@ Updated: 27 October 2026. Inspect Git status before work; source, deployment and
 - Existing thirteen Windows-baseline golden comparisons fail on Linux; preserve approved baselines. One known skipped test. No Android device attached.
 
 ## Release versus live
-- Incoming main contains immutable Android1.0.10+11 and matching stable metadata/site links. Its live deployment is not inferred from Git.
-- Packaged Android1.0.11+12, production HTTPS API/previewfalse/client pushtrue; 65,015,086 bytes, SHA256 8c1047e10c97c9e73914ab97fdaf88728a1b79d156bdc0359fd03e600976b59e. Stable/immutable APKs, metadata and both buttons align; original certificate and no broad contacts/SMS permission verified. Hosted verification pending.
+- Incoming build11 preserved as immutable; current verified live main download is Android1.0.11+12.
+- Packaged Android1.0.11+12, production HTTPS API/previewfalse/client pushtrue; 65,015,086 bytes, SHA256 8c1047e10c97c9e73914ab97fdaf88728a1b79d156bdc0359fd03e600976b59e. Stable/immutable APKs, metadata and both buttons align; original certificate and no broad contacts/SMS permission verified. Deployed successfully (117.1s response); complete hosted stable/immutable APK hashes match, metadata/both buttons verified, correct cache headers, API healthy and invitation routes reject unauthenticated access. Migrations011/012 applied.
 - Established beta certificate SHA256:6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c. Preserve earlier immutable APKs; never overwrite them.
 - Deployer preserves hosted .env, storage, PHP handlers and deploy.php itself. Successful push is not deployment evidence.
 
