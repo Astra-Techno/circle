@@ -17,13 +17,13 @@ Updated: 27 October 2026. Inspect Git status; source, deployment and physical ac
 - Previous build15 person-avatar sweep and build16 private group picture/banner controls remain included; photos need no re-upload. See docs/person-avatar-audit.md and docs/group-photos.md.
 
 ## Validation
-- Dedicated circle_test201 tests/3,466 assertions, PHPStan/composer validation clean. Covers limits/privacy/exact roles/duplicate/stale actions/removed sessions, nested comments, signed media and admin-alert demotion cancellation.
+- Dedicated circle_test202 tests/3,514 assertions, PHPStan/composer validation clean. Covers limits/privacy/exact roles/duplicate/stale actions/removed sessions, nested comments, signed media and admin-alert demotion cancellation.
 - Final full Flutter676 passed/1 skipped/13 known Windows-baseline golden failures; no functional failures. Final focused UI/push/design28 passed; format/analyze clean. Approved goldens unchanged.
 - Four report light/dark phone/tablet200% renders inspected. Contract377 references/63 unique operations verified; backend/frontend mapping and authorization reviewed.
 - No attached Android device. Native picker/install, actual push/taps and two-phone privacy/photo visibility remain owner acceptance.
 
 ## Release versus live
-- Current safety candidate1.0.16+17 packaged: 65,261,102 bytes SHA2565da05df9bf69bccf781fcb293a7a4c36bad484ad999e3abdfc36d93eb2d61c35; not yet claimed pushed/deployed. See docs/mobile-release-1.0.16.md.
+- Current safety candidate1.0.16+17 packaged: 65,261,102 bytes SHA2565da05df9bf69bccf781fcb293a7a4c36bad484ad999e3abdfc36d93eb2d61c35; APK/source137ddc3 pushed/deployed with migration015; hosted stable/versioned hashes/buttons/cache verified. Server-only cleanup/depth fixes verified; corrected backend deployment pending. See docs/mobile-release-1.0.16.md.
 - Previously verified live release: Android1.0.15+16, source4aeef59;65,244,718 bytes SHA2566fcd6afd16ddf5cf5e4bba9c677555de7c9844ee00c525e7f728121e8b63dc45. Stable/versioned/JSON/both buttons align; earlier immutable APKs preserved.
 - Pushed/deployed successfully:158.0s response/155.7s script; migration014 applied. Full hosted stable/versioned hashes match, including plain circle.apk without cache-busting; no-store stable and long-lived immutable cache headers verified. API healthy; private person/group avatar/cover reads reject unauthenticated access.
 - Established certificate SHA2566c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c matches build15; package/versionCode16/minSdk24/targetSdk36 verified. Production API/previewfalse/client pushtrue; build153s. AOT includes group-photo and person-avatar code.

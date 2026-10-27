@@ -17,10 +17,10 @@ final class MemoryController
 {
     /** Only active comment branches are visible; hiding a parent hides its descendants. */
     private const VISIBLE_COMMENTS = "WITH RECURSIVE visible_comments AS (
-        SELECT c.id,c.memory_id FROM comments c JOIN memories vm ON vm.id=c.memory_id AND vm.status='active'
+        SELECT c.id,c.memory_id,0 AS depth FROM comments c JOIN memories vm ON vm.id=c.memory_id AND vm.status='active'
         JOIN group_members vg ON vg.group_id=vm.group_id AND vg.user_id=:visible_viewer AND vg.status='active'
         WHERE c.parent_id IS NULL AND c.status='active'
-        UNION ALL SELECT c.id,c.memory_id FROM comments c JOIN visible_comments p ON c.parent_id=p.id AND c.memory_id=p.memory_id WHERE c.status='active'
+        UNION ALL SELECT c.id,c.memory_id,p.depth+1 FROM comments c JOIN visible_comments p ON c.parent_id=p.id AND c.memory_id=p.memory_id WHERE c.status='active' AND p.depth<31
     ) ";
 
     public static function commentIsVisible(int $id, int $userId): bool
@@ -368,11 +368,11 @@ final class MemoryController
         if ($parentId !== null && $parentId !== '') {
             $pid = is_int($parentId) || (is_string($parentId) && ctype_digit($parentId)) ? (int) $parentId : 0;
             $parent = Database::queryOne(
-                self::VISIBLE_COMMENTS . 'SELECT id FROM visible_comments WHERE id = :id AND memory_id = :mid',
+                self::VISIBLE_COMMENTS . 'SELECT id FROM visible_comments WHERE id = :id AND memory_id = :mid AND depth<31',
                 ['id' => $pid, 'mid' => $memoryId, 'visible_viewer' => $userId]
             );
             if ($parent === null) {
-                Response::validationError('parent_id must be a comment on the same Memory.');
+                Response::validationError('Choose a visible parent in this Memory; reply threads support at most 32 levels.');
             }
         }
 

@@ -62,6 +62,19 @@ final class ModerationTest extends ApiTestCase
         self::assertSame(401,$this->request('POST',"/api/v1/groups/$gid/reports",$draft,$reporter['token'])->status());
     }
 
+    public function testReplyDepthCannotBreakVisibleCommentQueries(): void
+    {
+        $owner=$this->user(); $gid=$this->createGroup($owner); $mid=$this->createMemory($owner,$gid,'Fictional deep thread');
+        $parent=null;
+        for ($depth=0;$depth<32;$depth++) {
+            $reply=$this->request('POST',"/api/v1/memories/$mid/comments",['body'=>'Level '.$depth,'parent_id'=>$parent],$owner['token']);
+            self::assertSame(201,$reply->status()); $parent=$reply->data()['id'];
+        }
+        self::assertSame(422,$this->request('POST',"/api/v1/memories/$mid/comments",['body'=>'Too deep','parent_id'=>$parent],$owner['token'])->status());
+        self::assertCount(32,$this->request('GET',"/api/v1/memories/$mid",[],$owner['token'])->data()['comments']);
+        self::assertSame(32,$this->request('GET','/api/v1/memories',[],$owner['token'])->data()[0]['comment_count']);
+    }
+
     public function testHiddenParentSuppressesRepliesCountsAndNewRepliesWithoutUndoingIndependentHides(): void
     {
         $owner=$this->user(); $writer=$this->user('Writer'); $reporter=$this->user('Reporter'); $gid=$this->createGroup($owner);
@@ -82,6 +95,13 @@ final class ModerationTest extends ApiTestCase
         $item=array_values(array_filter($items,static fn(array $i):bool=>$i['target_id']===$root))[0];
         self::assertSame(200,$this->request('POST',"/api/v1/groups/$gid/reports/{$item['id']}/actions",['action'=>'unhide','version'=>$item['version']],$owner['token'])->status());
         self::assertCount(1,$this->request('GET',"/api/v1/memories/$mid",[],$reporter['token'])->data()['comments']);
+        self::assertSame(200,$this->request('DELETE',"/api/v1/memories/$mid",[],$owner['token'])->status());
+        $removed=$this->request('GET',"/api/v1/groups/$gid/reports",[],$owner['token'])->data()['items'];
+        foreach ($removed as $case) {
+            self::assertFalse($case['available']);
+            self::assertSame(200,$this->request('POST',"/api/v1/groups/$gid/reports/{$case['id']}/actions",['action'=>'dismiss','version'=>$case['version']],$owner['token'])->status());
+        }
+        self::assertSame([],$this->request('GET',"/api/v1/groups/$gid/reports",[],$owner['token'])->data()['items']);
         $parent=$this->createGroup($owner); $parentOnly=$this->user('Parent admin');
         Database::execute("INSERT INTO group_members(group_id,user_id,role,status) VALUES(:g,:u,'admin','active')",['g'=>$parent,'u'=>$parentOnly['id']]);
         self::assertSame(403,$this->request('GET',"/api/v1/groups/$gid/reports",[],$parentOnly['token'])->status());

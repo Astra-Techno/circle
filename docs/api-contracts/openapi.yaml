@@ -979,7 +979,8 @@ paths:
         Hiding Memory blocks all ordinary lists/Saved/search/detail/mutations and
         existing signed photo links, for admins too. Restoring retains deleted-asset
         state. Hiding a comment suppresses its descendant branch and counts; restoring
-        a parent never unhides a separately hidden descendant. Admin queue is the only
+        a parent never unhides a separately hidden descendant. Reply trees are
+        bounded at32 levels; deeper parents are rejected with422 to bound recursion. Admin queue is the only
         private inspection surface. Dismiss/reopen affects reports, not visibility.
         No reporter identities, notes or content in audit/push. Existing member-role,
         owner-protection and removal rules still apply through Members controls.
@@ -1793,6 +1794,7 @@ paths:
       operationId: addComment
       tags: [Memories]
       summary: Comment on a Memory (members)
+      description: Parents must be visible comments of the same Memory. Threads support at most32 levels; deeper parents return422. Hidden/removed branches are not reply targets.
       requestBody:
         required: true
         content:

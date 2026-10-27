@@ -79,7 +79,7 @@ final class ModerationController
         $gid=(int)$request->param('id');
         MemberRepository::requireAdmin($gid,$request->userId());
         $offset=$request->queryInt('offset',0,0,1000000); $limit=$request->queryInt('limit',30,1,50);
-        $rows=Database::query('SELECT t.* FROM moderation_targets t WHERE t.group_id=:gid AND (EXISTS(SELECT 1 FROM reports r WHERE r.target_id=t.id AND r.dismissed=0) OR (t.kind=\'memory\' AND EXISTS(SELECT 1 FROM memories m WHERE m.id=t.target_id AND m.status=\'hidden\')) OR (t.kind=\'comment\' AND EXISTS(SELECT 1 FROM comments c WHERE c.id=t.target_id AND c.status=\'hidden\'))) ORDER BY t.updated_at DESC,t.id DESC LIMIT :lim OFFSET :off', ['gid'=>$gid,'lim'=>$limit+1,'off'=>$offset]);
+        $rows=Database::query('SELECT t.* FROM moderation_targets t WHERE t.group_id=:gid AND (EXISTS(SELECT 1 FROM reports r WHERE r.target_id=t.id AND r.dismissed=0) OR (t.kind=\'memory\' AND EXISTS(SELECT 1 FROM memories m WHERE m.id=t.target_id AND m.status=\'hidden\')) OR (t.kind=\'comment\' AND EXISTS(SELECT 1 FROM comments c JOIN memories cm ON cm.id=c.memory_id WHERE c.id=t.target_id AND c.status=\'hidden\' AND cm.status<>\'removed\'))) ORDER BY t.updated_at DESC,t.id DESC LIMIT :lim OFFSET :off', ['gid'=>$gid,'lim'=>$limit+1,'off'=>$offset]);
         $more=count($rows)>$limit; if ($more) array_pop($rows);
         $items=[];
         foreach ($rows as $row) {
