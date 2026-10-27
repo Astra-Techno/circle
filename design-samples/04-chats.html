@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>CIRCLE - Chats</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --primary: #050c25; --secondary: #5753ac; --secondary-light: #a29efd;
+    --coral: #de6751; --surface: #f9f9ff; --surface-container-low: #f0f3ff;
+    --surface-high: #e2e8f9; --surface-highest: #dce2f3;
+    --on-surface: #151c27; --on-surface-variant: #46464d;
+    --outline: #76767e; --outline-variant: #c6c6ce;
+    --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--surface); color: var(--on-surface); max-width: 430px; margin: 0 auto; min-height: 100dvh; padding-bottom: 80px; }
+
+  .app-bar {
+    position: sticky; top: 0; z-index: 10; padding: 12px 20px;
+    background: rgba(249,249,255,0.92); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid rgba(198,198,206,0.4);
+  }
+  .app-bar h1 { font-size: 22px; font-weight: 800; }
+  .icon-btn {
+    width: 40px; height: 40px; border: none; background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px; color: var(--on-surface);
+  }
+
+  /* Search */
+  .search-bar {
+    margin: 12px 20px;
+    height: 44px; display: flex; align-items: center; gap: 8px;
+    background: var(--surface-container-low); border-radius: 14px;
+    padding: 0 14px; border: 1px solid var(--outline-variant);
+  }
+  .search-bar svg { color: var(--outline); flex-shrink: 0; }
+  .search-bar input {
+    flex: 1; border: none; background: none; outline: none;
+    font-family: var(--font); font-size: 15px; color: var(--on-surface);
+  }
+  .search-bar input::placeholder { color: var(--outline); }
+
+  /* Filter chips */
+  .filters {
+    display: flex; gap: 8px; padding: 4px 20px 12px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 600;
+    border: 1.5px solid var(--outline-variant);
+    background: #fff; color: var(--on-surface-variant);
+    white-space: nowrap; cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+  .chip.active {
+    background: var(--primary); color: #fff;
+    border-color: var(--primary);
+  }
+
+  /* Chat list */
+  .chat-list { padding: 0; }
+  .chat-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .chat-item:hover { background: var(--surface-container-low); }
+  .chat-avatar-wrapper { position: relative; flex-shrink: 0; }
+  .chat-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    object-fit: cover; border: 1px solid var(--outline-variant);
+  }
+  .online-dot {
+    position: absolute; bottom: 1px; right: 1px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #22c55e; border: 2.5px solid var(--surface);
+  }
+  .chat-body { flex: 1; min-width: 0; }
+  .chat-top { display: flex; align-items: baseline; justify-content: space-between; }
+  .chat-name { font-size: 15px; font-weight: 700; }
+  .chat-time { font-size: 12px; color: var(--on-surface-variant); flex-shrink: 0; }
+  .chat-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+  .chat-preview {
+    font-size: 13px; color: var(--on-surface-variant);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1; margin-right: 8px;
+  }
+  .chat-preview.unread { color: var(--on-surface); font-weight: 600; }
+  .unread-badge {
+    min-width: 20px; height: 20px; padding: 0 6px;
+    background: var(--secondary); color: #fff;
+    font-size: 11px; font-weight: 700;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Group chat avatar */
+  .group-avatar {
+    width: 52px; height: 52px;
+    background: var(--surface-high); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--secondary); font-size: 18px; font-weight: 800;
+    border: 1px solid var(--outline-variant);
+  }
+
+  .section-label {
+    padding: 16px 20px 8px;
+    font-size: 12px; font-weight: 600;
+    color: var(--on-surface-variant);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Bottom nav (same as home) */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px; height: 72px;
+    background: rgba(249,249,255,0.95); backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(198,198,206,0.4);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 0 8px; z-index: 50;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px 12px; border: none; background: none; cursor: pointer;
+    font-family: var(--font); color: var(--on-surface-variant); position: relative;
+  }
+  .nav-item.active { color: var(--primary); }
+  .nav-item.active::before {
+    content: ''; position: absolute; top: 0; left: 8px; right: 8px; height: 3px;
+    background: var(--secondary); border-radius: 0 0 2px 2px;
+  }
+  .nav-item svg { width: 24px; height: 24px; }
+  .nav-label { font-size: 10px; font-weight: 600; }
+  .nav-badge {
+    position: absolute; top: 2px; right: 6px;
+    min-width: 16px; height: 16px; padding: 0 4px;
+    background: var(--coral); color: #fff; font-size: 10px; font-weight: 700;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-bar">
+  <h1>Chats</h1>
+  <button class="icon-btn">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+  </button>
+</div>
+
+<div class="search-bar">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <input type="text" placeholder="Search conversations..."/>
+</div>
+
+<div class="filters">
+  <button class="chip active">All</button>
+  <button class="chip">Unread</button>
+  <button class="chip">Groups</button>
+  <button class="chip">Direct</button>
+  <button class="chip">Archived</button>
+</div>
+
+<div class="section-label">Recent</div>
+
+<div class="chat-list">
+  <div class="chat-item">
+    <div class="chat-avatar-wrapper">
+      <img class="chat-avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=104&h=104&fit=crop&crop=faces" alt=""/>
+      <div class="online-dot"></div>
+    </div>
+    <div class="chat-body">
+      <div class="chat-top"><span class="chat-name">Priya Sharma</span><span class="chat-time">2m</span></div>
+      <div class="chat-bottom"><span class="chat-preview unread">Did you see the photos from Sunday?</span><span class="unread-badge">2</span></div>
+    </div>
+  </div>
+
+  <div class="chat-item">
+    <div class="chat-avatar-wrapper">
+      <div class="group-avatar">SF</div>
+    </div>
+    <div class="chat-body">
+      <div class="chat-top"><span class="chat-name">Smith Family</span><span class="chat-time">15m</span></div>
+      <div class="chat-bottom"><span class="chat-preview unread">Mom: Dinner at 7 tonight!</span><span class="unread-badge">5</span></div>
+    </div>
+  </div>
+
+  <div class="chat-item">
+    <div class="chat-avatar-wrapper">
+      <img class="chat-avatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=104&h=104&fit=crop&crop=faces" alt=""/>
+    </div>
+    <div class="chat-body">
+      <div class="chat-top"><span class="chat-name">Arjun Patel</span><span class="chat-time">1h</span></div>
+      <div class="chat-bottom"><span class="chat-preview">Let's plan the hiking trip</span></div>
+    </div>
+  </div>
+
+  <div class="chat-item">
+    <div class="chat-avatar-wrapper">
+      <div class="group-avatar">CC</div>
+      <div class="online-dot"></div>
+    </div>
+    <div class="chat-body">
+      <div class="chat-top"><span class="chat-name">College Crew</span><span class="chat-time">3h</span></div>
+      <div class="chat-bottom"><span class="chat-preview">Karthik: Who's coming this weekend?</span></div>
+    </div>
+  </div>
+
+  <div class="chat-item">
+    <div class="chat-avatar-wrapper">
+      <img class="chat-avatar" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=104&h=104&fit=crop&crop=faces" alt=""/>
+    </div>
+    <div class="chat-body">
+      <div class="chat-top"><span class="chat-name">Meera Singh</span><span class="chat-time">Yesterday</span></div>
+      <div class="chat-bottom"><span class="chat-preview">Thanks for the recipe!</span></div>
+    </div>
+  </div>
+
+  <div class="chat-item">
+    <div class="chat-avatar-wrapper">
+      <div class="group-avatar">OT</div>
+    </div>
+    <div class="chat-body">
+      <div class="chat-top"><span class="chat-name">Office Team</span><span class="chat-time">Yesterday</span></div>
+      <div class="chat-bottom"><span class="chat-preview">You: Shared the quarterly report</span></div>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">Home</span></button>
+  <button class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-label">Chats</span><span class="nav-badge">7</span></button>
+  <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-label">Groups</span></button>
+  <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span class="nav-label">Events</span></button>
+  <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">You</span></button>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>CIRCLE - Welcome</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --primary: #050c25;
+    --primary-light: #1b223c;
+    --secondary: #5753ac;
+    --secondary-light: #a29efd;
+    --tertiary: #260100;
+    --coral: #de6751;
+    --coral-light: #ffb4a6;
+    --surface: #f9f9ff;
+    --surface-dim: #d3daea;
+    --surface-container: #e7eeff;
+    --surface-container-low: #f0f3ff;
+    --surface-high: #e2e8f9;
+    --surface-highest: #dce2f3;
+    --on-surface: #151c27;
+    --on-surface-variant: #46464d;
+    --outline: #76767e;
+    --outline-variant: #c6c6ce;
+    --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--surface);
+    color: var(--on-surface);
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* Hero section with gradient overlay */
+  .hero {
+    position: relative;
+    height: 56vh;
+    overflow: hidden;
+    border-radius: 0 0 32px 32px;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 40%, var(--secondary) 100%);
+  }
+  .hero-pattern {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(162,158,253,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(222,103,81,0.1) 0%, transparent 50%);
+  }
+  .hero-content {
+    position: relative; z-index: 2;
+    height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 0 24px;
+    text-align: center;
+  }
+
+  /* Floating circle photos */
+  .photo-orbit {
+    position: relative;
+    width: 200px; height: 200px;
+    margin-bottom: 32px;
+  }
+  .orbit-ring {
+    position: absolute; inset: -8px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    animation: spin 30s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .photo-bubble {
+    position: absolute;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.9);
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+  .photo-bubble img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .pb-1 { width: 88px; height: 88px; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3; }
+  .pb-2 { width: 64px; height: 64px; top: -8px; left: 50%; transform: translateX(-50%); }
+  .pb-3 { width: 56px; height: 56px; bottom: 0; left: -12px; }
+  .pb-4 { width: 52px; height: 52px; bottom: 8px; right: -8px; }
+  .pb-5 { width: 44px; height: 44px; top: 30%; right: -16px; }
+
+  /* Center logo circle */
+  .pb-1 {
+    background: var(--secondary);
+    display: flex; align-items: center; justify-content: center;
+    border-color: var(--secondary-light);
+  }
+  .pb-1 svg { width: 44px; height: 44px; }
+
+  .hero h1 {
+    font-size: 26px; font-weight: 800;
+    color: #fff;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .hero p {
+    font-size: 14px; font-weight: 400;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Content section */
+  .content {
+    flex: 1;
+    padding: 28px 24px 32px;
+    display: flex; flex-direction: column;
+    gap: 20px;
+  }
+  .tagline {
+    font-size: 28px; font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+    text-align: center;
+    color: var(--on-surface);
+  }
+  .tagline span { color: var(--secondary); }
+
+  .subtitle {
+    font-size: 15px; line-height: 1.6;
+    color: var(--on-surface-variant);
+    text-align: center;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  /* Feature pills */
+  .features {
+    display: flex; flex-direction: column;
+    gap: 10px;
+    margin: 8px 0;
+  }
+  .feature {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface-container-low);
+    border-radius: 14px;
+    border: 1px solid var(--outline-variant);
+  }
+  .feature-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .feature-icon svg { width: 20px; height: 20px; }
+  .fi-private { background: rgba(87,83,172,0.12); color: var(--secondary); }
+  .fi-no-ads { background: rgba(222,103,81,0.12); color: var(--coral); }
+  .fi-safe { background: rgba(5,12,37,0.08); color: var(--primary); }
+  .feature-text {
+    font-size: 14px; font-weight: 600;
+    color: var(--on-surface);
+    line-height: 1.35;
+  }
+
+  /* Buttons */
+  .buttons {
+    display: flex; flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+  }
+  .btn-primary {
+    width: 100%; height: 54px;
+    background: var(--primary);
+    color: #fff;
+    border: none; border-radius: 16px;
+    font-family: var(--font);
+    font-size: 16px; font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 16px rgba(5,12,37,0.2);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-primary:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(5,12,37,0.15); }
+  .btn-secondary {
+    width: 100%; height: 54px;
+    background: var(--surface-high);
+    color: var(--on-surface);
+    border: none; border-radius: 16px;
+    font-family: var(--font);
+    font-size: 16px; font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform 0.15s;
+  }
+  .btn-secondary:active { transform: scale(0.97); }
+  .btn-secondary svg { color: var(--secondary); }
+
+  .legal {
+    text-align: center;
+    font-size: 12px;
+    color: var(--on-surface-variant);
+    line-height: 1.5;
+    padding-bottom: 8px;
+  }
+  .legal a {
+    color: var(--on-surface);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-pattern"></div>
+  <div class="hero-content">
+    <div class="photo-orbit">
+      <div class="orbit-ring"></div>
+      <!-- Center: CIRCLE logo -->
+      <div class="photo-bubble pb-1">
+        <svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 28c-4-6 0-14 8-14s8 6 8 10-4 10-8 10c4 0 8 2 8 10s-4 10-8 10-12-8-8-14"/>
+        </svg>
+      </div>
+      <!-- Surrounding photo bubbles -->
+      <div class="photo-bubble pb-2">
+        <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=128&h=128&fit=crop&crop=faces" alt="Friends laughing"/>
+      </div>
+      <div class="photo-bubble pb-3">
+        <img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?w=112&h=112&fit=crop&crop=faces" alt="Family dinner"/>
+      </div>
+      <div class="photo-bubble pb-4">
+        <img src="https://images.unsplash.com/photo-1543807535-eceef0bc6599?w=104&h=104&fit=crop&crop=faces" alt="College friends"/>
+      </div>
+      <div class="photo-bubble pb-5">
+        <img src="https://images.unsplash.com/photo-1506869640319-fe1a24fd76cb?w=88&h=88&fit=crop&crop=faces" alt="Outdoor group"/>
+      </div>
+    </div>
+    <h1>My Circle.<br/>Billion Memories.</h1>
+    <p>Private Groups. Shared Memories.</p>
+  </div>
+</div>
+
+<div class="content">
+  <p class="subtitle">A private place to stay close, share memories, and celebrate life together — without algorithms, ads, or public noise.</p>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon fi-private">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <span class="feature-text">100% Private to your chosen groups</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon fi-no-ads">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      </div>
+      <span class="feature-text">No follower counts, vanity metrics, or ads</span>
+    </div>
+    <div class="feature">
+      <div class="feature-icon fi-safe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <span class="feature-text">Safe and simple for ages 15 to 75</span>
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button class="btn-primary">
+      Get Started
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+    <button class="btn-secondary">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0M12 15h0M17 15h0"/></svg>
+      I Have an Invite
+    </button>
+  </div>
+
+  <p class="legal">By continuing, you agree to CIRCLE's <a href="#">Community Values</a> & <a href="#">Privacy Pact</a>.</p>
+</div>
+
+</body>
+</html>

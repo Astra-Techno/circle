@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>CIRCLE - Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --primary: #050c25; --secondary: #5753ac; --secondary-light: #a29efd;
+    --coral: #de6751; --teal: #3e978b;
+    --surface: #f9f9ff; --surface-container-low: #f0f3ff;
+    --surface-high: #e2e8f9; --surface-highest: #dce2f3;
+    --on-surface: #151c27; --on-surface-variant: #46464d;
+    --outline: #76767e; --outline-variant: #c6c6ce;
+    --error: #ba1a1a;
+    --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--surface); color: var(--on-surface); max-width: 430px; margin: 0 auto; min-height: 100dvh; padding-bottom: 80px; }
+
+  /* Profile header with cover */
+  .profile-header {
+    position: relative;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    height: 160px;
+  }
+  .profile-header-overlay {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 100%, rgba(162,158,253,0.2) 0%, transparent 50%);
+  }
+
+  .profile-top-bar {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: 12px 16px; display: flex; justify-content: space-between;
+    z-index: 2;
+  }
+  .profile-top-bar button {
+    width: 36px; height: 36px; border: none;
+    background: rgba(255,255,255,0.15); backdrop-filter: blur(8px);
+    border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+  }
+
+  .profile-card {
+    margin: -48px 20px 0;
+    background: #fff;
+    border-radius: 20px;
+    border: 1px solid var(--outline-variant);
+    padding: 0 20px 20px;
+    position: relative; z-index: 5;
+    box-shadow: 0 4px 24px rgba(5,12,37,0.08);
+  }
+
+  .profile-avatar-row {
+    display: flex; align-items: flex-end; gap: 16px;
+    margin-top: -40px; margin-bottom: 12px;
+  }
+  .profile-avatar {
+    width: 80px; height: 80px; border-radius: 24px;
+    border: 4px solid #fff; object-fit: cover;
+    box-shadow: 0 2px 12px rgba(5,12,37,0.12);
+  }
+  .profile-name-area { flex: 1; padding-bottom: 4px; }
+  .profile-name { font-size: 20px; font-weight: 800; line-height: 1.2; }
+  .profile-handle { font-size: 13px; color: var(--on-surface-variant); }
+
+  .profile-bio {
+    font-size: 14px; color: var(--on-surface-variant);
+    line-height: 1.5; margin-bottom: 16px;
+  }
+
+  .profile-stats {
+    display: flex; gap: 0;
+    background: var(--surface-container-low);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .stat {
+    flex: 1; padding: 12px 8px;
+    text-align: center;
+    border-right: 1px solid var(--outline-variant);
+  }
+  .stat:last-child { border-right: none; }
+  .stat-value { font-size: 18px; font-weight: 800; color: var(--on-surface); }
+  .stat-label { font-size: 11px; font-weight: 500; color: var(--on-surface-variant); margin-top: 2px; }
+
+  .profile-actions { display: flex; gap: 10px; }
+  .btn-edit {
+    flex: 1; height: 44px;
+    background: var(--primary); color: #fff;
+    border: none; border-radius: 12px;
+    font-family: var(--font); font-size: 14px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-share {
+    width: 44px; height: 44px;
+    background: var(--surface-high); color: var(--on-surface);
+    border: none; border-radius: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Settings menu */
+  .section-label {
+    padding: 20px 20px 8px; font-size: 12px; font-weight: 600;
+    color: var(--on-surface-variant); text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  .menu-list { padding: 0 20px; }
+  .menu-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--outline-variant);
+    cursor: pointer;
+  }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .menu-icon svg { width: 20px; height: 20px; }
+  .mi-purple { background: rgba(87,83,172,0.1); color: var(--secondary); }
+  .mi-coral { background: rgba(222,103,81,0.1); color: var(--coral); }
+  .mi-teal { background: rgba(62,151,139,0.1); color: var(--teal); }
+  .mi-dark { background: rgba(5,12,37,0.06); color: var(--primary); }
+  .mi-red { background: rgba(186,26,26,0.08); color: var(--error); }
+  .menu-body { flex: 1; }
+  .menu-title { font-size: 15px; font-weight: 600; }
+  .menu-desc { font-size: 12px; color: var(--on-surface-variant); }
+  .menu-chevron { color: var(--outline-variant); }
+
+  /* My Memories grid */
+  .memories-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 2px; padding: 0 20px; margin-top: 8px;
+  }
+  .memory-thumb {
+    aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+    cursor: pointer;
+  }
+  .memory-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; height: 72px; background: rgba(249,249,255,0.95); backdrop-filter: blur(12px); border-top: 1px solid rgba(198,198,206,0.4); display: flex; align-items: center; justify-content: space-around; padding: 0 8px; z-index: 50; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 12px; border: none; background: none; cursor: pointer; font-family: var(--font); color: var(--on-surface-variant); position: relative; }
+  .nav-item.active { color: var(--primary); }
+  .nav-item.active::before { content: ''; position: absolute; top: 0; left: 8px; right: 8px; height: 3px; background: var(--secondary); border-radius: 0 0 2px 2px; }
+  .nav-item svg { width: 24px; height: 24px; }
+  .nav-label { font-size: 10px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="profile-header">
+  <div class="profile-header-overlay"></div>
+  <div class="profile-top-bar">
+    <div></div>
+    <button><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+  </div>
+</div>
+
+<div class="profile-card">
+  <div class="profile-avatar-row">
+    <img class="profile-avatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&h=160&fit=crop&crop=faces" alt=""/>
+    <div class="profile-name-area">
+      <div class="profile-name">Mathavan G</div>
+      <div class="profile-handle">@mathavan</div>
+    </div>
+  </div>
+  <p class="profile-bio">Family first. Capturing life's little moments, one circle at a time.</p>
+
+  <div class="profile-stats">
+    <div class="stat">
+      <div class="stat-value">4</div>
+      <div class="stat-label">Circles</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">67</div>
+      <div class="stat-label">Memories</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">3</div>
+      <div class="stat-label">Events</div>
+    </div>
+  </div>
+
+  <div class="profile-actions">
+    <button class="btn-edit">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Edit Profile
+    </button>
+    <button class="btn-share">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="section-label">My Memories</div>
+<div class="memories-grid">
+  <div class="memory-thumb"><img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=280&h=280&fit=crop" alt=""/></div>
+  <div class="memory-thumb"><img src="https://images.unsplash.com/photo-1511895426328-dc8714191300?w=280&h=280&fit=crop" alt=""/></div>
+  <div class="memory-thumb"><img src="https://images.unsplash.com/photo-1506869640319-fe1a24fd76cb?w=280&h=280&fit=crop" alt=""/></div>
+  <div class="memory-thumb"><img src="https://images.unsplash.com/photo-1543807535-eceef0bc6599?w=280&h=280&fit=crop" alt=""/></div>
+  <div class="memory-thumb"><img src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=280&h=280&fit=crop" alt=""/></div>
+  <div class="memory-thumb"><img src="https://images.unsplash.com/photo-1523301343968-6a6ebf63c672?w=280&h=280&fit=crop" alt=""/></div>
+</div>
+
+<div class="section-label">Settings</div>
+<div class="menu-list">
+  <div class="menu-item">
+    <div class="menu-icon mi-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+    <div class="menu-body"><div class="menu-title">Notifications</div><div class="menu-desc">Push, email, quiet hours</div></div>
+    <div class="menu-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+  <div class="menu-item">
+    <div class="menu-icon mi-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+    <div class="menu-body"><div class="menu-title">Privacy & Security</div><div class="menu-desc">Password, sessions, data</div></div>
+    <div class="menu-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+  <div class="menu-item">
+    <div class="menu-icon mi-coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+    <div class="menu-body"><div class="menu-title">Appearance</div><div class="menu-desc">Theme, text size, language</div></div>
+    <div class="menu-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+  <div class="menu-item">
+    <div class="menu-icon mi-dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+    <div class="menu-body"><div class="menu-title">Help & Support</div><div class="menu-desc">FAQ, contact, report</div></div>
+    <div class="menu-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+  <div class="menu-item">
+    <div class="menu-icon mi-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+    <div class="menu-body"><div class="menu-title" style="color:var(--error)">Log Out</div></div>
+    <div class="menu-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">Home</span></button>
+  <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="nav-label">Chats</span></button>
+  <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-label">Groups</span></button>
+  <button class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span class="nav-label">Events</span></button>
+  <button class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">You</span></button>
+</nav>
+
+</body>
+</html>
