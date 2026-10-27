@@ -21,10 +21,10 @@ Updated: 27 October 2026. Inspect Git status; source, deployment and physical ac
 - No attached Android device. Native picker, installation, actual push and two-phone photo visibility remain owner acceptance.
 
 ## Release versus live
-- Previously verified live: Android1.0.14+15, source6f74bac/proofbef98f9;65,211,890 bytes SHA2564b154b4a3f1ddacd2dc091dc3f1679888f39f42f624790866b4245a859366b5e. Stable/versioned/JSON/both buttons align.
-- Current group-photo candidate1.0.15+16 packaged: 65,244,718 bytes, SHA2566fcd6afd16ddf5cf5e4bba9c677555de7c9844ee00c525e7f728121e8b63dc45; not yet claimed pushed/deployed. See docs/mobile-release-1.0.15.md and docs/group-photos.md for final artifact/hosted evidence.
-- Required certificate SHA2566c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c; production API/previewfalse/client pushtrue. Candidate certificate matches immutable build15; package/versionCode16/minSdk24/targetSdk36 verified. Build153s.
-- Deployer preserves hosted .env, private storage, PHP handlers and deploy.php itself. Migration014 must deploy with this batch.
+- Verified live release: Android1.0.15+16, source4aeef59;65,244,718 bytes SHA2566fcd6afd16ddf5cf5e4bba9c677555de7c9844ee00c525e7f728121e8b63dc45. Stable/versioned/JSON/both buttons align; earlier immutable APKs preserved.
+- Pushed/deployed successfully:158.0s response/155.7s script; migration014 applied. Full hosted stable/versioned hashes match, including plain circle.apk without cache-busting; no-store stable and long-lived immutable cache headers verified. API healthy; private person/group avatar/cover reads reject unauthenticated access.
+- Established certificate SHA2566c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c matches build15; package/versionCode16/minSdk24/targetSdk36 verified. Production API/previewfalse/client pushtrue; build153s. AOT includes group-photo and person-avatar code.
+- Deployer preserved .env/private storage/PHP handlers/deploy.php. Native/two-phone acceptance pending; existing person photos need no re-upload. Details: docs/mobile-release-1.0.15.md, docs/group-photos.md.
 
 ## Remaining acceptance and next work
 - Owner confirmed private sender/cron ready and can test APK. Real Android update, native location/geocoder/permissions, two-device logout/password re-login, contacts/composers, photo display and actual push/tap results remain pending.
