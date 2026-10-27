@@ -31,6 +31,10 @@ The owner approved sequential completion of this backlog, restoration of Chats a
 | 5 | Live polls | Memory/chat/event container permissions, named/anonymous votes, results visibility, closure and safe repeat requests | Container APIs must exist; deliver supported containers incrementally. |
 | 6 | Live albums | Exact-group private photos, create/edit permissions, covers/captions, pagination and cleanup | Existing media lifecycle plus reviewed album API; event albums after event integration. |
 
+## Completed source S1a: secure password-change API foundation
+
+Owns reviewed POST /auth/change-password, current-secret verification, 15–128 character new-secret policy, persistent failure throttling, atomic all-session/device revocation and serialized login/refresh issuance. No recovery/reset, account deletion/export or password UI is exposed by this server-only checkpoint. Next S1b connects the explained client form and independent local cleanup before a new APK. Evidence: [password-change-foundation.md](password-change-foundation.md). This API has not been deployed; build10 has no password form.
+
 ## Contact-selected invite sharing: source complete; device acceptance pending
 
 Owns WhatsApp recipient selection, one-contact SMS picker/manual SMS and system sharing; no address-book upload/broad contacts permission or automatic send. Share only active authorized server links, recheck session/link after picker, keep preview isolated and provide a safe HTTPS/browser download fallback. Android native/device handoff must be recorded separately from mocks. Evidence and device checks: [contact-invite-sharing.md](contact-invite-sharing.md). This implements contact-selected external sharing, not contacts sync, auto-send or verified Android App Links.

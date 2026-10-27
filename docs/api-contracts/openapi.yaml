@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.5
+  version: 0.3.6
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -34,7 +34,7 @@ info:
     - `/auth/register`, `/auth/login`, `/auth/refresh`: `RATE_LIMIT_AUTH_PER_MINUTE` (default 10).
     - Every other endpoint except `/health`, including `/invites/{token}` preview and
       `/auth/logout`: `RATE_LIMIT_PER_MINUTE` (default 60).
-    - Login also has a per-mobile-number limit on failed attempts:
+    - Login and authenticated change-password share a per-mobile-number limit on failed credential attempts:
       `LOGIN_MAX_FAILURES_PER_MOBILE` (default 10) per 15 minutes, across all IPs.
     - Photo upload tickets also have a per-person limit: `MEDIA_UPLOADS_PER_HOUR`
       (default 60) per hour, and at most `MEDIA_MAX_OPEN_UPLOADS` (default 50)
@@ -341,6 +341,55 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/change-password:
+    post:
+      operationId: changePassword
+      tags: [Auth]
+      summary: Change my password and end all my sessions
+      description: |
+        Requires an active authenticated session and the current password; not recovery or OTP reset.
+        Strings are used byte-for-byte, never trimmed. New password uses the Password schema (15–128 Unicode characters)
+        and must differ from current_password. Current input is limited to 1024 UTF-8 bytes.
+        Success atomically updates the hash, revokes ALL access/refresh sessions including this one and removes all
+        device registrations for this account. It issues no replacement tokens. Sign in again on every device.
+        Other accounts, group memberships and content are unchanged. Already-dispatched requests/provider messages cannot be recalled.
+        Wrong-current attempts use the shared per-mobile login failure budget (default 10/15min across IPs),
+        in addition to the normal per-IP rate limit. Retry-After is supplied on 429.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              additionalProperties: false
+              properties:
+                current_password: { type: string, minLength: 1, description: Exact current password; maximum 1024 UTF-8 bytes. }
+                new_password: { $ref: '#/components/schemas/Password' }
+      responses:
+        '200':
+          description: Password changed; all sessions revoked. No replacement credentials.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [sign_in_required]
+                        properties:
+                          sign_in_required: { type: boolean, const: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422':
+          description: Invalid input or invalid_current_password. Credentials are never echoed; account state is unchanged.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
   /auth/logout:
@@ -1798,6 +1847,7 @@ components:
         - unauthorized
         - invalid_token
         - invalid_credentials
+        - invalid_current_password
         - account_inactive
         - forbidden
         - not_member

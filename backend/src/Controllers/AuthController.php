@@ -108,16 +108,25 @@ final class AuthController
 
         $userId = (int) $user['id'];
 
-        if ($hash !== null && Passwords::needsRehash($hash)) {
-            Database::execute(
-                'UPDATE users SET password_hash = :hash WHERE id = :id',
-                ['hash' => Passwords::hash($password), 'id' => $userId]
-            );
+        // Serialize issuance with password changes, never issue an old-password
+        // login after another request has changed/revoked this account.
+        $tokens = Database::transaction(static function () use ($userId, $hash, $password): ?array {
+            $live = Database::queryOne('SELECT password_hash, status FROM users WHERE id = :id FOR UPDATE', ['id' => $userId]);
+            if ($live === null || $live['status'] !== 'active' || $live['password_hash'] !== $hash) {
+                return null;
+            }
+            if ($hash !== null && Passwords::needsRehash($hash)) {
+                Database::execute('UPDATE users SET password_hash = :hash WHERE id = :id',
+                    ['hash' => Passwords::hash($password), 'id' => $userId]);
+            }
+            $sessionId = bin2hex(random_bytes(16));
+            $tokens = JWT::issueTokens($userId, $sessionId);
+            self::storeRefreshToken($userId, $sessionId, $tokens['refresh_token']);
+            return $tokens;
+        });
+        if ($tokens === null) {
+            Response::unauthorized('Invalid mobile number or password.', 'invalid_credentials');
         }
-
-        $sessionId = bin2hex(random_bytes(16));
-        $tokens = JWT::issueTokens($userId, $sessionId);
-        self::storeRefreshToken($userId, $sessionId, $tokens['refresh_token']);
 
         Response::ok([
             'user' => [
@@ -148,9 +157,11 @@ final class AuthController
         $sessionId = $claims['session_id'];
 
         $tokens = Database::transaction(static function () use ($refreshToken, $userId, $sessionId): ?array {
+            // All credential mutations acquire user before session rows.
+            $account = Database::queryOne('SELECT status FROM users WHERE id = :id FOR UPDATE', ['id' => $userId]);
             $stored = Database::queryOne(
-                'SELECT rt.id, u.status
-                 FROM refresh_tokens rt JOIN users u ON u.id = rt.user_id
+                'SELECT rt.id
+                 FROM refresh_tokens rt
                  WHERE rt.user_id = :uid AND rt.session_id = :sid AND rt.token_hash = :hash
                    AND rt.revoked_at IS NULL AND rt.expires_at > NOW()
                  FOR UPDATE',
@@ -169,7 +180,7 @@ final class AuthController
                 Response::unauthorized('Invalid or expired refresh token.', 'invalid_token');
             }
 
-            if ($stored['status'] !== 'active') {
+            if ($account === null || $account['status'] !== 'active') {
                 self::revokeSession($userId, $sessionId);
                 return null;
             }
@@ -184,6 +195,62 @@ final class AuthController
         }
 
         Response::ok($tokens, 'Tokens refreshed.');
+    }
+
+    /** Password change is not recovery: an open session and current secret are required. */
+    public static function changePassword(Request $request): void
+    {
+        if (strtolower(trim(explode(';', $request->contentType)[0])) !== 'application/json' || !$request->jsonIsObject()) {
+            Response::validationError('Send a JSON object with current_password and new_password.');
+        }
+        if (array_diff(array_keys($request->all()), ['current_password', 'new_password']) !== []) {
+            Response::validationError('Only current_password and new_password are accepted.');
+        }
+        foreach (['current_password', 'new_password'] as $field) {
+            if (!is_string($request->input($field))) {
+                Response::validationError($field . ' must be text.');
+            }
+        }
+        $current = $request->raw('current_password');
+        $next = $request->raw('new_password');
+        if ($current === '' || strlen($current) > self::MAX_LOGIN_PASSWORD_BYTES) {
+            Response::validationError('Current password is required and must be at most 1024 bytes.');
+        }
+        (new Validator())->password($next)->bail();
+        if ((preg_match_all('/./us', $next) ?: 0) < 15) {
+            Response::validationError('New password must be at least 15 characters.');
+        }
+        if ($current === $next) {
+            Response::validationError('Choose a different new password.');
+        }
+        $outcome = Database::transaction(static function () use ($request, $current, $next): string {
+            $user = Database::queryOne('SELECT mobile, password_hash, status FROM users WHERE id = :id FOR UPDATE', ['id' => $request->userId()]);
+            if ($user === null || $user['status'] !== 'active') return 'inactive';
+            $session = Database::queryOne('SELECT id FROM refresh_tokens WHERE user_id = :uid AND session_id = :sid AND revoked_at IS NULL AND expires_at > NOW() FOR UPDATE',
+                ['uid' => $request->userId(), 'sid' => $request->attr('session_id')]);
+            if ($session === null) return 'expired';
+            $mobile = (string) $user['mobile'];
+            if (RateLimitMiddleware::tooManyLoginFailures($mobile)) return 'limited';
+            if (!Passwords::verify($current, (string) $user['password_hash'])) {
+                // Return normally so this failure budget commits, not rolls back
+                // with the captured HTTP response exception used by tests.
+                RateLimitMiddleware::recordLoginFailure($mobile);
+                return 'wrong';
+            }
+            Database::execute('UPDATE users SET password_hash = :hash WHERE id = :id',
+                ['hash' => Passwords::hash($next), 'id' => $request->userId()]);
+            Database::execute('UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = :uid AND revoked_at IS NULL', ['uid' => $request->userId()]);
+            Database::execute('DELETE FROM device_tokens WHERE user_id = :uid', ['uid' => $request->userId()]);
+            return 'changed';
+        });
+        if ($outcome === 'wrong') Response::validationError('Current password is incorrect.', 'invalid_current_password');
+        if ($outcome === 'limited') {
+            Response::header('Retry-After', '900');
+            Response::tooMany('Too many password attempts. Please try again later.');
+        }
+        if ($outcome === 'inactive') Response::forbidden('This account is not active.', 'account_inactive');
+        if ($outcome === 'expired') Response::unauthorized('Your session ended. Sign in again.', 'invalid_token');
+        Response::ok(['sign_in_required' => true], 'Password changed. Sign in again on each device.');
     }
 
     /** Ends the current session: its refresh tokens and access tokens stop working. */

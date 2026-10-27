@@ -58,6 +58,7 @@ final class App
         // ── Auth (protected) ─────────────────────────────────────
         $router->group('/api/v1/auth', ['rate', 'auth'], static function (Router $r): void {
             $r->post('/logout', AuthController::logout(...));
+            $r->post('/change-password', AuthController::changePassword(...));
         });
 
         // ── Invite preview (public, rate-limited) ────────────────
