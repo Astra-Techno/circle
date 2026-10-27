@@ -18,7 +18,7 @@ final class GroupController
 
     public static function index(Request $request): void
     {
-        Response::ok(GroupRepository::findByUser($request->userId()));
+        Response::ok(GroupPhotoController::attachVersions(GroupRepository::findByUser($request->userId())));
     }
 
     public static function show(Request $request): void
@@ -33,6 +33,7 @@ final class GroupController
             Response::error('not_member', 'You are not a member of this group.', 403);
         }
 
+        $group = GroupPhotoController::attachVersions([$group])[0];
         $group['member_count'] = MemberRepository::countActive($groupId);
         $group['my_role'] = MemberRepository::getRole($groupId, $userId);
         $group['ancestors'] = GroupRepository::getAncestors($groupId);

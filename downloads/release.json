@@ -1,11 +1,11 @@
 {
-  "version": "1.0.14",
-  "build": 15,
+  "version": "1.0.15",
+  "build": 16,
   "minimumAndroid": "7.0",
   "minimumSdk": 24,
   "apiBaseUrl": "https://circle.cloudkart24.com/api/v1",
   "preview": false,
-  "bytes": 65211890,
-  "sha256": "4b154b4a3f1ddacd2dc091dc3f1679888f39f42f624790866b4245a859366b5e",
-  "download": "https://circle.cloudkart24.com/downloads/circle-1.0.14-15.apk"
+  "bytes": 65244718,
+  "sha256": "6fcd6afd16ddf5cf5e4bba9c677555de7c9844ee00c525e7f728121e8b63dc45",
+  "download": "https://circle.cloudkart24.com/downloads/circle-1.0.15-16.apk"
 }

@@ -1,3 +1,4 @@
+import '../../groups/presentation/group_photos.dart';
 import '../application/profile_providers.dart';
 import 'profile_photo.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,6 @@ import '../../chat/presentation/chat_conversation.dart' show confirmBlock;
 import '../../groups/presentation/group_members.dart' show personLocation;
 import '../../moderation/presentation/report_sheet.dart';
 import '../../workspace/application/workspace_providers.dart';
-import '../../workspace/presentation/group_visuals.dart';
 import '../../workspace/presentation/workspace_view.dart';
 
 export '../../groups/presentation/group_members.dart' show personLocation;
@@ -183,9 +183,9 @@ class PersonProfileScreen extends ConsumerWidget {
               CircleRow(
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: CircleInitialAvatar(
-                    icon: circleTypeIcon(group.type),
-                    tone: circleTypeTone(group.type),
+                  leading: GroupAvatar(
+                    groupId: group.id,
+                    type: group.type,
                     size: CircleAvatarSize.small,
                   ),
                   title: Text(group.name),

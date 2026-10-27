@@ -9,6 +9,7 @@ use Circle\Controllers\SessionController;
 use Circle\Controllers\DeviceController;
 use Circle\Controllers\NotificationPreferenceController;
 use Circle\Controllers\ProfilePhotoController;
+use Circle\Controllers\GroupPhotoController;
 use Circle\Controllers\GroupController;
 use Circle\Controllers\GroupInvitationController;
 use Circle\Controllers\MediaController;
@@ -122,6 +123,7 @@ final class App
         $router->get('/api/v1/invites/{token}', MemberController::previewInvite(...), ['rate']);
 
         // Authenticated private profile reads have a separate bounded budget.
+        $router->get('/api/v1/groups/{id}/photos/{kind}', GroupPhotoController::show(...), ['auth', 'rate:profile_photo']);
         $router->get('/api/v1/me/photos/{kind}', ProfilePhotoController::show(...), ['auth', 'rate:profile_photo']);
         $router->get('/api/v1/profiles/{userId}/photos/{kind}', ProfilePhotoController::show(...), ['auth', 'rate:profile_photo']);
         // Media bytes: the HMAC-signed link is the credential (no bearer).
@@ -145,6 +147,8 @@ final class App
             $r->get('/groups', GroupController::index(...));
             $r->post('/groups', GroupController::create(...));
             $r->get('/groups/{id}', GroupController::show(...));
+            $r->put('/groups/{id}/photos/{kind}', GroupPhotoController::put(...));
+            $r->delete('/groups/{id}/photos/{kind}', GroupPhotoController::delete(...));
             $r->patch('/groups/{id}', GroupController::update(...));
             $r->get('/groups/{id}/subgroups', GroupController::subgroups(...));
             $r->post('/groups/{id}/leave', GroupController::leave(...));

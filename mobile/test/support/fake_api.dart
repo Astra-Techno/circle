@@ -156,6 +156,7 @@ class FakeCircleServer {
   final Map<String, Map<String, Object?>> uploads = {};
   final Map<String, ({Uint8List bytes, String mime})> profilePhotos = {};
   final Map<int, Map<String, Object?>> notificationPreferences = {};
+  final Map<String, ({Uint8List bytes, String mime})> groupPhotos = {};
   int _ids = 0, _tokens = 0, _profileVersions = 0;
 
   static const now = '2026-10-23 10:00:00';
@@ -526,6 +527,36 @@ class FakeCircleServer {
         return FakeResponse.error(403, 'not_member');
       }
       final admin = members[id]![me] == 'admin';
+      final photo = RegExp(r'^/photos/(avatar|cover)$').firstMatch(rest);
+      if (photo != null) {
+        final kind = photo[1]!, key = '$id:${photo[1]}';
+        if (r.method == 'GET') {
+          final image = groupPhotos[key];
+          if (image == null) return FakeResponse.error(404, 'not_found');
+          return FakeResponse(200, image.bytes, {
+            'content-type': image.mime,
+            'cache-control': 'private, no-store',
+          });
+        }
+        if (!admin) return FakeResponse.error(403, 'forbidden');
+        if (r.method == 'PUT') {
+          if (!mediaAvailable) return FakeResponse.error(503, 'server_error');
+          final mime = r.headers['content-type']?.toString().split(';').first;
+          if (!const {'image/jpeg', 'image/png', 'image/webp'}.contains(mime)) {
+            return FakeResponse.error(415, 'media_type_not_allowed');
+          }
+          if (r.bytes.isEmpty || r.bytes.length > 5 * 1024 * 1024) {
+            return FakeResponse.error(413, 'media_too_large');
+          }
+          groupPhotos[key] = (bytes: r.bytes, mime: mime!);
+          groups[id]!['${kind}_version'] =
+              '00000000-0000-4000-8000-${(++_profileVersions).toString().padLeft(12, '0')}';
+        } else if (r.method == 'DELETE') {
+          groupPhotos.remove(key);
+          groups[id]!['${kind}_version'] = null;
+        }
+        return FakeResponse.ok(groups[id]);
+      }
       switch ((r.method, rest)) {
         case ('GET', ''):
           return FakeResponse.ok({

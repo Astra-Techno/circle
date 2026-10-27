@@ -95,9 +95,12 @@ class CircleGroup {
     this.parentId,
     this.settings = const GroupSettings(),
     this.inviteLink,
+    this.avatarVersion,
+    this.coverVersion,
     this.order = 0,
   }) : roles = Map.unmodifiable(roles);
   final String id, name;
+  final String? avatarVersion, coverVersion;
   final CircleType type;
   final String? parentId;
   final int depth;
@@ -138,6 +141,8 @@ class CircleGroup {
     settings: settings ?? this.settings,
     inviteLink: clearInviteLink ? null : inviteLink ?? this.inviteLink,
     order: order,
+    avatarVersion: avatarVersion,
+    coverVersion: coverVersion,
   );
 }
 

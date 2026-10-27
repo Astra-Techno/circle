@@ -319,6 +319,7 @@ class ApiClient {
     Uint8List bytes, {
     required String contentType,
     String? expectedAccount,
+    int? expectedSession,
     void Function(int sent, int total)? onProgress,
   }) => _send(
     () => dio.put<Object?>(
@@ -326,7 +327,10 @@ class ApiClient {
       data: bytes,
       options: Options(
         contentType: contentType,
-        extra: {_expectedAccount: ?expectedAccount},
+        extra: {
+          _expectedAccount: ?expectedAccount,
+          _expectedSession: ?expectedSession,
+        },
         headers: {Headers.contentLengthHeader: '${bytes.length}'},
         sendTimeout: const Duration(minutes: 2),
       ),

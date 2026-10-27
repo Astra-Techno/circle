@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.9
+  version: 0.3.10
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -32,8 +32,8 @@ info:
 
     ## Rate limits (per client IP, fixed 60-second window)
     - `/auth/register`, `/auth/login`, `/auth/refresh`: `RATE_LIMIT_AUTH_PER_MINUTE` (default 10).
-    - Authenticated profile photo reads use a separate per-IP bucket `RATE_LIMIT_PROFILE_PHOTOS_PER_MINUTE` (default 240/minute), still requiring ownership/shared exact membership. They do not exhaust general mutation/list quota.
-    - Every other endpoint except profile photo reads and `/health`, including `/invites/{token}` preview and
+    - Authenticated profile/group photo reads use a separate per-IP bucket `RATE_LIMIT_PROFILE_PHOTOS_PER_MINUTE` (default 240/minute), still requiring profile ownership/shared exact membership or exact group membership. They do not exhaust general mutation/list quota.
+    - Every other endpoint except profile/group photo reads and `/health`, including `/invites/{token}` preview and
       `/auth/logout`: `RATE_LIMIT_PER_MINUTE` (default 60).
     - Login and authenticated change-password share a per-mobile-number limit on failed credential attempts:
       `LOGIN_MAX_FAILURES_PER_MOBILE` (default 10) per 15 minutes, across all IPs.
@@ -855,6 +855,76 @@ paths:
         '422': { $ref: '#/components/responses/ValidationError' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
+  /groups/{id}/photos/{kind}:
+    parameters:
+      - {$ref: '#/components/parameters/GroupId'}
+      - {name: kind, in: path, required: true, schema: {type: string, enum: [avatar, cover]}}
+    get:
+      operationId: getPrivateGroupPhoto
+      tags: [Groups, Profile]
+      summary: Read a private group picture or banner as an active exact member.
+      description: |
+        Both listed and hidden group images require active membership of this exact
+        group; parent/ancestor membership and invitation preview never grant photo access.
+        Missing/inaccessible photos return404. Private,no-store/nosniff responses; no
+        public storage path or signed URL. Separate authenticated photo-read quota240/min.
+      parameters:
+        - {name: size, in: query, schema: {type: string, enum: [thumb, medium, full], default: medium}}
+      responses:
+        '200':
+          description: Re-encoded, metadata-stripped image bytes.
+          content:
+            image/webp: {schema: {type: string, format: binary}}
+            image/jpeg: {schema: {type: string, format: binary}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+    put:
+      operationId: replaceGroupPhoto
+      tags: [Groups, Profile]
+      summary: Add or replace the group picture/banner as a current owner/admin.
+      description: |
+        Active exact admin permission is checked before processing and again under
+        group/user/session/membership locks before commit. Owner is an admin. Upload is
+        raw JPEG/PNG/WebP, at most5MiB, at most2048px/side and4,194,304pixels. Re-encode
+        through configured processor to thumb320/medium1080/full2048 variants, stripping
+        metadata/originals. Fresh opaque UUID version per replacement. Failure, lost
+        permission or ended session preserves old metadata/files and purges staging.
+        No automatic photo-change push is emitted for this routine private edit.
+      requestBody:
+        required: true
+        content:
+          image/jpeg: {schema: {type: string, format: binary}}
+          image/png: {schema: {type: string, format: binary}}
+          image/webp: {schema: {type: string, format: binary}}
+      responses:
+        '200':
+          description: Updated exact group with avatar_version/cover_version and null cover_path.
+          content:
+            application/json:
+              schema: {type: object, properties: {success: {const: true}, data: {$ref: '#/components/schemas/Group'}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '413': {description: media_too_large, over5MiB.}
+        '415': {description: media_type_not_allowed.}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '503': {description: Image processor unavailable; previous photo retained.}
+    delete:
+      operationId: removeGroupPhoto
+      tags: [Groups, Profile]
+      summary: Remove a picture/banner as a current owner/admin, independently.
+      description: Same current authorization/session locks as replacement; repeated deletion is idempotent. Old variants purged after commit.
+      responses:
+        '200':
+          description: Updated exact group; chosen photo version null, other photo unchanged.
+          content:
+            application/json:
+              schema: {type: object, properties: {success: {const: true}, data: {$ref: '#/components/schemas/Group'}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
   /groups:
     get:
       operationId: listMyGroups
@@ -2239,6 +2309,8 @@ components:
         depth: { type: integer, minimum: 1, maximum: 10 }
         type: { $ref: '#/components/schemas/GroupType' }
         name: { type: string }
+        avatar_version: {type: [string, 'null'], format: uuid, description: Opaque private group picture revision on authorized list/detail responses.}
+        cover_version: {type: [string, 'null'], format: uuid, description: Opaque private banner revision on authorized list/detail responses.}
         description: { type: string }
         visibility: { $ref: '#/components/schemas/Visibility' }
         approval_mode: { $ref: '#/components/schemas/ApprovalMode' }

@@ -1,3 +1,4 @@
+import 'group_photos.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -203,10 +204,7 @@ class CircleGroupTile extends ConsumerWidget {
               Space.sm,
               Space.md,
             ),
-            leading: CircleInitialAvatar(
-              icon: circleTypeIcon(group.type),
-              tone: circleTypeTone(group.type),
-            ),
+            leading: GroupAvatar(groupId: group.id, type: group.type),
             title: Text(group.name),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

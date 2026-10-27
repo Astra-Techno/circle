@@ -50,6 +50,8 @@ abstract final class ApiMappers {
             : EventCreationPolicy.members,
       ),
       inviteLink: inviteLink,
+      avatarVersion: ApiJson.optionalString(json['avatar_version']),
+      coverVersion: ApiJson.optionalString(json['cover_version']),
       order: order,
     );
   }

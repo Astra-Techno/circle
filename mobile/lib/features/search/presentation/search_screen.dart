@@ -1,3 +1,4 @@
+import '../../groups/presentation/group_photos.dart';
 import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +8,6 @@ import '../../../core/design.dart';
 import '../../workspace/presentation/feature_gate.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../memories/presentation/scoped_memory_list.dart';
-import '../../workspace/presentation/group_visuals.dart';
 import '../application/search_providers.dart';
 
 /// I2: one field; results grouped by kind, only from your own circles.
@@ -170,10 +170,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         CircleSectionTitle('Groups (${results.groups.length})'),
         for (final hit in results.groups)
           row(
-            leading: CircleInitialAvatar(
-              icon: circleTypeIcon(hit.type),
-              tone: circleTypeTone(hit.type),
-            ),
+            leading: GroupAvatar(groupId: hit.id, type: hit.type),
             title: hit.name,
             subtitle: [
               '${hit.memberCount} members',

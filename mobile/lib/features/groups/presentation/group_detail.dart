@@ -1,3 +1,4 @@
+import 'group_photos.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -211,12 +212,12 @@ class _GroupTabs extends StatelessWidget {
   }
 }
 
-class _GroupHeader extends StatelessWidget {
+class _GroupHeader extends ConsumerWidget {
   const _GroupHeader({required this.group, required this.workspace});
   final CircleGroup group;
   final CircleWorkspace workspace;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final viewer = workspace.viewer;
     final role = group.roles[viewer]!;
     final lineage = groupLineage(group, workspace.groupsById);
@@ -248,11 +249,14 @@ class _GroupHeader extends StatelessWidget {
               ],
             ),
           ),
-        CircleCover(
-          title: group.name,
-          icon: circleTypeIcon(group.type),
-          compact: true,
-        ),
+        if (ref.watch(circleFeaturesProvider).server)
+          GroupPhotoHeader(group: group)
+        else
+          CircleCover(
+            title: group.name,
+            icon: circleTypeIcon(group.type),
+            compact: true,
+          ),
         const SizedBox(height: Space.lg),
         Text(
           [
