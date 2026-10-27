@@ -20,11 +20,10 @@ Updated: 27 October 2026. Inspect Git status before work; source, deployment and
 - Existing thirteen Windows-baseline golden comparisons fail on Linux; one known skipped test. No Android device attached. Native display remains owner acceptance.
 
 ## Release versus live
-- Candidate Android1.0.14+15 packaged: 65,211,890 bytes, SHA256 4b154b4a3f1ddacd2dc091dc3f1679888f39f42f624790866b4245a859366b5e; original certificate, package/version/minSdk verified. Stable/versioned/JSON/buttons align; hosted deployment pending.
-- Verified live main download: Android1.0.13+14, production API/previewfalse/client pushtrue;65,129,974 bytes, SHA256 b9a7f88636dc5617b677a43633e3c948b4a263553212b4ee4437af0e7aa2c730. Stable/versioned APKs, metadata and both buttons align; earlier immutable artifacts preserved.
-- Source/release8ee77c2 pushed; deployment completed (140.5s response/138.5s script). Full hosted stable+immutable hashes, metadata/buttons and expected cache headers verified. API healthy; private avatar/cover endpoints reject unauthenticated access. Backend/migrations unchanged this batch.
-- Established certificate SHA256:6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c verified; same package, versionCode14/minSdk24/targetSdk36. Build107.4s; AOT includes shared-photo implementation.
-- Deployer preserves hosted .env, storage, PHP handlers and deploy.php itself. Actual two-phone photo display remains owner acceptance; uploader need not re-upload existing photos.
+- Verified live main download: Android1.0.14+15, production API/previewfalse/client pushtrue;65,211,890 bytes, SHA2564b154b4a3f1ddacd2dc091dc3f1679888f39f42f624790866b4245a859366b5e. Stable/versioned/JSON/both buttons align; earlier immutable files preserved.
+- Source/release6f74bac pushed. Deployment completed (145.8s response/141.6s script); no migration. Full hosted stable+immutable hashes, metadata/buttons/cache headers verified. API healthy; private avatar/cover endpoints reject unauthenticated access.
+- Established certificate SHA2566c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c verified; package/versionCode15/minSdk24/targetSdk36. Build106s; AOT includes PersonAvatar/Refresh members.
+- Deployer preserves hosted .env, private storage, PHP handlers and deploy.php itself. Actual Android avatar display remains owner acceptance; no re-upload needed.
 
 ## Remaining acceptance and next work
 - Owner confirmed private server sender/cron ready and can test APK. Real device update, native location/geocoder/permissions, two-device logout/password re-login, contacts/composers and actual push/tap results remain pending.
