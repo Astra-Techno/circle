@@ -1,0 +1,21 @@
+# Contact-selected invitation sharing
+
+27 October 2026. Android server-group invite screens now offer WhatsApp, SMS and More apps alongside Copy. This is external link sharing; no recipient is added to a group or messaged by CIRCLE automatically. Existing membership/approval, link expiry/limits and join authorization still apply. Preview links never expose real external-sharing controls.
+
+## Privacy and behavior
+
+WhatsApp opens its own recipient chooser (WhatsApp Business is tried if regular WhatsApp is unavailable). SMS explains the flow and offers the Android single-phone-record contact picker or manual recipient entry in the SMS app. More apps opens Android's system text-share chooser. These are draft/composer launches, not proof a message was sent. The recipient and sender confirm in their messaging app. Missing apps, denied/unavailable selected-record access and picker cancellation are recoverable, with Copy/manual SMS as alternatives.
+
+The phone picker uses ACTION_PICK with ContactsContract.CommonDataKinds.Phone.CONTENT_URI and queries only the selected record's phone number under the temporary grant. No READ_CONTACTS, WRITE_CONTACTS or SEND_SMS permission is added. No address-book enumeration, contact upload, stored contact cache, recipient logging or background SMS sending exists. The selected number is temporary, normalized locally and restricted to digits with an optional leading plus before an explicit smsto composer opens. No country code is guessed. Names and private group details are omitted from the generic invitation message.
+
+Before sharing, the application layer requires server mode, a secure configured origin, the current workspace viewer/account, invite permission and a live non-exhausted server token. After contact selection it rechecks the API instance, account/session generation, current invite token and permissions/expiry. A logout, account switch, reset, revoked local link or expired/used-up link cannot continue the stale composer launch. Server-side revocation/membership checks remain authoritative when the recipient opens/joins; sharing does not grant membership.
+
+Shared and copied production links use `https://<configured-origin>/invite.html#<token>`. The static browser page validates the token, shows a user-tapped custom-scheme Open CIRCLE button, a stable Android download link and the case-preserved manual code. The fragment is not sent to the web server by the browser; no-referrer/noindex and a restrictive static CSP apply. No API lookup/private group preview/third-party analytics runs on the page. HTTPS verified Android App Links are still a separate backlog item; this does not claim automatic verified-link routing. Invalid/oversized/script-shaped tokens cannot become executable markup or destinations.
+
+## Validation and device acceptance
+
+Full Flutter regression: 580 passed, one skipped, the same 13 known Windows-baseline golden failures. The final API-instance guard test was added afterward; latest sharing/real-route/design-guard subset: 22 passed. Format/analyze clean, goldens unchanged. Earlier invite/design/server-mode subset: 30 passed. Static page script tested with valid, empty, XSS-shaped and oversized tokens plus no-fetch/referrer assertions (four cases). These checks use fictional state and mocked channels; they do not establish contact-provider/WhatsApp/SMS/native browser behavior on a phone. Backend PHP/contracts unchanged; no backend rerun needed.
+
+Android 1.0.9+10 is a separate test candidate retaining build9's explicit opt-in push mode; stable build8 and its buttons/metadata stay unchanged pending push acceptance. Native compile, package/certificate/merged permission and hosted integrity results are recorded in the release document. Any further changed distributed APK must use build11 or higher.
+
+On the phone: open a group you can invite to → Invite people → create a link if needed. Test WhatsApp recipient selection/cancel/review, SMS contact pick/cancel, manual SMS, More apps, missing WhatsApp, links changed during selection, and a recipient browser opening CIRCLE or downloading/pasting the code. Confirm no broad contacts or automatic SMS permission is requested. Never send a real invitation during automated/cloud tests. No device is connected here; owner acceptance remains pending.

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>CIRCLE invitation</title>
+<style>
+[hidden]{display:none!important}:root{color-scheme:light dark;font-family:system-ui,sans-serif}body{margin:0;padding:24px;line-height:1.6;background:#f8f7fc;color:#242138}main{max-width:480px;margin:8vh auto;background:#fff;padding:28px;border-radius:24px;box-shadow:0 12px 36px #39305e14}h1{line-height:1.2}a{display:block;padding:14px 18px;margin:16px 0;border-radius:14px;background:#514298;color:white;text-decoration:none;text-align:center;font-weight:600;overflow-wrap:anywhere}a.secondary{background:#eeebf8;color:#45397f}code{display:block;overflow-wrap:anywhere;padding:12px;background:#f3f1f8;border-radius:12px}small{color:#615b72}@media(prefers-color-scheme:dark){body{background:#15131c;color:#edeaf6}main{background:#24212e}code,a.secondary{background:#34303f;color:#edeaf6}small{color:#c7bfd6}}
+</style>
+</head>
+<body><main>
+<p>CIRCLE</p><h1>You’re invited.</h1>
+<p id="intro">Open this invitation in CIRCLE to review the group and choose whether to join.</p>
+<a id="open" hidden>Open CIRCLE</a>
+<a class="secondary" href="/downloads/">Download CIRCLE for Android</a>
+<div id="manual" hidden><p>If the button doesn’t open the app, choose “Open an invite link” in CIRCLE and paste this code:</p><code id="code"></code></div>
+<small>Membership and approval rules still apply. Only share this invitation with people you know.</small>
+</main>
+<script>
+'use strict';
+const token = location.hash.slice(1);
+if (/^[A-Za-z0-9_-]{16,128}$/.test(token)) {
+  const open = document.getElementById('open');
+  open.href = 'circle://invite/' + encodeURIComponent(token);
+  open.hidden = false;
+  document.getElementById('code').textContent = token;
+  document.getElementById('manual').hidden = false;
+} else {
+  document.getElementById('intro').textContent = 'This invitation is incomplete. Ask the person who shared it for a new link.';
+}
+</script>
+</body></html>

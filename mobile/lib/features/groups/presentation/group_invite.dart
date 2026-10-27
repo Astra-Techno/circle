@@ -7,6 +7,8 @@ import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/feature_gate.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import '../domain/membership_rules.dart';
+import 'invite_share_actions.dart';
+import '../application/invite_sharing.dart';
 
 const _expiryChoices = [
   Duration(days: 1),
@@ -62,6 +64,12 @@ class GroupInviteScreen extends ConsumerWidget {
       final features = ref.watch(circleFeaturesProvider);
       final direct = features.has(CircleFeature.directInvitations);
       final link = g.inviteLink;
+      final linkText = link == null
+          ? ''
+          : (features.server
+                    ? ref.watch(inviteSharingProvider).linkFor(g.id)
+                    : null) ??
+                inviteLinkFor(link.token);
       final canManage = MembershipRules.canManageLink(g, viewer).allowed;
       final parent = workspace.group(g.parentId ?? '');
       final invited = workspace.sentInvitations
@@ -89,7 +97,7 @@ class GroupInviteScreen extends ConsumerWidget {
             const PreviewNotice(
               'Preview link — not shareable. It only works inside this preview.',
               server:
-                  'Share this link only with people you know. Tap it on a device with CIRCLE installed, or paste it into “Open an invite link”.',
+                  'Share this link only with people you know. Recipients can open CIRCLE or download the app, then review the invitation.',
             ),
             if (link == null)
               FilledButton.icon(
@@ -109,7 +117,7 @@ class GroupInviteScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       SelectableText(
-                        inviteLinkFor(link.token),
+                        linkText,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: Space.sm),
@@ -118,7 +126,7 @@ class GroupInviteScreen extends ConsumerWidget {
                       FilledButton.icon(
                         onPressed: () async {
                           await Clipboard.setData(
-                            ClipboardData(text: inviteLinkFor(link.token)),
+                            ClipboardData(text: linkText),
                           );
                           if (context.mounted) {
                             showCircleMessage(
@@ -136,6 +144,10 @@ class GroupInviteScreen extends ConsumerWidget {
                               : 'Copy preview link',
                         ),
                       ),
+                      if (features.server &&
+                          !link.expiredAt(DateTime.now().toUtc()) &&
+                          !link.exhausted)
+                        InviteShareActions(groupId: g.id),
                     ],
                   ),
                 ),

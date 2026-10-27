@@ -31,6 +31,10 @@ The owner approved sequential completion of this backlog, restoration of Chats a
 | 5 | Live polls | Memory/chat/event container permissions, named/anonymous votes, results visibility, closure and safe repeat requests | Container APIs must exist; deliver supported containers incrementally. |
 | 6 | Live albums | Exact-group private photos, create/edit permissions, covers/captions, pagination and cleanup | Existing media lifecycle plus reviewed album API; event albums after event integration. |
 
+## Contact-selected invite sharing: source complete; device acceptance pending
+
+Owns WhatsApp recipient selection, one-contact SMS picker/manual SMS and system sharing; no address-book upload/broad contacts permission or automatic send. Share only active authorized server links, recheck session/link after picker, keep preview isolated and provide a safe HTTPS/browser download fallback. Android native/device handoff must be recorded separately from mocks. Evidence and device checks: [contact-invite-sharing.md](contact-invite-sharing.md). This implements contact-selected external sharing, not contacts sync, auto-send or verified Android App Links.
+
 ## N1d: Android background/native source; device acceptance pending
 
 Owns shared-isolate ledger locking, read-only background authorization without refresh-token races, generic native notifications with atomic scoped deduplication/cancellation, native initial/warm tap handling and automated/native compile checks. Push remains off until real Android and hosted credentials/worker checks pass. No iOS delivery or later feature hooks are claimed. Implementation/evidence: [push-background-checkpoint.md](push-background-checkpoint.md); required owner checks: [push-device-acceptance.md](push-device-acceptance.md). A separate opt-in build9 test APK does not replace stable build8 or establish device delivery.
