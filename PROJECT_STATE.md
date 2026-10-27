@@ -9,14 +9,14 @@ Updated: 27 October 2026. This file is a short handoff, not a substitute for ins
 - Preview implementations do not establish live chat/events/albums/moderation or push preference enforcement.
 
 ## Repository versus live release
-- Owner requested promoting existing verified build10 to the main online download. Published runtime is Android1.0.9+10, production API/preview false, explicit opt-in push true, original beta certificate. No rebuild or runtime changes in this publication batch.
-- Repository circle.apk, immutable circle-1.0.9-10.apk, release.json and both site buttons align: 64,785,682 bytes, SHA-256 9f3b2507f350be8f3c8a93b03d5f67fc40d5fcea76122317963dd683e4a35f13. Earlier immutable/test artifacts retained. Deployment succeeded (95.9s); both complete hosted APK hashes, root/download buttons, labels and metadata verified. Stable alias/metadata return no-store; versioned APK is immutable. API healthy.
+- Current published runtime is Android 1.0.10+11, production API/preview false, push client enabled by default on Android (no build flag required), original beta certificate.
+- Repository circle.apk, immutable circle-1.0.10-11.apk, release.json and both site buttons align: 64,687,498 bytes, SHA-256 d41e0456585775f5ae8d9fb137505d04b18778aefdead628096b10133a3ed6d6. Earlier immutable artifacts retained.
 - Build10 contacts/WhatsApp/SMS and real push delivery still require owner device acceptance; promotion does not establish those results. Backend sender configuration/flags unchanged by this batch.
 
 ## Current work and priorities
 - Canonical backlog and acceptance criteria: `docs/pending-work.md`.
 - Next batch B1–B5: preserve/integrate profile work; truthful capability gates; optional/safe Firebase; complete profiles; correct signing and coherent release.
-- Full push delivery may stay disabled until its own acceptance checks pass. No new live chat/events/albums family in this batch.
+- Push client enabled by default in 1.0.10; FCM sender configured on server. Device registration and end-to-end push delivery pending user acceptance testing.
 - Owner approved sequential backlog execution: real push foundation; safety/privacy/account controls; restore live Chats; restore live Events; polls; albums. Core reliability/accessibility stays tracked.
 - Cross-feature push is required for relevant recipient-facing events; matrix and delivery/privacy/device acceptance are in the canonical backlog. No notifications for every tap/private edit.
 - Do not start another implementation batch before recording which acceptance criteria it owns.
