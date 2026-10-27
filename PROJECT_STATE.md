@@ -8,12 +8,14 @@ Updated: 27 October 2026. Inspect Git status; source, deployment and physical ac
 - AGENTS.md/README §0 govern verification, privacy, optional push, established signing and coherent immutable downloads.
 - Live core: auth, private profiles/media, nested groups/membership/invites, Memories/comments/reactions/saves/search and supported reporting/moderation. Chats/events/albums remain isolated previews pending service batches.
 
-## Current batch — UI/UX design elevation (Instagram/Facebook aesthetic polish)
+## Current batch — UI/UX design elevation (Glassy 3D & Instagram/Facebook aesthetic polish)
 - Modernized app visual presentation with pixel-perfect restraint adhering strictly to "Warm Keepsake on White" design tokens and calm privacy invariants.
-- Softened CircleDepth shadow tokens for smooth, diffused elevation (0.10 light / 0.38 dark).
-- Enhanced navigation bar with active filled iconography (Icons.forum_rounded, Icons.event_rounded).
+- Softened CircleDepth shadow tokens with dual-layer 3D ambient diffusion and contact shadows.
+- Enhanced panels and profile containers with specular top-edge lighting gradients.
+- Elevated navigation bar into a floating dock with transparent backdrop, rim borders, and active filled icons.
 - Elevated Memories cards with edge-to-edge photo layout and horizontal action menu (Icons.more_horiz).
 - Polished Direct Chat styling with Instagram-style pill composer field and crisp hairline borders on incoming bubbles.
+- Enriched heart reaction token to luminous coral pearl (0xFFFA5B4A) while preserving accessible text variant.
 - 100% compliant with design system guard (test/design_system_guard_test.dart), zero analyzer warnings, all chat and memories flow tests passing.
 
 ## Validation and release

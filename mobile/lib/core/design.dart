@@ -30,7 +30,7 @@ abstract final class CircleDepth {
   static const _ink = Color(0xFF262047);
 
   static Color shadow(Brightness brightness) => brightness == Brightness.light
-      ? _ink.withValues(alpha: 0.10)
+      ? _ink.withValues(alpha: 0.08)
       : Colors.black.withValues(alpha: 0.38);
 
   static BoxDecoration panel(
@@ -47,7 +47,7 @@ abstract final class CircleDepth {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Color.lerp(surface, theme.colorScheme.surface, light ? 0.72 : 0.12)!,
+          Color.lerp(surface, Colors.white, light ? 0.70 : 0.08)!,
           surface,
         ],
       ),
@@ -59,9 +59,17 @@ abstract final class CircleDepth {
       boxShadow: [
         BoxShadow(
           color: shadow(theme.brightness),
-          offset: const Offset(0, 6),
-          blurRadius: 16,
-          spreadRadius: -5,
+          offset: const Offset(0, 8),
+          blurRadius: 18,
+          spreadRadius: -4,
+        ),
+        BoxShadow(
+          color: shadow(
+            theme.brightness,
+          ).withValues(alpha: light ? 0.04 : 0.15),
+          offset: const Offset(0, 2),
+          blurRadius: 4,
+          spreadRadius: -1,
         ),
       ],
     );
@@ -80,15 +88,34 @@ abstract final class CircleDepth {
             blurRadius: 24,
             spreadRadius: -6,
           ),
+          BoxShadow(
+            color: shadow(Theme.of(context).brightness).withValues(
+              alpha: Theme.of(context).brightness == Brightness.light
+                  ? 0.05
+                  : 0.18,
+            ),
+            offset: const Offset(0, 2),
+            blurRadius: 6,
+            spreadRadius: -1,
+          ),
         ],
       );
 
   /// Quiet perimeter around the navigation dock and grouped list surfaces.
-  static BoxDecoration dock(BuildContext context) => panel(
-    context,
-    radius: CircleRadius.sheet,
-    tint: Theme.of(context).colorScheme.surface,
-  ).copyWith(border: Border.all(color: CircleAccents.of(context).hairline));
+  static BoxDecoration dock(BuildContext context) {
+    final light = Theme.of(context).brightness == Brightness.light;
+    return panel(
+      context,
+      radius: CircleRadius.sheet,
+      tint: Theme.of(context).colorScheme.surface,
+    ).copyWith(
+      border: Border.all(
+        color: light
+            ? CircleAccents.of(context).hairline
+            : Theme.of(context).colorScheme.outlineVariant,
+      ),
+    );
+  }
 
   static WidgetStateProperty<double> get buttonLift =>
       WidgetStateProperty.resolveWith((states) {
@@ -145,7 +172,7 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
   final Color activeDot;
 
   static const light = CircleAccents(
-    heart: Color(0xFFC24534),
+    heart: Color(0xFFFA5B4A),
     heartText: Color(0xFF9C3426),
     heartContainer: Color(0xFFFFE8E1),
     calm: Color(0xFF5753AC),
@@ -376,9 +403,9 @@ ThemeData circleTheme(Brightness brightness) {
       extendedTextStyle: text.labelLarge?.copyWith(fontSize: 16),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      elevation: CircleDepth.cardElevation,
-      shadowColor: CircleDepth.shadow(brightness),
-      backgroundColor: colors.surface,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       // Lavender selection keeps the dock quiet; icon and weight carry state.
       indicatorColor: accents.calmContainer,
