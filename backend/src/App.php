@@ -81,7 +81,7 @@ final class App
                     'user'     => $row['name'],
                     'platform' => $row['platform'],
                     'token'    => substr($row['fcm_token'], 0, 20) . '...',
-                    'status'   => $result->status->name,
+                    'status'   => $result->status,
                 ];
             }
 
