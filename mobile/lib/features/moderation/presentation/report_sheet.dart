@@ -1,3 +1,4 @@
+import '../../../core/api/api_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
@@ -42,21 +43,36 @@ Future<bool> reportToAdmins(
   required String what,
 }) {
   final controller = ref.read(circleWorkspaceProvider.notifier);
+  final api = ref.read(apiClientProvider);
+  final session = api?.sessionRevision;
+  final viewer = ref.read(circleViewerProvider);
   return showReportSheet(
     context,
     title: 'Report $what',
-    explanation: target.kind == ReportKind.subgroup
+    explanation: ref.read(circleFeaturesProvider).server
+        ? "Only this group’s admins review reports. Your account and optional note aren’t shown in their queue."
+        : target.kind == ReportKind.subgroup
         ? 'Admins of the group above it can remove it. They see its name, '
               'size and the reasons, never who reported it.'
         : 'Admins of this group see the reason, never who reported it.',
     confirmation: 'Thanks — admins of this group will review it.',
-    submit: (reason, note) => controller.report(
-      ReportDraft(target: target, reason: reason, note: note),
-    ),
+    submit: (reason, note) {
+      if (!context.mounted ||
+          !identical(ref.read(apiClientProvider), api) ||
+          api?.sessionRevision != session ||
+          ref.read(circleViewerProvider) != viewer) {
+        throw const CircleFailure(
+          'Your session changed. Open the report again.',
+        );
+      }
+      return controller.report(
+        ReportDraft(target: target, reason: reason, note: note),
+      );
+    },
   );
 }
 
-class _ReportSheet extends StatefulWidget {
+class _ReportSheet extends ConsumerStatefulWidget {
   const _ReportSheet({
     required this.title,
     required this.explanation,
@@ -65,10 +81,10 @@ class _ReportSheet extends StatefulWidget {
   final String title, explanation;
   final Future<void> Function(ReportReason reason, String? note) submit;
   @override
-  State<_ReportSheet> createState() => _ReportSheetState();
+  ConsumerState<_ReportSheet> createState() => _ReportSheetState();
 }
 
-class _ReportSheetState extends State<_ReportSheet> {
+class _ReportSheetState extends ConsumerState<_ReportSheet> {
   final _note = TextEditingController();
   ReportReason? _reason;
   String? _error;
@@ -129,7 +145,8 @@ class _ReportSheetState extends State<_ReportSheet> {
             const SizedBox(height: Space.xs),
             Text(widget.explanation, style: theme.textTheme.bodySmall),
             const SizedBox(height: Space.sm),
-            const PreviewLabel('Preview: reports stay on this device.'),
+            if (!ref.watch(circleFeaturesProvider).server)
+              const PreviewLabel('Preview: reports stay on this device.'),
             Text('What’s wrong?', style: theme.textTheme.titleMedium),
             RadioGroup<ReportReason>(
               groupValue: _reason,

@@ -346,7 +346,7 @@ void main() {
       () => repo.report(
         '$asha',
         ReportDraft(
-          target: ReportTarget.memory('1', groupId: '$group'),
+          target: ReportTarget.subgroup('1', parentGroup: '$group'),
           reason: ReportReason.spam,
         ),
       ),

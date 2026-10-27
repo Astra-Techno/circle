@@ -44,10 +44,11 @@ class CircleFeatures {
   const CircleFeatures.server(String this.host, {bool notifications = false})
     : available = notifications
           ? const {
+              CircleFeature.moderation,
               CircleFeature.notificationSettings,
               CircleFeature.contactInvitations,
             }
-          : const {CircleFeature.contactInvitations};
+          : const {CircleFeature.contactInvitations, CircleFeature.moderation};
 
   /// Null in the preview; the server's host in server mode.
   final String? host;

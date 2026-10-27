@@ -178,7 +178,12 @@ void main() {
         }
         final groupChoice = find.byKey(const ValueKey('push-groups'));
         await tester.scrollUntilVisible(groupChoice, 300);
-        expect(find.text('Group invitations'), findsOneWidget);
+        expect(find.text('Groups and safety'), findsOneWidget);
+        await Scrollable.ensureVisible(
+          tester.element(groupChoice),
+          alignment: 0.5,
+        );
+        await tester.pumpAndSettle();
         await tester.tap(groupChoice);
         await tester.pumpAndSettle();
         expect(

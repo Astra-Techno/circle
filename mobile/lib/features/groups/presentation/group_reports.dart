@@ -1,3 +1,4 @@
+import '../../moderation/presentation/server_reports.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +17,9 @@ class GroupReportsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(circleFeaturesProvider).server) {
+      return ServerReportsScreen(groupId: groupId);
+    }
     final load = ref.watch(moderationQueueProvider(groupId));
     final now = ref.watch(circleClockProvider)();
     return load.when(

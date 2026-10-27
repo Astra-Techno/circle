@@ -16,7 +16,7 @@ part 'api_memory_repository.dart';
 /// It keeps a small in-memory copy of what the viewer may see, so building
 /// the workspace after a change costs no network round trip; each change
 /// updates that copy from the server's answer or refetches just what it
-/// touched. [refresh] reloads everything. Events, polls and moderation
+/// touched. [refresh] reloads everything. Events and polls
 /// aren't on the server yet: their methods fail calmly and the workspace
 /// has none, so no fictional data is ever mixed into real groups.
 class ApiCircleRepository extends ApiRepositoryBase
@@ -85,8 +85,29 @@ class ApiCircleRepository extends ApiRepositoryBase
       Future.error(notOnServerYet(CircleFeature.events));
 
   @override
-  Future<void> report(String viewer, ReportDraft draft) =>
-      Future.error(notOnServerYet(CircleFeature.moderation));
+  Future<void> report(String viewer, ReportDraft draft) async {
+    _checkViewer(viewer);
+    if (!const {
+      ReportKind.memory,
+      ReportKind.comment,
+      ReportKind.member,
+    }.contains(draft.target.kind)) {
+      throw notOnServerYet(CircleFeature.moderation);
+    }
+    final session = api.sessionRevision;
+    await api.post(
+      '/groups/${draft.target.groupId}/reports',
+      body: {
+        'kind': draft.target.kind.name,
+        'target_id': int.parse(draft.target.id),
+        'reason': draft.reason.name,
+        if (draft.note != null) 'note': draft.note,
+      },
+      expectedAccount: viewer,
+      expectedSession: session,
+    );
+  }
+
   @override
   Future<ModerationQueue> queue(String viewer, String groupId) =>
       Future.error(notOnServerYet(CircleFeature.moderation));

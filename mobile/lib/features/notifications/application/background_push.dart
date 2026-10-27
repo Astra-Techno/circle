@@ -72,7 +72,7 @@ class BackgroundPushProcessor {
           api,
           accountId: scope.account,
         ).load();
-        final category = envelope.isInvitation
+        final category = (envelope.isInvitation || envelope.isReport)
             ? PushCategory.groups
             : envelope.type == 'memory.created'
             ? PushCategory.memories
@@ -84,9 +84,7 @@ class BackgroundPushProcessor {
         if (pushQuietNow(preferences, clock())) return;
         final memory = ApiJson.map(
           await api.get(
-            envelope.isInvitation
-                ? '/group-invitations/${envelope.invitationId}'
-                : '/memories/${envelope.memoryId}',
+            envelope.authorizationPath,
             expectedAccount: scope.account,
           ),
         );

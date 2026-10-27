@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Circle\Notifications;
 
 use Circle\Controllers\GroupInvitationController;
+use Circle\Controllers\MemoryController;
 use Circle\Core\Database;
 use Circle\Core\Env;
 use Circle\Core\NotificationPreferences;
@@ -55,13 +56,18 @@ final class NotificationWorker
                     WHERE id = :id AND state = 'pending'", ['lease' => $this->clockAt()->modify('+5 minutes')->format('Y-m-d H:i:s'), 'id' => $row['id']]) !== 1) continue;
                 $counts['processed']++;
                 $invitation = $row['kind'] === 'group.invitation';
+                $report = $row['kind'] === 'group.report';
                 $category = $row['kind'] === 'memory.created' ? 'memories' : 'replies_reactions';
                 $device = Database::queryOne("SELECT dt.fcm_token FROM device_tokens dt
                     WHERE dt.id = :did AND dt.user_id = :uid AND dt.session_id = :sid AND dt.platform = 'android'
                     AND EXISTS (SELECT 1 FROM refresh_tokens rt WHERE rt.user_id = dt.user_id AND rt.session_id = dt.session_id
                         AND rt.revoked_at IS NULL AND rt.expires_at > :now)",
                     ['did' => $row['device_id'], 'uid' => $row['user_id'], 'sid' => $row['session_id'], 'now' => $now]);
-                if ($invitation) {
+                if ($report) {
+                    $content = Database::queryOne("SELECT t.id FROM moderation_targets t JOIN group_members gm ON gm.group_id=t.group_id AND gm.user_id=:uid AND gm.role='admin' AND gm.status='active' JOIN users u ON u.id=gm.user_id AND u.status='active'
+                        WHERE t.id=:target AND t.group_id=:gid AND EXISTS(SELECT 1 FROM reports r WHERE r.target_id=t.id AND r.dismissed=0)", ['uid'=>$row['user_id'],'target'=>$row['moderation_target_id'],'gid'=>$row['group_id']]);
+                    $eligible = $content !== null && $row['memory_id'] === null && $row['comment_id'] === null && $row['invitation_id'] === null && NotificationPreferences::eligible((int)$row['user_id'],'groups',(int)$row['group_id']);
+                } elseif ($invitation) {
                     $content = Database::queryOne('SELECT id FROM group_invitations WHERE id = :id AND recipient_id = :uid AND group_id = :gid',
                         ['id' => $row['invitation_id'], 'uid' => $row['user_id'], 'gid' => $row['group_id']]);
                     $eligible = $content !== null && $row['memory_id'] === null && $row['comment_id'] === null
@@ -72,6 +78,7 @@ final class NotificationWorker
                         ['mid' => $row['memory_id'], 'gid' => $row['group_id']]);
                     if ($row['comment_id'] !== null && Database::queryOne("SELECT id FROM comments WHERE id = :cid AND memory_id = :mid AND status = 'active'",
                         ['cid' => $row['comment_id'], 'mid' => $row['memory_id']]) === null) $content = null;
+                    if ($row['comment_id'] !== null && !MemoryController::commentIsVisible((int)$row['comment_id'],(int)$row['user_id'])) $content = null;
                     $eligible = $content !== null && NotificationPreferences::eligible((int) $row['user_id'], $category, (int) $row['group_id']);
                 }
                 if ($row['expires_at'] <= $now || $device === null || !$eligible) {
@@ -96,7 +103,7 @@ final class NotificationWorker
                         'expires_at' => (string) (new \DateTimeImmutable((string) $row['expires_at'], new \DateTimeZone('UTC')))->getTimestamp(),
                     ];
                     if ($invitation) $data['invitation_id'] = (string) $row['invitation_id'];
-                    else {
+                    elseif (!$report) {
                         $data['memory_id'] = (string) $row['memory_id'];
                         $data['comment_id'] = $row['comment_id'] === null ? '' : (string) $row['comment_id'];
                     }

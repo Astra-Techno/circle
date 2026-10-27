@@ -44,7 +44,8 @@ class PushPresentation {
             binding.api,
             accountId: binding.scope.account,
           ).load();
-          final category = reception.envelope.isInvitation
+          final category =
+              (reception.envelope.isInvitation || reception.envelope.isReport)
               ? PushCategory.groups
               : reception.envelope.type == 'memory.created'
               ? PushCategory.memories
@@ -105,7 +106,8 @@ class PushPresentation {
         binding.api,
         accountId: binding.scope.account,
       ).load();
-      final category = reception.envelope.isInvitation
+      final category =
+          (reception.envelope.isInvitation || reception.envelope.isReport)
           ? PushCategory.groups
           : reception.envelope.type == 'memory.created'
           ? PushCategory.memories
@@ -118,9 +120,7 @@ class PushPresentation {
     }
     final data = ApiJson.map(
       await binding.api.get(
-        reception.envelope.isInvitation
-            ? '/group-invitations/${reception.envelope.invitationId}'
-            : '/memories/${reception.envelope.memoryId}',
+        reception.envelope.authorizationPath,
         expectedAccount: binding.scope.account,
       ),
     );

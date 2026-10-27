@@ -15,6 +15,19 @@ use Circle\Repositories\MemberRepository;
 
 final class MemoryController
 {
+    /** Only active comment branches are visible; hiding a parent hides its descendants. */
+    private const VISIBLE_COMMENTS = "WITH RECURSIVE visible_comments AS (
+        SELECT c.id,c.memory_id FROM comments c JOIN memories vm ON vm.id=c.memory_id AND vm.status='active'
+        JOIN group_members vg ON vg.group_id=vm.group_id AND vg.user_id=:visible_viewer AND vg.status='active'
+        WHERE c.parent_id IS NULL AND c.status='active'
+        UNION ALL SELECT c.id,c.memory_id FROM comments c JOIN visible_comments p ON c.parent_id=p.id AND c.memory_id=p.memory_id WHERE c.status='active'
+    ) ";
+
+    public static function commentIsVisible(int $id, int $userId): bool
+    {
+        return Database::queryOne(self::VISIBLE_COMMENTS . "SELECT v.id FROM visible_comments v JOIN memories m ON m.id=v.memory_id AND m.status='active' WHERE v.id=:id", ['id'=>$id,'visible_viewer'=>$userId]) !== null;
+    }
+
     /** Reactions are limited to a short, fixed set. */
     public const REACTIONS = ['❤️', '😂', '😮', '😢', '🙏', '👍', '🎉', '🔥'];
 
@@ -46,7 +59,7 @@ final class MemoryController
             Response::validationError('q must be valid UTF-8 text with at most 200 characters.');
         }
 
-        $params = ['viewer' => $userId, 'gm_status' => 'active', 'm_status' => 'active'];
+        $params = ['visible_viewer' => $userId, 'viewer' => $userId, 'gm_status' => 'active', 'm_status' => 'active'];
         $where = 'WHERE m.status = :m_status AND gm.user_id = :viewer AND gm.status = :gm_status';
 
         if ($groupId !== '') {
@@ -80,16 +93,15 @@ final class MemoryController
 
         $params['reacted_uid'] = $userId;
         $params['saved_uid'] = $userId;
-        $params['c_status'] = 'active';
         $params['lim'] = $limit + 1;
 
         $memories = Database::query(
-            "SELECT m.id, m.group_id, m.author_id, m.body, m.memory_date, m.place,
+            self::VISIBLE_COMMENTS . "SELECT m.id, m.group_id, m.author_id, m.body, m.memory_date, m.place,
                     m.created_at, m.updated_at,
                     u.display_name AS author_name, u.avatar_path AS author_avatar,
                     g.name AS group_name, g.`type` AS group_type,
                     (SELECT COUNT(*) FROM reactions r WHERE r.memory_id = m.id) AS reaction_count,
-                    (SELECT COUNT(*) FROM comments c WHERE c.memory_id = m.id AND c.status = :c_status) AS comment_count,
+                    (SELECT COUNT(*) FROM visible_comments c WHERE c.memory_id = m.id) AS comment_count,
                     EXISTS(SELECT 1 FROM reactions r2 WHERE r2.memory_id = m.id AND r2.user_id = :reacted_uid) AS user_reacted,
                     EXISTS(SELECT 1 FROM saves sv WHERE sv.memory_id = m.id AND sv.user_id = :saved_uid) AS user_saved
              FROM memories m
@@ -134,13 +146,13 @@ final class MemoryController
             'parent_id' => $c['parent_id'] !== null ? (int) $c['parent_id'] : null,
             'author_id' => (int) $c['author_id'],
         ], Database::query(
-            'SELECT c.id, c.parent_id, c.author_id, c.body, c.created_at,
+            self::VISIBLE_COMMENTS . 'SELECT c.id, c.parent_id, c.author_id, c.body, c.created_at,
                     u.display_name AS author_name, u.avatar_path AS author_avatar
              FROM comments c
              JOIN users u ON c.author_id = u.id
-             WHERE c.memory_id = :mid AND c.status = :s
+             WHERE c.memory_id = :mid AND EXISTS(SELECT 1 FROM visible_comments v WHERE v.id=c.id)
              ORDER BY c.created_at, c.id',
-            ['mid' => $memoryId, 's' => 'active']
+            ['mid' => $memoryId, 'visible_viewer' => $userId]
         ));
 
         $memory['reactions'] = array_map(static fn (array $r): array => [
@@ -356,8 +368,8 @@ final class MemoryController
         if ($parentId !== null && $parentId !== '') {
             $pid = is_int($parentId) || (is_string($parentId) && ctype_digit($parentId)) ? (int) $parentId : 0;
             $parent = Database::queryOne(
-                'SELECT id FROM comments WHERE id = :id AND memory_id = :mid AND status = :s',
-                ['id' => $pid, 'mid' => $memoryId, 's' => 'active']
+                self::VISIBLE_COMMENTS . 'SELECT id FROM visible_comments WHERE id = :id AND memory_id = :mid',
+                ['id' => $pid, 'mid' => $memoryId, 'visible_viewer' => $userId]
             );
             if ($parent === null) {
                 Response::validationError('parent_id must be a comment on the same Memory.');

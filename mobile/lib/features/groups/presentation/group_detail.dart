@@ -400,7 +400,7 @@ class _JoinableTile extends ConsumerWidget {
               runSpacing: Space.sm,
               children: [
                 _joinAction(context, controller),
-                if (!reported)
+                if (!reported && !ref.watch(circleFeaturesProvider).server)
                   TextButton(
                     onPressed: () => reportToAdmins(
                       context,

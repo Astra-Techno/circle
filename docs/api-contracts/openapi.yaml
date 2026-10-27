@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.10
+  version: 0.3.11
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -64,9 +64,13 @@ info:
     produce no outbox entries. Capture/delivery default off; native client acceptance is pending.
     Worker Memory envelopes follow PushMemoryEnvelope; group invitations follow
     PushGroupInvitationEnvelope (0.3.7) with recipient-consent authorization. This
-    does not introduce a public queue endpoint.
+    does not introduce a public queue endpoint. Reports use PushGroupReportEnvelope
+    (0.3.11), with groups opt-in, current exact-admin/session checks and a private
+    queue fetch before foreground/headless display or tap. One alert per target/device;
+    no reporter identity, reason, note or content is included.
     Retries are at-least-once: client event-id deduplication and account/server/session checks
-    are mandatory before presentation. API mutation idempotency is still not implemented.
+    are mandatory before presentation. Generic API idempotency keys remain planned;
+    report-duplicate and media-upload deduplication are defined per operation.
 
     ## Not yet implemented (planned, not part of this contract)
     Direct add with consent, events, polls, chat (and chat attachments), albums,
@@ -855,6 +859,148 @@ paths:
         '422': { $ref: '#/components/responses/ValidationError' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
+  /groups/{id}/reports:
+    parameters:
+      - {$ref: '#/components/parameters/GroupId'}
+    post:
+      operationId: reportGroupContent
+      tags: [Groups]
+      summary: Report an accessible Memory, comment or member to exact group admins.
+      description: |
+        Current exact membership and active target required; no self reports.
+        Parent membership never grants access. One report per account/target;
+        duplicate retries succeed without changing the report, version or alerts.
+        At most10 new reports per account/hour across groups; duplicates do not consume this budget.
+        Admin responses omit reporter accounts, notes, mobiles and report row ids.
+        Optional notes are private write-side text, never included in admin APIs/push.
+        New reports capture one generic group.report admin alert per target/device,
+        under groups preferences, quiet hours and current session/admin checks.
+        Chats/events/subgroups, blocking, deletion/export and platform escalation
+        are separate capabilities, not enabled by this operation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, target_id, reason]
+              properties:
+                kind: {type: string, enum: [memory, comment, member]}
+                target_id: {type: integer, minimum: 1}
+                reason: {type: string, enum: [spam, harassment, hate, nudity, violence, privateInfo, other]}
+                note: {type: string, maxLength: 500}
+      responses:
+        '200': {description: Report recorded, or duplicate safely ignored. No target/report identity returned.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+    get:
+      operationId: listPrivateGroupReports
+      tags: [Groups]
+      summary: Private paginated review queue and latest 50 admin actions.
+      description: |
+        Active exact admins only. Private,no-store. Open targets and hidden content
+        remain reviewable; dismissed visible targets leave the queue. Hidden content
+        is inspected here only, never through ordinary Memory/media endpoints.
+        Removed content has null summary and available=false; cannot be restored.
+        Offset pagination ordered updated_at/id descending is not a frozen snapshot;
+        refresh after changes. Recent audit omits reporter identity/notes.
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, default: 30, minimum: 1, maximum: 50}}
+        - {name: offset, in: query, schema: {type: integer, default: 0, minimum: 0, maximum: 1000000}}
+      responses:
+        '200':
+          description: Authorized queue.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: {const: true}
+                  data:
+                    type: object
+                    required: [group_id, items, has_more, offset, limit, audit]
+                    properties:
+                      group_id: {type: integer}
+                      has_more: {type: boolean}
+                      offset: {type: integer}
+                      limit: {type: integer}
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          required: [id, kind, target_id, version, updated_at, summary, hidden, available, reasons]
+                          properties:
+                            id: {type: integer, description: Moderation target handle; not a reporter/report row id.}
+                            kind: {type: string, enum: [memory, comment, member]}
+                            target_id: {type: integer}
+                            version: {type: integer, minimum: 1}
+                            updated_at: {type: string}
+                            summary: {type: [string, 'null'], maxLength: 500}
+                            hidden: {type: boolean}
+                            available: {type: boolean}
+                            reasons:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  reason: {type: string}
+                                  count: {type: integer}
+                      audit:
+                        type: array
+                        maxItems: 50
+                        items:
+                          type: object
+                          properties:
+                            id: {type: integer}
+                            action: {type: string, enum: [hide, unhide, dismiss, restore]}
+                            created_at: {type: string}
+                            kind: {type: string}
+                            target_id: {type: integer}
+                            actor_name: {type: string, description: Admin actor display name; not reporter.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /groups/{id}/reports/{reportTargetId}/actions:
+    parameters:
+      - {$ref: '#/components/parameters/GroupId'}
+      - {name: reportTargetId, in: path, required: true, schema: {type: integer, minimum: 1}}
+    post:
+      operationId: actOnPrivateGroupReport
+      tags: [Groups]
+      summary: Version-checked hide/restore/dismiss/reopen with admin audit.
+      description: |
+        Recheck active user/session/exact-admin under group/user/session/member locks.
+        New reports/actions increment version; stale actions/retries return409.
+        hide/unhide only Memory/comment targets; deleted content cannot be restored.
+        Hiding Memory blocks all ordinary lists/Saved/search/detail/mutations and
+        existing signed photo links, for admins too. Restoring retains deleted-asset
+        state. Hiding a comment suppresses its descendant branch and counts; restoring
+        a parent never unhides a separately hidden descendant. Admin queue is the only
+        private inspection surface. Dismiss/reopen affects reports, not visibility.
+        No reporter identities, notes or content in audit/push. Existing member-role,
+        owner-protection and removal rules still apply through Members controls.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, version]
+              properties:
+                action: {type: string, enum: [hide, unhide, dismiss, restore]}
+                version: {type: integer, minimum: 1}
+      responses:
+        '200': {description: Saved and audited; version incremented exactly once.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {description: Stale queue or removed target; refresh required.}
+        '422': {$ref: '#/components/responses/ValidationError'}
+        '429': {$ref: '#/components/responses/RateLimited'}
   /groups/{id}/photos/{kind}:
     parameters:
       - {$ref: '#/components/parameters/GroupId'}
@@ -1846,7 +1992,7 @@ paths:
         member of the asset's exact group (never inherited from parent or child
         groups); an asset not yet attached to a Memory is visible to its uploader only;
         and moderation hasn't hidden it (hidden media is `404` for everyone, including
-        admins, until moderation tools exist). Chat attachments (conversation access,
+        admins; restore visibility from the private moderation queue to re-enable ready assets). Chat attachments (conversation access,
         ADR 0003) come with chat. A missing asset and one you can't see both return the
         same `404`. The returned `url` is relative to the API base and needs no bearer
         token.
@@ -2106,6 +2252,18 @@ components:
           properties:
             invitation: {$ref: '#/components/schemas/GroupInvitation'}
             status: {type: string, enum: [joined, pending_approval, accepted, declined, expired]}
+    PushGroupReportEnvelope:
+      type: object
+      additionalProperties: false
+      required: [event_id, type, api_base_url, recipient_id, session_scope, group_id, expires_at]
+      properties:
+        event_id: {type: string, pattern: '^[a-f0-9]{64}$'}
+        type: {type: string, const: group.report}
+        api_base_url: {type: string, format: uri}
+        recipient_id: {type: string, pattern: '^[1-9][0-9]{0,19}$'}
+        session_scope: {type: string, pattern: '^[a-f0-9]{64}$'}
+        group_id: {type: string, pattern: '^[1-9][0-9]{0,19}$'}
+        expires_at: {type: string, pattern: '^[0-9]{1,13}$'}
     PushGroupInvitationEnvelope:
       type: object
       additionalProperties: false

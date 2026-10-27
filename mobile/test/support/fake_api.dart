@@ -147,6 +147,9 @@ class FakeCircleServer {
   final Set<String> expired = {};
   final Map<int, Map<String, Object?>> groups = {};
   final Map<int, Map<int, String>> members = {};
+  final List<Map<String, Object?>> moderationCases = [];
+  final List<Map<String, Object?>> moderationAudit = [];
+  final Set<int> hiddenMemories = {};
   final List<Map<String, Object?>> memories = [];
   final Map<int, List<Map<String, Object?>>> comments = {};
   final Map<int, Map<int, String>> reactions = {};
@@ -527,6 +530,101 @@ class FakeCircleServer {
         return FakeResponse.error(403, 'not_member');
       }
       final admin = members[id]![me] == 'admin';
+      if (rest == '/reports') {
+        if (r.method == 'POST') {
+          final target = body['target_id'];
+          final kind = body['kind'];
+          final memory = memories
+              .where((m) => m['id'] == target && m['group_id'] == id)
+              .firstOrNull;
+          if (kind == 'memory' && memory == null) {
+            return FakeResponse.error(404, 'not_found');
+          }
+          final existing = moderationCases
+              .where(
+                (m) =>
+                    m['group_id'] == id &&
+                    m['kind'] == kind &&
+                    m['target_id'] == target,
+              )
+              .firstOrNull;
+          if (existing == null) {
+            moderationCases.add({
+              'id': _next(),
+              'group_id': id,
+              'kind': kind,
+              'target_id': target,
+              'version': 2,
+              'updated_at': now,
+              'summary': memory?['body'] ?? users[target]?['display_name'],
+              'hidden': false,
+              'available': true,
+              'reasons': [
+                {'reason': body['reason'], 'count': 1},
+              ],
+            });
+          }
+          return FakeResponse.ok(null);
+        }
+        if (!admin) return FakeResponse.error(403, 'forbidden');
+        final all = moderationCases
+            .where(
+              (m) =>
+                  m['group_id'] == id &&
+                  (m['hidden'] == true || (m['reasons'] as List).isNotEmpty),
+            )
+            .toList();
+        final offset = int.tryParse(r.query['offset'] ?? '') ?? 0;
+        final limit = int.tryParse(r.query['limit'] ?? '') ?? 30;
+        return FakeResponse.ok({
+          'group_id': id,
+          'items': all.skip(offset).take(limit).toList(),
+          'has_more': all.length > offset + limit,
+          'offset': offset,
+          'limit': limit,
+          'audit': moderationAudit.where((v) => v['group_id'] == id).toList(),
+        });
+      }
+      final safetyAction = RegExp(r'^/reports/(\d+)/actions$').firstMatch(rest);
+      if (safetyAction != null && r.method == 'POST') {
+        if (!admin) return FakeResponse.error(403, 'forbidden');
+        final target = moderationCases
+            .where(
+              (m) => m['group_id'] == id && '${m['id']}' == safetyAction[1],
+            )
+            .firstOrNull;
+        if (target == null) return FakeResponse.error(404, 'not_found');
+        if (target['version'] != body['version']) {
+          return FakeResponse.error(409, 'conflict');
+        }
+        final action = body['action'];
+        if (action == 'hide' || action == 'unhide') {
+          target['hidden'] = action == 'hide';
+          if (target['kind'] == 'memory') {
+            if (action == 'hide') {
+              hiddenMemories.add(target['target_id'] as int);
+            } else {
+              hiddenMemories.remove(target['target_id']);
+            }
+          }
+        } else if (action == 'dismiss') {
+          target['reasons'] = <Object>[];
+        } else {
+          target['reasons'] = [
+            {'reason': 'spam', 'count': 1},
+          ];
+        }
+        target['version'] = (target['version'] as int) + 1;
+        moderationAudit.insert(0, {
+          'group_id': id,
+          'actor_name': users[me]!['display_name'],
+          'kind': target['kind'],
+          'target_id': target['target_id'],
+          'action': action,
+          'created_at': now,
+        });
+        return FakeResponse.ok(null);
+      }
       final photo = RegExp(r'^/photos/(avatar|cover)$').firstMatch(rest);
       if (photo != null) {
         final kind = photo[1]!, key = '$id:${photo[1]}';
@@ -718,7 +816,8 @@ class FakeCircleServer {
     if (path == '/memories' && r.method == 'GET') {
       final mine = [
         for (final memory in memories)
-          if ((members[memory['group_id']]?.containsKey(me) ?? false) &&
+          if (!hiddenMemories.contains(memory['id']) &&
+              (members[memory['group_id']]?.containsKey(me) ?? false) &&
               (r.query['group_id'] == null ||
                   '${memory['group_id']}' == r.query['group_id']) &&
               (r.query['saved'] != 'true' ||
@@ -746,6 +845,7 @@ class FakeCircleServer {
       final id = int.parse(memory[1]!);
       final json = memories.where((m) => m['id'] == id).firstOrNull;
       if (json == null ||
+          hiddenMemories.contains(id) ||
           !(members[json['group_id']]?.containsKey(me) ?? false)) {
         return FakeResponse.error(404, 'not_found');
       }

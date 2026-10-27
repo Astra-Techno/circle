@@ -174,8 +174,8 @@ class _Choices extends ConsumerWidget {
           ),
           category(
             PushCategory.groups,
-            'Group invitations',
-            'When someone invites you to a group',
+            'Groups and safety',
+            'Group invitations and reports for group admins',
           ),
           const SizedBox(height: Space.section),
           const CircleSectionTitle('Quiet hours'),

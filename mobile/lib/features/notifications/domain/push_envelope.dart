@@ -78,8 +78,17 @@ class PushEnvelope {
   });
   final String eventId, type, memoryId, groupId, commentId, invitationId;
   bool get isInvitation => type == 'group.invitation';
-  String get destination =>
-      isInvitation ? '/you/invitations' : '/home/memory/$memoryId';
+  bool get isReport => type == 'group.report';
+  String get authorizationPath => isReport
+      ? '/groups/$groupId/reports'
+      : isInvitation
+      ? '/group-invitations/$invitationId'
+      : '/memories/$memoryId';
+  String get destination => isReport
+      ? '/groups/g/$groupId/reports'
+      : isInvitation
+      ? '/you/invitations'
+      : '/home/memory/$memoryId';
   final int expiresAt;
   final PushScope scope;
 
@@ -89,6 +98,8 @@ class PushEnvelope {
     DateTime now,
   ) {
     final invitation = data['type'] == 'group.invitation';
+    final report = data['type'] == 'group.report';
+    final groupEvent = invitation || report;
     final keys = {
       'event_id',
       'type',
@@ -96,7 +107,12 @@ class PushEnvelope {
       'recipient_id',
       'session_scope',
       'group_id',
-      if (invitation) 'invitation_id' else ...['memory_id', 'comment_id'],
+      if (invitation)
+        'invitation_id'
+      else if (!report) ...[
+        'memory_id',
+        'comment_id',
+      ],
       'expires_at',
     };
     if (data.length != keys.length ||
@@ -110,12 +126,12 @@ class PushEnvelope {
       return null;
     }
     final event = data['event_id'] as String, type = data['type'] as String;
-    final memory = invitation ? '' : data['memory_id'] as String,
+    final memory = groupEvent ? '' : data['memory_id'] as String,
         group = data['group_id'] as String,
-        comment = invitation ? '' : data['comment_id'] as String,
+        comment = groupEvent ? '' : data['comment_id'] as String,
         invitationId = invitation ? data['invitation_id'] as String : '';
     if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(event) ||
-        (invitation ? !_id(invitationId) : !_id(memory)) ||
+        (invitation ? !_id(invitationId) : !report && !_id(memory)) ||
         !_id(group)) {
       return null;
     }
@@ -124,10 +140,11 @@ class PushEnvelope {
       'comment.created',
       'comment.reply',
       'group.invitation',
+      'group.report',
     }.contains(type)) {
       return null;
     }
-    if (!invitation &&
+    if (!groupEvent &&
         (type == 'memory.created' ? comment.isNotEmpty : !_id(comment))) {
       return null;
     }
@@ -159,7 +176,7 @@ class PushEnvelope {
     'group_id': groupId,
     if (isInvitation)
       'invitation_id': invitationId
-    else ...{
+    else if (!isReport) ...{
       'memory_id': memoryId,
       'comment_id': commentId,
     },
@@ -168,6 +185,11 @@ class PushEnvelope {
 
   /// Content is fetched through the active account API, never a payload URL.
   bool authorizes(Map<String, dynamic> data, DateTime now) {
+    if (isReport) {
+      return '${data['group_id']}' == groupId &&
+          data['items'] is List &&
+          (data['items'] as List).isNotEmpty;
+    }
     if (isInvitation) {
       final value = data['invitation'];
       if (value is! Map) return false;

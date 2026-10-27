@@ -48,6 +48,25 @@ final class NotificationWorkerTest extends ApiTestCase
         parent::tearDown();
     }
 
+    public function testReportAlertsAreGenericDeduplicatedAndCancelAfterAdminDemotion(): void
+    {
+        $owner=$this->user('Owner'); $member=$this->user('Reporter'); $gid=$this->createGroup($owner); $this->join($owner,$member,$gid);
+        foreach ([$owner,$member] as $user) {
+            $this->request('PATCH','/api/v1/me/notification-preferences',['enabled'=>true,'quiet_hours'=>false,'categories'=>['groups'=>true]],$user['token']);
+            $this->request('POST','/api/v1/devices/register',['fcm_token'=>'fictional-safety-'.$user['id'],'platform'=>'android'],$user['token']);
+        }
+        $mid=$this->createMemory($owner,$gid,'Private report text');
+        foreach ([1,2] as $_) self::assertSame(200,$this->request('POST',"/api/v1/groups/$gid/reports",['kind'=>'memory','target_id'=>$mid,'reason'=>'spam','note'=>'Private note'],$member['token'])->status());
+        self::assertSame(1,(int)Database::queryOne("SELECT COUNT(*) n FROM notification_outbox WHERE kind='group.report'")['n']);
+        $transport=new FakePushTransport(); $worker=new NotificationWorker($transport);
+        self::assertSame(1,$worker->run()['sent']); self::assertCount(1,$transport->calls);
+        $data=$transport->calls[0]['data']; self::assertCount(7,$data); self::assertSame('group.report',$data['type']); self::assertSame((string)$gid,$data['group_id']);
+        foreach (['note','reason','reporter_id','memory_id','comment_id','invitation_id','body'] as $field) self::assertArrayNotHasKey($field,$data);
+        Database::execute("UPDATE notification_outbox SET state='pending',available_at=UTC_TIMESTAMP() WHERE kind='group.report'");
+        Database::execute("UPDATE group_members SET role='member' WHERE group_id=:g AND user_id=:u",['g'=>$gid,'u'=>$owner['id']]);
+        self::assertSame(1,$worker->run()['cancelled']); self::assertCount(1,$transport->calls);
+    }
+
     /** @return array<string, mixed> */
     private function fixture(): array
     {

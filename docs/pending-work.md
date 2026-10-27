@@ -35,7 +35,7 @@ The owner approved sequential completion of this backlog, restoration of Chats a
 
 ## Completed source S1a: secure password-change API foundation
 
-Owns reviewed POST /auth/change-password, current-secret verification, 15–128 character new-secret policy, persistent failure throttling, atomic all-session/device revocation and serialized login/refresh issuance. No recovery/reset, account deletion/export or password UI is exposed by this server-only checkpoint. Next S1b connects the explained client form and independent local cleanup before a new APK. Evidence: [password-change-foundation.md](password-change-foundation.md). This API has not been deployed; build10 has no password form.
+Owns reviewed POST /auth/change-password, current-secret verification, 15–128 character new-secret policy, persistent failure throttling, atomic all-session/device revocation and serialized login/refresh issuance. No recovery/reset, account deletion/export or password UI is exposed by this server-only checkpoint. Next S1b connects the explained client form and independent local cleanup before a new APK. Evidence: [password-change-foundation.md](password-change-foundation.md). Historical server-only checkpoint: build10 had no password form. Password UI and session controls were subsequently delivered in the S1b/build13 batch.
 
 ## Contact-selected invite sharing: source complete; device acceptance pending
 
@@ -105,8 +105,14 @@ Open decisions are deferred to the batch that needs them: recovery/SMS provider 
 
 ## Contact-first invitation batch — 27 October 2026
 
-Owner requested selected-contact invitations and a compact Copy link action. Implemented with OpenAPI0.3.7, migrations011/012, explicit recipient consent/approval, persistent inbox, bounded per-sender attempts and scoped invitation push capture/delivery/client handling. Native picker/composer and actual Android delivery remain owner acceptance checks. See [contact-invite-sharing.md](contact-invite-sharing.md). This batch takes priority over the previously queued S1b password form; that form and later chat/events families remain pending.
+Owner requested selected-contact invitations and a compact Copy link action. Implemented with OpenAPI0.3.7, migrations011/012, explicit recipient consent/approval, persistent inbox, bounded per-sender attempts and scoped invitation push capture/delivery/client handling. Native picker/composer and actual Android delivery remain owner acceptance checks. See [contact-invite-sharing.md](contact-invite-sharing.md). This batch takes priority over the previously queued S1b password form; the form was subsequently delivered in S1b; later chat/events families remain pending.
 
 ## S1b and active-session controls — 27 October 2026
 
 Owner added logged-device details/location and individual session logout. Implemented password current/new/confirmation with no-replay and scoped independent cleanup; owner-only active devices, public handles, one-minute activity/IP metadata, optional foreground city/region sharing/removal, atomic current/remote logout and push-token revocation. OpenAPI0.3.8/migration013; see [account-security-sessions.md](account-security-sessions.md). Build13 verification/publication is this batch's exit. Two-device/native location acceptance remains open. Registration password-policy alignment, independent recovery/security alerts, reports/block/privacy and later chat/events families remain pending.
+
+## S2a — private group reporting and moderation
+
+27 October 2026. Next safety batch implements real Memory/comment/member reports, private paginated exact-admin review, hide/restore, dismiss/Undo and recent admin audit; OpenAPI0.3.11/migration015. Hidden Memories disappear from ordinary reads/Saved/search/actions and existing signed photo links; comment hiding suppresses descendants without restoring independently hidden replies. Reporter accounts and optional notes are never exposed by admin APIs/push. Version/session/admin checks protect stale actions; 10 new reports/account/hour, safe duplicate retries.
+
+Generic group.report alerts use current groups preferences/quiet hours and admin/session rechecks through sender, foreground/headless display and authorized queue taps. Native delivery remains device acceptance. This enables only supported report kinds; subgroup/event/chat reporting, global blocking, DM/profile privacy, platform escalation, account deletion/export and recovery remain separate batches. First implementation/release evidence: safety-reporting.md; actual source/live status is in PROJECT_STATE.md.

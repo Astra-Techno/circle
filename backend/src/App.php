@@ -10,6 +10,7 @@ use Circle\Controllers\DeviceController;
 use Circle\Controllers\NotificationPreferenceController;
 use Circle\Controllers\ProfilePhotoController;
 use Circle\Controllers\GroupPhotoController;
+use Circle\Controllers\ModerationController;
 use Circle\Controllers\GroupController;
 use Circle\Controllers\GroupInvitationController;
 use Circle\Controllers\MediaController;
@@ -144,6 +145,9 @@ final class App
             $r->patch('/me/notification-preferences', NotificationPreferenceController::update(...));
 
             // Groups
+            $r->post('/groups/{id}/reports', ModerationController::create(...));
+            $r->get('/groups/{id}/reports', ModerationController::index(...));
+            $r->post('/groups/{id}/reports/{reportTargetId}/actions', ModerationController::action(...));
             $r->get('/groups', GroupController::index(...));
             $r->post('/groups', GroupController::create(...));
             $r->get('/groups/{id}', GroupController::show(...));
