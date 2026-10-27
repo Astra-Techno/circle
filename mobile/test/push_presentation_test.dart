@@ -157,7 +157,7 @@ void main() {
         enabled: true,
         clock: () => now,
       );
-      var shown = 0;
+      var shown = 0, unavailable = 0;
       final presenter = PushPresentation(
         coordinator: coordinator,
         display: (r) async {
@@ -169,6 +169,9 @@ void main() {
           return true;
         },
         dismiss: () {},
+        unavailable: () {
+          unavailable++;
+        },
         clock: () => now,
       );
       presenter.listen();
@@ -176,6 +179,10 @@ void main() {
       gateway.messages.add(payload(current.scope));
       await flush();
       await presenter.pump();
+      gateway.taps.add(payload(current.scope));
+      await flush();
+      await presenter.pump();
+      expect(unavailable, 1);
       expect(shown, 0);
       expect(await coordinator.pending(), isEmpty);
       presenter.dispose();

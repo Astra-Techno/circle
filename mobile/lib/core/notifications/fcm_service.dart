@@ -3,16 +3,14 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Background presentation requires authenticated scope validation in its own
-/// isolate. Until that path is implemented, data-only messages do not display.
-@pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
+import 'native_push.dart';
 
 abstract interface class FcmGateway {
   bool get supported;
   Future<void> initialize();
   Future<bool> permission({required bool request});
   Future<void> activate();
+  Future<void> bindScope(String? scope);
   Future<String?> token();
   Future<void> deactivate();
   Stream<String> get tokenChanges;
@@ -30,7 +28,6 @@ class FirebaseFcmGateway implements FcmGateway {
   @override
   Future<void> initialize() async {
     if (Firebase.apps.isEmpty) await Firebase.initializeApp();
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   }
 
   @override
@@ -45,6 +42,8 @@ class FirebaseFcmGateway implements FcmGateway {
   @override
   // Keep Firebase auto-init off across restarts; token acquisition is explicit.
   Future<void> activate() => _sdk.setAutoInitEnabled(false);
+  @override
+  Future<void> bindScope(String? scope) => const NativePushBridge().bind(scope);
   @override
   Future<String?> token() => _sdk.getToken();
   @override
@@ -63,10 +62,25 @@ class FirebaseFcmGateway implements FcmGateway {
   Stream<Map<String, dynamic>> get foreground =>
       FirebaseMessaging.onMessage.map((m) => m.data);
   @override
-  Stream<Map<String, dynamic>> get opened =>
-      FirebaseMessaging.onMessageOpenedApp.map((m) => m.data);
+  Stream<Map<String, dynamic>> get opened => Stream.multi((controller) {
+    final subscriptions = [
+      FirebaseMessaging.onMessageOpenedApp
+          .map((m) => m.data)
+          .listen(controller.add, onError: controller.addError),
+      const NativePushBridge().opened.listen(
+        controller.add,
+        onError: controller.addError,
+      ),
+    ];
+    controller.onCancel = () async {
+      for (final subscription in subscriptions) {
+        await subscription.cancel();
+      }
+    };
+  }, isBroadcast: true);
   @override
   Future<Map<String, dynamic>?> initialMessage() async =>
+      await const NativePushBridge().initial() ??
       (await _sdk.getInitialMessage())?.data;
 }
 

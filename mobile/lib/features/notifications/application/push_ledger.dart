@@ -1,17 +1,19 @@
 import 'dart:convert';
 import '../../../core/local_settings.dart';
+import '../../../core/notifications/native_push.dart';
 import '../domain/push_envelope.dart';
 
-/// One serialized foreground coordinator owns this ledger. No background
-/// isolate may independently present messages until atomic dedup is designed.
+/// Production Android writers share the native process mutex across engines.
+/// Tests may omit it for a single-isolate in-memory store.
 class PushLedger {
-  PushLedger(this.store, {this.capacity = 512});
+  PushLedger(this.store, {this.capacity = 512, this.mutex});
+  final PushMutex? mutex;
   final LocalSettingsStore store;
   final int capacity;
   Future<void> _tail = Future.value();
 
   Future<bool> claim(PushEnvelope envelope, PushAction action, DateTime now) {
-    final result = _tail.then((_) async {
+    return _serialized(() async {
       try {
         const key = 'circle.push.v1.history';
         final raw = await store.read(key);
@@ -38,8 +40,6 @@ class PushLedger {
         return false;
       }
     });
-    _tail = result.then<void>((_) {});
-    return result;
   }
 
   static const _pendingKey = 'circle.push.v2.pending';
@@ -70,7 +70,6 @@ class PushLedger {
     final seconds = now.toUtc().millisecondsSinceEpoch ~/ 1000;
     pending.removeWhere(
       (key, value) =>
-          !key.startsWith('${scope.key}:') ||
           value is! Map ||
           value['data'] is! Map ||
           (int.tryParse('${value['data']['expires_at']}') ?? 0) <= seconds,
@@ -78,7 +77,9 @@ class PushLedger {
   }
 
   Future<T> _serialized<T>(Future<T> Function() action) {
-    final result = _tail.then((_) => action());
+    final result = _tail.then(
+      (_) => mutex == null ? action() : mutex!.run(action),
+    );
     _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
     return result;
   }
@@ -133,6 +134,16 @@ class PushLedger {
         }
       });
 
+  Future<bool> recorded(
+    PushEnvelope envelope,
+    PushAction action,
+    DateTime now,
+  ) => _serialized(() async {
+    final id = _id(envelope, action);
+    return (await _history(now)).containsKey(id) ||
+        (await _read(_pendingKey)).containsKey(id);
+  });
+
   /// Acknowledge only after a successful handoff or permanent authorization denial.
   Future<bool> complete(
     PushReception reception,
@@ -154,8 +165,15 @@ class PushLedger {
 
   /// Explicit account-data cleanup only, never an ordinary transport stop.
   Future<void> clear(PushScope scope) {
-    final result = _tail.then((_) async {
+    return _serialized(() async {
       try {
+        final pending = await _read(_pendingKey);
+        pending.removeWhere((key, _) => key.startsWith('${scope.key}:'));
+        if (pending.isEmpty) {
+          await store.delete(_pendingKey);
+        } else {
+          await store.write(_pendingKey, jsonEncode(pending));
+        }
         const key = 'circle.push.v1.history';
         final raw = await store.read(key);
         if (raw == null) return;
@@ -169,7 +187,5 @@ class PushLedger {
         }
       } catch (_) {}
     });
-    _tail = result;
-    return result;
   }
 }

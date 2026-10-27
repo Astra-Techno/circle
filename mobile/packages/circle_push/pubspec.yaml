@@ -1,0 +1,15 @@
+name: circle_push
+description: Private Android notification display, tap bridge and isolate mutex.
+version: 0.0.1
+publish_to: none
+environment:
+  sdk: ^3.12.2
+dependencies:
+  flutter:
+    sdk: flutter
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.circlecommunity.push
+        pluginClass: CirclePushPlugin

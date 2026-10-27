@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,6 +56,46 @@ PushBinding binding(String account, FakeHandler handler) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('native tap acknowledgement follows durable open staging', () async {
+    final gateway = Gateway(), store = MemoryLocalSettingsStore();
+    final current = binding('1', (r) async => FakeResponse.ok({}));
+    final ledger = PushLedger(store);
+    final coordinator = PushSessionCoordinator(
+      gateway: gateway,
+      current: () async => current,
+      ledger: ledger,
+      enabled: true,
+      clock: () => clock,
+    );
+    const channel = MethodChannel('circle/push_native');
+    var acknowledgements = 0;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == 'ack') {
+            expect(await ledger.pending(current.scope, clock), hasLength(1));
+            acknowledgements++;
+          }
+          return null;
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+      coordinator.dispose();
+    });
+    expect(await coordinator.start(), isTrue);
+    gateway.taps.add({
+      'circle_native_tap': {
+        'id': 'fictional-tap',
+        'data': message(current.scope),
+      },
+    });
+    await flush();
+    expect(acknowledgements, 1);
+    expect(
+      (await ledger.pending(current.scope, clock)).single.action,
+      PushAction.open,
+    );
+  });
   test(
     'explicit enable only; repeated start has one subscription and registration',
     () async {

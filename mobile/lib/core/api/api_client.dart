@@ -33,6 +33,7 @@ class ApiClient {
     required TokenStore tokens,
     HttpClientAdapter? adapter,
     this.onSessionEnded,
+    this.allowRefresh = true,
     Duration connectTimeout = const Duration(seconds: 10),
     Duration receiveTimeout = const Duration(seconds: 30),
     String userAgent = 'CIRCLE-mobile/1.0.0',
@@ -56,6 +57,7 @@ class ApiClient {
   final Dio dio;
   final TokenStore _store;
   SessionEnded? onSessionEnded;
+  final bool allowRefresh;
 
   TokenPair? _tokens;
   bool _tokensLoaded = false;
@@ -422,7 +424,8 @@ class _AuthInterceptor extends Interceptor {
       );
       return handler.next(err);
     }
-    if (response.statusCode != 401 ||
+    if (!client.allowRefresh ||
+        response.statusCode != 401 ||
         (code != 'invalid_token' && code != 'unauthorized')) {
       return handler.next(err);
     }

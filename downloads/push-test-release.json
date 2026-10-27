@@ -1,0 +1,15 @@
+{
+  "channel": "push-acceptance-test",
+  "version_name": "1.0.8",
+  "version_code": 9,
+  "file": "circle-1.0.8-9-push-test.apk",
+  "url": "https://circle.cloudkart24.com/downloads/circle-1.0.8-9-push-test.apk",
+  "bytes": 64752578,
+  "sha256": "c707df83fd020ee01956012eae34b64a648fa10e7b00b5b724777af428477d84",
+  "signing_certificate_sha256": "6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c",
+  "api_base_url": "https://circle.cloudkart24.com/api/v1",
+  "preview": false,
+  "push_client_enabled": true,
+  "device_delivery_verified": false,
+  "stable_release_unchanged": "1.0.7+8"
+}

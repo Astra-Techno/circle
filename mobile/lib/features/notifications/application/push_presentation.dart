@@ -14,11 +14,13 @@ class PushPresentation {
     required this.display,
     required this.open,
     required this.dismiss,
+    this.unavailable,
     DateTime Function()? clock,
   }) : clock = clock ?? DateTime.now;
   final PushSessionCoordinator coordinator;
   final Future<bool> Function(PushReception) display, open;
   final void Function() dismiss;
+  final void Function()? unavailable;
   final DateTime Function() clock;
   Future<void> _tail = Future.value();
   StreamSubscription<PushReception>? _subscription;
@@ -54,6 +56,9 @@ class PushPresentation {
           if (!await authorize(reception, checkPreferences: false)) {
             if (await coordinator.bindingFor(reception.envelope) != null) {
               await coordinator.ledger.complete(reception, clock());
+              if (!_disposed && reception.action == PushAction.open) {
+                unavailable?.call();
+              }
             }
             continue;
           }
@@ -71,6 +76,11 @@ class PushPresentation {
             'account_inactive',
           }.contains(error.code)) {
             await coordinator.ledger.complete(reception, clock());
+            if (!_disposed &&
+                coordinator.active &&
+                reception.action == PushAction.open) {
+              unavailable?.call();
+            }
           }
           // Transient/offline errors leave the persistent handoff pending.
         } catch (_) {}

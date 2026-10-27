@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/design.dart';
+import '../../../core/notifications/native_push.dart';
 import '../../../core/notifications/push_config.dart';
 import '../../workspace/application/server_session.dart';
 import '../application/push_presentation.dart';
@@ -26,12 +26,9 @@ class _PushPresentationHostState extends ConsumerState<PushPresentationHost>
     with WidgetsBindingObserver {
   final _messenger = GlobalKey<ScaffoldMessengerState>();
   PushPresentation? _presenter;
-  String? _shown;
   bool _foreground = true;
   int _connectionEpoch = 0;
   PushSessionCoordinator? _attached;
-  void _message(String text) =>
-      _messenger.currentState?.showSnackBar(SnackBar(content: Text(text)));
   @override
   void initState() {
     super.initState();
@@ -65,7 +62,6 @@ class _PushPresentationHostState extends ConsumerState<PushPresentationHost>
   }
 
   void _dismiss() {
-    _shown = null;
     _messenger.currentState?.clearMaterialBanners();
   }
 
@@ -80,62 +76,23 @@ class _PushPresentationHostState extends ConsumerState<PushPresentationHost>
     _presenter ??= PushPresentation(
       coordinator: coordinator,
       dismiss: _dismiss,
-      display: (reception) async {
-        if (!mounted ||
-            !_foreground ||
-            !coordinator.active ||
-            _messenger.currentState == null) {
-          return false;
-        }
-        final id =
-            '${reception.envelope.scope.key}:${reception.envelope.eventId}';
-        if (_shown == id) return true;
-        _dismiss();
-        _shown = id;
-        _messenger.currentState!.showMaterialBanner(
-          MaterialBanner(
-            leading: const Icon(Icons.notifications_outlined),
-            content: Text(
-              reception.envelope.type == 'memory.created'
-                  ? 'A new Memory is ready.'
-                  : 'There’s a comment or reply for you.',
+      unavailable: () {
+        if (mounted && _foreground) {
+          _messenger.currentState?.showSnackBar(
+            const SnackBar(
+              content: Text('This update is no longer available.'),
             ),
-            padding: const EdgeInsets.all(Space.lg),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  final presenter = _presenter;
-                  try {
-                    final allowed = await presenter?.authorize(reception);
-                    if (!mounted ||
-                        !_foreground ||
-                        !identical(_presenter, presenter) ||
-                        !coordinator.active) {
-                      return;
-                    }
-                    if (allowed == true) {
-                      widget.onOpen(reception.envelope.memoryId);
-                      _dismiss();
-                    } else {
-                      _dismiss();
-                      _message('This update is no longer available.');
-                    }
-                  } catch (_) {
-                    if (mounted &&
-                        identical(_presenter, presenter) &&
-                        coordinator.active) {
-                      _message('This update couldn’t open. Try again.');
-                    }
-                  }
-                },
-                child: const Text('View'),
-              ),
-              TextButton(onPressed: _dismiss, child: const Text('Dismiss')),
-            ],
-          ),
+          );
+        }
+      },
+      display: (reception) async {
+        if (!mounted || !_foreground || !coordinator.active) return false;
+        return const NativePushBridge().show(
+          scope: reception.envelope.scope.key,
+          event: reception.envelope.eventId,
+          expires: reception.envelope.expiresAt,
+          data: reception.envelope.toData(),
         );
-        await WidgetsBinding.instance.endOfFrame;
-        return mounted && _shown == id;
       },
       open: (reception) async {
         if (!mounted || !_foreground || !coordinator.active) return false;

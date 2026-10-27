@@ -24,6 +24,8 @@ class Gateway implements FcmGateway {
   }
 
   @override
+  Future<void> bindScope(String? scope) async {}
+  @override
   Future<void> activate() async {
     activated++;
   }

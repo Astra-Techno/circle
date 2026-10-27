@@ -5,6 +5,7 @@ import '../../../core/local_settings.dart';
 import '../../../core/notifications/fcm_service.dart';
 import '../../../core/notifications/push_lifecycle.dart';
 import '../../../core/notifications/push_config.dart';
+import '../../../core/notifications/native_push.dart';
 import '../../workspace/application/server_session.dart';
 import '../domain/push_envelope.dart';
 import 'push_ledger.dart';
@@ -91,8 +92,16 @@ class PushSessionCoordinator {
           if (!await _valid(binding, epoch)) return false;
           final token = await gateway.token();
           if (!await _valid(binding, epoch) || token == null) return false;
-          return token == _registeredToken ||
+          final registered =
+              token == _registeredToken ||
               await _register(binding, epoch, token);
+          if (registered && await _valid(binding, epoch)) {
+            final pendingTap = await gateway.initialMessage();
+            if (pendingTap != null) {
+              _receive(pendingTap, binding, epoch, PushAction.open);
+            }
+          }
+          return registered;
         }
         _cancelListeners();
         if (!_initialized) {
@@ -181,6 +190,11 @@ class PushSessionCoordinator {
         expectedSession: binding.sessionRevision,
       );
       if (!await _valid(binding, epoch)) return false;
+      await gateway.bindScope(binding.scope.key);
+      if (!await _valid(binding, epoch)) {
+        await gateway.bindScope(null);
+        return false;
+      }
       _healthy = true;
       if (previous != null &&
           previous != token &&
@@ -211,18 +225,44 @@ class PushSessionCoordinator {
     unawaited(
       _queue(() async {
         if (!await _valid(binding, epoch)) return;
+        String? nativeId;
+        final handoff = data['circle_native_tap'];
+        if (handoff is Map &&
+            handoff['id'] is String &&
+            handoff['data'] is Map) {
+          nativeId = handoff['id'] as String;
+          if (nativeId.length > 64) return;
+          data = Map<String, dynamic>.from(handoff['data'] as Map);
+        }
         final envelope = PushEnvelope.parse(data, binding.scope, clock());
-        if (envelope == null ||
-            !await ledger.stage(envelope, action, clock())) {
+        if (envelope == null) {
+          if (nativeId != null) {
+            await const NativePushBridge()
+                .acknowledge(nativeId)
+                .catchError((Object _) {});
+          }
           return;
         }
+        final staged = await ledger
+            .stage(envelope, action, clock())
+            .catchError((Object _) => false);
+        if (nativeId != null &&
+            (staged ||
+                await ledger
+                    .recorded(envelope, action, clock())
+                    .catchError((Object _) => false))) {
+          await const NativePushBridge()
+              .acknowledge(nativeId)
+              .catchError((Object _) {});
+        }
+        if (!staged) return;
         if (await _valid(binding, epoch) &&
             !_disposed &&
             epoch == _epoch &&
             envelope.belongsTo(binding.scope, clock())) {
           _accepted.add(PushReception(envelope, action));
         }
-      }),
+      }).catchError((Object _) {}),
     );
   }
 
@@ -241,7 +281,9 @@ class PushSessionCoordinator {
   Future<List<PushReception>> pending() async {
     final binding = _binding, epoch = _epoch;
     if (!active || binding == null || !await _valid(binding, epoch)) return [];
-    return ledger.pending(binding.scope, clock());
+    return ledger
+        .pending(binding.scope, clock())
+        .catchError((Object _) => <PushReception>[]);
   }
 
   void _cancelListeners() {
@@ -258,6 +300,7 @@ class PushSessionCoordinator {
   /// Safe to call unawaited from authentication; local invalidation is immediate.
   Future<void> stop() {
     _epoch++;
+    unawaited(gateway.bindScope(null).catchError((Object _) {}));
     _starting = null;
     _healthy = false;
     _cancelListeners();
@@ -304,7 +347,12 @@ class PushSessionCoordinator {
 final pushSessionCoordinatorProvider = Provider<PushSessionCoordinator>((ref) {
   final coordinator = PushSessionCoordinator(
     gateway: ref.watch(fcmGatewayProvider),
-    ledger: PushLedger(ref.watch(localSettingsStoreProvider)),
+    ledger: PushLedger(
+      ref.watch(localSettingsStoreProvider),
+      mutex: ref.watch(pushClientEnabledProvider)
+          ? const NativePushBridge()
+          : null,
+    ),
     enabled: ref.watch(pushClientEnabledProvider),
     current: () async {
       if (!ref.mounted) return null;
