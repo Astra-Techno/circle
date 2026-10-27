@@ -1,5 +1,7 @@
 # Notification settings and foreground presentation — N1c2
 
+Historical N1c2 checkpoint: [N1d](push-background-checkpoint.md) supersedes the in-app banner with shared foreground/background native display and durable encrypted native tap handoff.
+
 Source checkpoint, 27 October 2026. The client flag `CIRCLE_PUSH_ENABLED` defaults false and the live installation APK remains 1.0.7+8. This batch does not enable production push or publish an APK.
 
 ## Implemented scope
