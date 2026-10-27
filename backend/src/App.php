@@ -55,41 +55,51 @@ final class App
                 Response::unauthorized('Invalid key.');
             }
 
-            $sender = new \Circle\Core\FcmSender();
-            $db = Database::connection();
+            try {
+                $sender = new \Circle\Core\FcmSender();
+                $fcmReady = $sender->isReady();
+                $db = Database::connection();
 
-            $tokens = $db->query(
-                'SELECT dt.fcm_token, dt.platform, dt.user_id, u.name, dt.created_at
-                 FROM device_tokens dt JOIN users u ON u.id = dt.user_id
-                 ORDER BY dt.created_at DESC LIMIT 20'
-            )->fetchAll(\PDO::FETCH_ASSOC);
+                $tokens = $db->query(
+                    'SELECT dt.fcm_token, dt.platform, dt.user_id, u.name, dt.created_at
+                     FROM device_tokens dt JOIN users u ON u.id = dt.user_id
+                     ORDER BY dt.created_at DESC LIMIT 20'
+                )->fetchAll(\PDO::FETCH_ASSOC);
 
-            $results = [];
-            $now = time();
-            foreach ($tokens as $row) {
-                $data = [
-                    'type'       => 'test',
-                    'title'      => 'Circle Push Test',
-                    'body'       => 'Push notifications are working!',
-                    'event'      => 'push_test',
-                    'scope'      => 'system',
-                    'expires_at' => (string) ($now + 300),
-                    'sent_at'    => (string) $now,
-                ];
-                $result = $sender->send($row['fcm_token'], $data);
-                $results[] = [
-                    'user'     => $row['name'],
-                    'platform' => $row['platform'],
-                    'token'    => substr($row['fcm_token'], 0, 20) . '...',
-                    'status'   => $result->status,
-                ];
+                $results = [];
+                $now = time();
+                foreach ($tokens as $row) {
+                    $data = [
+                        'type'       => 'test',
+                        'title'      => 'Circle Push Test',
+                        'body'       => 'Push notifications are working!',
+                        'event'      => 'push_test',
+                        'scope'      => 'system',
+                        'expires_at' => (string) ($now + 300),
+                        'sent_at'    => (string) $now,
+                    ];
+                    $result = $sender->send($row['fcm_token'], $data);
+                    $results[] = [
+                        'user'     => $row['name'],
+                        'platform' => $row['platform'],
+                        'token'    => substr($row['fcm_token'], 0, 20) . '...',
+                        'status'   => $result->status,
+                    ];
+                }
+
+                Response::ok([
+                    'fcm_ready'   => $fcmReady,
+                    'devices'     => count($tokens),
+                    'results'     => $results,
+                ]);
+            } catch (\Throwable $e) {
+                Response::json([
+                    'success' => false,
+                    'debug'   => $e->getMessage(),
+                    'file'    => basename($e->getFile()) . ':' . $e->getLine(),
+                    'trace'   => array_slice(array_map(fn($f) => basename($f['file'] ?? '?') . ':' . ($f['line'] ?? '?') . ' ' . ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? ''), $e->getTrace()), 0, 8),
+                ], 500);
             }
-
-            Response::ok([
-                'fcm_ready'   => $sender->isReady(),
-                'devices'     => count($tokens),
-                'results'     => $results,
-            ]);
         });
 
         // ── Auth (public, rate-limited) ──────────────────────────
