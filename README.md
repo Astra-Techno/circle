@@ -42,6 +42,8 @@ ChatGPT/Codex and Claude follow the efficient workflow in `AGENTS.md`. Start wit
 - Use existing logging APIs and redacted error handling. Never log private notification titles/bodies, credentials, bearer tokens or device tokens. Only remove invalid FCM tokens for a confirmed provider error such as `UNREGISTERED`, not every HTTP 404.
 - Keep server service-account keys private and outside the web root/source control. Android client configuration does not configure the server sender or iOS. Supply the correct platform configuration, or keep push unavailable on that platform without breaking the app.
 
+Notification policy (owner, 29 October 2026): account push and all current categories default on when no preferences are saved. Users can turn off all notifications or individual categories in You → Notifications. Preserve every saved opt-out during partial settings updates. Android/iOS permission remains a separate device choice; quiet hours and authorization checks still apply. This supersedes older default-off acceptance checkpoints.
+
 ### 0.4 Android signing and release identity
 
 - Keep the same application id and established signing key for updates to the existing beta. Compare the candidate certificate against the last validated immutable release, not a recently overwritten `circle.apk`.
@@ -230,8 +232,8 @@ Core group/event polls are implemented in source under OpenAPI0.4.2; see [implem
 
 ### 3.7 Notifications
 
-- **Push (FCM, M5), personal by default:** direct messages, @mentions and replies to you, event changes/reminders for events you RSVP'd to, invitations/approvals for you, join requests (admins only).
-- **In-app activity inbox or daily digest, not push:** new Memories, reactions (batched), new events and polls in your groups, poll results, role changes.
+- **Push (FCM):** account notifications and current category defaults are on (owner, 29 October 2026). People can turn all notifications or individual categories off in You → Notifications. Phone permission remains a separate device choice.
+- Deliver only implemented notification types with current access/session checks, generic private payloads and quiet hours. No alerts for individual poll votes or option additions; richer activity/digest features remain gated.
 - Group chats with more than 50 members default to mentions only. Quiet hours 10 PM–7 AM are on by default. One-tap mute for 8 hours / 1 week / always. Users can turn more push types on. See the calm rules in §4.0.
 
 ### 3.8 Moderation and safety
@@ -273,7 +275,7 @@ These rules override feature wishes. If a feature can't follow them, simplify th
 - **Works on slow networks:** instant UI with cached content, uploads continue in the background, compressed media by default, clear but quiet offline banner.
 
 **Calm: never annoying**
-- **Notifications are personal by default.** Push only for: direct messages, @mentions and replies to you, event changes/reminders for events you RSVP'd to, approvals/invitations for you, and join requests (admins). Everything else (new memories, reactions, poll results) goes to the in-app activity inbox or a **daily digest**, not push.
+- **Notifications follow the person’s settings.** Account push and all supported categories default on (owner, 29 October 2026). People can turn everything off or choose individual categories in You → Notifications; saved opt-outs always win. Keep generic private payloads, quiet hours and audience/session checks. Votes and added poll options do not generate individual alerts. Unsupported notification types remain unavailable.
 - **Big groups are quiet automatically:** group chats with more than 50 members default to "mentions only". Reactions are batched ("Mira and 12 others loved your memory").
 - **Quiet hours on by default** (10 PM–7 AM local; changeable). One tap mutes any group or chat for 8 hours, 1 week or always.
 - **Badges mean something:** red badges only for DMs and things that need *you*. No badge for general activity.

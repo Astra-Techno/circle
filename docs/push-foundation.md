@@ -1,5 +1,7 @@
 # Push foundation N1a — 26 October 2026
 
+Historical checkpoint: the owner approved default-on account notifications on29October2026. Current policy and migration023 are documented in [notification defaults](notification-defaults.md); the older default-off statements below describe N1a only.
+
 This source batch implements secure device registration and saved delivery policy. It does not enable push delivery, live Activity/settings UI, Chats or Events, and it is not an APK release.
 
 ## Behavior and contracts

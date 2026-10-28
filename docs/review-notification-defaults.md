@@ -16,3 +16,5 @@ Review validation: notification/worker/poll run46 tests produced2 notification a
 Poll writes now check current locked membership, parent status, admin role, selections and option totals after lock waits. Group/poll notification lock order is consistent. MariaDB1020 snapshot conflicts and1213 deadlocks roll back and retry with fresh reads, at most3 attempts; exhaustion returns409. Tests use two real circle_test connections to verify removal, Memory hiding and admin demotion after an older snapshot, plus the12-option cap/idempotent duplicate. No APK changes or rebuild are required for this server-only patch.
 
 The default-on commit is preserved. Notification initialization/policy alignment remains unresolved; do not call the complete branch deployment-verified.
+
+Resolved follow-up,29October2026: the owner confirmed default-on notifications with user-controlled opt-outs. Consistent first-row initialization, saved-choice preservation, migration023 and updated contract/tests are documented in notification-defaults.md. Earlier findings remain above as the review record; current validation/publication is in PROJECT_STATE.md.

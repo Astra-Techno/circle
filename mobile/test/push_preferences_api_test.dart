@@ -32,7 +32,7 @@ void main() {
     adapter: FakeHttpAdapter(handler),
   );
 
-  test('reads complete opt-in defaults with authenticated API', () async {
+  test('reads complete saved opt-outs with authenticated API', () async {
     final api = PushPreferencesApi(
       client((request) async {
         expect(request.method, 'GET');
@@ -49,6 +49,24 @@ void main() {
     expect(prefs.quietEnd, 420);
     expect(prefs.timezone, 'UTC');
   });
+
+  test(
+    'reads default-on server policy without changing saved opt-out handling',
+    () async {
+      final defaults = policy();
+      defaults['enabled'] = true;
+      defaults['categories'] = {
+        for (final key in (defaults['categories'] as Map).keys) key: true,
+      };
+      final api = PushPreferencesApi(
+        client((_) async => FakeResponse.ok(defaults)),
+      );
+      final prefs = await api.load();
+      expect(prefs.enabled, isTrue);
+      expect(prefs.categories.values, everyElement(isTrue));
+      expect(prefs.quietHours, isTrue);
+    },
+  );
 
   test('sends only changed fields including explicit false category', () async {
     final api = PushPreferencesApi(

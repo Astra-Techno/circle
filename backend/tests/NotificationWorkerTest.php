@@ -6,6 +6,7 @@ namespace Circle\Tests;
 
 use Circle\Core\Database;
 use Circle\Core\Env;
+use Circle\Core\NotificationPreferences;
 use Circle\Core\FcmSender;
 use Circle\Notifications\NotificationOutbox;
 use Circle\Notifications\NotificationWorker;
@@ -66,7 +67,7 @@ final class NotificationWorkerTest extends ApiTestCase
     {
         $owner=$this->user('Owner'); $member=$this->user('Reporter'); $gid=$this->createGroup($owner); $this->join($owner,$member,$gid);
         foreach ([$owner,$member] as $user) {
-            $this->request('PATCH','/api/v1/me/notification-preferences',['enabled'=>true,'quiet_hours'=>false,'categories'=>['groups'=>true]],$user['token']);
+            $this->request('PATCH','/api/v1/me/notification-preferences',['enabled'=>true,'quiet_hours'=>false,'categories'=>array_replace(array_fill_keys(NotificationPreferences::CATEGORIES,false),['groups'=>true])],$user['token']);
             $this->request('POST','/api/v1/devices/register',['fcm_token'=>'fictional-safety-'.$user['id'],'platform'=>'android'],$user['token']);
         }
         $mid=$this->createMemory($owner,$gid,'Private report text');

@@ -4,25 +4,45 @@ declare(strict_types=1);
 
 namespace Circle\Core;
 
-/** Persistent opt-in policy shared by future feature delivery batches. */
+/** Default-on account policy with persistent user opt-outs and device permission gates. */
 final class NotificationPreferences
 {
     public const CATEGORIES = ['memories', 'replies_reactions', 'groups', 'chats', 'events', 'polls', 'albums', 'security'];
+
+    /**
+     * Defaults apply only when the account has no saved choices.
+     * @return array<string, mixed>
+     */
+    public static function defaults(): array
+    {
+        return [
+            'enabled' => true,
+            'categories' => array_fill_keys(self::CATEGORIES, true),
+            'quiet_hours' => true,
+            'quiet_start' => 1320,
+            'quiet_end' => 420,
+            'timezone' => 'UTC',
+        ];
+    }
 
     /** @return array<string, mixed> */
     public static function get(int $userId): array
     {
         $row = Database::queryOne('SELECT * FROM notification_preferences WHERE user_id = :uid', ['uid' => $userId]);
-        $categories = array_fill_keys(self::CATEGORIES, true);
-        if ($row !== null) {
-            $stored = json_decode((string) $row['categories'], true);
-            foreach (self::CATEGORIES as $category) $categories[$category] = is_array($stored) ? (($stored[$category] ?? true) === true) : true;
+        if ($row === null) {
+            return self::defaults();
+        }
+        $stored = json_decode((string) $row['categories'], true);
+        $categories = array_fill_keys(self::CATEGORIES, false);
+        foreach (self::CATEGORIES as $category) {
+            // Preserve saved opt-outs; incomplete or invalid saved categories stay off.
+            $categories[$category] = is_array($stored) && ($stored[$category] ?? false) === true;
         }
         return [
-            'enabled' => (bool) ($row['enabled'] ?? true), 'categories' => $categories,
-            'quiet_hours' => (bool) ($row['quiet_hours'] ?? true),
-            'quiet_start' => (int) ($row['quiet_start'] ?? 1320), 'quiet_end' => (int) ($row['quiet_end'] ?? 420),
-            'timezone' => (string) ($row['timezone'] ?? 'UTC'),
+            'enabled' => (bool) $row['enabled'], 'categories' => $categories,
+            'quiet_hours' => (bool) $row['quiet_hours'],
+            'quiet_start' => (int) $row['quiet_start'], 'quiet_end' => (int) $row['quiet_end'],
+            'timezone' => (string) $row['timezone'],
         ];
     }
 

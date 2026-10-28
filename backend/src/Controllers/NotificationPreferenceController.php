@@ -39,8 +39,14 @@ final class NotificationPreferenceController
         }
         $userId = $request->userId();
         $result = Database::transaction(static function () use ($userId, $fields): array {
-            Database::execute('INSERT IGNORE INTO notification_preferences (user_id, categories) VALUES (:uid, :categories)',
-                ['uid' => $userId, 'categories' => json_encode(array_fill_keys(NotificationPreferences::CATEGORIES, false), JSON_THROW_ON_ERROR)]);
+            $defaults = NotificationPreferences::defaults();
+            Database::execute('INSERT IGNORE INTO notification_preferences
+                (user_id, enabled, categories, quiet_hours, quiet_start, quiet_end, timezone)
+                VALUES (:uid, :enabled, :categories, :quiet, :start, :end, :timezone)',
+                ['uid' => $userId, 'enabled' => $defaults['enabled'],
+                 'categories' => json_encode($defaults['categories'], JSON_THROW_ON_ERROR),
+                 'quiet' => $defaults['quiet_hours'], 'start' => $defaults['quiet_start'],
+                 'end' => $defaults['quiet_end'], 'timezone' => $defaults['timezone']]);
             Database::queryOne('SELECT user_id FROM notification_preferences WHERE user_id = :uid FOR UPDATE', ['uid' => $userId]);
             $current = NotificationPreferences::get($userId);
             foreach ($fields as $key => $value) {

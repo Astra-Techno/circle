@@ -54,6 +54,18 @@ class Choices extends PushSettings {
   }
 }
 
+class DefaultOnChoices extends Choices {
+  @override
+  Future<PushPreferences> build() async => PushPreferences(
+    enabled: true,
+    categories: {for (final c in PushCategory.values) c: true},
+    quietHours: true,
+    quietStart: 1320,
+    quietEnd: 420,
+    timezone: 'UTC',
+  );
+}
+
 class DeferredChoices extends PushSettings {
   final result = Completer<PushPreferences>();
   @override
@@ -76,6 +88,41 @@ class TrackingCoordinator extends PushSessionCoordinator {
 }
 
 void main() {
+  testWidgets(
+    'default-on account can turn off notifications without changing category choices or requesting permission',
+    (tester) async {
+      final choices = DefaultOnChoices();
+      final container = ProviderContainer(
+        overrides: [pushSettingsProvider.overrideWith(() => choices)],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: circleTheme(Brightness.light),
+            home: const Scaffold(body: ServerPushSettingsScreen()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final off = find.text('Turn off notifications');
+      await tester.scrollUntilVisible(off, 200);
+      await tester.tap(off);
+      await tester.pumpAndSettle();
+      expect(
+        container.read(pushSettingsProvider).requireValue.enabled,
+        isFalse,
+      );
+      expect(
+        container.read(pushSettingsProvider).requireValue.categories.values,
+        everyElement(isTrue),
+      );
+      expect(choices.permissions, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('paused host cannot reconnect after delayed preferences load', (
     tester,
   ) async {

@@ -76,7 +76,7 @@ final class PushFoundationTest extends ApiTestCase
         self::assertCount(0, Database::query('SELECT id FROM device_tokens'));
     }
 
-    public function testPreferencesAreOptInPrivateAndPartialUpdatesPreserveOtherValues(): void
+    public function testPreferencesDefaultOnPrivateAndPartialUpdatesPreserveOtherValues(): void
     {
         $user = $this->user();
         $other = $this->user();
@@ -84,19 +84,50 @@ final class PushFoundationTest extends ApiTestCase
         self::assertSame(401, $this->request('GET', $path)->status());
         self::assertSame(401, $this->request('PATCH', $path, ['enabled' => true])->status());
         $defaults = $this->request('GET', $path, [], $user['token']);
-        self::assertFalse($defaults->data()['enabled']);
+        self::assertTrue($defaults->data()['enabled']);
         self::assertSame('private, no-store', $defaults->header('Cache-Control'));
-        self::assertFalse($defaults->data()['categories']['chats']);
+        self::assertTrue($defaults->data()['categories']['chats']);
         $saved = $this->request('PATCH', $path, ['enabled' => true, 'categories' => ['chats' => true], 'timezone' => 'Asia/Kolkata'], $user['token']);
         self::assertSame(200, $saved->status());
         $saved = $this->request('PATCH', $path, ['categories' => ['events' => true]], $user['token']);
         self::assertTrue($saved->data()['categories']['chats']);
         self::assertTrue($saved->data()['categories']['events']);
         self::assertSame('Asia/Kolkata', $saved->data()['timezone']);
-        self::assertFalse($this->request('GET', $path, [], $other['token'])->data()['enabled']);
+        self::assertTrue($this->request('GET', $path, [], $other['token'])->data()['enabled']);
         $saved = $this->request('PATCH', $path, ['categories' => ['chats' => false]], $user['token']);
         self::assertFalse($saved->data()['categories']['chats']);
         self::assertTrue($saved->data()['categories']['events']);
+    }
+
+    public function testFirstTimezoneOnlySavePreservesDefaultOnAndLaterOptOuts():void
+    {
+        $user=$this->user();$path='/api/v1/me/notification-preferences';
+        $defaults=$this->request('GET',$path,[],$user['token'])->data();
+        self::assertTrue($defaults['enabled']);self::assertCount(8,array_filter($defaults['categories']));
+        $saved=$this->request('PATCH',$path,['timezone'=>'Asia/Kolkata'],$user['token']);
+        self::assertSame(200,$saved->status());self::assertTrue($saved->data()['enabled']);
+        self::assertSame($defaults['categories'],$saved->data()['categories']);
+        self::assertSame('Asia/Kolkata',$saved->data()['timezone']);
+        $this->request('PATCH',$path,['enabled'=>false,'categories'=>['polls'=>false,'chats'=>false]],$user['token']);
+        $saved=$this->request('PATCH',$path,['quiet_start'=>1200],$user['token'])->data();
+        self::assertFalse($saved['enabled']);self::assertFalse($saved['categories']['polls']);self::assertFalse($saved['categories']['chats']);
+        self::assertTrue($saved['categories']['events']);
+        self::assertFalse($this->request('GET',$path,[],$user['token'])->data()['enabled']);
+        $this->request('PATCH',$path,['enabled'=>true],$user['token']);
+        $again=$this->request('GET',$path,[],$user['token'])->data();
+        self::assertTrue($again['enabled']);self::assertFalse($again['categories']['polls']);
+    }
+
+    public function testFirstCategoryOnlySaveAndLegacySavedOptOutsArePreserved():void
+    {
+        $u=$this->user();$path='/api/v1/me/notification-preferences';
+        $saved=$this->request('PATCH',$path,['categories'=>['polls'=>false]],$u['token'])->data();
+        self::assertTrue($saved['enabled']);self::assertFalse($saved['categories']['polls']);self::assertTrue($saved['categories']['events']);
+        Database::execute('UPDATE notification_preferences SET enabled=0,categories=:c WHERE user_id=:u',['c'=>'{"chats":false}','u'=>$u['id']]);
+        $saved=$this->request('PATCH',$path,['timezone'=>'UTC'],$u['token'])->data();
+        self::assertFalse($saved['enabled']);self::assertFalse($saved['categories']['chats']);self::assertFalse($saved['categories']['polls']);
+        Database::execute('UPDATE notification_preferences SET enabled=1,categories=:c WHERE user_id=:u',['c'=>'null','u'=>$u['id']]);
+        self::assertSame([],array_filter($this->request('GET',$path,[],$u['token'])->data()['categories']));
     }
 
     public function testInvalidPreferencesNeverOverwriteSavedValues(): void
@@ -118,9 +149,9 @@ final class PushFoundationTest extends ApiTestCase
         $user = $this->user();
         $group = $this->createGroup($user);
         $at = static fn (string $time): \DateTimeImmutable => new \DateTimeImmutable($time, new \DateTimeZone('UTC'));
-        self::assertFalse(NotificationPreferences::allows($user['id'], 'memories', $group, $at('2026-10-26 10:00')));
+        self::assertTrue(NotificationPreferences::allows($user['id'], 'memories', $group, $at('2026-10-26 10:00')));
         $this->request('PATCH', '/api/v1/me/notification-preferences', [
-            'enabled' => true, 'categories' => ['memories' => true], 'timezone' => 'Asia/Kolkata',
+            'enabled' => true, 'categories' => ['memories' => true, 'chats' => false], 'timezone' => 'Asia/Kolkata',
         ], $user['token']);
         foreach (['2026-10-26 16:29' => true, '2026-10-26 16:30' => false, '2026-10-27 01:29' => false, '2026-10-27 01:30' => true] as $time => $allowed) {
             self::assertSame($allowed, NotificationPreferences::allows($user['id'], 'memories', $group, $at($time)), $time);

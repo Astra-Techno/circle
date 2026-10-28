@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.4.2
+  version: 0.4.3
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -432,7 +432,7 @@ paths:
     get:
       operationId: getNotificationPreferences
       tags: [Notifications]
-      summary: Read owner-only persistent delivery policy, with opt-in defaults.
+      summary: Read owner-only persistent delivery policy, enabled by default with saved opt-outs preserved.
       responses:
         '200': { $ref: '#/components/responses/NotificationPreferences' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -447,8 +447,12 @@ paths:
         Category updates are partial; omitted switches and fields retain their stored values.
         Quiet times are local minutes in the IANA timezone. Start and end must differ.
         Start is inclusive and end exclusive, across midnight and daylight-saving changes.
-        Defaults disable push globally and all categories, with quiet hours 22:00–07:00 UTC.
-        This foundation does not schedule or dispatch events or expose live settings UI.
+        Accounts without saved preferences default to push enabled and all current categories on,
+        with quiet hours 22:00–07:00 UTC. The first partial update persists those same defaults.
+        Saved global/category false values survive every unrelated edit, logout and update.
+        Missing or invalid categories in an existing saved map remain off. Migration023 changes
+        only the enabled-column default for new rows; no existing preferences are overwritten.
+        OS permission, device registration and configured delivery infrastructure are still required.
         The delivery worker must defer quiet-hour events; filtering alone does not schedule them.
       requestBody:
         required: true
@@ -4057,17 +4061,19 @@ components:
             platform: { type: string, enum: [android, ios] }
     PushCategories:
       type: object
+      description: Partial category switches; omitted keys never change saved choices.
       additionalProperties: false
       properties:
-        memories: { type: boolean, default: false }
-        replies_reactions: { type: boolean, default: false }
-        groups: { type: boolean, default: false }
-        chats: { type: boolean, default: false }
-        events: { type: boolean, default: false }
-        polls: { type: boolean, default: false }
-        albums: { type: boolean, default: false }
-        security: { type: boolean, default: false }
+        memories: { type: boolean }
+        replies_reactions: { type: boolean }
+        groups: { type: boolean }
+        chats: { type: boolean }
+        events: { type: boolean }
+        polls: { type: boolean }
+        albums: { type: boolean }
+        security: { type: boolean }
     CompletePushCategories:
+      description: Complete effective policy. All current categories start on without saved preferences; saved opt-outs take precedence.
       allOf:
         - $ref: '#/components/schemas/PushCategories'
         - type: object
@@ -4076,17 +4082,17 @@ components:
       type: object
       additionalProperties: false
       properties:
-        enabled: { type: boolean, default: false }
+        enabled: { type: boolean }
         categories: { $ref: '#/components/schemas/PushCategories' }
-        quiet_hours: { type: boolean, default: true }
-        quiet_start: { type: integer, minimum: 0, maximum: 1439, default: 1320 }
-        quiet_end: { type: integer, minimum: 0, maximum: 1439, default: 420 }
-        timezone: { type: string, maxLength: 64, default: UTC, description: Valid IANA timezone identifier. }
+        quiet_hours: { type: boolean }
+        quiet_start: { type: integer, minimum: 0, maximum: 1439 }
+        quiet_end: { type: integer, minimum: 0, maximum: 1439 }
+        timezone: { type: string, maxLength: 64, description: Valid IANA timezone identifier. }
     NotificationPreferences:
       type: object
       required: [enabled, categories, quiet_hours, quiet_start, quiet_end, timezone]
       properties:
-        enabled: { type: boolean, default: false }
+        enabled: { type: boolean, default: true }
         categories: { $ref: '#/components/schemas/CompletePushCategories' }
         quiet_hours: { type: boolean, default: true }
         quiet_start: { type: integer, minimum: 0, maximum: 1439, default: 1320 }
