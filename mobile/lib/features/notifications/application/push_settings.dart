@@ -83,9 +83,7 @@ class PushSettings extends AsyncNotifier<PushPreferences> {
           unawaited(coordinator.stop());
         }
         if (requestPermission) {
-          if (!(previous.categories[PushCategory.memories] == true ||
-              previous.categories[PushCategory.repliesReactions] == true ||
-              previous.categories[PushCategory.groups] == true)) {
+          if (!previous.categories.values.any((enabled) => enabled)) {
             throw const CircleFailure(
               'Choose at least one type of update first.',
             );

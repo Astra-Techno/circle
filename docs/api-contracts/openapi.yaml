@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.3.12
+  version: 0.4.0
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -865,6 +865,1086 @@ paths:
         '422': { $ref: '#/components/responses/ValidationError' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
+  /groups/{id}/chat:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: &id001
+        type: integer
+        minimum: 1
+    get:
+      operationId: getGroupConversation
+      tags:
+      - Chats
+      description: Exact current or historical member resolves the group conversation id. No inherited group
+        access. Private no-store reads. Foreground REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /chats:
+    get:
+      operationId: listLiveChats
+      tags:
+      - Chats
+      description: Own group conversations, direct requests and accepted/declined history. Bounded offset/limit.
+        Returns items(id/kind/group_id/name/request_state/incoming/unread/muted/pinned/archived),has_more; pinned
+        first. Archived rows are labelled and retained. Private no-store reads. Foreground REST polling, not
+        WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+  /chats/contacts:
+    get:
+      operationId: listChatContacts
+      tags:
+      - Chats
+      description: Bounded shared-group people only, id/display_name. No global directory or numbers. Opening
+        a direct conversation checks eligibility without disclosing blocks. Private no-store reads. Foreground
+        REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+  /chats/direct/{userId}:
+    parameters:
+    - name: userId
+      in: path
+      required: true
+      schema: *id001
+    put:
+      operationId: openDirectConversation
+      tags:
+      - Chats
+      description: Sorted user/current-session locks. Requires exact active shared group, active target and no
+        pair block; recipient policy all or accepted existing conversation. First contact pending, stable unique
+        pair, returns id. Self422; unavailable404; declined requests cannot be reopened by sender. Private no-store
+        reads. Foreground REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+  /chats/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id001
+    get:
+      operationId: readLiveConversation
+      tags:
+      - Chats
+      description: Only own direct pair or exact historical group member. Newest bounded page ascending, before
+        exclusive message id. Returns id/name/kind/other_id/can_send/request_state/incoming/muted/pinned/archived/items/has_more.
+        Items id/author_id/display_name/body/removed/edited/reply_to_id/created_at/reactions. Version snapshots
+        at departure exclude later messages AND later edits/unsends; rejoin restores live history. Frozen history
+        omits mutable reactions. Direct history remains readable after loss of shared membership or a block,
+        but cannot send. Private no-store reads. Foreground REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      - name: before
+        in: query
+        schema: *id001
+  /chats/{id}/messages:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id001
+    post:
+      operationId: sendLiveMessage
+      tags:
+      - Chats
+      description: Active exact group or eligible accepted direct pair; pending requester can send one introduction
+        and must wait for consent. Body1–4000; unique author/client_id retry returns same id, changed payload409.
+        Same-conversation reply only. At most60 new messages/account/minute. Group/user locks serialize with
+        removal/blocks; current session rechecked. Generic push only, subject to mute/read/preferences/session/membership/privacy.
+        Private no-store reads. Foreground REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - body
+              - client_id
+              properties:
+                body:
+                  type: string
+                  minLength: 1
+                  maxLength: 4000
+                client_id: &id002
+                  type: string
+                  pattern: ^[a-zA-Z0-9_-]{16,100}$
+                reply_to_id: *id001
+  /chats/{id}/messages/{messageId}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id001
+    - name: messageId
+      in: path
+      required: true
+      schema: *id001
+    get:
+      operationId: authorizeLiveMessagePush
+      tags:
+      - Chats
+      description: Authorized conversation participant; returns id/conversation_id/notification_allowed rechecking
+        current membership, pair blocks, recipient messaging policy, mute, read marker and unsend. No message
+        content in push payload. Private no-store reads. Foreground REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    patch:
+      operationId: changeLiveMessage
+      tags:
+      - Chats
+      description: Author and current sending eligibility. Append immutable version; body edits within15 minutes,
+        unsend/Undo available; old frozen members retain their pre-departure version. No new-message alert for
+        edits or unsend. Private no-store reads. Foreground REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              maxProperties: 1
+              properties:
+                body:
+                  type: string
+                  minLength: 1
+                  maxLength: 4000
+                removed:
+                  type: boolean
+  /chats/{id}/messages/{messageId}/reaction:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id001
+    - name: messageId
+      in: path
+      required: true
+      schema: *id001
+    put:
+      operationId: setLiveMessageReaction
+      tags:
+      - Chats
+      description: Eligible participant, visible not-unsent message. Idempotently replace own reaction; emoji:null
+        clears it. No reaction-alert spam. Frozen history cannot react. Private no-store reads. Foreground REST
+        polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - emoji
+              properties:
+                emoji:
+                  type:
+                  - string
+                  - 'null'
+                  enum:
+                  - null
+                  - ❤️
+                  - 👍
+                  - 😂
+                  - 😮
+                  - 😢
+                  - 🙏
+                  - 🎉
+                  - 👏
+  /chats/{id}/state:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id001
+    patch:
+      operationId: setLiveChatState
+      tags:
+      - Chats
+      description: Own monotonic read marker, mute, pin/archive. Read id must exist within own visible history,
+        including version cutoff. Silent, current-session guarded. Private no-store reads. Foreground REST polling,
+        not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                read_id:
+                  type: integer
+                  minimum: 0
+                muted:
+                  type: boolean
+                pinned:
+                  type: boolean
+                archived:
+                  type: boolean
+  /chats/{id}/request:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id001
+    post:
+      operationId: respondDirectRequest
+      tags:
+      - Chats
+      description: Recipient only can accept/decline. Pair block denies accepting; no contact alert. Sending
+        still rechecks current shared membership and privacy after acceptance. Private no-store reads. Foreground
+        REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - action
+              properties:
+                action:
+                  type: string
+                  enum:
+                  - accept
+                  - decline
+  /chats/{id}/reports:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id001
+    post:
+      operationId: reportDirectMessage
+      tags:
+      - Chats
+      description: Participant reports one visible other-person message in a direct conversation, including after
+        a block. Explicitly consented selected-message snapshot and optional note go only to private server-operator
+        review, never shared-group admins. No alert to reported person. Idempotent duplicate; at most10/account/hour.
+        No whole-conversation export. Operator CLI src/Core/direct_reports.php lists/reviews private cases. No
+        promise of response time. Private no-store reads. Foreground REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - message_id
+              - reason
+              properties:
+                message_id: *id001
+                reason:
+                  type: string
+                  enum:
+                  - spam
+                  - harassment
+                  - hate
+                  - nudity
+                  - violence
+                  - privateInfo
+                  - other
+                note:
+                  type: string
+                  maxLength: 2000
+  /me/chat-privacy:
+    get:
+      operationId: getLiveChatPrivacy
+      tags:
+      - Chats
+      description: 'Own persistent who_can_message: all(default), existing(accepted chats only), none. Applies
+        to direct incoming contact, not group content. No activity-status claim. Private no-store reads. Foreground
+        REST polling, not WebSocket or E2E encryption.'
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    patch:
+      operationId: setLiveChatPrivacy
+      tags:
+      - Chats
+      description: Change own incoming direct policy; saved immediately, capture/worker/foreground/headless authorization
+        enforce it. Does not alert people. Private no-store reads. Foreground REST polling, not WebSocket or
+        E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - who_can_message
+              properties:
+                who_can_message:
+                  type: string
+                  enum:
+                  - all
+                  - existing
+                  - none
+  /events:
+    get:
+      operationId: listLiveEvents
+      tags:
+      - Events
+      description: Current exact memberships only. Bounded limit/offset, optional group_id. Upcoming first then
+        past, includes cancelled plans. Returns items and has_more. Private no-store reads. Foreground REST polling,
+        not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+      - name: group_id
+        in: query
+        schema: *id001
+  /groups/{id}/events:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id001
+    post:
+      operationId: createLiveEvent
+      tags:
+      - Events
+      description: Current exact member, group event_creation policy and session under group lock. Unique creator/client_id
+        safe retry; changed payload409. Future start, valid end/deadline/capacity. At most20/account/hour. Returns
+        id/group_id; captures generic creation and one-hour reminders. Private no-store reads. Foreground REST
+        polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - client_id
+              - title
+              - start_at
+              - timezone
+              properties:
+                client_id: *id002
+                title: &id003
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                description: &id004
+                  type: string
+                  maxLength: 10000
+                event_type: &id005
+                  type: string
+                  enum:
+                  - function
+                  - wedding
+                  - reunion
+                  - meetup
+                  - birthday
+                  - trip
+                  - online
+                  - other
+                venue: &id006
+                  type: string
+                  maxLength: 500
+                online_link: &id007
+                  type: string
+                  maxLength: 1000
+                  description: Empty or HTTPS without credentials; a place or meeting link is required.
+                start_at: &id008
+                  type: string
+                  format: date-time
+                  description: ISO timestamp with seconds and Z/explicit offset; stored and returned in UTC,
+                    before2038.
+                end_at: &id009
+                  type:
+                  - string
+                  - 'null'
+                  format: date-time
+                rsvp_deadline: &id010
+                  type:
+                  - string
+                  - 'null'
+                  format: date-time
+                timezone: &id011
+                  type: string
+                  description: IANA zone, independent of the UTC instant.
+                max_capacity: &id012
+                  type:
+                  - integer
+                  - 'null'
+                  minimum: 1
+                  maximum: 100000
+  /events/{eventId}:
+    parameters:
+    - name: eventId
+      in: path
+      required: true
+      schema: *id001
+    get:
+      operationId: getLiveEvent
+      tags:
+      - Events
+      description: Exact active membership; event fields plus id/group_id/created_by/status/version/my_rsvp/can_manage/going_count.
+        Other peoples notes and mobile numbers never returned. Private no-store reads. Foreground REST polling,
+        not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    patch:
+      operationId: updateLiveEvent
+      tags:
+      - Events
+      description: Organizer or exact admin, session and current version; serial group/event locks. Cancelled
+        events cannot reopen/edit. Reject capacity below existing attendance. Cancel old pending notification/reminder
+        versions and schedule replacement; silent description data never included in generic push. Private no-store
+        reads. Foreground REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - version
+              minProperties: 2
+              properties:
+                version: *id001
+                title: *id003
+                description: *id004
+                event_type: *id005
+                venue: *id006
+                online_link: *id007
+                start_at: *id008
+                end_at: *id009
+                rsvp_deadline: *id010
+                timezone: *id011
+                max_capacity: *id012
+                status:
+                  type: string
+                  enum:
+                  - cancelled
+  /events/{eventId}/rsvp:
+    parameters:
+    - name: eventId
+      in: path
+      required: true
+      schema: *id001
+    put:
+      operationId: setLiveEventRsvp
+      tags:
+      - Events
+      description: Current exact member/session; active future event before deadline. Atomic capacity includes
+        guests. Non-going guest_count0. Exact retry no duplicate alert. Generic relevant RSVP changes go only
+        to current organizer with Events preferences. Notes visible only to their author. Private no-store reads.
+        Foreground REST polling, not WebSocket or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - going
+                  - maybe
+                  - not_going
+                guest_count:
+                  type: integer
+                  minimum: 0
+                  maximum: 10
+                note:
+                  type: string
+                  maxLength: 500
+  /events/{eventId}/attendees:
+    parameters:
+    - name: eventId
+      in: path
+      required: true
+      schema: *id001
+    get:
+      operationId: listLiveEventAttendees
+      tags:
+      - Events
+      description: Current exact member; bounded offset/limit. Items id/display_name/status/guest_count and has_more.
+        No other-person notes or mobile numbers. Private no-store reads. Foreground REST polling, not WebSocket
+        or E2E encryption.
+      responses:
+        '200':
+          description: Authorized result or committed action.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    const: true
+                  data:
+                    type:
+                    - object
+                    - 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Stale version, idempotency conflict or closed/full event.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
   /me/blocks:
     get:
       operationId: listOwnBlocks
@@ -1273,6 +2353,7 @@ paths:
                 type: { $ref: '#/components/schemas/GroupType' }
                 approval_mode: { $ref: '#/components/schemas/ApprovalMode' }
                 visibility: { $ref: '#/components/schemas/Visibility' }
+                event_creation: {type: string, enum: [admins, members]}
                 link_sharing: { type: string, enum: [admins, members] }
       responses:
         '200':

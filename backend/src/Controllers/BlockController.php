@@ -39,7 +39,8 @@ final class BlockController
                 $person=null;foreach($users as $u)if((int)$u['id']===$target)$person=$u;
                 $shared=Database::queryOne("SELECT a.group_id FROM group_members a JOIN group_members b ON a.group_id=b.group_id WHERE a.user_id=:a AND b.user_id=:b AND a.status='active' AND b.status='active' LIMIT 1",['a'=>$viewer,'b'=>$target]);
                 $received=Database::queryOne('SELECT id FROM group_invitations WHERE recipient_id=:a AND inviter_id=:b LIMIT 1',['a'=>$viewer,'b'=>$target]);
-                if($person===null || $person['status']!=='active' || ($shared===null && $received===null))Response::notFound('This person is not available.');
+                $direct=Database::queryOne('SELECT id FROM conversations WHERE pair_low=:a AND pair_high=:b',['a'=>min($viewer,$target),'b'=>max($viewer,$target)]);
+                if($person===null || $person['status']!=='active' || ($shared===null && $received===null && $direct===null))Response::notFound('This person is not available.');
                 Database::execute('INSERT INTO user_blocks(blocker_id,blocked_id,label) VALUES(:a,:b,:label)',['a'=>$viewer,'b'=>$target,'label'=>$person['display_name']]);
                 Database::execute("UPDATE group_invitations SET status='expired' WHERE status='pending' AND ((inviter_id=:a AND recipient_id=:b) OR (inviter_id=:c AND recipient_id=:d))",['a'=>$viewer,'b'=>$target,'c'=>$target,'d'=>$viewer]);
             } elseif(!$block) Database::execute('DELETE FROM user_blocks WHERE blocker_id=:a AND blocked_id=:b',['a'=>$viewer,'b'=>$target]);

@@ -8,6 +8,8 @@ enum CircleFeature {
   events('Events', plural: true),
   polls('Polls', plural: true),
   chat('Chat'),
+  liveChat('Chats', plural: true),
+  liveEvents('Events', plural: true),
   albums('Albums', plural: true),
   activity('Activity'),
   notificationSettings('Notification settings', plural: true),
@@ -45,6 +47,8 @@ class CircleFeatures {
   const CircleFeatures.server(String this.host, {bool notifications = false})
     : available = notifications
           ? const {
+              CircleFeature.liveChat,
+              CircleFeature.liveEvents,
               CircleFeature.blocking,
               CircleFeature.moderation,
               CircleFeature.notificationSettings,
@@ -53,6 +57,8 @@ class CircleFeatures {
           : const {
               CircleFeature.contactInvitations,
               CircleFeature.moderation,
+              CircleFeature.liveChat,
+              CircleFeature.liveEvents,
               CircleFeature.blocking,
             };
 

@@ -120,3 +120,7 @@ Generic group.report alerts use current groups preferences/quiet hours and admin
 ## S2b — direct-contact blocking
 
 27 October 2026. Owner selected stopping direct contact while keeping shared-group content visible. OpenAPI0.3.12/migration016 add private outgoing state/list, unblock, protected profile/invitation entry, invitation expiry and personal comment/reply alert suppression. Shared-group profiles/photos/Memories/comments/reactions and ordinary group updates remain visible; membership and moderation continue. No block/unblock alert. See safety-blocking.md and PROJECT_STATE.md for actual release evidence. Profile-field privacy, future DM policy, deletion/export/retention and recovery remain separate batches; live Chats/Events remain required later service batches.
+
+## Live Chats and Events core — 28 October 2026
+
+Owner requested integration with the current UI changes. OpenAPI0.4.0/migrations017–020 implement real group/direct text conversations and requests, frozen message versions, offline send intents, safety/reporting, Events/RSVPs and scoped notifications/reminders. See live-chat-events.md and PROJECT_STATE.md for exact implemented, verified and published states. Keep photo attachments/covers, forwarding/sharing, activity indicators, chat search, date polls/cohosts/albums as explicit follow-up service extensions. Profile-field privacy and reviewed deletion/export/recovery remain separate safety work; do not reapply the missing earlier environment WIP.

@@ -168,7 +168,7 @@ class MessageTile extends StatelessWidget {
         if (message.reactions.total > 0)
           _Reactions(reactions: message.reactions),
         if (selected && interactive)
-          _ActionRow(
+          _VisibleActions(
             message: message,
             timeLabel: timeLabel,
             callbacks: callbacks,
@@ -682,4 +682,35 @@ class _NoAccessCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Reveal actions within the viewport when a selected bubble grows.
+class _VisibleActions extends StatefulWidget {
+  const _VisibleActions({
+    required this.message,
+    required this.timeLabel,
+    required this.callbacks,
+  });
+  final MessageView message;
+  final String timeLabel;
+  final MessageCallbacks callbacks;
+  @override
+  State<_VisibleActions> createState() => _VisibleActionsState();
+}
+
+class _VisibleActionsState extends State<_VisibleActions> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Scrollable.ensureVisible(context, alignment: 0.5);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => _ActionRow(
+    message: widget.message,
+    timeLabel: widget.timeLabel,
+    callbacks: widget.callbacks,
+  );
 }

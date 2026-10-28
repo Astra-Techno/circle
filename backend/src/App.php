@@ -12,6 +12,8 @@ use Circle\Controllers\ProfilePhotoController;
 use Circle\Controllers\GroupPhotoController;
 use Circle\Controllers\ModerationController;
 use Circle\Controllers\BlockController;
+use Circle\Controllers\ChatController;
+use Circle\Controllers\EventController;
 use Circle\Controllers\GroupController;
 use Circle\Controllers\GroupInvitationController;
 use Circle\Controllers\MediaController;
@@ -133,6 +135,26 @@ final class App
 
         // ── Protected API ────────────────────────────────────────
         $router->group('/api/v1', ['rate', 'auth'], static function (Router $r): void {
+            $r->get('/me/chat-privacy', ChatController::privacy(...));
+            $r->patch('/me/chat-privacy', ChatController::privacy(...));
+            $r->get('/groups/{id}/chat', ChatController::group(...));
+            $r->get('/chats', ChatController::inbox(...));
+            $r->get('/chats/contacts', ChatController::contacts(...));
+            $r->put('/chats/direct/{userId}', ChatController::direct(...));
+            $r->get('/chats/{id}', ChatController::show(...));
+            $r->patch('/chats/{id}/state', ChatController::state(...));
+            $r->post('/chats/{id}/reports', ChatController::report(...));
+            $r->post('/chats/{id}/request', ChatController::respond(...));
+            $r->post('/chats/{id}/messages', ChatController::send(...));
+            $r->get('/chats/{id}/messages/{messageId}', ChatController::pushMessage(...));
+            $r->patch('/chats/{id}/messages/{messageId}', ChatController::changeMessage(...));
+            $r->put('/chats/{id}/messages/{messageId}/reaction', ChatController::react(...));
+            $r->get('/events', EventController::index(...));
+            $r->post('/groups/{id}/events', EventController::create(...));
+            $r->get('/events/{eventId}', EventController::show(...));
+            $r->patch('/events/{eventId}', EventController::update(...));
+            $r->put('/events/{eventId}/rsvp', EventController::rsvp(...));
+            $r->get('/events/{eventId}/attendees', EventController::attendees(...));
             $r->get('/me/blocks', BlockController::index(...));
             $r->get('/me/blocks/{userId}', BlockController::show(...));
             $r->put('/me/blocks/{userId}', BlockController::put(...));

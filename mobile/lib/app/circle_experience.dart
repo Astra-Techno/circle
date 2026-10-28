@@ -16,11 +16,13 @@ import '../features/chat/presentation/chat_conversation.dart';
 import '../features/chat/presentation/chat_details.dart';
 import '../features/chat/presentation/chat_photos.dart';
 import '../features/chat/presentation/chat_inbox.dart';
+import '../features/chat/presentation/live_chats.dart';
 import '../features/chat/presentation/chat_new.dart';
 import '../features/chat/presentation/chat_privacy.dart';
 import '../features/profile/presentation/server_blocking.dart';
 import '../features/chat/presentation/chat_reply_privately.dart';
 import '../features/events/presentation/circle_events.dart';
+import '../features/events/presentation/live_events.dart';
 import '../features/groups/domain/membership_rules.dart';
 import '../features/groups/presentation/circle_groups.dart';
 import '../features/groups/presentation/group_detail.dart';
@@ -118,18 +120,28 @@ Widget _page(BuildContext context, String title, Widget child) => Scaffold(
 Widget _gate(CircleFeature feature, Widget child) =>
     CircleFeatureGate(feature: feature, child: child);
 
-Widget _chatsPane([String? id]) => _gate(
-  CircleFeature.chat,
-  CircleAdaptivePane(
-    kind: 'chats',
-    initial: id,
-    list: const ChatInboxScreen(),
-    detail: (id) => ChatConversationScreen(key: ValueKey(id), id: id),
-    placeholder: const CirclePanePlaceholder(
-      title: 'Choose a chat',
-      message: 'Pick a conversation on the left to read it here.',
-    ),
-  ),
+Widget _chatsPane([String? id]) => Consumer(
+  builder: (context, ref, _) {
+    if (ref.watch(circleFeaturesProvider).server) {
+      return _gate(
+        CircleFeature.liveChat,
+        LiveChatsScreen(key: ValueKey(id), id: id),
+      );
+    }
+    return _gate(
+      CircleFeature.chat,
+      CircleAdaptivePane(
+        kind: 'chats',
+        initial: id,
+        list: const ChatInboxScreen(),
+        detail: (id) => ChatConversationScreen(key: ValueKey(id), id: id),
+        placeholder: const CirclePanePlaceholder(
+          title: 'Choose a chat',
+          message: 'Pick a conversation on the left to read it here.',
+        ),
+      ),
+    );
+  },
 );
 
 Widget _groupsPane([String? id]) => CircleAdaptivePane(
@@ -143,18 +155,28 @@ Widget _groupsPane([String? id]) => CircleAdaptivePane(
   ),
 );
 
-Widget _eventsPane([String? id]) => _gate(
-  CircleFeature.events,
-  CircleAdaptivePane(
-    kind: 'events',
-    initial: id,
-    list: const CircleEvents(),
-    detail: (id) => CircleEventDetail(key: ValueKey(id), id: id),
-    placeholder: const CirclePanePlaceholder(
-      title: 'Choose an event',
-      message: 'Pick an event on the left to see its details here.',
-    ),
-  ),
+Widget _eventsPane([String? id, String? group]) => Consumer(
+  builder: (context, ref, _) {
+    if (ref.watch(circleFeaturesProvider).server) {
+      return _gate(
+        CircleFeature.liveEvents,
+        LiveEventsScreen(key: ValueKey(id), id: id, group: group),
+      );
+    }
+    return _gate(
+      CircleFeature.events,
+      CircleAdaptivePane(
+        kind: 'events',
+        initial: id,
+        list: const CircleEvents(),
+        detail: (id) => CircleEventDetail(key: ValueKey(id), id: id),
+        placeholder: const CirclePanePlaceholder(
+          title: 'Choose an event',
+          message: 'Pick an event on the left to see its details here.',
+        ),
+      ),
+    );
+  },
 );
 
 Widget _albumRoute(GoRouterState state, Widget Function(String id) builder) {
@@ -359,9 +381,19 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                 builder: (_, _) => _chatsPane(),
                 routes: [
                   GoRoute(
+                    path: 'privacy',
+                    builder: (_, _) => ref.read(circleFeaturesProvider).server
+                        ? const LiveChatPrivacyScreen()
+                        : _gate(
+                            CircleFeature.privacy,
+                            const ChatPrivacyScreen(),
+                          ),
+                  ),
+                  GoRoute(
                     path: 'new',
-                    builder: (_, _) =>
-                        _gate(CircleFeature.chat, const NewChatScreen()),
+                    builder: (_, _) => ref.read(circleFeaturesProvider).server
+                        ? const LiveChatsScreen(contacts: true)
+                        : _gate(CircleFeature.chat, const NewChatScreen()),
                   ),
                   GoRoute(
                     path: 'archived',
@@ -534,13 +566,19 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/events',
-                builder: (_, _) => _eventsPane(),
+                builder: (_, state) =>
+                    _eventsPane(null, state.uri.queryParameters['group']),
                 routes: [
                   GoRoute(
                     path: 'new',
-                    builder: (_, state) => EventFormScreen(
-                      initialGroupId: state.uri.queryParameters['group'],
-                    ),
+                    builder: (_, state) =>
+                        ref.read(circleFeaturesProvider).server
+                        ? LiveEventForm(
+                            group: state.uri.queryParameters['group'],
+                          )
+                        : EventFormScreen(
+                            initialGroupId: state.uri.queryParameters['group'],
+                          ),
                   ),
                   GoRoute(
                     path: 'e/:id',
@@ -548,14 +586,20 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                     routes: [
                       GoRoute(
                         path: 'attendees',
-                        builder: (_, state) =>
-                            _idRoute(state, (id) => EventAttendees(id: id)),
+                        builder: (_, state) => _idRoute(
+                          state,
+                          (id) => ref.read(circleFeaturesProvider).server
+                              ? LiveAttendeesScreen(id: id)
+                              : EventAttendees(id: id),
+                        ),
                       ),
                       GoRoute(
                         path: 'edit',
                         builder: (_, state) => _idRoute(
                           state,
-                          (id) => EventFormScreen(eventId: id),
+                          (id) => ref.read(circleFeaturesProvider).server
+                              ? LiveEventForm(id: id)
+                              : EventFormScreen(eventId: id),
                         ),
                       ),
                     ],
@@ -731,14 +775,19 @@ class CircleAppShell extends ConsumerWidget {
     final features = ref.watch(circleFeaturesProvider);
     final branches = [
       0,
-      if (features.has(CircleFeature.chat)) 1,
+      if ((features.has(CircleFeature.chat) ||
+          features.has(CircleFeature.liveChat)))
+        1,
       2,
-      if (features.has(CircleFeature.events)) 3,
+      if ((features.has(CircleFeature.events) ||
+          features.has(CircleFeature.liveEvents)))
+        3,
       4,
     ];
     // "New event" only when the viewer may create an event somewhere.
     final canCreateEvent =
-        features.has(CircleFeature.events) &&
+        (features.has(CircleFeature.events) ||
+            features.has(CircleFeature.liveEvents)) &&
         (workspace?.groups.any(
               (group) => MembershipRules.canCreateEvent(
                 group,
@@ -750,10 +799,10 @@ class CircleAppShell extends ConsumerWidget {
         ? null
         : switch (index) {
             0 => (label: 'Create Memory', location: composeLocation(filter)),
-            1 when features.has(CircleFeature.chat) => (
-              label: 'New chat',
-              location: '/chats/new',
-            ),
+            1
+                when (features.has(CircleFeature.chat) ||
+                    features.has(CircleFeature.liveChat)) =>
+              (label: 'New chat', location: '/chats/new'),
             2 => (label: 'New group', location: '/groups/new'),
             3 when canCreateEvent => (
               label: 'New event',
@@ -874,7 +923,8 @@ class CircleAppShell extends ConsumerWidget {
                           selectedIcon: Icon(Icons.home_rounded),
                           label: 'Home',
                         ),
-                        if (features.has(CircleFeature.chat))
+                        if ((features.has(CircleFeature.chat) ||
+                            features.has(CircleFeature.liveChat)))
                           NavigationDestination(
                             icon: Icon(Icons.forum_outlined),
                             selectedIcon: Icon(Icons.forum_rounded),
@@ -885,7 +935,8 @@ class CircleAppShell extends ConsumerWidget {
                           selectedIcon: Icon(Icons.groups_rounded),
                           label: 'Groups',
                         ),
-                        if (features.has(CircleFeature.events))
+                        if ((features.has(CircleFeature.events) ||
+                            features.has(CircleFeature.liveEvents)))
                           NavigationDestination(
                             icon: Icon(Icons.event_outlined),
                             selectedIcon: Icon(Icons.event_rounded),

@@ -1,37 +1,32 @@
 # CIRCLE project state
 
-Updated: 27 October 2026. Inspect Git status; source, deployment and physical acceptance are distinct.
+Updated:28 October2026. Source, deployment, APK and physical acceptance are separate facts.
 
-## Architecture and rules
-- Flutter/Riverpod/go_router, shared Warm Keepsake tokens in mobile/lib/core; PHP8.3+/MySQL, OpenAPI docs/api-contracts/openapi.yaml.
-- Main only; preserve unrelated work. Active checkout /workspace/circle-docs-sync. Original /workspace/circle retains old WIP; do not reapply it.
-- AGENTS.md/README §0 govern verification, privacy, optional push, established signing and coherent immutable downloads.
-- Live core: auth, private profiles/media, nested groups/membership/invites, Memories/comments/reactions/saves/search and supported reporting/moderation. Chats/events/albums remain isolated previews pending service batches.
+## Rules and architecture
+- Active checkout /workspace/circle, main only. Current base0770004 includes build19/download/deploy fixes and earlier3D design changes; preserve them. Previous /workspace/circle-docs-sync WIP is absent in this refreshed environment.
+- AGENTS.md/README§0 govern scope, privacy, optional push, test/release integrity. Flutter/Riverpod/go_router and PHP/MySQL; OpenAPI docs/api-contracts/openapi.yaml.
+- Prior core auth/groups/Memories/private media/reporting/direct-contact blocking remains included. Profile-field privacy, deletion/export/recovery are not implemented by this batch.
 
-## Current batch — UI/UX design elevation (Glassy 3D & Instagram/Facebook aesthetic polish)
-- Modernized app visual presentation with pixel-perfect restraint adhering strictly to "Warm Keepsake on White" design tokens and calm privacy invariants.
-- Softened CircleDepth shadow tokens with dual-layer 3D ambient diffusion and contact shadows.
-- Enhanced panels and profile containers with specular top-edge lighting gradients.
-- Elevated navigation bar into a floating dock with transparent backdrop, rim borders, and active filled icons.
-- Elevated Memories cards with edge-to-edge photo layout and horizontal action menu (Icons.more_horiz).
-- Polished Direct Chat styling with Instagram-style pill composer field and crisp hairline borders on incoming bubbles.
-- Enriched heart reaction token to luminous coral pearl (0xFFFA5B4A) while preserving accessible text variant.
-- 100% compliant with design system guard (test/design_system_guard_test.dart), zero analyzer warnings, all chat and memories flow tests passing.
+## Current source — live Chats and Events
+- OpenAPI0.4.0; migrations017 chat,018 events,019 private direct reports,020 fair reminder scanning.87 operations/489 local references validated.
+- Exact-group and consent-based direct text chats; replies, idempotent sends, bounded history, receipts/unread/mute/pin/archive, edit15min, unsend/Undo, reactions/clear. Frozen message versions prevent later text/edits leaking after removal; rejoin restores access.
+- Direct messaging respects shared membership, blocks and persistent recipient policy. One introduction waits for acceptance. Selected direct-message reports go only to private operator CLI; never a group-admin queue.
+- Encrypted pending sends are capped/session-scoped, persist across same-session restarts and retry only while Chats is active. Rejected sends need review; logout prevents stale replay.
+- Events create/edit/cancel, type/details/place/HTTPS link, IANA/UTC times, RSVP/guests/private own notes/capacity/deadline/attendees. Group creation policy and optimistic event versions enforced.
+- Chat/event generic push, safe taps, categories, recipient/session/current-access checks; one-hour reminders include late devices/current members and cancel obsolete versions. Native delivery still needs device acceptance.
+- Current visual tokens/dock preserved; selected preview actions now scroll into view. Richer attachment/cover/forward/share/activity/search/poll/cohost/album extensions remain gated. See docs/live-chat-events.md and ADR0008.
 
-## Validation and release
-- Dedicated circle_test206 tests/3,639 assertions; PHPStan/composer valid. Full Flutter684 passed/1 skipped/13 known Windows-baseline golden failures; analyzer clean. Final blocking/server-mode/design24 tests pass; format clean. Final APK rebuilt and deployed.
-- Live1.0.17+18/sourcee071227:65,343,022 bytes SHA256539701a9ddbf8bb8e47dada3bb618ca98a4a0b08cd9065a5462eae59e7ef589b. Full hosted stable/immutable hashes, metadata/both buttons/cache verified. See docs/mobile-release-1.0.17.md.
-- Previous immutable1.0.16+17: APK/source137ddc3, server3ce253f, proofee77090;65,261,102 bytes SHA2565da05df9bf69bccf781fcb293a7a4c36bad484ad999e3abdfc36d93eb2d61c35.
-- Established certificate SHA2566c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c. Preserve immutable releases and hosting settings.
-- Deployment176.0s response/173.9s script; migration016 applied. API healthy; private blocks/photos/reports unauth401. Hosting settings preserved.
-- No attached Android device; actual installation and two-phone notification acceptance remain pending.
+## Validation
+- Full backend214 tests/3,832 assertions pass; final label/security/invitation/notification regression41 tests/961 assertions pass. PHPStan and composer validation clean.
+- Final full Flutter705 passed/1 skipped/13 known Windows-baseline golden failures; no functional failures. New lifecycle/report/outbox/layout26 focused tests pass; analyzer/format clean. Forwarding regression fixed.
+- Twelve new light/dark phone/tablet200% renders captured; representative layouts inspected. No Android device attached.
 
-## Remaining acceptance and next work
-- Owner confirmed private sender/cron ready and can test APK. Real Android update, native location/geocoder/permissions, two-device logout/password re-login, contacts/composers, photo display and actual push/tap results remain pending.
-- Sequential backlog and notification matrix: docs/pending-work.md. Safety/privacy, live Chats, live Events, polls/albums follow in verified batches.
-- Prior evidence: docs/contact-invite-sharing.md, docs/push-device-acceptance.md, docs/password-change-foundation.md.
+## Release/deployment
+- Verified source batch ready to commit/push; no production deployment or APK rebuild in this step. Current repository1.0.18+19:65,277,758 bytes SHA2563c844920fe94fd0f5a17efc5e6bb13c8dc42f9d1760d7efdf50e36cef4d24506.
+- Build19 certificate SHA256e38a9bf147b621ee468a1abdda916239663810346aa9f104c956e089bbebbf61 differs from earlier build18. Matching installed-app key/Android SDK are absent here; never generate a replacement or call this APK-ready.
+- Last previously verified live18 evidence remains docs/mobile-release-1.0.17.md; current hosted build19 was not verified in this source task. Deployer on main skips APK binaries.
 
-## Commands
-- Source /workspace/toolchain/mobile-env; dart format/flutter analyze and focused/full flutter test. Never run Flutter test tooling during APK build.
-- Backend composer test only against circle_test; composer analyse. Source toolchain/test-env when present; never print secrets.
-- Verify package/version/certificate/hash/bytes; align stable+immutable APK/JSON/both buttons, then verify complete hosted bytes. Preserve earlier immutable APKs.
+## Environment and next checks
+- Restored Flutter3.44.8/Dart3.12.2: source /workspace/toolchain/mobile-env. no_proxy/NO_PROXY must include local addresses for Flutter test WebSockets; XDG/analyzer overrides keep caches writable. Setup/start draft saved; publication of that environment draft remains user action.
+- Backend: export PATH=/workspace/toolchain/bin:$PATH; source /workspace/toolchain/test-env without printing secrets; composer test only against circle_test, one suite at a time. composer analyse/validate. Local dev migrations and operator CLI checked; API health healthy.
+- Native/two-phone consent, block/mute/quiet hours, frozen history, offline/restart recovery, actual push/taps and RSVP/reminders remain pending. Backlog in docs/pending-work.md.

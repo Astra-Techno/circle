@@ -131,7 +131,7 @@ final class MemberRepository
         Database::execute(
             'UPDATE group_members
              SET role = :role, status = :status, added_by = :added, approved_by = :approved,
-                 joined_at = NOW(), left_at = NULL, rejoin_after_link_id = NULL
+                 joined_at = NOW(), left_at = NULL, rejoin_after_link_id = NULL, chat_frozen_id = NULL
              WHERE id = :id',
             [
                 'role' => $role,
@@ -165,9 +165,9 @@ final class MemberRepository
 
         $changed = Database::execute(
             'UPDATE group_members
-             SET status = :status, left_at = NOW(), rejoin_after_link_id = :rejoin
+             SET status = :status, left_at = NOW(), rejoin_after_link_id = :rejoin, chat_frozen_id=(SELECT COALESCE(MAX(v.id),0) FROM chat_versions v JOIN chat_messages m ON m.id=v.message_id JOIN conversations c ON c.id=m.conversation_id WHERE c.group_id=:chat_group)
              WHERE group_id = :gid AND user_id = :uid AND status = :active',
-            ['status' => $reason, 'rejoin' => $rejoinAfter, 'gid' => $groupId, 'uid' => $userId, 'active' => 'active']
+            ['status' => $reason, 'rejoin' => $rejoinAfter, 'chat_group'=>$groupId, 'gid' => $groupId, 'uid' => $userId, 'active' => 'active']
         ) > 0;
         if ($changed) {
             Database::execute("UPDATE group_invitations SET status = 'expired', updated_at = NOW(6) WHERE group_id = :gid AND (recipient_id = :recipient OR inviter_id = :inviter) AND status = 'pending'",

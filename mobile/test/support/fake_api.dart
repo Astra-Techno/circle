@@ -400,6 +400,9 @@ class FakeCircleServer {
       refresh.removeWhere((_, user) => user == me);
       return FakeResponse.ok(null);
     }
+    if (path == '/chats' || path == '/events') {
+      return FakeResponse.ok({'items': [], 'has_more': false});
+    }
     if (path == '/me/blocks' && r.method == 'GET') {
       final all = (blocks[me] ?? {}).entries.toList()
         ..sort((a, b) => a.key.compareTo(b.key));

@@ -75,16 +75,31 @@ class PushEnvelope {
     required this.invitationId,
     required this.expiresAt,
     required this.scope,
+    this.messageId = '',
+    this.conversationId = '',
+    this.eventRef = '',
+    this.eventVersion = '',
   });
   final String eventId, type, memoryId, groupId, commentId, invitationId;
+  final String messageId, conversationId, eventRef, eventVersion;
+  bool get isChat => type == 'chat.message';
+  bool get isEvent => type.startsWith('event.');
   bool get isInvitation => type == 'group.invitation';
   bool get isReport => type == 'group.report';
-  String get authorizationPath => isReport
+  String get authorizationPath => isChat
+      ? '/chats/$conversationId/messages/$messageId'
+      : isEvent
+      ? '/events/$eventRef'
+      : isReport
       ? '/groups/$groupId/reports'
       : isInvitation
       ? '/group-invitations/$invitationId'
       : '/memories/$memoryId';
-  String get destination => isReport
+  String get destination => isChat
+      ? '/chats/c/$conversationId'
+      : isEvent
+      ? '/events/e/$eventRef'
+      : isReport
       ? '/groups/g/$groupId/reports'
       : isInvitation
       ? '/you/invitations'
@@ -99,7 +114,11 @@ class PushEnvelope {
   ) {
     final invitation = data['type'] == 'group.invitation';
     final report = data['type'] == 'group.report';
-    final groupEvent = invitation || report;
+    final chat = data['type'] == 'chat.message',
+        event =
+            (data['type'] is String) &&
+            (data['type'] as String).startsWith('event.');
+    final groupEvent = invitation || report || chat || event;
     final keys = {
       'event_id',
       'type',
@@ -109,7 +128,13 @@ class PushEnvelope {
       'group_id',
       if (invitation)
         'invitation_id'
-      else if (!report) ...[
+      else if (chat) ...[
+        'conversation_id',
+        'message_id',
+      ] else if (event) ...[
+        'event_ref',
+        'event_version',
+      ] else if (!report) ...[
         'memory_id',
         'comment_id',
       ],
@@ -125,13 +150,21 @@ class PushEnvelope {
         data['session_scope'] != scope.sessionHash) {
       return null;
     }
-    final event = data['event_id'] as String, type = data['type'] as String;
+    final eventKey = data['event_id'] as String, type = data['type'] as String;
     final memory = groupEvent ? '' : data['memory_id'] as String,
         group = data['group_id'] as String,
         comment = groupEvent ? '' : data['comment_id'] as String,
         invitationId = invitation ? data['invitation_id'] as String : '';
-    if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(event) ||
-        (invitation ? !_id(invitationId) : !report && !_id(memory)) ||
+    if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(eventKey) ||
+        (chat
+            ? (!_id(data['conversation_id'] as String) ||
+                  !_id(data['message_id'] as String))
+            : event
+            ? (!_id(data['event_ref'] as String) ||
+                  !_id(data['event_version'] as String))
+            : invitation
+            ? !_id(invitationId)
+            : !report && !_id(memory)) ||
         !_id(group)) {
       return null;
     }
@@ -141,6 +174,12 @@ class PushEnvelope {
       'comment.reply',
       'group.invitation',
       'group.report',
+      'chat.message',
+      'event.created',
+      'event.updated',
+      'event.cancelled',
+      'event.rsvp',
+      'event.reminder',
     }.contains(type)) {
       return null;
     }
@@ -156,7 +195,7 @@ class PushEnvelope {
       return null;
     }
     return PushEnvelope._(
-      eventId: event,
+      eventId: eventKey,
       type: type,
       memoryId: memory,
       groupId: group,
@@ -164,6 +203,10 @@ class PushEnvelope {
       invitationId: invitationId,
       expiresAt: expiry,
       scope: scope,
+      messageId: chat ? data['message_id'] as String : '',
+      conversationId: chat ? data['conversation_id'] as String : '',
+      eventRef: event ? data['event_ref'] as String : '',
+      eventVersion: event ? data['event_version'] as String : '',
     );
   }
 
@@ -176,7 +219,13 @@ class PushEnvelope {
     'group_id': groupId,
     if (isInvitation)
       'invitation_id': invitationId
-    else if (!isReport) ...{
+    else if (isChat) ...{
+      'conversation_id': conversationId,
+      'message_id': messageId,
+    } else if (isEvent) ...{
+      'event_ref': eventRef,
+      'event_version': eventVersion,
+    } else if (!isReport) ...{
       'memory_id': memoryId,
       'comment_id': commentId,
     },
@@ -185,6 +234,22 @@ class PushEnvelope {
 
   /// Content is fetched through the active account API, never a payload URL.
   bool authorizes(Map<String, dynamic> data, DateTime now) {
+    if (isChat) {
+      return '${data['id']}' == messageId &&
+          '${data['conversation_id']}' == conversationId &&
+          data['notification_allowed'] == true;
+    }
+    if (isEvent) {
+      final start = DateTime.tryParse(data['start_at'] as String? ?? '');
+      return '${data['id']}' == eventRef &&
+          '${data['group_id']}' == groupId &&
+          '${data['version']}' == eventVersion &&
+          (type == 'event.cancelled'
+              ? data['status'] == 'cancelled'
+              : data['status'] == 'active') &&
+          (type != 'event.reminder' ||
+              (start != null && start.isAfter(now.toUtc())));
+    }
     if (isReport) {
       return '${data['group_id']}' == groupId &&
           data['items'] is List &&

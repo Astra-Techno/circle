@@ -1,0 +1,20 @@
+CREATE TABLE direct_chat_reports (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ conversation_id BIGINT UNSIGNED NOT NULL,
+ message_id BIGINT UNSIGNED NOT NULL,
+ reporter_id BIGINT UNSIGNED NOT NULL,
+ reported_user_id BIGINT UNSIGNED NOT NULL,
+ reason VARCHAR(30) NOT NULL,
+ note VARCHAR(2000) NULL,
+ excerpt TEXT NOT NULL,
+ state ENUM('open','reviewed') NOT NULL DEFAULT 'open',
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ reviewed_at DATETIME NULL,
+ UNIQUE KEY direct_report_once(message_id,reporter_id),
+ INDEX direct_report_queue(state,id),
+ INDEX direct_report_rate(reporter_id,created_at),
+ FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+ FOREIGN KEY(message_id) REFERENCES chat_messages(id) ON DELETE CASCADE,
+ FOREIGN KEY(reporter_id) REFERENCES users(id),
+ FOREIGN KEY(reported_user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

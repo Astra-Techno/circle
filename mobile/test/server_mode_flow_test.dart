@@ -148,30 +148,17 @@ void main() {
     );
     expect(currentUri(container).path, '/home');
 
-    for (final (tab, label) in [
-      ('Events', 'Events aren’t on the server yet.'),
-      ('Chats', 'Chat isn’t on the server yet.'),
-    ]) {
-      expect(find.widgetWithText(NavigationDestination, tab), findsNothing);
-      container
-          .read(circleRouterProvider)
-          .go(tab == 'Events' ? '/events' : '/chats');
+    for (final path in ['/chats', '/events']) {
+      container.read(circleRouterProvider).go(path);
       await settle(tester);
-      expect(find.text('Not on the server yet'), findsOneWidget);
-      expect(find.textContaining(label), findsOneWidget);
-      expect(find.byType(FloatingActionButton), findsNothing);
-      // No calendar toggle or chat actions behind the gate.
+      expect(find.text('Not on the server yet'), findsNothing);
       expect(find.text('Month'), findsNothing);
       expect(find.text('Forward'), findsNothing);
     }
 
     container.read(circleRouterProvider).go('/groups/g/$family');
     await settle(tester);
-    for (final (tab, label) in [
-      ('Events', 'Events aren’t'),
-      ('Chat', 'Chat isn’t'),
-      ('Albums', 'Albums aren’t'),
-    ]) {
+    for (final (tab, label) in [('Albums', 'Albums aren’t')]) {
       await openTab(tester, tab);
       await settle(tester);
       expect(find.textContaining(label), findsOneWidget, reason: tab);
@@ -194,10 +181,7 @@ void main() {
     }
     // No fictional data was mixed in.
     expect(find.text('Mira (fictional)'), findsNothing);
-    expect(
-      server.adapter.requests.where((r) => r.path.contains('event')),
-      isEmpty,
-    );
+    expect(server.adapter.count('GET', '/events'), greaterThan(0));
   });
 
   testWidgets('a stored session reopens; an expired one refreshes once', (

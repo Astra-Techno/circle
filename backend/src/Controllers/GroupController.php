@@ -133,6 +133,7 @@ final class GroupController
                 );
             }
 
+            Database::execute("INSERT INTO conversations(kind,group_id) VALUES('group',:id)",['id'=>$groupId]);
             MemberRepository::addMember($groupId, $userId, 'admin', $userId);
 
             return $groupId;
@@ -170,6 +171,7 @@ final class GroupController
             'approval_mode' => ['approval_mode', ['auto', 'manual']],
             'visibility' => ['visibility', ['listed', 'hidden']],
             'link_sharing' => ['link_sharing', ['admins', 'members']],
+            'event_creation' => ['event_creation', ['admins','members']],
         ];
         foreach ($enums as $field => [$column, $allowed]) {
             if ($request->has($field)) {

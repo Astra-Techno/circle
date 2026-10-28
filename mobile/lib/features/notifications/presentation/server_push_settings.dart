@@ -178,6 +178,16 @@ class _Choices extends ConsumerWidget {
             'Group invitations and reports for group admins',
           ),
           const SizedBox(height: Space.section),
+          category(
+            PushCategory.chats,
+            'Messages',
+            'Unmuted group messages and eligible direct requests',
+          ),
+          category(
+            PushCategory.events,
+            'Events',
+            'Plans, RSVP updates, cancellations and reminders',
+          ),
           const CircleSectionTitle('Quiet hours'),
           CircleRow(
             child: SwitchListTile(

@@ -85,13 +85,13 @@ class PendingGroupView extends ConsumerWidget {
   );
 }
 
-class _GroupTabs extends StatelessWidget {
+class _GroupTabs extends ConsumerWidget {
   const _GroupTabs({required this.group, required this.workspace});
   final CircleGroup group;
   final CircleWorkspace workspace;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
+  Widget build(BuildContext context, WidgetRef ref) => LayoutBuilder(
     builder: (context, constraints) {
       final side = math.max(Space.lg, (constraints.maxWidth - 640) / 2);
       final padding = CircleInsets.page.copyWith(left: side, right: side);
@@ -135,7 +135,9 @@ class _GroupTabs extends StatelessWidget {
                       ),
                       SliverPadding(
                         padding: padding,
-                        sliver: SliverList.list(children: _tab(context, index)),
+                        sliver: SliverList.list(
+                          children: _tab(context, ref, index),
+                        ),
                       ),
                     ],
                   ),
@@ -147,7 +149,7 @@ class _GroupTabs extends StatelessWidget {
     },
   );
 
-  List<Widget> _tab(BuildContext context, int index) {
+  List<Widget> _tab(BuildContext context, WidgetRef ref, int index) {
     switch (index) {
       case 0:
         return [
@@ -175,6 +177,19 @@ class _GroupTabs extends StatelessWidget {
       case 2:
         return [GroupMembersTab(group: group, workspace: workspace)];
       case 3:
+        if (ref.watch(circleFeaturesProvider).server) {
+          return [
+            CircleEmpty(
+              title: 'Events for ${group.name}',
+              message: 'Make plans with this exact circle.',
+              action: FilledButton.icon(
+                onPressed: () => context.go('/events?group=${group.id}'),
+                icon: const Icon(Icons.event_outlined),
+                label: const Text('Open group events'),
+              ),
+            ),
+          ];
+        }
         return [
           CircleFeatureGate(
             feature: CircleFeature.events,
@@ -185,13 +200,15 @@ class _GroupTabs extends StatelessWidget {
       case 4:
         return [
           CircleFeatureGate(
-            feature: CircleFeature.chat,
+            feature: ref.watch(circleFeaturesProvider).server
+                ? CircleFeature.liveChat
+                : CircleFeature.chat,
             inline: true,
             child: CircleEmpty(
               title: 'Talk with everyone in ${group.name}',
-              message:
-                  'This group’s chat always includes exactly its members. '
-                  'Preview: messages stay on this device.',
+              message: ref.watch(circleFeaturesProvider).server
+                  ? 'Private messages saved for this group.'
+                  : 'This group’s chat always includes exactly its members. Preview: messages stay on this device.',
               action: FilledButton.icon(
                 onPressed: () => context.go('/chats/g/${group.id}'),
                 icon: const Icon(Icons.forum_outlined),

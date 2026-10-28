@@ -2,6 +2,7 @@ import '../../groups/presentation/group_photos.dart';
 import '../application/profile_providers.dart';
 import 'profile_photo.dart';
 import 'server_blocking.dart';
+import '../../chat/application/live_chat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -78,13 +79,15 @@ class PersonProfileScreen extends ConsumerWidget {
       final reportGroup =
           shared.where((group) => group.id == groupId).firstOrNull ??
           shared.first;
-      final controller = ref.read(chatControllerProvider.notifier);
+      final controller = chat
+          ? ref.read(chatControllerProvider.notifier)
+          : null;
 
       Future<void> message() async {
         final router = GoRouter.of(context);
         final id = await runCalmly(
           context,
-          () => controller.openDirect(person),
+          () => controller!.openDirect(person),
         );
         if (id != null) router.go('/chats/c/$id');
       }
@@ -159,6 +162,16 @@ class PersonProfileScreen extends ConsumerWidget {
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: Space.lg),
+            if (features.server && features.has(CircleFeature.liveChat))
+              FilledButton.icon(
+                onPressed: () async {
+                  final api = ref.read(liveChatApiProvider);
+                  final id = await runCalmly(context, () => api.direct(person));
+                  if (context.mounted && id != null) context.go('/chats/c/$id');
+                },
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: Text('Message $name'),
+              ),
             if (chat)
               FilledButton.icon(
                 key: const ValueKey('profile-message'),
@@ -217,7 +230,7 @@ class PersonProfileScreen extends ConsumerWidget {
                     if (blocked) {
                       await runCalmly(
                         context,
-                        () => controller.unblock(person),
+                        () => controller!.unblock(person),
                         success: '$name unblocked.',
                       );
                       return;
@@ -228,7 +241,7 @@ class PersonProfileScreen extends ConsumerWidget {
                     }
                     await runCalmly(
                       context,
-                      () => controller.block(person),
+                      () => controller!.block(person),
                       success: '$name blocked.',
                     );
                   },

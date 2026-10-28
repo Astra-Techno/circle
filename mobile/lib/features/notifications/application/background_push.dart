@@ -74,6 +74,10 @@ class BackgroundPushProcessor {
         ).load();
         final category = (envelope.isInvitation || envelope.isReport)
             ? PushCategory.groups
+            : envelope.isChat
+            ? PushCategory.chats
+            : envelope.isEvent
+            ? PushCategory.events
             : envelope.type == 'memory.created'
             ? PushCategory.memories
             : PushCategory.repliesReactions;

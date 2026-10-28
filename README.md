@@ -4,7 +4,7 @@
 
 > **Required reading for Codex, Claude Code and other coding agents:** follow [§0: shared implementation and release rules](#0-shared-implementation-and-release-rules) and [AGENTS.md](AGENTS.md) before making changes. [CLAUDE.md](CLAUDE.md) loads compact shared instructions for Claude Code; detailed rules are read as needed. Current owner instructions take precedence; older status snapshots and examples do not override the current rules.
 >
-> **Status distinction:** account/group/Memory APIs and private Memory media have been implemented and live-tested. The broader chat/events/albums UI includes local previews. Firebase source files and enabled feature flags alone do not establish working push delivery or server feature support. See §12 and the release/validation records for evidence.
+> **Status distinction:** account/group/Memory APIs and private Memory media have been implemented and live-tested. Live text Chats and Events/RSVP APIs are implemented in the current source; richer chat/event extensions and albums remain isolated previews. See [integration scope](docs/live-chat-events.md) for publication evidence and limits. Firebase source files and enabled feature flags alone do not establish working push delivery or server feature support. See §12 and the release/validation records for evidence.
 >
 > **Product scope:** CIRCLE is for **any close-knit private group**: families, offices, schools, colleges, friend circles and clubs. Anyone can create a group, nest subgroups inside it, and share memories, chat, plan events and run polls with only the people who belong there.
 

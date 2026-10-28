@@ -171,7 +171,6 @@ mixin ApiGroupRepository on ApiRepositoryBase implements GroupRepository {
     final group = _requireGroup(groupId);
     final rule = MembershipRules.canEditSettings(group, viewer);
     if (!rule.allowed) throw CircleFailure(rule.reason!);
-    if (eventCreation != null) throw notOnServerYet(CircleFeature.events);
     if (hidden != null && !group.isSubgroup) {
       throw const CircleFailure('Only subgroups can be listed or hidden.');
     }
@@ -181,6 +180,10 @@ mixin ApiGroupRepository on ApiRepositoryBase implements GroupRepository {
         'approval_mode': approvalRequired ? 'manual' : 'auto',
       if (invitePolicy != null)
         'link_sharing': invitePolicy == InvitePolicy.allMembers
+            ? 'members'
+            : 'admins',
+      if (eventCreation != null)
+        'event_creation': eventCreation == EventCreationPolicy.members
             ? 'members'
             : 'admins',
       if (hidden != null) 'visibility': hidden ? 'hidden' : 'listed',

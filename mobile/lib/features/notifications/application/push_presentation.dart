@@ -47,6 +47,10 @@ class PushPresentation {
           final category =
               (reception.envelope.isInvitation || reception.envelope.isReport)
               ? PushCategory.groups
+              : reception.envelope.isChat
+              ? PushCategory.chats
+              : reception.envelope.isEvent
+              ? PushCategory.events
               : reception.envelope.type == 'memory.created'
               ? PushCategory.memories
               : PushCategory.repliesReactions;
@@ -109,6 +113,10 @@ class PushPresentation {
       final category =
           (reception.envelope.isInvitation || reception.envelope.isReport)
           ? PushCategory.groups
+          : reception.envelope.isChat
+          ? PushCategory.chats
+          : reception.envelope.isEvent
+          ? PushCategory.events
           : reception.envelope.type == 'memory.created'
           ? PushCategory.memories
           : PushCategory.repliesReactions;

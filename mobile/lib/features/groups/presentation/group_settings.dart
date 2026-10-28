@@ -236,7 +236,8 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
                   )
                 : null,
           ),
-          if (features.has(CircleFeature.events)) ...[
+          if ((features.has(CircleFeature.events) ||
+              features.has(CircleFeature.liveEvents))) ...[
             const SizedBox(height: Space.md),
             DropdownButtonFormField<EventCreationPolicy>(
               initialValue: group.settings.eventCreation,
