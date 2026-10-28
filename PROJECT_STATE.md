@@ -22,7 +22,7 @@ Updated:28 October2026. Source, deployment, APK and physical acceptance are sepa
 - Twelve new light/dark phone/tablet200% renders captured; representative layouts inspected. No Android device attached.
 
 ## Release/deployment
-- Verified source batch ready to commit/push; no production deployment or APK rebuild in this step. Current repository1.0.18+19:65,277,758 bytes SHA2563c844920fe94fd0f5a17efc5e6bb13c8dc42f9d1760d7efdf50e36cef4d24506.
+- Source17d1156 committed and pushed to main on28 October2026; recent visual/download changes retained. No production deployment or APK rebuild in this step. Current repository1.0.18+19:65,277,758 bytes SHA2563c844920fe94fd0f5a17efc5e6bb13c8dc42f9d1760d7efdf50e36cef4d24506.
 - Build19 certificate SHA256e38a9bf147b621ee468a1abdda916239663810346aa9f104c956e089bbebbf61 differs from earlier build18. Matching installed-app key/Android SDK are absent here; never generate a replacement or call this APK-ready.
 - Last previously verified live18 evidence remains docs/mobile-release-1.0.17.md; current hosted build19 was not verified in this source task. Deployer on main skips APK binaries.
 
