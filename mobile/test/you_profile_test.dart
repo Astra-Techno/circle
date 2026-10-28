@@ -23,7 +23,7 @@ void main() {
     await tester.tap(find.widgetWithText(NavigationDestination, 'You'));
     await settle(tester);
     await settle(tester);
-    expect(find.text('CIRCLE'), findsOneWidget);
+    expect(find.text('Preview'), findsNothing);
     expect(find.textContaining('circle.test'), findsNothing);
     expect(find.byKey(const ValueKey('you-profile-card')), findsOneWidget);
     expect(find.text('Edit profile'), findsOneWidget);

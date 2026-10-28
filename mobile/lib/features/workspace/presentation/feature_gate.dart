@@ -39,7 +39,7 @@ class PreviewNotice extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(circleFeaturesProvider).server) return PreviewLabel(text);
-    return server == null ? const SizedBox.shrink() : PreviewLabel(server!);
+    return server == null ? const SizedBox.shrink() : CircleNote(server!);
   }
 }
 

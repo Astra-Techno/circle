@@ -123,7 +123,46 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
           final mine = e['my_rsvp'],
               active = e['status'] == 'active',
               manage = e['can_manage'] == true;
-          return ListView(
+          final canRsvp =
+              active &&
+              DateTime.parse(
+                e['start_at'] as String,
+              ).isAfter(DateTime.now().toUtc());
+          final chosen = mine is Map ? mine['status'] : null;
+          Widget choiceButton(MapEntry<String, String> choice) {
+            final label = Text(choice.value, textAlign: TextAlign.center);
+            return chosen == choice.key
+                ? FilledButton(onPressed: () {}, child: label)
+                : OutlinedButton(
+                    onPressed: _busy
+                        ? null
+                        : () async {
+                            final api = ref.read(liveEventsApiProvider);
+                            setState(() => _busy = true);
+                            await runCalmly(
+                              context,
+                              () => api.rsvp(
+                                id,
+                                choice.key,
+                                choice.key == 'going' && mine is Map
+                                    ? (mine['guest_count'] as int? ?? 0)
+                                    : 0,
+                                mine is Map
+                                    ? (mine['note'] as String? ?? '')
+                                    : '',
+                              ),
+                              success: 'RSVP saved.',
+                            );
+                            if (mounted) {
+                              setState(() => _busy = false);
+                              refreshLiveEvents(ref);
+                            }
+                          },
+                    child: label,
+                  );
+          }
+
+          final details = ListView(
             padding: CircleInsets.form,
             children: [
               CircleHeading(
@@ -213,48 +252,7 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                     ? 'Your RSVP: ${mine['status']}'
                     : 'You haven’t replied yet.',
               ),
-              if (active &&
-                  DateTime.parse(
-                    e['start_at'] as String,
-                  ).isAfter(DateTime.now().toUtc())) ...[
-                Wrap(
-                  spacing: Space.sm,
-                  runSpacing: Space.sm,
-                  children: [
-                    for (final choice in {
-                      'going': 'Going',
-                      'maybe': 'Maybe',
-                      'not_going': 'Can’t go',
-                    }.entries)
-                      OutlinedButton(
-                        onPressed: _busy
-                            ? null
-                            : () async {
-                                final api = ref.read(liveEventsApiProvider);
-                                setState(() => _busy = true);
-                                await runCalmly(
-                                  context,
-                                  () => api.rsvp(
-                                    id,
-                                    choice.key,
-                                    choice.key == 'going' && mine is Map
-                                        ? (mine['guest_count'] as int? ?? 0)
-                                        : 0,
-                                    mine is Map
-                                        ? (mine['note'] as String? ?? '')
-                                        : '',
-                                  ),
-                                  success: 'RSVP saved.',
-                                );
-                                if (mounted) {
-                                  setState(() => _busy = false);
-                                  refreshLiveEvents(ref);
-                                }
-                              },
-                        child: Text(choice.value),
-                      ),
-                  ],
-                ),
+              if (canRsvp) ...[
                 TextButton(
                   onPressed: _busy
                       ? null
@@ -323,6 +321,43 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Refresh event'),
               ),
+            ],
+          );
+          // Answers sit in the thumb zone, pinned below the details.
+          return Column(
+            children: [
+              Expanded(child: details),
+              if (canRsvp)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border(
+                      top: BorderSide(
+                        color: CircleAccents.of(context).hairline,
+                      ),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      Space.section,
+                      Space.md,
+                      Space.section,
+                      Space.lg,
+                    ),
+                    child: Row(
+                      children: [
+                        for (final (index, choice) in {
+                          'going': 'Going',
+                          'maybe': 'Maybe',
+                          'not_going': 'Can’t go',
+                        }.entries.indexed) ...[
+                          if (index > 0) const SizedBox(width: Space.sm),
+                          Expanded(child: choiceButton(choice)),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
             ],
           );
         },

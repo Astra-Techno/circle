@@ -105,223 +105,232 @@ class CircleEventDetail extends ConsumerWidget {
           subtitle: subtitle == null ? null : Text(subtitle),
           trailing: trailing,
         );
-        return ReadingPane(
-          child: SingleChildScrollView(
-            padding: CircleInsets.form,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const PreviewLabel(
-                  'Preview: RSVPs stay on this device and nobody is notified.',
-                ),
-                if (hidden) ...[
-                  HiddenByAdminsNotice(
-                    groupId: event.groupId,
-                    target: report,
-                    what: 'event',
-                  ),
-                  const SizedBox(height: Space.md),
-                ],
-                SizedBox(
-                  height: 140,
-                  child: CircleSceneTile(
-                    label: event.type.label,
-                    icon: eventTypeIcon(event.type),
-                    semanticsLabel:
-                        'Fictional illustration for a ${event.type.label.toLowerCase()} event',
-                  ),
-                ),
-                const SizedBox(height: Space.lg),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          event.title,
-                          style: theme.textTheme.headlineSmall,
-                        ),
-                      ),
-                    ),
-                    if (manage || canReport)
-                      PopupMenuButton<_EventAction>(
-                        tooltip: manage
-                            ? 'Event options'
-                            : 'More options for this event',
-                        onSelected: (action) => switch (action) {
-                          _EventAction.edit => context.push(
-                            '/events/e/${event.id}/edit',
-                          ),
-                          _EventAction.cancel => _cancel(context, ref),
-                          _EventAction.report => reportToAdmins(
-                            context,
-                            ref,
-                            target: report,
-                            what: 'this event',
-                          ),
-                        },
-                        itemBuilder: (_) => [
-                          if (manage) ...const [
-                            PopupMenuItem(
-                              value: _EventAction.edit,
-                              child: Text('Edit event'),
-                            ),
-                            PopupMenuItem(
-                              value: _EventAction.cancel,
-                              child: Text('Cancel event'),
-                            ),
-                          ],
-                          if (canReport)
-                            const PopupMenuItem(
-                              value: _EventAction.report,
-                              child: Text('Report'),
-                            ),
-                        ],
-                      ),
-                  ],
-                ),
-                const SizedBox(height: Space.sm),
-                Wrap(
-                  spacing: Space.sm,
-                  runSpacing: Space.xs,
-                  children: [
-                    if (event.cancelled)
-                      const CirclePill(
-                        'Cancelled',
-                        icon: Icons.event_busy_outlined,
-                        tone: CircleTone.strong,
-                      ),
-                    CirclePill(
-                      event.type.label,
-                      icon: eventTypeIcon(event.type),
-                    ),
-                    CirclePill(
-                      audiencePath(group, workspace.groupsById),
-                      icon: Icons.lock_outline,
-                      tone: circleTypeTone(group.type),
-                      semanticsLabel: 'For ${group.name} only',
-                    ),
-                    if (event.edited) const CirclePill('Edited'),
-                  ],
+        final scroll = SingleChildScrollView(
+          padding: CircleInsets.form,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const PreviewLabel(
+                'Preview: RSVPs stay on this device and nobody is notified.',
+              ),
+              if (hidden) ...[
+                HiddenByAdminsNotice(
+                  groupId: event.groupId,
+                  target: report,
+                  what: 'event',
                 ),
                 const SizedBox(height: Space.md),
-                if (event.cancelled)
-                  const EventNotice(
-                    icon: Icons.event_busy_outlined,
-                    text: 'This event was cancelled. RSVPs are closed.',
-                  )
-                else if (EventRules.hasEnded(event, now))
-                  const EventNotice(
-                    icon: Icons.history,
-                    text: 'This event has ended.',
-                  )
-                else if (!respond.allowed)
-                  EventNotice(
-                    icon: Icons.lock_clock_outlined,
-                    text: respond.reason!,
-                  ),
-                info(
-                  Icons.schedule,
-                  eventWhenLabel(event, now),
-                  subtitle: end == null
-                      ? null
-                      : formatDuration(end.difference(event.startsAt)),
+              ],
+              SizedBox(
+                height: 140,
+                child: CircleSceneTile(
+                  label: event.type.label,
+                  icon: eventTypeIcon(event.type),
+                  semanticsLabel:
+                      'Fictional illustration for a ${event.type.label.toLowerCase()} event',
                 ),
-                if (event.hosts.isNotEmpty)
-                  info(
-                    Icons.person_outline,
-                    'Hosted by ${joinNames([for (final host in event.hosts) workspace.nameOf(host)])}',
-                  ),
-                if (event.venue != null)
-                  info(
-                    Icons.place_outlined,
-                    event.venue!,
-                    trailing: IconButton(
-                      tooltip: 'Copy place',
-                      icon: const Icon(Icons.content_copy_outlined),
-                      onPressed: () => _copy(context, event.venue!, 'Place'),
+              ),
+              const SizedBox(height: Space.lg),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        event.title,
+                        style: theme.textTheme.headlineSmall,
+                      ),
                     ),
                   ),
-                if (event.onlineLink != null)
-                  info(
-                    Icons.videocam_outlined,
-                    event.onlineLink!,
-                    subtitle: 'Copy it into your video app.',
-                    trailing: IconButton(
-                      tooltip: 'Copy link',
-                      icon: const Icon(Icons.content_copy_outlined),
-                      onPressed: () =>
-                          _copy(context, event.onlineLink!, 'Link'),
+                  if (manage || canReport)
+                    PopupMenuButton<_EventAction>(
+                      tooltip: manage
+                          ? 'Event options'
+                          : 'More options for this event',
+                      onSelected: (action) => switch (action) {
+                        _EventAction.edit => context.push(
+                          '/events/e/${event.id}/edit',
+                        ),
+                        _EventAction.cancel => _cancel(context, ref),
+                        _EventAction.report => reportToAdmins(
+                          context,
+                          ref,
+                          target: report,
+                          what: 'this event',
+                        ),
+                      },
+                      itemBuilder: (_) => [
+                        if (manage) ...const [
+                          PopupMenuItem(
+                            value: _EventAction.edit,
+                            child: Text('Edit event'),
+                          ),
+                          PopupMenuItem(
+                            value: _EventAction.cancel,
+                            child: Text('Cancel event'),
+                          ),
+                        ],
+                        if (canReport)
+                          const PopupMenuItem(
+                            value: _EventAction.report,
+                            child: Text('Report'),
+                          ),
+                      ],
                     ),
-                  ),
-                if (event.rsvpDeadline != null)
-                  info(
-                    Icons.event_available_outlined,
-                    'RSVP by ${EventRules.slotLabel(event.rsvpDeadline!, offset: event.utcOffset, zone: event.timeZoneLabel, today: today)}',
-                  ),
-                if (event.capacity != null)
-                  info(
-                    Icons.event_seat_outlined,
-                    'Room for ${event.capacity} '
-                    '${event.capacity == 1 ? 'person' : 'people'}',
-                    subtitle: left == 0
-                        ? 'Full — you can still answer Maybe.'
-                        : '$left ${left == 1 ? 'place' : 'places'} left, counting guests',
-                  ),
-                if (event.description != null) ...[
-                  const CircleSectionTitle('About'),
-                  Text(event.description!),
                 ],
-                const CircleSectionTitle('Are you coming?'),
+              ),
+              const SizedBox(height: Space.sm),
+              Wrap(
+                spacing: Space.sm,
+                runSpacing: Space.xs,
+                children: [
+                  if (event.cancelled)
+                    const CirclePill(
+                      'Cancelled',
+                      icon: Icons.event_busy_outlined,
+                      tone: CircleTone.strong,
+                    ),
+                  CirclePill(event.type.label, icon: eventTypeIcon(event.type)),
+                  CirclePill(
+                    audiencePath(group, workspace.groupsById),
+                    icon: Icons.lock_outline,
+                    tone: circleTypeTone(group.type),
+                    semanticsLabel: 'For ${group.name} only',
+                  ),
+                  if (event.edited) const CirclePill('Edited'),
+                ],
+              ),
+              const SizedBox(height: Space.md),
+              if (event.cancelled)
+                const EventNotice(
+                  icon: Icons.event_busy_outlined,
+                  text: 'This event was cancelled. RSVPs are closed.',
+                )
+              else if (EventRules.hasEnded(event, now))
+                const EventNotice(
+                  icon: Icons.history,
+                  text: 'This event has ended.',
+                )
+              else if (!respond.allowed)
+                EventNotice(
+                  icon: Icons.lock_clock_outlined,
+                  text: respond.reason!,
+                ),
+              info(
+                Icons.schedule,
+                eventWhenLabel(event, now),
+                subtitle: end == null
+                    ? null
+                    : formatDuration(end.difference(event.startsAt)),
+              ),
+              if (event.hosts.isNotEmpty)
+                info(
+                  Icons.person_outline,
+                  'Hosted by ${joinNames([for (final host in event.hosts) workspace.nameOf(host)])}',
+                ),
+              if (event.venue != null)
+                info(
+                  Icons.place_outlined,
+                  event.venue!,
+                  trailing: IconButton(
+                    tooltip: 'Copy place',
+                    icon: const Icon(Icons.content_copy_outlined),
+                    onPressed: () => _copy(context, event.venue!, 'Place'),
+                  ),
+                ),
+              if (event.onlineLink != null)
+                info(
+                  Icons.videocam_outlined,
+                  event.onlineLink!,
+                  subtitle: 'Copy it into your video app.',
+                  trailing: IconButton(
+                    tooltip: 'Copy link',
+                    icon: const Icon(Icons.content_copy_outlined),
+                    onPressed: () => _copy(context, event.onlineLink!, 'Link'),
+                  ),
+                ),
+              if (event.rsvpDeadline != null)
+                info(
+                  Icons.event_available_outlined,
+                  'RSVP by ${EventRules.slotLabel(event.rsvpDeadline!, offset: event.utcOffset, zone: event.timeZoneLabel, today: today)}',
+                ),
+              if (event.capacity != null)
+                info(
+                  Icons.event_seat_outlined,
+                  'Room for ${event.capacity} '
+                  '${event.capacity == 1 ? 'person' : 'people'}',
+                  subtitle: left == 0
+                      ? 'Full — you can still answer Maybe.'
+                      : '$left ${left == 1 ? 'place' : 'places'} left, counting guests',
+                ),
+              if (event.description != null) ...[
+                const CircleSectionTitle('About'),
+                Text(event.description!),
+              ],
+              // Open events answer from the RsvpBar in the thumb zone;
+              // guests and a note stay here once there is an answer.
+              if (!respond.allowed || event.rsvpOf(viewer) != null) ...[
+                CircleSectionTitle(
+                  respond.allowed ? 'Your answer' : 'Are you coming?',
+                ),
                 RsvpControl(
                   key: ValueKey('rsvp-${event.id}'),
                   event: event,
                   viewer: viewer,
                   enabled: respond.allowed,
+                  showChoices: !respond.allowed,
                 ),
-                const CircleSectionTitle('Who’s coming?'),
-                Semantics(
-                  container: true,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Going ${attendance.going} · Maybe ${attendance.maybe} · '
-                        'Not going ${attendance.notGoing}',
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: Space.xs),
-                      Text(
-                        '${attendance.expected} '
-                        '${attendance.expected == 1 ? 'person' : 'people'} '
-                        'expected, including guests',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: Space.sm),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: OutlinedButton.icon(
-                    onPressed: () =>
-                        context.push('/events/e/${event.id}/attendees'),
-                    icon: const Icon(Icons.groups_outlined),
-                    label: const Text('See attendees'),
-                  ),
-                ),
-                EventAlbumSection(event: event),
-                if (poll != null) ...[
-                  const CircleSectionTitle('Date poll'),
-                  PollCard(
-                    poll: poll,
-                    onVote: (choices) => controller.voteEventPoll(id, choices),
-                    onRetract: () => controller.retractEventPollVote(id),
-                    onClose: () => controller.closeEventPoll(id),
-                  ),
-                ],
               ],
-            ),
+              const CircleSectionTitle('Who’s coming?'),
+              Semantics(
+                container: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Going ${attendance.going} · Maybe ${attendance.maybe} · '
+                      'Not going ${attendance.notGoing}',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: Space.xs),
+                    Text(
+                      '${attendance.expected} '
+                      '${attendance.expected == 1 ? 'person' : 'people'} '
+                      'expected, including guests',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Space.sm),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: OutlinedButton.icon(
+                  onPressed: () =>
+                      context.push('/events/e/${event.id}/attendees'),
+                  icon: const Icon(Icons.groups_outlined),
+                  label: const Text('See attendees'),
+                ),
+              ),
+              EventAlbumSection(event: event),
+              if (poll != null) ...[
+                const CircleSectionTitle('Date poll'),
+                PollCard(
+                  poll: poll,
+                  onVote: (choices) => controller.voteEventPoll(id, choices),
+                  onRetract: () => controller.retractEventPollVote(id),
+                  onClose: () => controller.closeEventPoll(id),
+                ),
+              ],
+            ],
+          ),
+        );
+        return ReadingPane(
+          child: Column(
+            children: [
+              Expanded(child: scroll),
+              if (respond.allowed) RsvpBar(event: event, viewer: viewer),
+            ],
           ),
         );
       },

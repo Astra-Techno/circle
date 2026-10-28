@@ -268,14 +268,48 @@ class _GroupHeader extends ConsumerWidget {
           ),
         if (ref.watch(circleFeaturesProvider).server)
           GroupPhotoHeader(group: group)
-        else
-          CircleCover(
-            title: group.name,
-            icon: circleTypeIcon(group.type),
-            compact: true,
+        else ...[
+          // Editorial header: a wide cover, then the name as a headline.
+          // The decorative cover steps aside at large text sizes so the
+          // tabs stay within reach.
+          if (MediaQuery.textScalerOf(context).scale(1) <=
+              CircleLayout.largeTextThreshold) ...[
+            Semantics(
+              image: true,
+              label: 'Original fictional illustration: ${group.name}',
+              excludeSemantics: true,
+              child: AspectRatio(
+                aspectRatio: CircleProfileLayout.coverAspectRatio,
+                child: DecoratedBox(
+                  decoration: CircleDepth.panel(
+                    context,
+                    radius: CircleRadius.card,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      circleTypeIcon(group.type),
+                      size: Space.large,
+                      color: CircleAccents.of(context).caption,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: Space.lg),
+          ],
+          Semantics(
+            header: true,
+            child: Text(
+              group.name,
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
           ),
-        const SizedBox(height: Space.lg),
+        ],
+        const SizedBox(height: Space.sm),
         Text(
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: CircleAccents.of(context).caption,
+          ),
           [
             '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
             'You: ${circleRoleLabel(role)}',

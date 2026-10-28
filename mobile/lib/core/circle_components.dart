@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'circle_failure.dart';
 import 'design.dart';
 
-/// A compact, dimensional opening with one readable message and a quiet motif.
-/// No fixed height: names and larger text can always wrap.
+/// An editorial page opening: a headline and one quiet line, with an
+/// optional artwork (an avatar or photo) beside it. No panel, no motif
+/// bubble, so the page's real content starts higher. No fixed height:
+/// names and larger text can always wrap.
 class CircleIntroPanel extends StatelessWidget {
   const CircleIntroPanel({
     super.key,
@@ -14,68 +16,50 @@ class CircleIntroPanel extends StatelessWidget {
   });
   final String title, subtitle;
   final Widget? artwork;
+
+  /// Kept for callers; the editorial opening no longer draws a motif.
   final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accents = CircleAccents.of(context);
     final largeText =
         MediaQuery.textScalerOf(context).scale(1) >
         CircleLayout.largeTextThreshold;
-    final size = largeText ? Space.lg * 3 : Space.hero * 3;
-    return Container(
-      padding: const EdgeInsets.all(Space.lg),
-      decoration: CircleDepth.panel(
-        context,
-        radius: CircleRadius.sheet,
-        tint: accents.calmContainer,
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: size,
-            child:
-                artwork ??
-                ExcludeSemantics(
-                  child: Container(
-                    height: size,
-                    decoration: CircleDepth.panel(
-                      context,
-                      radius: CircleRadius.pill,
-                      tint: theme.colorScheme.surface,
-                    ),
-                    child: Icon(
-                      icon,
-                      size: Space.large,
-                      color: accents.calmText,
-                    ),
-                  ),
-                ),
+    final text = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            title,
+            style: largeText
+                ? theme.textTheme.titleLarge
+                : theme.textTheme.headlineMedium,
           ),
-          const SizedBox(width: Space.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Semantics(
-                  header: true,
-                  child: Text(
-                    title,
-                    style: largeText
-                        ? theme.textTheme.titleLarge
-                        : theme.textTheme.headlineMedium,
-                  ),
-                ),
-                if (!largeText) ...[
-                  const SizedBox(height: Space.sm),
-                  Text(subtitle, style: theme.textTheme.bodySmall),
-                ],
-              ],
+        ),
+        if (!largeText) ...[
+          const SizedBox(height: Space.sm),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: CircleAccents.of(context).caption,
             ),
           ),
         ],
-      ),
+      ],
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Space.sm),
+      child: artwork == null
+          ? text
+          : Row(
+              children: [
+                artwork!,
+                const SizedBox(width: Space.md),
+                Expanded(child: text),
+              ],
+            ),
     );
   }
 }
@@ -107,7 +91,11 @@ class CircleCover extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(icon, size: compact ? 40 : 64, color: colors.secondary),
+              Icon(
+                icon,
+                size: compact ? Space.large : Space.large * 4 / 3,
+                color: CircleAccents.of(context).caption,
+              ),
               const SizedBox(height: Space.md),
               Text(
                 title,
@@ -137,10 +125,14 @@ class CircleSceneTile extends StatelessWidget {
     this.onLongPress,
     this.more,
     this.large = false,
+    this.asset,
   });
   final String label, semanticsLabel;
   final IconData icon;
   final VoidCallback? onTap;
+
+  /// A bundled fictional photo shown instead of the icon and label.
+  final String? asset;
 
   /// More choices for this photo (every long-press also has a visible
   /// button elsewhere, README §4.0).
@@ -179,35 +171,46 @@ class CircleSceneTile extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(Space.sm),
-                  // Decorative: scales down instead of overflowing small tiles.
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          icon,
-                          size: large ? 96 : 40,
-                          color: colors.secondary,
-                        ),
-                        const SizedBox(height: Space.sm),
-                        // On the last tile, "+N more" takes the label's place
-                        // so the two never overlap.
-                        if (more != null)
-                          CirclePill(more!, tone: CircleTone.strong)
-                        else
-                          Text(
-                            label,
-                            textAlign: TextAlign.center,
-                            style: (large ? text.titleLarge : text.titleSmall)
-                                ?.copyWith(color: colors.onSurface),
+                if (asset != null) ...[
+                  Image.asset(asset!, fit: BoxFit.cover),
+                  if (more != null)
+                    Align(
+                      alignment: AlignmentDirectional.bottomEnd,
+                      child: Padding(
+                        padding: const EdgeInsets.all(Space.sm),
+                        child: CirclePill(more!, tone: CircleTone.strong),
+                      ),
+                    ),
+                ] else
+                  Padding(
+                    padding: const EdgeInsets.all(Space.sm),
+                    // Decorative: scales down instead of overflowing small tiles.
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            icon,
+                            size: large ? Space.large * 2 : Space.large,
+                            color: CircleAccents.of(context).caption,
                           ),
-                      ],
+                          const SizedBox(height: Space.sm),
+                          // On the last tile, "+N more" takes the label's place
+                          // so the two never overlap.
+                          if (more != null)
+                            CirclePill(more!, tone: CircleTone.strong)
+                          else
+                            Text(
+                              label,
+                              textAlign: TextAlign.center,
+                              style: (large ? text.titleLarge : text.titleSmall)
+                                  ?.copyWith(color: colors.onSurface),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -240,7 +243,7 @@ class CircleHeading extends StatelessWidget {
             Text(
               eyebrow!,
               style: theme.textTheme.labelMedium?.copyWith(
-                color: CircleAccents.of(context).calmText,
+                color: CircleAccents.of(context).caption,
                 letterSpacing: 1.2,
               ),
             ),
@@ -249,13 +252,13 @@ class CircleHeading extends StatelessWidget {
           Text(
             // Intros are one calm line; manual breaks were for big headlines.
             title.replaceAll('\n', ' '),
-            style: theme.textTheme.headlineSmall,
+            style: theme.textTheme.headlineMedium,
           ),
-          const SizedBox(height: Space.xs),
+          const SizedBox(height: Space.sm),
           Text(
             subtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: CircleAccents.of(context).caption,
             ),
           ),
         ],
@@ -271,13 +274,13 @@ class CircleSectionTitle extends StatelessWidget {
   final Widget? trailing;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: Space.md, bottom: Space.sm),
+    padding: const EdgeInsets.only(top: Space.section, bottom: Space.sm),
     child: Row(
       children: [
         Expanded(
           child: Semantics(
             header: true,
-            child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
           ),
         ),
         ?trailing,
@@ -373,7 +376,7 @@ class CirclePill extends StatelessWidget {
     final palette = circleToneColors(context, tone);
     final pill = Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: Space.sm + Space.xs / 2,
+        horizontal: Space.sm,
         vertical: Space.xs,
       ),
       decoration: BoxDecoration(
@@ -384,7 +387,7 @@ class CirclePill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: palette.text),
+            Icon(icon, size: Space.lg, color: palette.text),
             const SizedBox(width: Space.xs),
           ],
           Flexible(
@@ -408,7 +411,7 @@ class CirclePill extends StatelessWidget {
 /// Avatar sizes used across the app.
 enum CircleAvatarSize {
   small(32),
-  medium(44),
+  medium(40),
   large(56),
   hero(72),
   profile(96);
@@ -443,11 +446,7 @@ class CircleInitialAvatar extends StatelessWidget {
     final palette = circleToneColors(context, tone);
     final diameter = size.diameter;
     final avatar = DecoratedBox(
-      decoration: CircleDepth.panel(
-        context,
-        radius: diameter / 2,
-        tint: palette.fill,
-      ),
+      decoration: BoxDecoration(color: palette.fill, shape: BoxShape.circle),
       child: CircleAvatar(
         radius: diameter / 2,
         backgroundColor: Colors.transparent,
@@ -534,9 +533,10 @@ class CircleEmpty extends StatelessWidget {
   );
 }
 
-/// One calm, small label per screen for mock behaviour.
-class PreviewLabel extends StatelessWidget {
-  const PreviewLabel(this.text, {super.key});
+/// A quiet one-line notice with an info icon (session ended, what the
+/// server can't do yet, how requests work).
+class CircleNote extends StatelessWidget {
+  const CircleNote(this.text, {super.key});
   final String text;
   @override
   Widget build(BuildContext context) => Padding(
@@ -546,21 +546,32 @@ class PreviewLabel extends StatelessWidget {
       children: [
         Icon(
           Icons.info_outline,
-          size: 18,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: Space.lg,
+          color: CircleAccents.of(context).caption,
         ),
         const SizedBox(width: Space.sm),
         Expanded(
           child: Text(
             text,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: CircleAccents.of(context).caption,
             ),
           ),
         ),
       ],
     ),
   );
+}
+
+/// Formerly one small label per screen for mock behaviour. The owner removed
+/// on-screen preview labels (28 Oct 2026); callers keep their text so the
+/// behaviour stays documented in code, but nothing is drawn. Real notices
+/// use [CircleNote].
+class PreviewLabel extends StatelessWidget {
+  const PreviewLabel(this.text, {super.key});
+  final String text;
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 /// A small text badge, e.g. a role. [strong] marks the most important one.

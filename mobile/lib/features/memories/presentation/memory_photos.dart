@@ -23,6 +23,14 @@ IconData memorySceneIcon(MemoryScene? scene) => switch (scene) {
   MemoryScene.oldClassroom => Icons.history_edu_outlined,
 };
 
+/// Fictional preview scenes that have a bundled photo (the owner's
+/// supplied welcome images); the rest stay illustrated.
+String? memoryScenePhoto(MemoryScene? scene) => switch (scene) {
+  MemoryScene.sundayLunch => 'assets/welcome/sunday-supper.jpg',
+  MemoryScene.hillTrip => 'assets/welcome/friends.jpg',
+  _ => null,
+};
+
 /// Full-screen viewer for a Memory's photos, starting at [index].
 String photoViewerLocation(String memoryId, int index) => Uri(
   path: '/home/memory/$memoryId/photos',
@@ -289,6 +297,7 @@ class MemoryPhotoTile extends ConsumerWidget {
       return CircleSceneTile(
         label: photo.label,
         icon: memorySceneIcon(photo.scene),
+        asset: memoryScenePhoto(photo.scene),
         semanticsLabel: semanticsLabel,
         more: more,
         onTap: onTap,

@@ -9,129 +9,73 @@ abstract final class CircleLayout {
   static const largeTextThreshold = 1.4;
 }
 
+/// 8-point grid. [xs] (4) is the only half-step, kept for icon-to-text
+/// micro gaps; every other padding, margin and gap is a multiple of 8.
 abstract final class Space {
   static const double xs = 4,
       sm = 8,
-      md = 12,
+      md = 16,
       lg = 16,
-      xl = 20,
+      xl = 24,
       section = 24,
       hero = 32,
-      large = 40;
+      large = 48;
 }
 
-/// Shared soft-depth lighting: bright upper edge, tinted lower surface,
-/// and a restrained downward shadow. Text and fields retain clear borders.
+/// Editorial surfaces are flat: a quiet fill and, where needed, a hairline.
+/// Only the floating dock keeps one soft shadow so it reads above content.
 abstract final class CircleDepth {
-  static const cardElevation = 2.0;
-  static const buttonElevation = 2.0;
-  static const pressedElevation = 1.0;
-  static const floatingElevation = 4.0;
-  static const _ink = Color(0xFF262047);
+  static const cardElevation = 0.0;
+  static const buttonElevation = 0.0;
+  static const pressedElevation = 0.0;
+  static const floatingElevation = 2.0;
+  static const _ink = Color(0xFF1C1B22);
 
   static Color shadow(Brightness brightness) => brightness == Brightness.light
       ? _ink.withValues(alpha: 0.08)
-      : Colors.black.withValues(alpha: 0.38);
+      : Colors.black.withValues(alpha: 0.40);
 
   static BoxDecoration panel(
     BuildContext context, {
     required double radius,
     Color? tint,
-  }) {
+  }) => BoxDecoration(
+    borderRadius: BorderRadius.circular(radius),
+    color: tint ?? Theme.of(context).colorScheme.surfaceContainer,
+  );
+
+  static BoxDecoration profilePanel(BuildContext context) => panel(
+    context,
+    radius: CircleRadius.sheet,
+    tint: Theme.of(context).colorScheme.surfaceContainer,
+  );
+
+  /// The floating navigation dock: surface, hairline and one soft shadow.
+  static BoxDecoration dock(BuildContext context) {
     final theme = Theme.of(context);
-    final light = theme.brightness == Brightness.light;
-    final surface = tint ?? theme.colorScheme.surfaceContainer;
     return BoxDecoration(
-      borderRadius: BorderRadius.circular(radius),
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color.lerp(surface, Colors.white, light ? 0.70 : 0.08)!,
-          surface,
-        ],
-      ),
-      border: Border.all(
-        color: light
-            ? Colors.white.withValues(alpha: 0.9)
-            : theme.colorScheme.outlineVariant,
-      ),
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(CircleRadius.sheet),
+      border: Border.all(color: CircleAccents.of(context).hairline),
       boxShadow: [
         BoxShadow(
           color: shadow(theme.brightness),
           offset: const Offset(0, 8),
-          blurRadius: 18,
+          blurRadius: 24,
           spreadRadius: -4,
-        ),
-        BoxShadow(
-          color: shadow(
-            theme.brightness,
-          ).withValues(alpha: light ? 0.04 : 0.15),
-          offset: const Offset(0, 2),
-          blurRadius: 4,
-          spreadRadius: -1,
         ),
       ],
     );
   }
 
-  static BoxDecoration profilePanel(BuildContext context) =>
-      panel(
-        context,
-        radius: CircleRadius.sheet,
-        tint: CircleAccents.of(context).calmContainer,
-      ).copyWith(
-        boxShadow: [
-          BoxShadow(
-            color: shadow(Theme.of(context).brightness),
-            offset: const Offset(0, 10),
-            blurRadius: 24,
-            spreadRadius: -6,
-          ),
-          BoxShadow(
-            color: shadow(Theme.of(context).brightness).withValues(
-              alpha: Theme.of(context).brightness == Brightness.light
-                  ? 0.05
-                  : 0.18,
-            ),
-            offset: const Offset(0, 2),
-            blurRadius: 6,
-            spreadRadius: -1,
-          ),
-        ],
-      );
-
-  /// Quiet perimeter around the navigation dock and grouped list surfaces.
-  static BoxDecoration dock(BuildContext context) {
-    final light = Theme.of(context).brightness == Brightness.light;
-    return panel(
-      context,
-      radius: CircleRadius.sheet,
-      tint: Theme.of(context).colorScheme.surface,
-    ).copyWith(
-      border: Border.all(
-        color: light
-            ? CircleAccents.of(context).hairline
-            : Theme.of(context).colorScheme.outlineVariant,
-      ),
-    );
-  }
-
   static WidgetStateProperty<double> get buttonLift =>
-      WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.disabled)) return 0;
-        if (states.contains(WidgetState.pressed)) return pressedElevation;
-        if (states.contains(WidgetState.hovered) ||
-            states.contains(WidgetState.focused)) {
-          return floatingElevation;
-        }
-        return buttonElevation;
-      });
+      const WidgetStatePropertyAll(0);
 }
 
-/// Warm Keepsake on White: indigo structure, lavender selection, coral
-/// reactions and sage confirmations. Semantic roles keep colour consistent
-/// across every feature; group identity also always has an icon and name.
+/// Editorial, photo-first (owner, 28 Oct 2026). 60/30/10: 60% white
+/// surface, 30% warm neutral fills and ink text, 10% deep indigo for the one
+/// primary action, selection and love. Photos carry the colour, not chrome.
+/// Sage is kept only for confirmations; group identity always has a name.
 @immutable
 class CircleAccents extends ThemeExtension<CircleAccents> {
   const CircleAccents({
@@ -151,10 +95,10 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     required this.activeDot,
   });
 
-  /// Love and reactions: warm coral with an accessible text variant.
+  /// Love and reactions: the primary indigo (a vector heart, never emoji).
   final Color heart, heartText, heartContainer;
 
-  /// Selection and focus: soft lavender with darker accessible text.
+  /// Selection and focus: a faint indigo wash with indigo text.
   final Color calm, calmText, calmContainer;
 
   /// Supporting sage family (events, confirmations, secondary groups).
@@ -163,8 +107,8 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
   /// Recessed fills (comment previews, tiles) and the 1px hairline border.
   final Color recessed, hairline;
 
-  /// Title charcoal (#1A1D2E) and caption slate (#667085). Body copy is the
-  /// scheme's onSurfaceVariant-style slate (#475467) via the text theme.
+  /// Title ink (#1C1B22) and warm caption grey (#6B6878). Body copy is the
+  /// scheme's onSurfaceVariant (#34323C) via the text theme.
   final Color title, caption;
 
   /// The "Active now" dot on a person's avatar: sage,
@@ -172,37 +116,37 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
   final Color activeDot;
 
   static const light = CircleAccents(
-    heart: Color(0xFFFA5B4A),
-    heartText: Color(0xFF9C3426),
-    heartContainer: Color(0xFFFFE8E1),
-    calm: Color(0xFF5753AC),
-    calmText: Color(0xFF46408D),
-    calmContainer: Color(0xFFEAE7FF),
-    sage: Color(0xFF297B6F),
-    sageText: Color(0xFF23675D),
-    sageContainer: Color(0xFFE0F3ED),
-    recessed: Color(0xFFF0F3FF),
-    hairline: Color(0xFFEAEDF5),
-    title: Color(0xFF1A1D2E),
-    caption: Color(0xFF667085),
-    activeDot: Color(0xFF297B6F),
+    heart: Color(0xFF3B2E8C),
+    heartText: Color(0xFF3B2E8C),
+    heartContainer: Color(0xFFEFECF7),
+    calm: Color(0xFF3B2E8C),
+    calmText: Color(0xFF3B2E8C),
+    calmContainer: Color(0xFFEFECF7),
+    sage: Color(0xFF3F7A68),
+    sageText: Color(0xFF2F6153),
+    sageContainer: Color(0xFFE6EFE9),
+    recessed: Color(0xFFF3F0EA),
+    hairline: Color(0xFFECE8E1),
+    title: Color(0xFF1C1B22),
+    caption: Color(0xFF6B6878),
+    activeDot: Color(0xFF3F7A68),
   );
 
   static const dark = CircleAccents(
-    heart: Color(0xFFFFB4A6),
-    heartText: Color(0xFFFFDAD3),
-    heartContainer: Color(0xFF4E211C),
-    calm: Color(0xFFC4C0FF),
-    calmText: Color(0xFFE3DFFF),
-    calmContainer: Color(0xFF2C2854),
-    sage: Color(0xFF9FD8C8),
-    sageText: Color(0xFFC2EBDD),
-    sageContainer: Color(0xFF183E36),
-    recessed: Color(0xFF181B24),
-    hairline: Color(0xFF262B38),
-    title: Color(0xFFF0F1F7),
-    caption: Color(0xFF98A2B3),
-    activeDot: Color(0xFFDCE1FF),
+    heart: Color(0xFFC9C0FF),
+    heartText: Color(0xFFE2DCFF),
+    heartContainer: Color(0xFF2A2547),
+    calm: Color(0xFFC9C0FF),
+    calmText: Color(0xFFE2DCFF),
+    calmContainer: Color(0xFF2A2547),
+    sage: Color(0xFF9CCFB9),
+    sageText: Color(0xFFC3E6D6),
+    sageContainer: Color(0xFF1B3A30),
+    recessed: Color(0xFF1E1C22),
+    hairline: Color(0xFF2C2A31),
+    title: Color(0xFFF2EFEA),
+    caption: Color(0xFFA19DAA),
+    activeDot: Color(0xFF9CCFB9),
   );
 
   static CircleAccents of(BuildContext context) =>
@@ -218,75 +162,78 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
 
 const _font = 'PlusJakartaSans';
 
-/// The design's scale with negative tracking on headlines. One readability
-/// exception (README §4.0, ages 15–75): everyday body text stays 16px
-/// (`body-lg`) instead of the design's 14px default; 14px is secondary text.
+/// Editorial type: exactly four sizes (28 / 20 / 16 / 13) and two weights
+/// (400 / 600), all in the app's Plus Jakarta Sans. Headlines get slightly
+/// tighter tracking. Body text stays 16px for readability (§4.0).
 TextTheme _textTheme({required Color title, required Color body}) {
-  TextStyle style(
-    double size,
-    FontWeight weight,
-    double height,
-    double em,
-    Color ink,
-  ) => TextStyle(
+  TextStyle sans(double size, FontWeight weight, double height, Color ink) =>
+      TextStyle(
+        fontFamily: _font,
+        fontSize: size,
+        fontWeight: weight,
+        height: height / size,
+        letterSpacing: 0,
+        color: ink,
+      );
+  TextStyle headline(double size, double height) => TextStyle(
     fontFamily: _font,
     fontSize: size,
-    fontWeight: weight,
+    fontWeight: FontWeight.w600,
     height: height / size,
-    letterSpacing: em * size,
-    color: ink,
+    letterSpacing: -0.02 * size,
+    color: title,
   );
   return TextTheme(
-    displaySmall: style(32, FontWeight.w700, 40, -0.03, title),
-    headlineLarge: style(26, FontWeight.w700, 34, -0.025, title),
-    headlineMedium: style(22, FontWeight.w600, 28, -0.02, title),
-    headlineSmall: style(18, FontWeight.w600, 24, -0.015, title),
-    titleLarge: style(18, FontWeight.w600, 24, -0.015, title),
-    titleMedium: style(16, FontWeight.w600, 22, -0.01, title),
-    titleSmall: style(14, FontWeight.w600, 20, 0, title),
-    bodyLarge: style(16, FontWeight.w400, 24, -0.01, body),
-    bodyMedium: style(16, FontWeight.w400, 24, -0.01, body),
-    bodySmall: style(14, FontWeight.w400, 20, -0.005, body),
-    labelLarge: style(14, FontWeight.w600, 20, 0.01, title),
-    labelMedium: style(12, FontWeight.w600, 16, 0.02, title),
-    labelSmall: style(11, FontWeight.w500, 14, 0.03, title),
+    displaySmall: headline(28, 36),
+    headlineLarge: headline(28, 36),
+    headlineMedium: headline(28, 36),
+    headlineSmall: headline(20, 28),
+    titleLarge: headline(20, 28),
+    titleMedium: sans(16, FontWeight.w600, 24, title),
+    titleSmall: sans(13, FontWeight.w600, 16, title),
+    bodyLarge: sans(16, FontWeight.w400, 24, body),
+    bodyMedium: sans(16, FontWeight.w400, 24, body),
+    bodySmall: sans(13, FontWeight.w400, 16, body),
+    labelLarge: sans(16, FontWeight.w600, 24, title),
+    labelMedium: sans(13, FontWeight.w600, 16, title),
+    labelSmall: sans(13, FontWeight.w400, 16, title),
   );
 }
 
-/// Warm Keepsake on White (owner, 26 Oct 2026): white canvas and cards,
-/// indigo actions, lavender panels, coral reactions and sage confirmations.
+/// Editorial, photo-first (owner, 28 Oct 2026): white canvas, warm neutral
+/// fills, ink text and one deep indigo accent, built on Material 3 tokens.
 ThemeData circleTheme(Brightness brightness) {
   final light = brightness == Brightness.light;
   final accents = light ? CircleAccents.light : CircleAccents.dark;
   final generated = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF46369C),
+    seedColor: const Color(0xFF3B2E8C),
     brightness: brightness,
   );
-  final body = light ? const Color(0xFF475467) : const Color(0xFFC3C9D5);
+  final body = light ? const Color(0xFF34323C) : const Color(0xFFD6D2DA);
   final colors = generated.copyWith(
-    primary: light ? const Color(0xFF46369C) : const Color(0xFFDCE1FF),
-    onPrimary: light ? Colors.white : const Color(0xFF131A34),
+    primary: light ? const Color(0xFF3B2E8C) : const Color(0xFFC9C0FF),
+    onPrimary: light ? Colors.white : const Color(0xFF1E1660),
     primaryContainer: accents.calmContainer,
     onPrimaryContainer: accents.calmText,
-    secondary: light ? const Color(0xFF5753AC) : const Color(0xFFC4C0FF),
-    onSecondary: light ? Colors.white : const Color(0xFF101828),
+    secondary: light ? const Color(0xFF3B2E8C) : const Color(0xFFC9C0FF),
+    onSecondary: light ? Colors.white : const Color(0xFF1E1660),
     secondaryContainer: accents.calmContainer,
     onSecondaryContainer: accents.calmText,
     tertiary: accents.sageText,
     tertiaryContainer: accents.sageContainer,
     onTertiaryContainer: accents.sageText,
-    surface: light ? Colors.white : const Color(0xFF0F1117),
+    surface: light ? Colors.white : const Color(0xFF121116),
     onSurface: accents.title,
     onSurfaceVariant: body,
-    surfaceContainerLowest: light ? Colors.white : const Color(0xFF151821),
-    surfaceContainerLow: light ? Colors.white : const Color(0xFF151821),
+    surfaceContainerLowest: light ? Colors.white : const Color(0xFF17161B),
+    surfaceContainerLow: light ? Colors.white : const Color(0xFF17161B),
     surfaceContainer: accents.recessed,
     surfaceContainerHigh: light
-        ? const Color(0xFFEAE7FF)
-        : const Color(0xFF1E2333),
+        ? const Color(0xFFECE8E1)
+        : const Color(0xFF26242B),
     surfaceContainerHighest: light
-        ? const Color(0xFFE2E8F9)
-        : const Color(0xFF262B38),
+        ? const Color(0xFFE6E1D8)
+        : const Color(0xFF2C2A31),
     outline: accents.caption,
     outlineVariant: accents.hairline,
   );
@@ -313,7 +260,7 @@ ThemeData circleTheme(Brightness brightness) {
       backgroundColor: colors.surface,
       surfaceTintColor: Colors.transparent,
       scrolledUnderElevation: 0,
-      shape: Border(bottom: hairline),
+      shape: const Border(),
       titleTextStyle: text.titleLarge,
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -395,11 +342,11 @@ ThemeData circleTheme(Brightness brightness) {
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: colors.primary,
       foregroundColor: colors.onPrimary,
-      shape: rounded(CircleRadius.card),
-      elevation: CircleDepth.floatingElevation,
-      focusElevation: CircleDepth.floatingElevation,
-      hoverElevation: CircleDepth.floatingElevation,
-      highlightElevation: CircleDepth.pressedElevation,
+      shape: const StadiumBorder(),
+      elevation: 0,
+      focusElevation: 0,
+      hoverElevation: 0,
+      highlightElevation: 0,
       extendedTextStyle: text.labelLarge?.copyWith(fontSize: 16),
     ),
     navigationBarTheme: NavigationBarThemeData(
@@ -407,34 +354,34 @@ ThemeData circleTheme(Brightness brightness) {
       shadowColor: Colors.transparent,
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
-      // Lavender selection keeps the dock quiet; icon and weight carry state.
-      indicatorColor: accents.calmContainer,
+      // No pill: the indigo icon and semibold label carry selection.
+      indicatorColor: Colors.transparent,
       iconTheme: WidgetStateProperty.resolveWith(
         (states) => IconThemeData(
           color: states.contains(WidgetState.selected)
-              ? accents.calmText
+              ? colors.primary
               : accents.caption,
         ),
       ),
       labelTextStyle: WidgetStateProperty.resolveWith(
         (states) => text.labelMedium?.copyWith(
           color: states.contains(WidgetState.selected)
-              ? accents.title
+              ? colors.primary
               : accents.caption,
           fontWeight: states.contains(WidgetState.selected)
-              ? FontWeight.w700
-              : FontWeight.w500,
+              ? FontWeight.w600
+              : FontWeight.w400,
         ),
       ),
     ),
     dividerTheme: DividerThemeData(color: accents.hairline, space: 1),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      // Flat indigo on white: tinted shadows render as hard rings.
+      // Flat ink on white: tinted shadows render as hard rings.
       elevation: 0,
-      backgroundColor: colors.primary,
-      contentTextStyle: text.bodySmall?.copyWith(color: colors.onPrimary),
-      actionTextColor: light ? accents.hairline : accents.calmContainer,
+      backgroundColor: accents.title,
+      contentTextStyle: text.bodyMedium?.copyWith(color: colors.surface),
+      actionTextColor: light ? accents.calmContainer : colors.primary,
       shape: rounded(CircleRadius.button),
     ),
     // Lists are rows separated by hairline dividers (see CircleRow).
@@ -484,7 +431,7 @@ ThemeData circleTheme(Brightness brightness) {
       unselectedLabelColor: accents.caption,
       labelStyle: text.labelLarge,
       unselectedLabelStyle: text.labelLarge?.copyWith(
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w400,
       ),
       indicatorColor: colors.primary,
       indicatorSize: TabBarIndicatorSize.label,
@@ -557,27 +504,25 @@ ThemeData circleTheme(Brightness brightness) {
         selectedForegroundColor: colors.onPrimary,
         side: hairline,
         shape: rounded(CircleRadius.button),
+        padding: const EdgeInsets.symmetric(horizontal: Space.md),
       ),
     ),
   );
 }
 
-/// Corner radii from the design. Use these names, never numbers.
+/// Corner radii on the 8-point grid. Use these names, never numbers.
 abstract final class CircleRadius {
-  /// Checkbox corners.
+  /// Checkbox corners (the 4px half-step).
   static const xsmall = 4.0;
 
-  /// Core interactive elements, tooltips.
-  static const small = 8.0;
+  /// Core interactive elements, tooltips and input fields.
+  static const small = 8.0, input = 8.0;
 
-  /// Input fields.
-  static const input = 10.0;
+  /// Buttons are pills: half of the 48px minimum height.
+  static const button = 24.0;
 
-  /// Buttons, tiles and inner panels.
-  static const button = 12.0, tile = 12.0, inner = 12.0;
-
-  /// Cards, menus and floating buttons.
-  static const card = 16.0;
+  /// Tiles, inner panels, cards, menus and floating buttons.
+  static const tile = 16.0, inner = 16.0, card = 16.0;
 
   /// Sheets, dialogs and hero surfaces.
   static const sheet = 24.0, hero = sheet;
@@ -586,21 +531,21 @@ abstract final class CircleRadius {
   static const pill = 999.0;
 }
 
-/// Standard page padding: 16px mobile margins, with room at the bottom so
-/// the floating action button never covers the last item.
+/// Standard page padding: 24px editorial margins, with room at the bottom
+/// so the floating dock and action button never cover the last item.
 abstract final class CircleInsets {
   static const page = EdgeInsets.fromLTRB(
-    Space.lg,
-    Space.md,
-    Space.lg,
+    Space.section,
+    Space.sm,
+    Space.section,
     Space.hero * 3,
   );
 
   /// Pages without a floating action button (details, forms, settings).
   static const form = EdgeInsets.fromLTRB(
-    Space.lg,
-    Space.md,
-    Space.lg,
+    Space.section,
+    Space.sm,
+    Space.section,
     Space.hero,
   );
 }

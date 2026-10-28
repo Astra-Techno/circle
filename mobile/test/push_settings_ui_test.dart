@@ -196,6 +196,8 @@ void main() {
         expect(choices.permissions, 0);
         final enable = find.text('Enable notifications');
         await tester.scrollUntilVisible(enable, -300);
+        await tester.ensureVisible(enable);
+        await tester.pumpAndSettle();
         await tester.tap(enable);
         await tester.pumpAndSettle();
         expect(find.text('Choose what reaches you'), findsOneWidget);

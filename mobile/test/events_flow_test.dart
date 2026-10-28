@@ -85,7 +85,7 @@ void main() {
     final container = await openCircle(tester, now: now);
     await tester.tap(find.widgetWithText(NavigationDestination, 'Events'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('New event'));
+    await tester.tap(find.byTooltip('New event'));
     await tester.pumpAndSettle();
     expect(currentUri(container).toString(), '/events/new');
     expect(find.text('Choose a group'), findsOneWidget);
@@ -375,7 +375,7 @@ void main() {
     // The filter is context for "New event" when allowed there.
     await tester.tap(find.widgetWithText(ChoiceChip, 'Sunday miles'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('New event'));
+    await tester.tap(find.byTooltip('New event'));
     await tester.pumpAndSettle();
     expect(find.text('Sunday miles'), findsOneWidget);
   });
@@ -479,6 +479,11 @@ void main() {
       await tapText(tester, 'Create event');
       expect(tester.takeException(), isNull, reason: 'form errors');
       await go(tester, container, '/events/e/lunch');
+      // A message from the form must not cover the pinned answer bar.
+      ScaffoldMessenger.of(
+        tester.element(find.byType(Scaffold).first),
+      ).clearSnackBars();
+      await tester.pumpAndSettle();
       await tapText(tester, 'Going');
       await tapText(tester, 'Add a note');
       expect(tester.takeException(), isNull, reason: 'rsvp');

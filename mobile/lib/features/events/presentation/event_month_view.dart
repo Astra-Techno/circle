@@ -266,8 +266,8 @@ class _DayCell extends StatelessWidget {
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: selected ? colors.onPrimary : colors.onSurface,
                         fontWeight: today || count > 0
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                       ),
                     ),
                   ),

@@ -216,7 +216,7 @@ class _RequestsTab extends StatelessWidget {
     children: [
       const Padding(
         padding: EdgeInsets.symmetric(horizontal: Space.lg),
-        child: PreviewLabel(
+        child: CircleNote(
           'First messages from people outside your close groups wait here. '
           'They won’t know you’ve seen them unless you accept.',
         ),
@@ -249,7 +249,7 @@ class ConversationRow extends ConsumerWidget {
     final colors = theme.colorScheme;
     final accents = CircleAccents.of(context);
     final strong = chat.unread
-        ? const TextStyle(fontWeight: FontWeight.w700)
+        ? const TextStyle(fontWeight: FontWeight.w600)
         : null;
     final status = [
       if (chat.unread) 'unread',
@@ -293,7 +293,7 @@ class ConversationRow extends ConsumerWidget {
             overflow: TextOverflow.ellipsis,
             style: chat.unread
                 ? theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: accents.title,
                   )
                 : null,

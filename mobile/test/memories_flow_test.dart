@@ -34,8 +34,12 @@ void main() {
       await enterField(tester, 'Your Memory', 'A day by the water.');
       await tapText(tester, 'Add photos');
       expect(
-        find.text(
-          'Preview: fictional illustrations — real uploads come later.',
+        find.byWidgetPredicate(
+          (w) =>
+              w is PreviewLabel &&
+              w.text ==
+                  'Preview: fictional illustrations — real uploads come later.',
+          skipOffstage: false,
         ),
         findsOneWidget,
       );
@@ -203,26 +207,27 @@ void main() {
       await tester.tap(find.widgetWithText(ChoiceChip, '😂'));
       await tester.pumpAndSettle();
       expect(memoryOf(container, 'table').reactions.mine, '😂');
-      expect(find.text('😂 Reacted'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, '😂'), findsOneWidget);
       final semantics = tester.ensureSemantics();
       expect(
         find.bySemanticsLabel(RegExp('Reacted with Laugh. Remove reaction')),
         findsOneWidget,
       );
       semantics.dispose();
-      await tapText(tester, '😂 Reacted');
+      await tester.tap(find.widgetWithText(TextButton, '😂'));
+      await tester.pumpAndSettle();
       expect(memoryOf(container, 'table').reactions.mine, isNull);
-      expect(find.text('Love'), findsOneWidget);
+      expect(find.byTooltip('Love $_table'), findsOneWidget);
 
       // Long-press on Love opens the same picker.
-      await reveal(tester, find.text('Love'));
-      await tester.longPress(find.text('Love'));
+      await reveal(tester, find.byTooltip('Love $_table'));
+      await tester.longPress(find.byTooltip('Love $_table'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ChoiceChip, '❤️'));
       await tester.pumpAndSettle();
-      expect(find.text('Loved'), findsOneWidget);
+      expect(find.byTooltip('Remove love from $_table'), findsOneWidget);
 
-      await tapText(tester, '❤️😂🙏 17');
+      await tapTooltip(tester, 'Show reactions for $_table');
       expect(find.text('Reactions (17)'), findsOneWidget);
       expect(find.text('Includes you'), findsOneWidget);
       expect(find.text('13'), findsOneWidget);
@@ -353,7 +358,7 @@ void main() {
       await tester.tap(find.text('Save changes'));
       await tester.pumpAndSettle();
       expect(find.text('My better words.'), findsOneWidget);
-      expect(find.text('Just now · Edited'), findsOneWidget);
+      expect(find.textContaining('Just now · Edited'), findsOneWidget);
 
       await tapTooltip(tester, 'More options for $mine');
       await tester.tap(find.text('Delete'));
@@ -389,6 +394,10 @@ void main() {
     final container = await openCircle(tester);
     await container.read(circleWorkspaceProvider.notifier).save('route-poll');
     await go(tester, container, '/you');
+    await reveal(
+      tester,
+      find.text('Poll: Which route for the season’s last ride?'),
+    );
     expect(
       find.text('Poll: Which route for the season’s last ride?'),
       findsOneWidget,

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/circle_brand.dart';
 import 'package:mobile/app/circle_experience.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
+import 'package:mobile/features/workspace/presentation/feature_gate.dart';
 import 'support/circle_harness.dart';
 
 void main() {
@@ -12,8 +13,9 @@ void main() {
     (tester) async {
       await openCircle(tester, entered: false);
       await tapText(tester, 'Explore fictional circles');
-      expect(find.byType(CircleBrand), findsOneWidget);
-      expect(find.text('Memories'), findsOneWidget);
+      // Home opens on the "Your circles" row (editorial redesign).
+      expect(find.byKey(const ValueKey('home-circle-family')), findsOneWidget);
+      expect(find.text('Circle'), findsOneWidget);
       for (final label in ['Home', 'Chats', 'Groups', 'Events', 'You']) {
         expect(
           find.widgetWithText(NavigationDestination, label),
@@ -52,7 +54,7 @@ void main() {
       expect(workspaceOf(container).groups.single.name, 'Our weekend circle');
       await tester.tap(find.widgetWithText(NavigationDestination, 'Home'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Create Memory'));
+      await tester.tap(find.byTooltip('Create Memory'));
       await tester.pumpAndSettle();
       // With a single group the only possible audience is shown.
       expect(find.text('Our weekend circle'), findsOneWidget);
@@ -68,7 +70,7 @@ void main() {
   group('compose audience', () {
     testWidgets('no silent default when several groups exist', (tester) async {
       final container = await openCircle(tester);
-      await tester.tap(find.text('Create Memory'));
+      await tester.tap(find.byTooltip('Create Memory'));
       await tester.pumpAndSettle();
       expect(find.text('Choose a group'), findsOneWidget);
       await tester.enterText(
@@ -85,10 +87,10 @@ void main() {
 
     testWidgets('Home filter opens compose for that group', (tester) async {
       final container = await openCircle(tester);
-      await reveal(tester, find.widgetWithText(ChoiceChip, 'Sunday miles'));
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Sunday miles'));
+      await reveal(tester, find.byKey(const ValueKey('home-circle-club')));
+      await tester.tap(find.byKey(const ValueKey('home-circle-club')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Create Memory'));
+      await tester.tap(find.byTooltip('Create Memory'));
       await tester.pumpAndSettle();
       expect(currentUri(container).queryParameters['group'], 'club');
       await tester.enterText(
@@ -175,7 +177,8 @@ void main() {
       previousY = y;
       previousX = x;
     }
-    expect(find.textContaining('Level 4 · in Section A'), findsOneWidget);
+    // The deepest group sits indented under Section A.
+    expect(find.text('The window-seat crew'), findsOneWidget);
     await reveal(tester, find.byTooltip('Collapse Northbank 2009'));
     await tester.tap(find.byTooltip('Collapse Northbank 2009'));
     await tester.pumpAndSettle();
@@ -199,7 +202,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(workspaceOf(container).memories.first.saved, isTrue);
       await go(tester, container, '/home/memory/table');
-      await tapText(tester, 'Love');
+      const love = 'Love Memory from Mira in The Sunday table';
+      await reveal(tester, find.byTooltip(love));
+      await tester.tap(find.byTooltip(love));
+      await tester.pumpAndSettle();
       expect(workspaceOf(container).memories.first.loved, isTrue);
       await reveal(tester, find.byType(TextField));
       await tester.enterText(find.byType(TextField), 'See you next Sunday.');
@@ -219,9 +225,14 @@ void main() {
       expect(workspaceOf(container).event('lunch')!.rsvpOf('you'), isNull);
       await tester.tap(find.widgetWithText(NavigationDestination, 'You'));
       await tester.pumpAndSettle();
+      await reveal(tester, find.textContaining('Same table'));
       expect(find.textContaining('Same table'), findsOneWidget);
       // Ending the preview lives under You › Account (H5).
       await tapText(tester, 'Account');
+      ScaffoldMessenger.of(
+        tester.element(find.byType(Scaffold).first),
+      ).clearSnackBars();
+      await tester.pumpAndSettle();
       await tapText(tester, 'End preview and clear local changes');
       expect(container.read(circlePreviewSessionProvider), false);
       await container
@@ -337,8 +348,11 @@ void main() {
       await go(tester, container, '/groups/g/club');
       await tapText(tester, 'Invite people');
       expect(
-        find.text(
-          'Preview link — not shareable. It only works inside this preview.',
+        find.byWidgetPredicate(
+          (w) =>
+              w is PreviewNotice &&
+              w.text.startsWith('Preview link — not shareable.'),
+          skipOffstage: false,
         ),
         findsOneWidget,
       );
@@ -677,7 +691,7 @@ void main() {
             : null,
       );
       await go(tester, container, route);
-      if (route == '/home') {
+      if (find.byType(CircleBrand).evaluate().isNotEmpty) {
         await tester.runAsync(
           () => precacheImage(
             const AssetImage(CircleIdentity.artwork),
@@ -697,12 +711,6 @@ void main() {
 
   testWidgets('original circle golden dark home', (tester) async {
     await openCircle(tester, brightness: Brightness.dark);
-    await tester.runAsync(
-      () => precacheImage(
-        const AssetImage(CircleIdentity.artwork),
-        tester.element(find.byType(CircleBrand)),
-      ),
-    );
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(MaterialApp),

@@ -111,16 +111,17 @@ class _CircleEventsState extends ConsumerState<CircleEvents> {
                 SegmentedButton<bool>(
                   key: const ValueKey('events-view'),
                   showSelectedIcon: false,
+                  // Icons only, so both controls share one row.
                   segments: const [
                     ButtonSegment(
                       value: false,
                       icon: Icon(Icons.view_agenda_outlined),
-                      label: Text('List'),
+                      tooltip: 'List',
                     ),
                     ButtonSegment(
                       value: true,
                       icon: Icon(Icons.calendar_month_outlined),
-                      label: Text('Month'),
+                      tooltip: 'Month',
                     ),
                   ],
                   selected: {_calendar},

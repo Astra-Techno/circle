@@ -1,5 +1,30 @@
 # CIRCLE design system
 
+## Current direction — Editorial, photo-first (owner, 28 Oct 2026)
+
+The owner approved the "Editorial, photo-first" mock-ups and asked for the whole app to follow them. This **supersedes** the Visual refinement, Soft 3D and Warm Keepsake sections below and the older token, typography and component tables, which are updated to match. README §4.0 (calm, easy UX) still governs.
+
+Five rules, enforced through `mobile/lib/core/design.dart` and the shared kit:
+
+1. **8-point grid.** `Space` is 8 / 16 / 24 / 32 / 48 (`md` = `lg` = 16, `xl` = `section` = 24). The only half-step is `xs` = 4, for icon-to-text micro gaps. Page margins are 24 (`CircleInsets`); tap targets are at least 48, primary CTAs 56 tall.
+2. **60 / 30 / 10 colour on Material 3 tokens.** 60% white surface; 30% warm neutral fills (`surfaceContainer`/`recessed` `#F3F0EA`) and ink text (`#1C1B22`, captions `#6B6878`); 10% deep indigo `#3B2E8C` for the one primary action, selection and love. `ColorScheme.fromSeed` with overrides. Photos carry the colour, not chrome. `CircleAccents` keeps its names: `heart` and `calm` are now indigo (a vector heart, never emoji); `sage` is kept only for confirmations.
+3. **Thumb zone.** Primary actions sit in the bottom third. The floating dock stays; an open event pins Going / Maybe / Not going in `RsvpBar` above it (a choice the rules refuse, such as Going on a full event, is disabled with the reason shown in the bar, so no snackbar covers the buttons); the live chat composer is pinned below the conversation. At very large text (`CircleLayout.largeTextThreshold`) the chat composer scrolls with the conversation instead.
+4. **Four sizes, two weights.** 28 / 20 / 16 / 13 at 400 / 600 only, all in **Plus Jakarta Sans** (owner rejected the serif, 28 Oct 2026). Headlines use −0.02em tracking. Body stays 16.
+5. **No overflow.** Screens scroll as one list; one-line labels ellipsize or scale down (`RsvpBar`) instead of breaking words; decorative covers step aside at large text.
+
+Surfaces are flat: no gradients or shadows except one soft shadow on the floating dock. Buttons are pills (`CircleRadius.button` 24); cards, tiles and menus 16; sheets 24.
+
+Screen patterns:
+- **Home:** the logo and "Circle", then "Your circles": round group photos that filter Memories (tap again for all). The brand lockup no longer sits on Home; it stays on Welcome and access screens.
+- **Memory:** no card box. Avatar, name and a lock + audience + time line (audience is always visible); full-width photos; an action row with a vector heart, a reaction count that opens the summary, comments, the reaction picker and save; then the caption. Short words-only Memories (≤ 160 characters) read as a quote on a warm panel.
+- **Group:** a wide cover, the name as a headline, a caption meta line, then the tabs.
+- **Event:** details scroll; the answer bar is pinned in the thumb zone. Events list: Upcoming/Past and an icon-only List/Month toggle share one row.
+- **You:** a quiet cover with the avatar overlapping it, the name as a headline.
+
+Header: the owner's logo (`assets/brand/circle-brand.png`) and "Circle" on Home, the page name on other tabs, and the tab's create action as a + icon beside the title (no floating action button). No preview labels are drawn (`PreviewLabel` renders nothing; real notices use `CircleNote`). Group lists are one clean list: subgroups indent 24px per level (up to 4) with smaller avatars and no coloured guides.
+
+Windows golden baselines must be regenerated and reviewed for this deliberate change; they are not regenerated on Linux.
+
 ## Visual refinement — 26 October 2026
 
 The current pass applies the repository's Flutter UI, design-system, accessibility and visual-QA skills, activated from `CODEX_SOCIAL_APP_SKILLS_BOOTSTRAP.md` under `.codex/skills/`. This section supersedes earlier sizes and navigation treatments where they differ.
@@ -38,7 +63,7 @@ No Figma reference has been provided. Everything here is an **original** Materia
 - Tagline, exactly: **MY CIRCLE. BILLION MEMORIES.**
 - Canonical artwork: `mobile/assets/brand/circle-brand.png`, copied byte-for-byte from the owner's supplied PNG. Use the complete logo, wordmark and tagline together. Do not redraw, crop or recolour the artwork.
 - `core/circle_brand.dart` supplies the shared access-screen lockup and its screen-reader label. The supplied image retains its light background in dark mode.
-- Home uses `CircleBrand.home()` above its group filters: a compact 160px full-artwork lockup that scrolls with Memories, including in empty workspaces. The complete logo, wordmark and tagline remain visible together; no duplicate preview label or additional action is introduced.
+- Since the editorial redesign (28 Oct 2026) Home opens on "Your circles" instead of the brand lockup; `CircleBrand.home()` remains available. The complete logo, wordmark and tagline stay together wherever the artwork is used (Welcome and access screens).
 - Welcome and access forms replace the previous infinity/blur symbols, collage and alternate slogans with this identity. General product copy and group-type icons are not brand marks.
 - Android/iOS launcher assets and web icons are mechanical size exports of the complete artwork. Regenerate on Windows with `mobile/tool/generate_brand_icons.ps1`; no additional dependencies or image generation are used.
 - The existing semantic screen palette and component kit below remain the UI system; the supplied artwork is an intentional branded image asset.
@@ -69,53 +94,51 @@ README §4.0 is binding for every component:
 
 | Token | Light | Dark (derived) | Use |
 |---|---|---|---|
-| Canvas and cards | `#FFFFFF` | `#0F1117` / `#151821` | Everything sits on white; no grey stacking |
-| Hairline | `#EAEDF5` | `#262B38` | Card, input, sheet and chip borders; list dividers |
-| Primary indigo | `#1B223C` (pressed wash 6%) | `#DCE1FF` | Primary buttons, selected chip, nav pill, FAB, filled ♥ |
-| Titles | `#1A1D2E` | `#F0F1F7` | Headlines, titles, labels |
-| Body | `#475467` | `#C3C9D5` | Reading text |
-| Captions | `#667085` | `#98A2B3` | Timestamps, placeholders, metadata, unselected nav |
-| Indigo wash (`calmContainer`) | `#F1F2F6` | `#1E2333` | Pills, avatars, selection tiles |
-| Recessed | `#F6F7FA` | `#181B24` | Comment bubbles, illustration tiles |
-| Spacing | 4, 8, 12, 16, 20, 24, 32, 40 (`Space`); 16px mobile margins (`CircleInsets`) | | |
-| Radius | checkbox 4 · small 8 · input 10 · button/tile 12 · card/menu/FAB 16 · sheet/dialog 24 · pill (chips, avatars, badges) (`CircleRadius`) | | |
+| Canvas and cards (60%) | `#FFFFFF` | `#121116` / `#17161B` | Everything sits on white |
+| Warm neutral (`surfaceContainer`, `recessed`) (30%) | `#F3F0EA` | `#1E1C22` | Quote panels, comment bubbles, covers, illustration tiles |
+| Hairline | `#ECE8E1` | `#2C2A31` | Inputs, dock, list dividers |
+| Primary indigo (10%) | `#3B2E8C` | `#C9C0FF` | The primary action, selection, filled heart, badges |
+| Titles (ink) | `#1C1B22` | `#F2EFEA` | Headlines, titles, labels |
+| Body | `#34323C` | `#D6D2DA` | Reading text |
+| Captions | `#6B6878` | `#A19DAA` | Timestamps, metadata, unselected nav |
+| Indigo wash (`calmContainer`) | `#EFECF7` | `#2A2547` | Pills, avatars, selection tiles |
+| Spacing | 4 (half-step), 8, 16, 24, 32, 48 (`Space`); 24px page margins (`CircleInsets`) | | |
+| Radius | checkbox 4 · small/input 8 · tile/card/menu 16 · button/sheet/dialog 24 · pill (`CircleRadius`) | | |
 | Max content width | 640px (`ReadingPane`) | | |
 
-**`CircleAccents`** keeps its `heart`, `calm` and `sage` names, so no screen code changed. All three now resolve to indigo/slate washes. Groups are told apart by **icon and name**, never by colour.
+**`CircleAccents`** keeps its `heart`, `calm` and `sage` names. `heart` and `calm` resolve to indigo, `sage` to a muted green for confirmations. Groups are told apart by **icon and name**, never by colour.
 
-**Depth:** cards use the 1px hairline. The design's micro-shadows are too faint to notice on devices and render as hard rings in goldens, so they're omitted. Floating buttons are flat indigo.
+**Depth:** flat. `CircleDepth.panel` is a plain warm fill; only the floating dock keeps one soft shadow. Floating buttons are flat indigo pills.
 
 Never put hex literals in feature widgets. Use `ColorScheme` or `CircleAccents.of(context)`.
 
 ## Typography
 
-**Plus Jakarta Sans** is bundled at weights 400/500/600/700 (SIL OFL, `PlusJakartaSans-OFL.txt`). Headlines use negative tracking.
+**Plus Jakarta Sans** (SIL OFL, `PlusJakartaSans-OFL.txt`) for everything. Four sizes, two weights (400/600); feature code never adds other weights.
 
-| Style | Size / line height / weight / tracking |
-|---|---|
-| displaySmall (headline-xl) | 32/40/700, −0.03em |
-| headlineLarge (headline-lg) | 26/34/700, −0.025em |
-| headlineMedium (headline-md) | 22/28/600, −0.02em |
-| headlineSmall · titleLarge (headline-sm) | 18/24/600, −0.015em |
-| titleMedium | 16/22/600 |
-| bodyLarge · bodyMedium (body-lg, the readable default) | 16/24, −0.01em, `#475467` |
-| bodySmall (body-md) | 14/20 |
-| labelLarge / labelMedium / labelSmall | 14/20/600 · 12/16/600 · 11/14/500 |
+| Style | Font | Size / line height / weight |
+|---|---|---|
+| displaySmall · headlineLarge · headlineMedium | Jakarta | 28/36/600, −0.02em |
+| headlineSmall · titleLarge (app bar titles, section titles) | Jakarta | 20/28/600, −0.02em |
+| titleMedium · labelLarge (buttons) | Jakarta | 16/24/600 |
+| bodyLarge · bodyMedium (the readable default) | Jakarta | 16/24/400, `#34323C` |
+| titleSmall · labelMedium | Jakarta | 13/16/600 |
+| bodySmall · labelSmall | Jakarta | 13/16/400 |
 
 Plus Jakarta Sans has **no Tamil glyphs**. When localization is added, bundle a licensed fallback (e.g. Noto Sans Tamil).
 
 ## Components in this design
 
 - **Buttons:**
-  - Primary: indigo, white label, 48px tall, 12px radius.
-  - Secondary: white with a hairline border and charcoal label.
+  - Primary: indigo pill, white 16px label, 56px tall with default padding, flat.
+  - Secondary: white pill with a hairline border and ink label.
   - Ghost: text only, indigo.
-- **Cards:** white, hairline border, 16px radius.
-- **Inputs:** 48px tall, white, hairline border, 10px radius; focus is a 1.5px indigo border.
+- **Cards:** white, hairline border, 16px radius, flat. Memories have no card box.
+- **Inputs:** white, hairline border, 8px radius; focus is a 1.5px indigo border.
 - **Chips:** white with a hairline border and slate label; selected = solid indigo with white text.
 - **Selection controls:** a checked checkbox, radio or switch is solid indigo.
 - **Lists:** rows separated by 1px hairline dividers (`CircleRow`), not one card per row.
-- **Navigation bar:** white. The selected item is a solid indigo pill with a white icon and a charcoal label; unselected items are caption slate.
+- **Navigation bar:** the floating white dock with a hairline and one soft shadow. The selected item is an indigo filled icon with a semibold indigo label (no pill); unselected items are caption grey.
 
 ## Welcome screen (owner's Stitch design, 23 Oct 2026)
 

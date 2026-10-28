@@ -16,7 +16,7 @@ import 'contact_invitation_entry.dart';
 
 /// Indentation steps stop growing after this many levels; deeper levels
 /// stay distinguishable through the "Level n · in Parent" hint.
-const _indentStep = 16.0, _indentLevels = 4;
+const _indentStep = Space.section, _indentLevels = 4;
 
 class CircleGroups extends ConsumerStatefulWidget {
   const CircleGroups({super.key});
@@ -174,71 +174,94 @@ class CircleGroupTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final viewer = ref.watch(circleViewerProvider);
     final role = group.roles[viewer];
-    final tone = circleToneColors(context, circleTypeTone(group.type));
     final indent = math.min(level, _indentLevels) * _indentStep;
+    final nested = level > 0;
+    final avatar = nested ? CircleAvatarSize.small : CircleAvatarSize.medium;
+    final accents = CircleAccents.of(context);
     final details = [
       '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
       if (role != null) circleRoleLabel(role),
-      if (group.depth > 1) 'Level ${group.depth}',
-      if (where != null) 'in $where',
+      // Nested rows sit under their parent, so the place is already clear.
+      if (where != null && !nested) 'in $where',
     ].join(' · ');
-    return Container(
-      padding: EdgeInsetsDirectional.only(start: indent),
-      margin: EdgeInsets.only(bottom: level == 0 ? Space.sm : 0),
-      decoration: level == 0 ? CircleDepth.dock(context) : null,
-      child: CircleRow(
-        divider: level > 0,
-        child: DecoratedBox(
-          // A start-edge guide marks nested groups.
-          decoration: level == 0
-              ? const BoxDecoration()
-              : BoxDecoration(
-                  border: BorderDirectional(
-                    start: BorderSide(color: tone.dot, width: 3),
-                  ),
+    final selected = CirclePaneScope.isSelected(context, 'groups', group.id);
+    // One clean list: subgroups indent under their parent with a smaller
+    // avatar; the divider starts where the names start.
+    return Material(
+      color: selected
+          ? accents.calmContainer
+          : Theme.of(context).colorScheme.surface,
+      child: InkWell(
+        onTap: () {
+          if (!CirclePaneScope.select(context, 'groups', group.id)) {
+            context.push('/groups/g/${group.id}');
+          }
+        },
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(start: indent),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: Space.sm),
+                child: Row(
+                  children: [
+                    GroupAvatar(
+                      groupId: group.id,
+                      type: group.type,
+                      size: avatar,
+                    ),
+                    const SizedBox(width: Space.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            group.name,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(
+                            details,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: accents.caption),
+                          ),
+                          if (requests > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: Space.xs),
+                              child: CircleBadge(
+                                requests == 1
+                                    ? '1 request to review'
+                                    : '$requests requests to review',
+                                strong: true,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (expanded == null)
+                      Padding(
+                        padding: const EdgeInsets.all(Space.md),
+                        child: Icon(
+                          Icons.chevron_right,
+                          color: accents.caption,
+                        ),
+                      )
+                    else
+                      IconButton(
+                        tooltip: expanded!
+                            ? 'Collapse ${group.name}'
+                            : 'Expand ${group.name}',
+                        icon: Icon(
+                          expanded! ? Icons.expand_less : Icons.expand_more,
+                          color: accents.caption,
+                        ),
+                        onPressed: onToggle,
+                      ),
+                  ],
                 ),
-          child: ListTile(
-            contentPadding: const EdgeInsetsDirectional.fromSTEB(
-              Space.lg,
-              Space.md,
-              Space.sm,
-              Space.md,
-            ),
-            leading: GroupAvatar(groupId: group.id, type: group.type),
-            title: Text(group.name),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(details),
-                if (requests > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: Space.xs),
-                    child: CircleBadge(
-                      requests == 1
-                          ? '1 request to review'
-                          : '$requests requests to review',
-                      strong: true,
-                    ),
-                  ),
-              ],
-            ),
-            trailing: expanded == null
-                ? const Icon(Icons.chevron_right)
-                : IconButton(
-                    tooltip: expanded!
-                        ? 'Collapse ${group.name}'
-                        : 'Expand ${group.name}',
-                    icon: Icon(
-                      expanded! ? Icons.expand_less : Icons.expand_more,
-                    ),
-                    onPressed: onToggle,
-                  ),
-            selected: CirclePaneScope.isSelected(context, 'groups', group.id),
-            onTap: () {
-              if (!CirclePaneScope.select(context, 'groups', group.id)) {
-                context.push('/groups/g/${group.id}');
-              }
-            },
+              ),
+              Divider(height: 1, indent: avatar.diameter + Space.md),
+            ],
           ),
         ),
       ),

@@ -143,7 +143,7 @@ class _WelcomeBrand extends StatelessWidget {
           'CIRCLE',
           style: theme.textTheme.headlineSmall?.copyWith(
             letterSpacing: 4,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: Space.xs),
@@ -434,7 +434,7 @@ class _MiniAvatar extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           color: textColor ?? Theme.of(context).colorScheme.onSurface,
         ),
       ),
@@ -483,7 +483,7 @@ class _Promises extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(Space.lg),
       decoration: BoxDecoration(
-        color: CircleAccents.of(context).calmContainer,
+        color: CircleAccents.of(context).recessed,
         borderRadius: BorderRadius.circular(CircleRadius.card),
       ),
       child: Column(
@@ -661,7 +661,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
       _PreviewNote(connectedTo: widget.connectedTo),
       if (widget.notice != null && widget.onSubmit != null) ...[
         const SizedBox(height: Space.md),
-        PreviewLabel(widget.notice!),
+        CircleNote(widget.notice!),
       ],
       const SizedBox(height: Space.section),
       AutofillGroup(

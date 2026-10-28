@@ -42,7 +42,7 @@ List<InlineSpan> mentionSpans(
 }) {
   final colors = Theme.of(context).colorScheme;
   final emphasis = TextStyle(
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w600,
     color: onPrimary ? colors.onPrimary : colors.primary,
     decoration: onPrimary ? TextDecoration.underline : null,
     decorationColor: onPrimary ? colors.onPrimary : null,

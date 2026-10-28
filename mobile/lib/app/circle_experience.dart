@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/api/api_providers.dart';
+import '../core/circle_brand.dart';
 import '../core/circle_components.dart';
 import '../core/design.dart';
 import '../core/invite_entry.dart';
@@ -39,7 +40,6 @@ import '../features/notifications/presentation/notification_settings.dart';
 import '../features/notifications/presentation/server_push_settings.dart';
 import '../features/notifications/presentation/push_presentation_host.dart';
 import '../features/profile/presentation/circle_you.dart';
-import '../features/profile/presentation/profile_photo.dart';
 import '../features/profile/presentation/profile_edit.dart';
 import '../features/profile/presentation/person_profile.dart';
 import '../features/search/presentation/search_screen.dart';
@@ -811,54 +811,46 @@ class CircleAppShell extends ConsumerWidget {
             _ => null,
           };
     final theme = Theme.of(context);
-    final accents = CircleAccents.of(context);
     const titles = ['Memories', 'Chats', 'Groups', 'Events', 'You'];
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 64,
-        titleSpacing: detail ? 0 : Space.lg,
+        toolbarHeight: Space.hero * 2 + Space.sm,
+        titleSpacing: detail ? 0 : Space.section,
         // The prototype label lives here once, instead of on every control.
+        // Like Instagram: the logo and wordmark on Home, the page name on
+        // other tabs.
         title: Row(
           children: [
-            if (!detail) ...[
-              Semantics(
-                button: true,
-                label: 'Open You',
-                excludeSemantics: true,
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () => shell.goBranch(4),
-                  child: ProfilePhotoSurface(
-                    kind: ProfilePhotoKind.avatar,
-                    version: ref.watch(serverAccountProvider)?.avatarVersion,
-                    name:
-                        ref.watch(serverAccountProvider)?.displayName ?? 'You',
-                  ),
-                ),
+            if (index == 0 && !detail) ...[
+              Image.asset(
+                CircleIdentity.artwork,
+                width: Space.hero + Space.xs,
+                height: Space.hero + Space.xs,
+                semanticLabel: CircleIdentity.name,
               ),
-              const SizedBox(width: Space.md),
+              const SizedBox(width: Space.sm),
             ],
             Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    features.server ? 'CIRCLE' : 'CIRCLE • PREVIEW',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      color: accents.calmText,
-                    ),
-                  ),
-                  Text(
-                    titles[index],
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ],
+              child: Semantics(
+                header: true,
+                child: Text(
+                  index == 0 && !detail ? 'Circle' : titles[index],
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: largeText || detail
+                      ? theme.textTheme.titleLarge
+                      : theme.textTheme.headlineMedium,
+                ),
               ),
             ),
+            // The tab's create action sits beside the title (no floating
+            // button covering content).
+            if (fab != null)
+              IconButton(
+                tooltip: fab.label,
+                onPressed: () => context.push(fab.location),
+                icon: const Icon(Icons.add_box_outlined),
+              ),
           ],
         ),
         // Search and the activity bell on every tab's main page (§4.1).
@@ -874,32 +866,13 @@ class CircleAppShell extends ConsumerWidget {
             : null,
       ),
       body: SafeArea(child: shell),
-      floatingActionButton: fab == null || largeText
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => context.push(fab.location),
-              icon: const Icon(Icons.add),
-              label: Text(fab.label),
-            ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(Space.md, 0, Space.md, Space.sm),
+          padding: const EdgeInsets.fromLTRB(Space.lg, 0, Space.lg, Space.sm),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (largeText && fab != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: Space.sm),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => context.push(fab.location),
-                      icon: const Icon(Icons.add),
-                      label: Text(fab.label),
-                    ),
-                  ),
-                ),
               DecoratedBox(
                 decoration: CircleDepth.dock(context),
                 child: ClipRRect(
@@ -907,7 +880,7 @@ class CircleAppShell extends ConsumerWidget {
                   child: MediaQuery.withClampedTextScaling(
                     maxScaleFactor: navigationMaxTextScale,
                     child: NavigationBar(
-                      height: 60 + 12 * textScale,
+                      height: Space.hero * 2 + Space.sm * textScale,
                       selectedIndex: branches.contains(index)
                           ? branches.indexOf(index)
                           : 0,

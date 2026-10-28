@@ -271,131 +271,132 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
     final account = widget.account;
     final name = account.displayName.isEmpty ? 'You' : account.displayName;
     final theme = Theme.of(context);
-    return Container(
-      decoration: CircleDepth.profilePanel(context),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final coverHeight =
-                  (constraints.maxWidth / CircleProfileLayout.coverAspectRatio)
-                      .clamp(
-                        CircleProfileLayout.minCoverHeight,
-                        CircleProfileLayout.maxCoverHeight,
-                      );
-              final avatar = CircleAvatarSize.profile.diameter;
-              return SizedBox(
-                height: coverHeight + avatar / 2,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: coverHeight,
+    // Editorial: no panel; a rounded cover, the avatar overlapping it and
+    // the name as a headline on the page itself.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final coverHeight =
+                (constraints.maxWidth / CircleProfileLayout.coverAspectRatio)
+                    .clamp(
+                      CircleProfileLayout.minCoverHeight,
+                      CircleProfileLayout.maxCoverHeight,
+                    );
+            final avatar = CircleAvatarSize.profile.diameter;
+            return SizedBox(
+              height: coverHeight + avatar / 2,
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: coverHeight,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(CircleRadius.card),
                       child: ProfilePhotoSurface(
                         kind: ProfilePhotoKind.cover,
                         version: account.coverVersion,
                         name: name,
                       ),
                     ),
-                    PositionedDirectional(
-                      top: Space.sm,
-                      end: Space.sm,
-                      child: FilledButton.tonalIcon(
-                        onPressed: _busy
-                            ? null
-                            : () => _photo(ProfilePhotoKind.cover),
-                        icon: const Icon(Icons.photo_camera_outlined),
-                        label: Text(
-                          account.coverVersion == null
-                              ? 'Add cover'
-                              : 'Change cover',
-                        ),
+                  ),
+                  PositionedDirectional(
+                    top: Space.sm,
+                    end: Space.sm,
+                    child: FilledButton.tonalIcon(
+                      onPressed: _busy
+                          ? null
+                          : () => _photo(ProfilePhotoKind.cover),
+                      icon: const Icon(Icons.photo_camera_outlined),
+                      label: Text(
+                        account.coverVersion == null
+                            ? 'Add cover'
+                            : 'Change cover',
                       ),
                     ),
-                    PositionedDirectional(
-                      start: Space.lg,
-                      bottom: 0,
-                      child: SizedBox.square(
-                        dimension: avatar + Space.sm,
-                        child: Stack(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(Space.xs),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: theme.colorScheme.surface,
-                              ),
-                              child: ProfilePhotoSurface(
-                                kind: ProfilePhotoKind.avatar,
-                                version: account.avatarVersion,
-                                name: name,
-                                size: CircleAvatarSize.profile,
-                              ),
+                  ),
+                  PositionedDirectional(
+                    start: Space.lg,
+                    bottom: 0,
+                    child: SizedBox.square(
+                      dimension: avatar + Space.sm,
+                      child: Stack(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(Space.xs),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: theme.colorScheme.surface,
                             ),
-                            PositionedDirectional(
-                              end: 0,
-                              bottom: 0,
-                              child: IconButton.filledTonal(
-                                tooltip: account.avatarVersion == null
-                                    ? 'Add profile photo'
-                                    : 'Change profile photo',
-                                onPressed: _busy
-                                    ? null
-                                    : () => _photo(ProfilePhotoKind.avatar),
-                                icon: const Icon(Icons.photo_camera_outlined),
-                              ),
+                            child: ProfilePhotoSurface(
+                              kind: ProfilePhotoKind.avatar,
+                              version: account.avatarVersion,
+                              name: name,
+                              size: CircleAvatarSize.profile,
                             ),
-                          ],
-                        ),
+                          ),
+                          PositionedDirectional(
+                            end: 0,
+                            bottom: 0,
+                            child: IconButton.filledTonal(
+                              tooltip: account.avatarVersion == null
+                                  ? 'Add profile photo'
+                                  : 'Change profile photo',
+                              onPressed: _busy
+                                  ? null
+                                  : () => _photo(ProfilePhotoKind.avatar),
+                              icon: const Icon(Icons.photo_camera_outlined),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
-          Padding(
-            padding: const EdgeInsets.all(Space.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: theme.textTheme.headlineMedium),
-                if (account.about.isNotEmpty) ...[
-                  const SizedBox(height: Space.sm),
-                  Text(account.about),
-                ],
-                if (_busy) ...[
-                  const SizedBox(height: Space.md),
-                  const LinearProgressIndicator(
-                    semanticsLabel: 'Updating profile photo',
                   ),
                 ],
-                const SizedBox(height: Space.lg),
-                Wrap(
-                  spacing: Space.sm,
-                  runSpacing: Space.sm,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: _busy ? null : () => context.push('/you/edit'),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit profile'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => context.go('/groups'),
-                      icon: const Icon(Icons.groups_outlined),
-                      label: const Text('Your groups'),
-                    ),
-                  ],
+              ),
+            );
+          },
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: Space.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name, style: theme.textTheme.headlineMedium),
+              if (account.about.isNotEmpty) ...[
+                const SizedBox(height: Space.sm),
+                Text(account.about),
+              ],
+              if (_busy) ...[
+                const SizedBox(height: Space.md),
+                const LinearProgressIndicator(
+                  semanticsLabel: 'Updating profile photo',
                 ),
               ],
-            ),
+              const SizedBox(height: Space.lg),
+              Wrap(
+                spacing: Space.sm,
+                runSpacing: Space.sm,
+                children: [
+                  FilledButton.icon(
+                    onPressed: _busy ? null : () => context.push('/you/edit'),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit profile'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => context.go('/groups'),
+                    icon: const Icon(Icons.groups_outlined),
+                    label: const Text('Your groups'),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

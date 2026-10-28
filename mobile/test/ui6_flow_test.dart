@@ -201,12 +201,8 @@ void main() {
       final container = await openCircle(tester, now: fixed);
       final before = await badgeOf(container);
       await go(tester, container, '/you/notifications');
-      expect(
-        find.text(
-          'Preview: no notifications are sent; these settings show what would happen.',
-        ),
-        findsOneWidget,
-      );
+      // Preview labels are no longer drawn (owner, 28 Oct 2026).
+      expect(find.byType(PreviewLabel, skipOffstage: false), findsOneWidget);
       expect(find.text('Push (personal)'), findsOneWidget);
       await reveal(tester, find.text('New Memories in your groups'));
       await tester.tap(find.text('New Memories in your groups'));
@@ -360,6 +356,10 @@ void main() {
         findsNothing,
         reason: 'unread',
       );
+      await reveal(
+        tester,
+        find.bySemanticsLabel('Remove subgroup Late-night memes'),
+      );
       await tester.tap(
         find.bySemanticsLabel('Remove subgroup Late-night memes'),
       );
@@ -446,6 +446,7 @@ void main() {
       final container = await openCircle(tester, now: fixed);
       await go(tester, container, '/you');
       for (final entry in ['Activity', 'Notifications', 'Privacy', 'Account']) {
+        await reveal(tester, find.text(entry));
         expect(find.text(entry), findsOneWidget, reason: entry);
       }
       await tapText(tester, 'Account');
@@ -512,7 +513,8 @@ void main() {
           await tester.pumpAndSettle();
           expect(currentUri(container).path, '/groups');
           expect(find.byType(TabBar), findsOneWidget);
-          expect(find.text('The Sunday table'), findsWidgets);
+          // The list stays beside the detail: the name shows in both.
+          expect(find.text('Studio North'), findsAtLeast(2));
 
           await go(tester, container, '/events');
           await tester.dragUntilVisible(

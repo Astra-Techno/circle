@@ -48,9 +48,8 @@ class CircleMemoryCard extends ConsumerWidget {
     void openDetail() => context.push('/home/memory/${memory.id}');
     final latest = CommentRules.latest(memory.comments);
     final reactions = memory.reactions;
-    final caption = theme.textTheme.bodySmall?.copyWith(
-      color: colors.onSurfaceVariant,
-    );
+    final accents = CircleAccents.of(context);
+    final caption = theme.textTheme.bodySmall?.copyWith(color: accents.caption);
     final taken = memory.takenLabel;
 
     Future<void> react(String emoji) =>
@@ -103,18 +102,31 @@ class CircleMemoryCard extends ConsumerWidget {
       }
     }
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    final hasPhotos = memory.photos.isNotEmpty;
+    final hasText = memory.text.isNotEmpty;
+    // A short words-only Memory reads as a quote.
+    final quote =
+        hasText &&
+        !hasPhotos &&
+        memory.poll == null &&
+        memory.text.length <= _quoteMaxLength;
+    final text = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Space.section),
+      child: Text(memory.text, style: theme.textTheme.bodyLarge),
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: detail ? 0 : Space.hero),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (hidden)
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                Space.md,
-                Space.md,
-                Space.md,
+                Space.section,
                 0,
+                Space.section,
+                Space.sm,
               ),
               child: HiddenByAdminsNotice(
                 groupId: memory.groupId,
@@ -124,58 +136,55 @@ class CircleMemoryCard extends ConsumerWidget {
             ),
           Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(
-              Space.lg,
-              Space.lg,
-              Space.xs,
-              Space.md,
+              Space.section,
+              0,
+              Space.sm,
+              Space.sm,
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 PersonAvatar(
                   person: memory.authorId,
                   name: memory.author,
                   tone: circleTypeTone(group.type),
                 ),
-                const SizedBox(width: Space.md),
+                const SizedBox(width: Space.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Wrap(
-                        spacing: Space.sm,
-                        runSpacing: Space.xs,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            memory.author,
-                            style: theme.textTheme.titleMedium,
+                      Text(memory.author, style: theme.textTheme.titleMedium),
+                      // Who can see it, always visible (privacy first).
+                      Semantics(
+                        container: true,
+                        label: 'Shared with ${audience ?? group.name} only',
+                        excludeSemantics: true,
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              WidgetSpan(
+                                alignment: PlaceholderAlignment.middle,
+                                child: Icon(
+                                  Icons.lock_outline,
+                                  size: Space.lg,
+                                  color: accents.caption,
+                                ),
+                              ),
+                              TextSpan(
+                                text:
+                                    ' ${[audience ?? group.name, memoryTimeLabel(memory.createdAt, DateTime.now()), if (memory.edited) 'Edited'].join(' · ')}',
+                              ),
+                            ],
                           ),
-                          Text(
-                            [
-                              memoryTimeLabel(memory.createdAt, DateTime.now()),
-                              if (memory.edited) 'Edited',
-                            ].join(' · '),
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: Space.xs),
-                      CirclePill(
-                        audience ?? group.name,
-                        icon: Icons.lock_outline,
-                        tone: circleTypeTone(group.type),
-                        semanticsLabel:
-                            'Shared with ${audience ?? group.name} only',
+                          style: caption,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 PopupMenuButton<_MemoryAction>(
                   tooltip: 'More options for $about',
-                  icon: const Icon(Icons.more_horiz),
+                  icon: Icon(Icons.more_horiz, color: accents.caption),
                   onSelected: onMenu,
                   itemBuilder: (_) => [
                     PopupMenuItem(
@@ -210,104 +219,68 @@ class CircleMemoryCard extends ConsumerWidget {
               ],
             ),
           ),
-          if (memory.text.isNotEmpty)
+          if (hasPhotos) MemoryPhotoGrid(memory: memory),
+          if (quote)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Space.lg),
-              child: Text(memory.text, style: theme.textTheme.bodyMedium),
-            ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: accents.recessed,
+                  borderRadius: BorderRadius.circular(CircleRadius.card),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(Space.section),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ExcludeSemantics(
+                        child: Icon(
+                          Icons.format_quote_rounded,
+                          color: accents.caption,
+                        ),
+                      ),
+                      const SizedBox(height: Space.sm),
+                      Text(memory.text, style: theme.textTheme.titleLarge),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else if (hasText && !hasPhotos)
+            text,
           if (taken != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                Space.lg,
+                Space.section,
                 Space.sm,
-                Space.lg,
+                Space.section,
                 0,
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.history_outlined,
-                    size: 16,
-                    color: colors.onSurfaceVariant,
+                    size: Space.lg,
+                    color: accents.caption,
                   ),
                   const SizedBox(width: Space.xs),
                   Expanded(child: Text(taken, style: caption)),
                 ],
               ),
             ),
-          if (memory.photos.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: Space.md),
-              child: MemoryPhotoGrid(memory: memory),
-            ),
           if (memory.poll != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                Space.lg,
-                Space.md,
-                Space.lg,
+                Space.section,
+                Space.sm,
+                Space.section,
                 0,
               ),
               child: MemoryPollCard(memoryId: memory.id, poll: memory.poll!),
             ),
-          if (reactions.total > 0 || (!detail && comments > 0))
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Space.sm,
-                Space.sm,
-                Space.sm,
-                0,
-              ),
-              child: Row(
-                children: [
-                  if (reactions.total > 0)
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: colors.onSurface,
-                      ),
-                      onPressed: () => showReactionSummary(context, reactions),
-                      child: Text(
-                        [
-                          reactions.ranked.take(3).map((r) => r.emoji).join(),
-                          '${reactions.total}',
-                        ].where((part) => part.isNotEmpty).join(' '),
-                        semanticsLabel:
-                            '${reactions.describe()}. Show reactions',
-                        style: theme.textTheme.labelLarge,
-                      ),
-                    ),
-                  const Spacer(),
-                  if (!detail && comments > 0)
-                    TextButton(
-                      onPressed: openDetail,
-                      child: Text(
-                        commentLabel,
-                        semanticsLabel: '$commentLabel on $about',
-                        style: caption,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          if (!detail && latest != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Space.lg,
-                Space.sm,
-                Space.lg,
-                0,
-              ),
-              child: CommentBubble(latest, onTap: openDetail, maxLines: 2),
-            ),
-          const Padding(
-            padding: EdgeInsets.only(top: Space.md),
-            child: Divider(),
-          ),
+          // Actions: vector heart + count, comments, reaction picker, save.
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Space.sm,
-              vertical: Space.xs,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: Space.sm),
             child: Row(
               children: [
                 // Wraps onto two lines at very large text sizes.
@@ -321,30 +294,58 @@ class CircleMemoryCard extends ConsumerWidget {
                         onTap: () => react(reactions.mine ?? loveReaction),
                         onLongPress: pickReaction,
                       ),
-                      IconButton(
-                        tooltip: 'Choose a reaction for $about',
-                        onPressed: pickReaction,
-                        icon: const Icon(Icons.add_reaction_outlined),
-                      ),
+                      if (reactions.total > 0)
+                        Tooltip(
+                          message: 'Show reactions for $about',
+                          excludeFromSemantics: true,
+                          child: TextButton(
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(Space.large, Space.large),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: Space.xs,
+                              ),
+                              foregroundColor: colors.onSurface,
+                            ),
+                            onPressed: () =>
+                                showReactionSummary(context, reactions),
+                            child: Text(
+                              '${reactions.total}',
+                              semanticsLabel:
+                                  '${reactions.describe()}. Show reactions',
+                              style: theme.textTheme.labelLarge,
+                            ),
+                          ),
+                        ),
                       if (!detail)
                         TextButton.icon(
                           style: TextButton.styleFrom(
                             foregroundColor: colors.onSurface,
                           ),
                           onPressed: openDetail,
-                          icon: const Icon(Icons.chat_bubble_outline),
+                          icon: const Icon(Icons.chat_bubble_outline_rounded),
                           label: Text(
-                            'Comment',
-                            semanticsLabel: 'Comment on $about',
+                            comments > 0 ? '$comments' : 'Comment',
+                            semanticsLabel: comments > 0
+                                ? '$commentLabel on $about'
+                                : 'Comment on $about',
+                            style: theme.textTheme.bodyLarge,
                           ),
                         ),
+                      IconButton(
+                        tooltip: 'Choose a reaction for $about',
+                        onPressed: pickReaction,
+                        icon: const Icon(Icons.add_reaction_outlined),
+                      ),
                     ],
                   ),
                 ),
                 IconButton(
                   tooltip: memory.saved ? 'Unsave $about' : 'Save $about',
                   icon: Icon(
-                    memory.saved ? Icons.bookmark : Icons.bookmark_border,
+                    memory.saved
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    color: memory.saved ? colors.primary : null,
                   ),
                   onPressed: () =>
                       runCalmly(context, () => controller.save(memory.id)),
@@ -352,15 +353,30 @@ class CircleMemoryCard extends ConsumerWidget {
               ],
             ),
           ),
+          if (hasText && hasPhotos) text,
+          if (!detail && latest != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Space.section,
+                Space.sm,
+                Space.section,
+                0,
+              ),
+              child: CommentBubble(latest, onTap: openDetail, maxLines: 2),
+            ),
         ],
       ),
     );
   }
 }
 
-/// One tap toggles ❤️; when the viewer chose another emoji, it shows that
-/// emoji and one tap removes it. Long-press opens the picker, which is
-/// also reachable from the "Choose a reaction" button (README §4.0).
+/// Words-only Memories up to this length are shown as a quote.
+const _quoteMaxLength = 160;
+
+/// A vector heart: one tap toggles love; when the viewer chose another
+/// reaction, it shows that one and one tap removes it. Long-press opens the
+/// picker, which is also reachable from "Choose a reaction" (README §4.0).
+/// Emoji appear only for a chosen non-love reaction and in the sheets.
 class _LoveButton extends StatelessWidget {
   const _LoveButton({
     required this.reactions,
@@ -373,7 +389,6 @@ class _LoveButton extends StatelessWidget {
   final VoidCallback onTap, onLongPress;
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final accents = CircleAccents.of(context);
     final mine = reactions.mine;
     if (mine != null && mine != loveReaction) {
@@ -382,7 +397,7 @@ class _LoveButton extends StatelessWidget {
         onPressed: onTap,
         onLongPress: onLongPress,
         child: Text(
-          '$mine Reacted',
+          mine,
           semanticsLabel:
               'Reacted with ${memoryReactionNames[mine]}. '
               'Remove reaction from $about',
@@ -390,21 +405,26 @@ class _LoveButton extends StatelessWidget {
       );
     }
     final loved = mine == loveReaction;
-    return TextButton.icon(
-      style: TextButton.styleFrom(
-        foregroundColor: loved ? accents.heartText : colors.onSurface,
-      ),
-      onPressed: onTap,
-      onLongPress: onLongPress,
-      icon: Icon(
-        loved ? Icons.favorite : Icons.favorite_border,
-        color: loved ? accents.heart : null,
-      ),
-      label: Text(
-        loved ? 'Loved' : 'Love',
-        semanticsLabel: loved
-            ? 'Loved. Remove love from $about'
-            : 'Love $about',
+    return Semantics(
+      button: true,
+      toggled: loved,
+      label: loved ? 'Loved. Remove love from $about' : 'Love $about',
+      onLongPressHint: 'Choose a reaction',
+      excludeSemantics: true,
+      // Long-press belongs to the reaction picker, not the tooltip.
+      child: Tooltip(
+        message: loved ? 'Remove love from $about' : 'Love $about',
+        triggerMode: TooltipTriggerMode.manual,
+        excludeFromSemantics: true,
+        child: GestureDetector(
+          onLongPress: onLongPress,
+          child: IconButton(
+            isSelected: loved,
+            onPressed: onTap,
+            icon: const Icon(Icons.favorite_border_rounded),
+            selectedIcon: Icon(Icons.favorite_rounded, color: accents.heart),
+          ),
+        ),
       ),
     );
   }
@@ -522,7 +542,7 @@ class CommentBubble extends ConsumerWidget {
               children: [
                 TextSpan(
                   text: '${comment.authorName}: ',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 ...mentionSpans(context, comment.text, comment.mentions.values),
               ],

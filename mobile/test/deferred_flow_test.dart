@@ -234,8 +234,8 @@ void main() {
             ),
           );
       await go(tester, container, '/events');
-      expect(find.text('List'), findsOneWidget);
-      await tester.tap(find.text('Month'));
+      expect(find.byTooltip('List'), findsOneWidget);
+      await tester.tap(find.byTooltip('Month'));
       await tester.pumpAndSettle();
       expect(find.text('October 2026'), findsOneWidget);
       expect(
@@ -298,7 +298,7 @@ void main() {
       // Past has no calendar toggle.
       await tester.tap(find.text('Past'));
       await tester.pumpAndSettle();
-      expect(find.text('Month'), findsNothing);
+      expect(find.byTooltip('Month'), findsNothing);
       expect(find.byTooltip('Next month'), findsNothing);
     });
   });
@@ -353,7 +353,7 @@ void main() {
         return true;
       });
       final mention = spans.firstWhere((span) => span.text == '@Mira');
-      expect(mention.style?.fontWeight, FontWeight.w700);
+      expect(mention.style?.fontWeight, FontWeight.w600);
 
       // Mira gets a personal Activity item.
       final feed = await container
@@ -546,7 +546,14 @@ void main() {
       await settleTap(tester);
       expect(currentUri(container).path, '/chats/c/g-family/photos/${sent.id}');
       expect(find.text('1 of 2'), findsOneWidget);
-      expect(find.text('Hill trip'), findsOneWidget);
+      // The Hill trip scene now shows its bundled fictional photo.
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is CircleSceneTile && w.asset == 'assets/welcome/friends.jpg',
+        ),
+        findsOneWidget,
+      );
     });
   });
 
@@ -646,7 +653,7 @@ void main() {
             ],
           );
       await go(tester, container, '/events');
-      await tester.tap(find.text('Month'));
+      await tester.tap(find.byTooltip('Month'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       final day = find.byKey(const ValueKey('calendar-day-2026-10-25'));

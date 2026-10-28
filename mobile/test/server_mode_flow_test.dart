@@ -73,8 +73,8 @@ void main() {
     );
     expect((await tokens.read())?.accessToken, startsWith('access-'));
     expect(currentUri(container).path, '/home');
-    expect(find.text('CIRCLE', findRichText: true), findsOneWidget);
-    expect(find.text('CIRCLE • PREVIEW', findRichText: true), findsNothing);
+    expect(find.text('Circle'), findsOneWidget);
+    expect(find.text('Preview'), findsNothing);
     expect(find.text('A little space for your people'), findsOneWidget);
 
     await tap(tester, find.widgetWithText(FilledButton, 'Create a group'));
@@ -134,7 +134,8 @@ void main() {
       password,
     );
     await tap(tester, find.widgetWithText(FilledButton, 'Log in'));
-    expect(find.text('CIRCLE', findRichText: true), findsOneWidget);
+    expect(find.text('Circle'), findsOneWidget);
+    expect(find.text('Preview'), findsNothing);
   });
 
   testWidgets('features the server lacks say so, calmly, once', (tester) async {
@@ -152,7 +153,7 @@ void main() {
       container.read(circleRouterProvider).go(path);
       await settle(tester);
       expect(find.text('Not on the server yet'), findsNothing);
-      expect(find.text('Month'), findsNothing);
+      expect(find.byTooltip('Month'), findsNothing);
       expect(find.text('Forward'), findsNothing);
     }
 
@@ -163,7 +164,7 @@ void main() {
       await settle(tester);
       expect(find.textContaining(label), findsOneWidget, reason: tab);
       expect(find.text('Set as cover'), findsNothing);
-      expect(find.text('Month'), findsNothing);
+      expect(find.byTooltip('Month'), findsNothing);
     }
     // Deep links into preview-only screens are honest too.
     for (final location in [
@@ -361,7 +362,6 @@ void main() {
     final container = await openServerCircle(tester, server);
     await tap(tester, find.text('Explore fictional circles'));
     expect(currentUri(container).path, '/home');
-    expect(find.text('CIRCLE • PREVIEW', findRichText: true), findsOneWidget);
     expect(workspaceOf(container).groups, isNotEmpty);
     expect(server.adapter.requests, isEmpty);
     expect(container.read(apiClientProvider), isNotNull);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/circle_components.dart';
 import 'package:mobile/features/chat/application/chat_providers.dart';
 import 'package:mobile/features/chat/presentation/chat_message.dart';
 import 'package:mobile/features/chat/presentation/chat_visuals.dart';
@@ -74,8 +75,14 @@ void main() {
       final container = await openCircle(tester, now: fixed);
       await tester.tap(find.widgetWithText(NavigationDestination, 'Chats'));
       await tester.pumpAndSettle();
-      expect(find.text(chatPreviewNote), findsOneWidget);
-      expect(find.text('New chat'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is PreviewLabel && w.text == chatPreviewNote,
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+      expect(find.byTooltip('New chat'), findsOneWidget);
       expect(find.widgetWithText(Tab, 'Requests (1)'), findsOneWidget);
       expect(find.text('Seen by Mira, Dev'), findsOneWidget);
 
@@ -145,7 +152,7 @@ void main() {
   testWidgets('new chat shows who can’t be messaged and why', (tester) async {
     final container = await openCircle(tester, now: fixed);
     await go(tester, container, '/chats');
-    await tester.tap(find.text('New chat'));
+    await tester.tap(find.byTooltip('New chat'));
     await tester.pumpAndSettle();
     expect(currentUri(container).path, '/chats/new');
     await tester.enterText(
@@ -192,7 +199,13 @@ void main() {
     ) async {
       final container = await openCircle(tester, now: fixed);
       await go(tester, container, '/chats/c/d-mira-you');
-      expect(find.text(chatPreviewNote), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is PreviewLabel && w.text == chatPreviewNote,
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Seen'), findsOneWidget);
       IconButton send() => tester.widget<IconButton>(
         find.widgetWithIcon(IconButton, Icons.send),

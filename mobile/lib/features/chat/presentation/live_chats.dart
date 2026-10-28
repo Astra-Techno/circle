@@ -191,7 +191,109 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
           final items = ApiJson.list(data['items']).map(ApiJson.map).toList();
           final active = data['can_send'] == true;
           final chat = id == null ? '' : ApiJson.id(data['id']);
-          return ListView(
+          // At very large text sizes the composer scrolls with the
+          // conversation instead of taking a fixed share of the screen.
+          final inline =
+              MediaQuery.textScalerOf(context).scale(1) >
+              CircleLayout.largeTextThreshold;
+          final composer = <Widget>[
+            if (_reply != null)
+              ListTile(
+                title: Text('Replying to message $_reply'),
+                trailing: IconButton(
+                  onPressed: () => setState(() => _reply = null),
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Cancel reply',
+                ),
+              ),
+            if (_photos.isNotEmpty)
+              Wrap(
+                spacing: Space.sm,
+                children: [
+                  for (final photo in _photos)
+                    InputChip(
+                      label: Text('Photo ${_photos.indexOf(photo) + 1}'),
+                      onDeleted: _busy
+                          ? null
+                          : () => setState(() => _photos.remove(photo)),
+                    ),
+                ],
+              ),
+            if (data['kind'] == 'group' || data['request_state'] == 'accepted')
+              OutlinedButton.icon(
+                onPressed: _busy || _photos.length >= 4
+                    ? null
+                    : () async {
+                        final api = ref.read(liveChatApiProvider);
+                        final picker = ref.read(profilePhotoPickerProvider);
+                        setState(() => _busy = true);
+                        final photo = await runCalmly(
+                          context,
+                          () => api.pickPhoto(chat, picker),
+                        );
+                        if (!mounted) return;
+                        if (photo != null &&
+                            identical(ref.read(liveChatApiProvider), api)) {
+                          _photos.add(photo);
+                        }
+                        setState(() => _busy = false);
+                      },
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: Text(_busy ? 'Please wait…' : 'Add photo'),
+              ),
+            TextField(
+              controller: _text,
+              enabled: !_busy,
+              minLines: 1,
+              maxLines: 5,
+              maxLength: 4000,
+              decoration: const InputDecoration(labelText: 'Message'),
+            ),
+            FilledButton.icon(
+              onPressed: _busy
+                  ? null
+                  : () async {
+                      final api = ref.read(liveChatApiProvider),
+                          body = _text.text;
+                      if (body.trim().isEmpty && _photos.isEmpty) {
+                        return;
+                      }
+                      final signature =
+                          '$chat\n$body\n$_reply\n${_photos.join(',')}';
+                      if (signature != _retrySignature) {
+                        _retrySignature = signature;
+                        _retryKey =
+                            'circle-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
+                      }
+                      setState(() => _busy = true);
+                      final ok = await runCalmly(context, () async {
+                        await api.send(chat, {
+                          'body': body,
+                          'client_id': _retryKey,
+                          if (_photos.isNotEmpty)
+                            'attachments': List<String>.of(_photos),
+                          if (_reply != null) 'reply_to_id': _reply,
+                        });
+                        return true;
+                      });
+                      if (!mounted) return;
+                      if (ok == true &&
+                          identical(ref.read(liveChatApiProvider), api)) {
+                        _text.clear();
+                        _photos.clear();
+                        _retryKey = null;
+                        _retrySignature = null;
+                        _reply = null;
+                        _before = null;
+                      }
+                      setState(() => _busy = false);
+                      _refresh();
+                    },
+              icon: const Icon(Icons.send_outlined),
+              label: Text(_busy ? 'Sending…' : 'Send'),
+            ),
+          ];
+          final list = ListView(
             padding: CircleInsets.form,
             children: [
               CircleHeading(
@@ -593,102 +695,40 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                       ),
                     ),
                   ),
-              if (id != null && active) ...[
-                if (_reply != null)
-                  ListTile(
-                    title: Text('Replying to message $_reply'),
-                    trailing: IconButton(
-                      onPressed: () => setState(() => _reply = null),
-                      icon: const Icon(Icons.close),
-                      tooltip: 'Cancel reply',
+              if (id != null && active && inline) ...composer,
+            ],
+          );
+          // The composer is pinned below the conversation, in the thumb
+          // zone; it scrolls on its own if it grows (photos, replies).
+          if (id == null || !active || inline) return list;
+          return Column(
+            children: [
+              Expanded(child: list),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border(
+                    top: BorderSide(color: CircleAccents.of(context).hairline),
+                  ),
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height / 3,
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      Space.section,
+                      Space.sm,
+                      Space.section,
+                      Space.sm,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [...composer],
                     ),
                   ),
-                if (_photos.isNotEmpty)
-                  Wrap(
-                    spacing: Space.sm,
-                    children: [
-                      for (final photo in _photos)
-                        InputChip(
-                          label: Text('Photo ${_photos.indexOf(photo) + 1}'),
-                          onDeleted: _busy
-                              ? null
-                              : () => setState(() => _photos.remove(photo)),
-                        ),
-                    ],
-                  ),
-                if (data['kind'] == 'group' ||
-                    data['request_state'] == 'accepted')
-                  OutlinedButton.icon(
-                    onPressed: _busy || _photos.length >= 4
-                        ? null
-                        : () async {
-                            final api = ref.read(liveChatApiProvider);
-                            final picker = ref.read(profilePhotoPickerProvider);
-                            setState(() => _busy = true);
-                            final photo = await runCalmly(
-                              context,
-                              () => api.pickPhoto(chat, picker),
-                            );
-                            if (!mounted) return;
-                            if (photo != null &&
-                                identical(ref.read(liveChatApiProvider), api)) {
-                              _photos.add(photo);
-                            }
-                            setState(() => _busy = false);
-                          },
-                    icon: const Icon(Icons.add_photo_alternate_outlined),
-                    label: Text(_busy ? 'Please wait…' : 'Add photo'),
-                  ),
-                TextField(
-                  controller: _text,
-                  enabled: !_busy,
-                  minLines: 1,
-                  maxLines: 5,
-                  maxLength: 4000,
-                  decoration: const InputDecoration(labelText: 'Message'),
                 ),
-                FilledButton.icon(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          final api = ref.read(liveChatApiProvider),
-                              body = _text.text;
-                          if (body.trim().isEmpty && _photos.isEmpty) return;
-                          final signature =
-                              '$chat\n$body\n$_reply\n${_photos.join(',')}';
-                          if (signature != _retrySignature) {
-                            _retrySignature = signature;
-                            _retryKey =
-                                'circle-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
-                          }
-                          setState(() => _busy = true);
-                          final ok = await runCalmly(context, () async {
-                            await api.send(chat, {
-                              'body': body,
-                              'client_id': _retryKey,
-                              if (_photos.isNotEmpty)
-                                'attachments': List<String>.of(_photos),
-                              if (_reply != null) 'reply_to_id': _reply,
-                            });
-                            return true;
-                          });
-                          if (!mounted) return;
-                          if (ok == true &&
-                              identical(ref.read(liveChatApiProvider), api)) {
-                            _text.clear();
-                            _photos.clear();
-                            _retryKey = null;
-                            _retrySignature = null;
-                            _reply = null;
-                            _before = null;
-                          }
-                          setState(() => _busy = false);
-                          _refresh();
-                        },
-                  icon: const Icon(Icons.send_outlined),
-                  label: Text(_busy ? 'Sending…' : 'Send'),
-                ),
-              ],
+              ),
             ],
           );
         },

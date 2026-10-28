@@ -854,9 +854,14 @@ class _DatePollEditor extends StatelessWidget {
                     ),
                   ),
                 ),
-                TextButton(
-                  onPressed: onRemovePoll,
-                  child: const Text('Remove date poll'),
+                Flexible(
+                  child: TextButton(
+                    onPressed: onRemovePoll,
+                    child: const Text(
+                      'Remove date poll',
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
                 ),
               ],
             ),

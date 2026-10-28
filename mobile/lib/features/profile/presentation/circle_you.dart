@@ -69,56 +69,65 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                 account: account,
               )
             else
-              Container(
+              Column(
                 key: const ValueKey('you-profile-card'),
-                padding: const EdgeInsets.all(Space.section),
-                decoration: CircleDepth.profilePanel(context),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleInitialAvatar(
-                          name: account?.displayName.isNotEmpty == true
-                              ? account!.displayName
-                              : 'You',
-                          size: CircleAvatarSize.large,
-                        ),
-                        const SizedBox(width: Space.lg),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                account == null
-                                    ? 'You · Fictional preview'
-                                    : account.displayName.isEmpty
-                                    ? 'You'
-                                    : account.displayName,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineSmall,
-                              ),
-                              const SizedBox(height: Space.xs),
-                              Text(
-                                account == null
-                                    ? 'No real account or phone number is saved.'
-                                    : 'Your people. Your private circles.',
-                              ),
-                            ],
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Editorial header: a quiet cover with the avatar
+                  // overlapping it, then the name as a headline.
+                  Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Space.large),
+                        child: AspectRatio(
+                          aspectRatio: CircleProfileLayout.coverAspectRatio,
+                          child: DecoratedBox(
+                            decoration: CircleDepth.panel(
+                              context,
+                              radius: CircleRadius.card,
+                            ),
                           ),
                         ),
-                      ],
+                      ),
+                      PositionedDirectional(
+                        start: Space.lg,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(Space.xs),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context).colorScheme.surface,
+                          ),
+                          child: const CircleInitialAvatar(
+                            name: 'You',
+                            size: CircleAvatarSize.profile,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: Space.lg),
+                  Text(
+                    'You · Fictional preview',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: Space.sm),
+                  Text(
+                    'No real account or phone number is saved.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: CircleAccents.of(context).caption,
                     ),
-                    const SizedBox(height: Space.lg),
-                    TextButton.icon(
+                  ),
+                  const SizedBox(height: Space.lg),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: OutlinedButton.icon(
                       icon: const Icon(Icons.groups_outlined),
                       label: const Text('Your groups'),
                       onPressed: () => context.go('/groups'),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             const SizedBox(height: Space.section),
             if (waiting > 0)

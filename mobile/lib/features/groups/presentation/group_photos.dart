@@ -149,7 +149,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
         child: Icon(
           circleTypeIcon(group.type),
           size: Space.large,
-          color: CircleAccents.of(context).calmText,
+          color: CircleAccents.of(context).caption,
         ),
       ),
     );
@@ -223,10 +223,14 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
             size: CircleAvatarSize.hero,
           ),
         ),
-        Text(
-          group.name,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleLarge,
+        const SizedBox(height: Space.sm),
+        Semantics(
+          header: true,
+          child: Text(
+            group.name,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
         ),
         if (_busy) const LinearProgressIndicator(),
         if (admin)
