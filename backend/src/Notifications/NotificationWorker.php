@@ -41,7 +41,7 @@ final class NotificationWorker
         }
         $started = microtime(true);
         try {
-            FeatureNotifications::scheduleReminders();
+            FeatureNotifications::scheduleReminders();PollNotifications::scan();
             $now = $this->now();
             // A crashed process releases the advisory lock. Its five-minute
             // lease bounds recovery; acceptance may have preceded the crash.
@@ -65,7 +65,9 @@ final class NotificationWorker
                         AND rt.revoked_at IS NULL AND rt.expires_at > :now)",
                     ['did' => $row['device_id'], 'uid' => $row['user_id'], 'sid' => $row['session_id'], 'now' => $now]);
                 $chat=$row['kind']==='chat.message';$event=str_starts_with((string)$row['kind'],'event.');
-                if($chat){$eligible=FeatureNotifications::chatEligible((int)$row['chat_message_id'],(int)$row['user_id']) && NotificationPreferences::eligible((int)$row['user_id'],'chats',(int)$row['group_id']);}
+                $poll=str_starts_with((string)$row['kind'],'poll.');
+                if($poll){$eligible=PollNotifications::eligible((int)$row['poll_id'],(int)$row['user_id'],(string)$row['kind']);}
+                elseif($chat){$eligible=FeatureNotifications::chatEligible((int)$row['chat_message_id'],(int)$row['user_id']) && NotificationPreferences::eligible((int)$row['user_id'],'chats',(int)$row['group_id']);}
                 elseif($event){$e=Database::queryOne('SELECT version,status,start_at FROM events WHERE id=:id AND group_id=:g',['id'=>$row['event_id'],'g'=>$row['group_id']]);$eligible=$e!==null && (int)$e['version']===(int)$row['event_version'] && ($row['kind']==='event.cancelled'?$e['status']==='cancelled':$e['status']==='active') && ($row['kind']!=='event.reminder'||$e['start_at']>$now) && NotificationPreferences::eligible((int)$row['user_id'],'events',(int)$row['group_id']);}
                 elseif ($report) {
                     $content = Database::queryOne("SELECT t.id FROM moderation_targets t JOIN group_members gm ON gm.group_id=t.group_id AND gm.user_id=:uid AND gm.role='admin' AND gm.status='active' JOIN users u ON u.id=gm.user_id AND u.status='active'
@@ -110,7 +112,8 @@ final class NotificationWorker
                         'group_id' => (string) $row['group_id'],
                         'expires_at' => (string) (new \DateTimeImmutable((string) $row['expires_at'], new \DateTimeZone('UTC')))->getTimestamp(),
                     ];
-                    if($chat){$m=Database::queryOne('SELECT conversation_id FROM chat_messages WHERE id=:id',['id'=>$row['chat_message_id']]);$data['conversation_id']=(string)($m['conversation_id']??'');$data['message_id']=(string)$row['chat_message_id'];}
+                    if($poll){$data['poll_ref']=(string)$row['poll_id'];}
+                    elseif($chat){$m=Database::queryOne('SELECT conversation_id FROM chat_messages WHERE id=:id',['id'=>$row['chat_message_id']]);$data['conversation_id']=(string)($m['conversation_id']??'');$data['message_id']=(string)$row['chat_message_id'];}
                     elseif($event){$data['event_ref']=(string)$row['event_id'];$data['event_version']=(string)$row['event_version'];}
                     elseif ($invitation) $data['invitation_id'] = (string) $row['invitation_id'];
                     elseif (!$report) {

@@ -74,6 +74,8 @@ class BackgroundPushProcessor {
         ).load();
         final category = (envelope.isInvitation || envelope.isReport)
             ? PushCategory.groups
+            : envelope.isPoll
+            ? PushCategory.polls
             : envelope.isChat
             ? PushCategory.chats
             : envelope.isEvent

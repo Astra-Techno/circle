@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.4.1
+  version: 0.4.2
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -78,10 +78,16 @@ info:
     are mandatory before presentation. Generic API idempotency keys remain planned;
     report-duplicate and media-upload deduplication are defined per operation.
 
+    Poll push (0.4.2): generic poll.created/poll.closed references use the same scope,
+    group_id and expires_at fields, plus poll_ref (positive poll id), with no content.
+    Client display/open fetches /polls/{pollId}, rechecks exact membership/current
+    context, polls preferences/quiet hours and matching closed state. Creation is
+    opted-in; closing targets current voters/creator; votes never produce push.
+
     ## Not yet implemented (planned, not part of this contract)
-    Direct add with consent, events, polls, chat (and chat attachments), albums,
-    idempotency keys (other than media upload tickets), account recovery/number
-    change, OTP.
+    Video/document attachments, direct-chat polls, structured event date polls,
+    albums, content forwarding/sharing, general idempotency outside the documented
+    operation-specific send/upload ids, account recovery/number change and OTP.
 servers:
   - url: http://localhost:8080/api/v1
     description: Local development (`composer serve`)
@@ -3497,6 +3503,316 @@ paths:
           $ref: '#/components/responses/RateLimited'
         '503':
           description: Image processor unavailable; fails closed.
+
+  /polls:
+    get:
+      operationId: listLivePolls
+      tags:
+      - Polls
+      description: Current exact memberships only; bounded limit1–100 default30/offset. Optional group_id, event_id,
+        memory_id filters. Hidden/removed Memory contexts are excluded. Newest first. JSON data.items/has_more; each
+        row follows poll detail visibility. Private no-store.
+      responses:
+        '200':
+          description: Authorized result or committed poll action.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Poll closed, immutable vote/id conflict or option cap reached.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /groups/{id}/polls:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    post:
+      operationId: createLivePoll
+      tags:
+      - Polls
+      description: 'Active exact group member and current session; group lock. Question+2–12 unique non-empty options.
+        Optional one context (active same-group Memory or non-cancelled same-group event), no cross-group inheritance.
+        Settings immutable after create. Creator/client_id idempotency: identical normalized request returns id, changed409.
+        Max20/account/hour. Generic new-poll push only for opted-in current members; no vote push. Returns data.id/group_id.'
+      responses:
+        '200':
+          description: Authorized result or committed poll action.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Poll closed, immutable vote/id conflict or option cap reached.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - client_id
+              - question
+              - options
+              properties:
+                client_id:
+                  type: string
+                  pattern: ^[a-zA-Z0-9_-]{16,100}$
+                question:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                options:
+                  type: array
+                  minItems: 2
+                  maxItems: 12
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 200
+                poll_type:
+                  enum:
+                  - single
+                  - multiple
+                  default: single
+                anonymous:
+                  type: boolean
+                  default: false
+                allow_add_options:
+                  type: boolean
+                  default: false
+                allow_change_vote:
+                  type: boolean
+                  default: true
+                results_visibility:
+                  enum:
+                  - always
+                  - after_voting
+                  - after_closing
+                  default: always
+                closes_at:
+                  type:
+                  - string
+                  - 'null'
+                  format: date-time
+                  description: Optional future ISO offset/Z instant before2038, stored UTC.
+                memory_id:
+                  type:
+                  - integer
+                  - 'null'
+                  minimum: 1
+                event_id:
+                  type:
+                  - integer
+                  - 'null'
+                  minimum: 1
+  /polls/{pollId}:
+    parameters:
+    - name: pollId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    get:
+      operationId: getLivePoll
+      tags:
+      - Polls
+      description: Exact active membership and accessible context. JSON id/group_id/group_name/created_by/memory_id/event_id/question/poll_type/anonymous/allow_add_options/allow_change_vote/results_visibility/closes_at/closed/options/my_votes/results_available/voter_count/can_manage/notification_allowed.
+        options contain id/label; votes only when results_available. voter_count is null while hidden. Results visible
+        always, after own vote, or after close; all settings unlock after close. Anonymous never exposes identities,
+        including to admins. closes_at UTC Z; expiry enforced without a worker. Private no-store.
+      responses:
+        '200':
+          description: Authorized result or committed poll action.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Poll closed, immutable vote/id conflict or option cap reached.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /polls/{pollId}/votes:
+    parameters:
+    - name: pollId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    put:
+      operationId: setLivePollVotes
+      tags:
+      - Polls
+      description: Replace own selections atomically; empty clears when changes allowed. Single choice max1, multiple
+        max12. IDs must belong to exact poll; duplicates/non-integers invalid. Same selection idempotent even after
+        close; changed selection denied after expiry/close or after a locked vote. Group/poll/session locks; max120
+        changes/account/minute. Returns detail. No vote notifications.
+      responses:
+        '200':
+          description: Authorized result or committed poll action.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Poll closed, immutable vote/id conflict or option cap reached.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - option_ids
+              properties:
+                option_ids:
+                  type: array
+                  maxItems: 12
+                  uniqueItems: true
+                  items:
+                    type: integer
+                    minimum: 1
+  /polls/{pollId}/options:
+    parameters:
+    - name: pollId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    post:
+      operationId: addLivePollOption
+      tags:
+      - Polls
+      description: Current exact member; open poll with allow_add_options. Atomic total cap12; case-folded trimmed
+        duplicate is idempotent. Returns detail. Cannot modify existing labels/options.
+      responses:
+        '200':
+          description: Authorized result or committed poll action.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Poll closed, immutable vote/id conflict or option cap reached.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - label
+              properties:
+                label:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+  /polls/{pollId}/close:
+    parameters:
+    - name: pollId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    post:
+      operationId: closeLivePoll
+      tags:
+      - Polls
+      description: Creator or current exact-group admin; empty JSON object. Idempotent early close, no reopening.
+        Results unlock immediately. Generic opt-in close notification to other current voters/creator; no question,
+        choices or vote identities in push. Expired polls also close logically without cron; existing notification
+        worker scans expired polls and captures close once.
+      responses:
+        '200':
+          description: Authorized result or committed poll action.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Poll closed, immutable vote/id conflict or option cap reached.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: []
+              properties: {}
+  /polls/{pollId}/voters:
+    parameters:
+    - name: pollId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    get:
+      operationId: listLivePollVoters
+      tags:
+      - Polls
+      description: Only named polls with currently visible results. Anonymous always403 for everyone, including creator/admin.
+        Bounded limit1–100 default30/offset; JSON data.items/has_more. Each selection row id (voter), display_name,
+        option_id, label. Never mobile/note. Exact active membership/context and private no-store.
+      responses:
+        '200':
+          description: Authorized result or committed poll action.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Poll closed, immutable vote/id conflict or option cap reached.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
 
 components:
   securitySchemes:

@@ -1,3 +1,4 @@
+import '../features/polls/presentation/live_polls.dart';
 import '../features/profile/presentation/account_security_screens.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -68,6 +69,8 @@ String? circleReturnDestination(String? input) {
         '/groups/new',
         '/compose',
         '/events/new',
+        '/polls',
+        '/polls/new',
         '/chats/new',
         '/chats/archived',
         '/you/privacy',
@@ -80,8 +83,9 @@ String? circleReturnDestination(String? input) {
         '/search',
       }.contains(path) ||
       RegExp(
-        r'^/(home/memory|chats/g|chats/c|chats/reply|groups/g|invite|events/e)/[A-Za-z0-9_-]+$',
+        r'^/(home/memory|chats/g|chats/c|chats/reply|groups/g|invite|events/e|polls/p)/[A-Za-z0-9_-]+$',
       ).hasMatch(path) ||
+      RegExp(r'^/polls/p/[A-Za-z0-9_-]+/voters$').hasMatch(path) ||
       RegExp(r'^/you/invitations/[A-Za-z0-9_-]+$').hasMatch(path) ||
       RegExp(r'^/groups/g/[A-Za-z0-9_-]+/invite/link$').hasMatch(path) ||
       RegExp(r'^/chats/c/[A-Za-z0-9_-]+/details$').hasMatch(path) ||
@@ -305,6 +309,63 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ),
+      ),
+      GoRoute(
+        path: '/polls',
+        builder: (context, state) => _page(
+          context,
+          'Polls',
+          _gate(
+            CircleFeature.livePolls,
+            LivePollScreen(
+              group: state.uri.queryParameters['group'],
+              event: state.uri.queryParameters['event'],
+            ),
+          ),
+        ),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => _page(
+              context,
+              'New poll',
+              _gate(
+                CircleFeature.livePolls,
+                LivePollForm(
+                  key: ValueKey(
+                    '${ref.watch(serverAccountProvider)?.id}:${ref.watch(apiClientProvider)?.sessionRevision}',
+                  ),
+                  group: state.uri.queryParameters['group'],
+                  event: state.uri.queryParameters['event'],
+                ),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: 'p/:id',
+            builder: (context, state) => _page(
+              context,
+              'Poll',
+              _gate(
+                CircleFeature.livePolls,
+                _idRoute(state, (id) => LivePollScreen(id: id)),
+              ),
+            ),
+            routes: [
+              GoRoute(
+                path: 'voters',
+                builder: (context, state) => _page(
+                  context,
+                  'Who voted',
+                  _gate(
+                    CircleFeature.livePolls,
+                    _idRoute(state, (id) => LivePollVoters(id: id)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/search',

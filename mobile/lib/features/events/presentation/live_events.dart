@@ -225,6 +225,12 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                       ),
                   ],
                 ),
+              OutlinedButton.icon(
+                onPressed: () =>
+                    context.push('/polls?group=${e['group_id']}&event=$id'),
+                icon: const Icon(Icons.poll_outlined),
+                label: const Text('Event polls'),
+              ),
               if (!active) const Text('This event is cancelled.'),
               if ((e['description'] as String? ?? '').isNotEmpty)
                 Text(e['description'] as String),

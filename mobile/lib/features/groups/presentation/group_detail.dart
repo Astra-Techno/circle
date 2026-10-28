@@ -161,6 +161,12 @@ class _GroupTabs extends ConsumerWidget {
               label: const Text('Share a Memory here'),
             ),
           ),
+          if (ref.watch(circleFeaturesProvider).server)
+            OutlinedButton.icon(
+              onPressed: () => context.push('/polls?group=${group.id}'),
+              icon: const Icon(Icons.poll_outlined),
+              label: const Text('Polls · ask your circle'),
+            ),
           const SizedBox(height: Space.lg),
           ScopedMemoryList(
             query: MemoryQuery(groupId: group.id),

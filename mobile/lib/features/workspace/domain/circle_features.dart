@@ -10,6 +10,7 @@ enum CircleFeature {
   chat('Chat'),
   liveChat('Chats', plural: true),
   liveEvents('Events', plural: true),
+  livePolls('Polls', plural: true),
   albums('Albums', plural: true),
   activity('Activity'),
   notificationSettings('Notification settings', plural: true),
@@ -49,6 +50,7 @@ class CircleFeatures {
           ? const {
               CircleFeature.liveChat,
               CircleFeature.liveEvents,
+              CircleFeature.livePolls,
               CircleFeature.blocking,
               CircleFeature.moderation,
               CircleFeature.notificationSettings,
@@ -59,6 +61,7 @@ class CircleFeatures {
               CircleFeature.moderation,
               CircleFeature.liveChat,
               CircleFeature.liveEvents,
+              CircleFeature.livePolls,
               CircleFeature.blocking,
             };
 

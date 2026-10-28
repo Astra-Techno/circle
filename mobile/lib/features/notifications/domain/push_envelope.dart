@@ -79,14 +79,19 @@ class PushEnvelope {
     this.conversationId = '',
     this.eventRef = '',
     this.eventVersion = '',
+    this.pollRef = '',
   });
   final String eventId, type, memoryId, groupId, commentId, invitationId;
   final String messageId, conversationId, eventRef, eventVersion;
+  final String pollRef;
+  bool get isPoll => type.startsWith('poll.');
   bool get isChat => type == 'chat.message';
   bool get isEvent => type.startsWith('event.');
   bool get isInvitation => type == 'group.invitation';
   bool get isReport => type == 'group.report';
-  String get authorizationPath => isChat
+  String get authorizationPath => isPoll
+      ? '/polls/$pollRef'
+      : isChat
       ? '/chats/$conversationId/messages/$messageId'
       : isEvent
       ? '/events/$eventRef'
@@ -95,7 +100,9 @@ class PushEnvelope {
       : isInvitation
       ? '/group-invitations/$invitationId'
       : '/memories/$memoryId';
-  String get destination => isChat
+  String get destination => isPoll
+      ? '/polls/p/$pollRef'
+      : isChat
       ? '/chats/c/$conversationId'
       : isEvent
       ? '/events/e/$eventRef'
@@ -118,7 +125,9 @@ class PushEnvelope {
         event =
             (data['type'] is String) &&
             (data['type'] as String).startsWith('event.');
-    final groupEvent = invitation || report || chat || event;
+    final poll =
+        data['type'] == 'poll.created' || data['type'] == 'poll.closed';
+    final groupEvent = invitation || report || chat || event || poll;
     final keys = {
       'event_id',
       'type',
@@ -126,7 +135,9 @@ class PushEnvelope {
       'recipient_id',
       'session_scope',
       'group_id',
-      if (invitation)
+      if (poll)
+        'poll_ref'
+      else if (invitation)
         'invitation_id'
       else if (chat) ...[
         'conversation_id',
@@ -156,7 +167,9 @@ class PushEnvelope {
         comment = groupEvent ? '' : data['comment_id'] as String,
         invitationId = invitation ? data['invitation_id'] as String : '';
     if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(eventKey) ||
-        (chat
+        (poll
+            ? !_id(data['poll_ref'] as String)
+            : chat
             ? (!_id(data['conversation_id'] as String) ||
                   !_id(data['message_id'] as String))
             : event
@@ -175,6 +188,8 @@ class PushEnvelope {
       'group.invitation',
       'group.report',
       'chat.message',
+      'poll.created',
+      'poll.closed',
       'event.created',
       'event.updated',
       'event.cancelled',
@@ -205,6 +220,7 @@ class PushEnvelope {
       scope: scope,
       messageId: chat ? data['message_id'] as String : '',
       conversationId: chat ? data['conversation_id'] as String : '',
+      pollRef: poll ? data['poll_ref'] as String : '',
       eventRef: event ? data['event_ref'] as String : '',
       eventVersion: event ? data['event_version'] as String : '',
     );
@@ -217,7 +233,9 @@ class PushEnvelope {
     'recipient_id': scope.account,
     'session_scope': scope.sessionHash,
     'group_id': groupId,
-    if (isInvitation)
+    if (isPoll)
+      'poll_ref': pollRef
+    else if (isInvitation)
       'invitation_id': invitationId
     else if (isChat) ...{
       'conversation_id': conversationId,
@@ -234,6 +252,14 @@ class PushEnvelope {
 
   /// Content is fetched through the active account API, never a payload URL.
   bool authorizes(Map<String, dynamic> data, DateTime now) {
+    if (isPoll) {
+      return '${data['id']}' == pollRef &&
+          '${data['group_id']}' == groupId &&
+          data['notification_allowed'] == true &&
+          (type == 'poll.closed'
+              ? data['closed'] == true
+              : data['closed'] == false);
+    }
     if (isChat) {
       return '${data['id']}' == messageId &&
           '${data['conversation_id']}' == conversationId &&

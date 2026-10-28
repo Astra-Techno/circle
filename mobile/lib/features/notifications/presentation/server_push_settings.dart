@@ -188,6 +188,11 @@ class _Choices extends ConsumerWidget {
             'Events',
             'Plans, RSVP updates, cancellations and reminders',
           ),
+          category(
+            PushCategory.polls,
+            'Polls',
+            'New questions and results for polls you joined; no alerts for each vote',
+          ),
           const CircleSectionTitle('Quiet hours'),
           CircleRow(
             child: SwitchListTile(

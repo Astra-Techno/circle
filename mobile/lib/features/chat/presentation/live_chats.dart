@@ -197,6 +197,13 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
               MediaQuery.textScalerOf(context).scale(1) >
               CircleLayout.largeTextThreshold;
           final composer = <Widget>[
+            if (active && data['kind'] == 'group' && data['group_id'] != null)
+              TextButton.icon(
+                onPressed: () =>
+                    context.push('/polls?group=${data['group_id']}'),
+                icon: const Icon(Icons.poll_outlined),
+                label: const Text('Group polls'),
+              ),
             if (_reply != null)
               ListTile(
                 title: Text('Replying to message $_reply'),

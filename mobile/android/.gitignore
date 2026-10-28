@@ -15,3 +15,6 @@ key.properties
 
 # Kotlin incremental compilation cache
 /.kotlin/
+
+# Generated Gradle diagnostics (including failed signing checks)
+/build/

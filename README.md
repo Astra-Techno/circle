@@ -4,7 +4,7 @@
 
 > **Required reading for Codex, Claude Code and other coding agents:** follow [§0: shared implementation and release rules](#0-shared-implementation-and-release-rules) and [AGENTS.md](AGENTS.md) before making changes. [CLAUDE.md](CLAUDE.md) loads compact shared instructions for Claude Code; detailed rules are read as needed. Current owner instructions take precedence; older status snapshots and examples do not override the current rules.
 >
-> **Status distinction:** account/group/Memory APIs and private Memory media have been implemented and live-tested. Live Chats, photo attachments, Events/RSVP and event covers are implemented in the current source; other rich extensions and albums remain isolated previews. See [integration scope](docs/live-chat-events.md) for publication evidence and limits. Firebase source files and enabled feature flags alone do not establish working push delivery or server feature support. See §12 and the release/validation records for evidence.
+> **Status distinction:** account/group/Memory APIs and private Memory media have been implemented and live-tested. Live Chats/photos, Events/RSVP/covers and core group/event polls are implemented in the current source; other rich extensions and albums remain isolated previews. See [integration scope](docs/live-chat-events.md) for publication evidence and limits. Firebase source files and enabled feature flags alone do not establish working push delivery or server feature support. See §12 and the release/validation records for evidence.
 >
 > **Product scope:** CIRCLE is for **any close-knit private group**: families, offices, schools, colleges, friend circles and clubs. Anyone can create a group, nest subgroups inside it, and share memories, chat, plan events and run polls with only the people who belong there.
 
@@ -47,8 +47,9 @@ ChatGPT/Codex and Claude follow the efficient workflow in `AGENTS.md`. Start wit
 - Keep the same application id and established signing key for updates to the existing beta. Compare the candidate certificate against the last validated immutable release, not a recently overwritten `circle.apk`.
 - Historical build18 beta signing certificate SHA-256: `6c78be13d88b19587e4c37edb9012e3f2eb37fee34f6850084dd069d78f9b66c`. A candidate signed by another key cannot update those installations. Never silently generate a replacement debug keystore and call it update-compatible. If the key is unavailable, report the signing blocker. On 28 October 2026 the owner explicitly approved a new dedicated release key and reinstall for build20; record its verified certificate and clearly disclose the one-time uninstall/local-data loss. Subsequent releases must retain that key. Never commit a keystore, its password or private signing configuration.
 - Owner-approved dedicated build20 release certificate SHA-256: `157579dd08f44d8aebe9bc5b6e53e778d8ca642d97233d15c206f8f5185df01e`. Build18/build19 users must uninstall once; future updates must retain the build20 key. The private signing backup is never part of Git or public downloads.
+- Release builds must fail if private signing configuration is missing; never publish an unsigned APK. `apksigner verify` must pass on the final bytes and its certificate must match the established key. Build21 metadata claimed compatibility, but its artifact fails verification; use a newly signed higher build rather than overwriting it.
 - Increment `versionCode` for every changed application release, including a rebuild that changes runtime behavior. Keep `versionName`/build values consistent with the APK and metadata. Never replace an already published immutable versioned APK with different bytes.
-- Build production APKs with the intended HTTPS API and `CIRCLE_PREVIEW=false`; label any preview APK explicitly. Verify package id, version, minimum SDK and certificate from the built artifact. Keep release builds separate from concurrent Flutter test tooling that can regenerate Android plugin registration files.
+- Build production APKs with the intended HTTPS API and `CIRCLE_PREVIEW=false`; label any preview APK explicitly. Verify package id, version, minimum SDK and certificate from the built artifact. Keep release builds separate from concurrent Flutter test tooling that can regenerate Android plugin registration files. After tests, use normal `flutter build apk --release` tooling regeneration (without `--no-pub`) so release registration excludes test-only plugins.
 
 ### 0.5 Download publication and deployment
 
@@ -206,6 +207,8 @@ Chat follows the **Instagram Direct** model: casual and visual, closely connecte
 - No payments or contributions in the MVP.
 
 ### 3.4 Polls
+
+Core group/event polls are implemented in source under OpenAPI0.4.2; see [implemented scope and limits](docs/live-polls.md). Inline Memory polls, direct-chat polls and structured date slots remain later client/service work.
 
 - Can be created in: a group's **Memories**, **group chat**, **1:1 chat**, and **events**.
 - Question plus 2–12 options. Single or multiple choice.

@@ -124,3 +124,7 @@ Generic group.report alerts use current groups preferences/quiet hours and admin
 ## Live Chats and Events core — 28 October 2026
 
 Owner requested integration with the current UI changes. OpenAPI0.4.0/migrations017–020 implement real group/direct text conversations and requests, frozen message versions, offline send intents, safety/reporting, Events/RSVPs and scoped notifications/reminders. See live-chat-events.md and PROJECT_STATE.md for exact implemented, verified and published states. Photo attachments/covers are implemented in the build20 source extension (OpenAPI0.4.1/migration021). Keep video/document attachments, forwarding/sharing, activity indicators, chat search, date polls/cohosts/albums as explicit follow-up service extensions. Profile-field privacy and reviewed deletion/export/recovery remain separate safety work; do not reapply the missing earlier environment WIP.
+
+## Live poll core —28October2026
+
+Group/event poll creation, single/multiple voting, named/anonymous results, close/expiry, member-added options and opt-in scoped notifications are implemented in source (OpenAPI0.4.2/migration022). See live-polls.md and PROJECT_STATE.md for validation/publication. Inline Memory, direct-chat and structured date-slot poll UI remain separate extensions; never enable legacy preview poll repositories for server accounts.

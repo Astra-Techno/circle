@@ -1,0 +1,15 @@
+# Android1.0.21 build22 — live polls and verified signing
+
+28 October2026. Safely pulled main399cd9d (Editorial, photo-first redesign and build21), preserving unfinished poll work. This release retains the current flat surfaces, shared spacing/type tokens, pinned chat composer/RSVP bar and approved navigation direction.
+
+Adds real group/event poll creation, single/multiple choices, anonymous/named voting, optional closing, controlled results, member-added options, vote changes/removal, creator/admin early close, bounded voter lists and opt-in scoped notifications. Entry: Group → Memories → Polls; group chat → Group polls; event detail → Event polls. See [implemented scope and limits](live-polls.md). Direct-chat polls, inline Memory-poll UI and structured event date slots remain later extensions; server accounts never use preview poll repositories.
+
+OpenAPI0.4.2/migration022;99 unique operations and549 local references resolved. Full backend224 tests/4,074 assertions pass; PHPStan/composer validation clean. Full Flutter729 passed/1 skipped/13 known Windows-baseline golden mismatches; no functional failures. Final36 poll/chat/event/design checks pass; analyzer/format clean. Eight poll light/dark phone/tablet200% renders captured and representative layouts inspected. Windows baselines remain unchanged by this task. No Android device attached; native installation, actual push/taps/quiet hours and two-phone voting remain owner acceptance checks.
+
+Build21's bytes match its metadata checksum, but `apksigner verify` fails (`DOES NOT VERIFY / Missing META-INF/MANIFEST.MF`). Build20 passes v2 verification. Build22 reuses the established build20 key; never generate another key or overwrite immutable21. Android release configuration now fails if private signing configuration is absent; a dry-run without the key was rejected with the intended error, and the private file was restored before the real build. No signing secrets enter Git or public downloads.
+
+Production build: HTTPS circle.cloudkart24.com/api/v1, CIRCLE_PREVIEW=false, CIRCLE_PUSH_ENABLED=true. Signing certificate must equal157579dd08f44d8aebe9bc5b6e53e778d8ca642d97233d15c206f8f5185df01e; package com.circlecommunity.mobile/versionName1.0.21/versionCode22/minSdk24/targetSdk36, non-debuggable. Matching build20 installations can update in place; installations signed with older keys still require reinstalling.
+
+Artifact, publication and production deployment evidence are recorded after final verification. The deployer skips APK binaries; the existing current-version download fallback serves the immutable repository artifact. A Git push does not apply migration022 or refresh the hosted page; run the existing deployment link before testing live polls.
+
+Verified signed artifact: 65,933,294bytes; SHA256`c57ecc1eb8945309bace68d4b0517fe35a63b2f820345250c4a109f346751a0d`. APK v2 verification passes with the established certificate; package/version/minimum/target SDK and non-debuggable flags match the values above. Earlier build20 and21 bytes remain unchanged. Repository publication and live deployment evidence follow separately.

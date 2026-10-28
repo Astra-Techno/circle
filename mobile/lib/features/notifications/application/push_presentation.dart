@@ -47,6 +47,8 @@ class PushPresentation {
           final category =
               (reception.envelope.isInvitation || reception.envelope.isReport)
               ? PushCategory.groups
+              : reception.envelope.isPoll
+              ? PushCategory.polls
               : reception.envelope.isChat
               ? PushCategory.chats
               : reception.envelope.isEvent
@@ -113,6 +115,8 @@ class PushPresentation {
       final category =
           (reception.envelope.isInvitation || reception.envelope.isReport)
           ? PushCategory.groups
+          : reception.envelope.isPoll
+          ? PushCategory.polls
           : reception.envelope.isChat
           ? PushCategory.chats
           : reception.envelope.isEvent

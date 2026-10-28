@@ -154,6 +154,13 @@ final class App
             $r->put('/events/{eventId}/cover', \Circle\Controllers\FeatureMediaController::putCover(...));
             $r->delete('/events/{eventId}/cover', \Circle\Controllers\FeatureMediaController::deleteCover(...));
             $r->get('/events/{eventId}/cover', \Circle\Controllers\FeatureMediaController::cover(...));
+            $r->get('/polls', \Circle\Controllers\PollController::index(...));
+            $r->post('/groups/{id}/polls', \Circle\Controllers\PollController::create(...));
+            $r->get('/polls/{pollId}', \Circle\Controllers\PollController::show(...));
+            $r->put('/polls/{pollId}/votes', \Circle\Controllers\PollController::vote(...));
+            $r->post('/polls/{pollId}/options', \Circle\Controllers\PollController::addOption(...));
+            $r->post('/polls/{pollId}/close', \Circle\Controllers\PollController::close(...));
+            $r->get('/polls/{pollId}/voters', \Circle\Controllers\PollController::voters(...));
             $r->get('/events', EventController::index(...));
             $r->post('/groups/{id}/events', EventController::create(...));
             $r->get('/events/{eventId}', EventController::show(...));

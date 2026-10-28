@@ -7,8 +7,8 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-// Private signing inputs are never committed. An absent key produces an
-// unsigned compilation artifact; it must never be published as an update.
+// Private signing inputs are never committed. An absent key causes a
+// release build failure; it must never be published as an unsigned update.
 val releaseKeys = Properties()
 val releaseKeyFile = rootProject.file("key.properties")
 if (releaseKeyFile.exists()) {
@@ -16,6 +16,10 @@ if (releaseKeyFile.exists()) {
 }
 val hasReleaseKey = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
     .all { !releaseKeys.getProperty(it).isNullOrBlank() }
+
+if (!hasReleaseKey && gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }) {
+    throw GradleException("Release signing key is missing. Restore private android/key.properties and the established keystore before building a release. Do not generate a replacement key.")
+}
 
 android {
     namespace = "com.circlecommunity.mobile"

@@ -1,0 +1,19 @@
+# Live group polls
+
+OpenAPI0.4.2/migration022. Polls belong to one exact group. An active member can create a question with2–12 unique options; single/multiple choice, anonymous/named votes, optional UTC closing instant, member-added options, results always/after own vote/after close and changeable/locked votes. Settings and existing option labels are immutable after creation. New options stop at12. The creator or an exact-group admin can close early; no reopening.
+
+Group → Memories → Polls opens the list/create flow. Group chat has a Group polls action. Event detail → Event polls scopes the list/create flow to that event. The API also supports a same-group Memory context, hiding its polls if the Memory is hidden/removed; a dedicated inline Memory-poll client remains future work. Direct-chat polls and structured date-slot polls remain gated. Preview poll repositories remain separate from real server accounts; livePolls is a distinct capability.
+
+Creation uses a stable client id and canonical request hash. Votes atomically replace only the current person's valid option IDs under group/poll/session locks. A matching retry does not duplicate selections; other changes after closing/expiry or after a locked vote are rejected. Empty selections remove a changeable vote. Expiry is enforced at read/write time without depending on cron.
+
+Hidden results never contain counts, totals or identities. After-voting visibility is revoked when a person removes their vote. Anonymous polls never expose voter identities through the API, even to the creator/admin; database operators still control the database, so this is not cryptographic anonymity. Named voter rows are paginated and contain names and chosen option labels, never mobile numbers. Group audience names are shown in list/detail. Parent-group members, removed members, hidden contexts and foreign options grant no access.
+
+Polls notifications are off unless the person explicitly enables the category and notifications globally. New-poll alerts target current opted-in exact members; closing alerts target other current voters/the creator. Votes and added options produce no push. Generic payloads contain scoped poll/group references only. Existing worker/session/device/preference/quiet-hours checks apply, and display/taps fetch current authorized poll state. The current notification-worker cron scans expired polls and captures closing once; no new cron is required. Native delivery still needs device acceptance.
+
+The app follows the pulled Editorial, photo-first tokens and flat surfaces. Poll creation asks for question/two options, with advanced choices collapsed. Loading/error/retry, audience selection, bounded lists, vote-change explanations and large-text layouts are included.
+
+# Pulled release review
+
+Before continuing, main was safely fast-forwarded to399cd9d, preserving unfinished poll work.87912e1 changes design tokens/layouts, pinned chat composer/RSVP bar, preview labels and Windows golden baselines;399cd9d publishes1.0.20+21. No backend changes were pulled. Build21 bytes match metadata SHA256daaae50082e21f0c35a40e0300b84869239d1ffcabfe8c43efafc4af4b411ab5, but `apksigner verify --verbose --print-certs` fails with `DOES NOT VERIFY / Missing META-INF/MANIFEST.MF`. Build20 passes v2 verification with certificate157579dd08f44d8aebe9bc5b6e53e778d8ca642d97233d15c206f8f5185df01e. Preserve immutable artifacts; publish a newly signed build22 instead of overwriting21.
+
+Android release configuration now fails immediately if private signing properties are missing, preventing this class of unsigned publication. The established build20 key remains private and must be restored locally from the owner's backup; no replacement key is generated. Release validation and production deployment are recorded separately in PROJECT_STATE.md and the build22 release record.
