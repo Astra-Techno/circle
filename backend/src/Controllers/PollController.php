@@ -12,20 +12,47 @@ use Circle\Notifications\PollNotifications;
 
 final class PollController
 {
-    /** @param array<string,mixed> $p */
-    public static function visible(array $p,int $user):bool
+    /** Retry a rolled-back snapshot/deadlock conflict with fresh authorization reads.
+     * @template T
+     * @param callable():T $work
+     * @return T
+     */
+    public static function write(callable $work):mixed
     {
-        if(!MemberRepository::isActiveMember((int)$p['group_id'],$user))return false;
-        if($p['memory_id']!==null&&Database::queryOne("SELECT id FROM memories WHERE id=:id AND group_id=:g AND status='active'",['id'=>$p['memory_id'],'g'=>$p['group_id']])===null)return false;
-        if($p['event_id']!==null&&Database::queryOne('SELECT id FROM events WHERE id=:id AND group_id=:g',['id'=>$p['event_id'],'g'=>$p['group_id']])===null)return false;
+        for($attempt=0;;$attempt++){
+            try{return Database::transaction($work);}
+            catch(\PDOException $e){
+                if(!in_array((int)($e->errorInfo[1]??0),[1020,1213],true))throw $e;
+                if($attempt>=2)Response::error('conflict','This poll changed while saving. Refresh and try again.',409);
+            }
+        }
+    }
+    /** @param array<string,mixed> $p */
+    public static function visible(array $p,int $user,bool $lock=false):bool
+    {
+        // Read mutable status after locking the immutable membership/context key.
+        $suffix=$lock?' FOR UPDATE':'';
+        $member=Database::queryOne('SELECT status FROM group_members WHERE group_id=:g AND user_id=:u'.$suffix,['g'=>$p['group_id'],'u'=>$user]);
+        if($member===null||$member['status']!=='active')return false;
+        if($p['memory_id']!==null){
+            $memory=Database::queryOne('SELECT status FROM memories WHERE id=:id AND group_id=:g'.$suffix,['id'=>$p['memory_id'],'g'=>$p['group_id']]);
+            if($memory===null||$memory['status']!=='active')return false;
+        }
+        if($p['event_id']!==null&&Database::queryOne('SELECT id FROM events WHERE id=:id AND group_id=:g'.$suffix,['id'=>$p['event_id'],'g'=>$p['group_id']])===null)return false;
         return true;
+    }
+    /** @param array<string,mixed> $p */
+    public static function canManage(array $p,int $user,bool $lock=false):bool
+    {
+        $m=Database::queryOne('SELECT role,status FROM group_members WHERE group_id=:g AND user_id=:u'.($lock?' FOR UPDATE':''),['g'=>$p['group_id'],'u'=>$user]);
+        return $m!==null&&$m['status']==='active'&&((int)$p['created_by']===$user||$m['role']==='admin');
     }
     /** @return array<string,mixed> */
     private static function access(Request $r,bool $write=false):array
     {
         $p=Database::queryOne('SELECT * FROM polls WHERE id=:id',['id'=>(int)$r->param('pollId')]);if($p===null)Response::notFound('This poll is not available.');
         if($write){Database::queryOne('SELECT id FROM `groups` WHERE id=:g FOR UPDATE',['g'=>$p['group_id']]);$p=Database::queryOne('SELECT * FROM polls WHERE id=:id FOR UPDATE',['id'=>$p['id']]);if($p===null)Response::notFound();self::session($r);}
-        if(!self::visible($p,$r->userId()))Response::notFound('This poll is not available.');return $p;
+        if(!self::visible($p,$r->userId(),$write))Response::notFound('This poll is not available.');return $p;
     }
     private static function session(Request $r):void
     {
@@ -53,10 +80,10 @@ final class PollController
         if($f['closes_at']!==null){if(!is_string($f['closes_at'])||!preg_match('/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:Z|[+-]\d\d:\d\d)$/',$f['closes_at']))Response::validationError('Choose a valid end time with offset.');try{$d=new \DateTimeImmutable($f['closes_at']);}catch(\Exception){Response::validationError('Choose a valid end time.');}$errors=\DateTimeImmutable::getLastErrors();if(($errors!==false&&($errors['warning_count']||$errors['error_count']))||$d->getTimestamp()>2147483647)Response::validationError('Choose a valid end time before2038.');$f['closes_at']=$d->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');}
         $f['options']=$labels;ksort($f);
         $g=(int)$r->param('id');$hash=hash('sha256',json_encode([$g,$f,$labels],JSON_THROW_ON_ERROR));
-        $id=Database::transaction(static function()use($r,$f,$labels,$g,$hash):int{
+        $id=self::write(static function()use($r,$f,$labels,$g,$hash):int{
             Database::queryOne('SELECT id FROM `groups` WHERE id=:g FOR UPDATE',['g'=>$g]);MemberRepository::requireActiveMember($g,$r->userId());self::session($r);
-            $candidate=['group_id'=>$g,'memory_id'=>$f['memory_id'],'event_id'=>$f['event_id']];if(!self::visible($candidate,$r->userId()))Response::notFound('This audience is not available.');
-            $old=Database::queryOne('SELECT id,request_hash FROM polls WHERE created_by=:u AND client_id=:c',['u'=>$r->userId(),'c'=>$f['client_id']]);if($old!==null){if(!hash_equals((string)$old['request_hash'],$hash))Response::error('conflict','This send id is already used.',409);return (int)$old['id'];}
+            $candidate=['group_id'=>$g,'memory_id'=>$f['memory_id'],'event_id'=>$f['event_id']];if(!self::visible($candidate,$r->userId(),true))Response::notFound('This audience is not available.');
+            $old=Database::queryOne('SELECT id,request_hash FROM polls WHERE created_by=:u AND client_id=:c FOR UPDATE',['u'=>$r->userId(),'c'=>$f['client_id']]);if($old!==null){if(!hash_equals((string)$old['request_hash'],$hash))Response::error('conflict','This send id is already used.',409);return (int)$old['id'];}
             if($f['closes_at']!==null&&$f['closes_at']<=gmdate('Y-m-d H:i:s'))Response::validationError('Choose a future end time.');
             if($f['event_id']!==null&&Database::queryOne("SELECT id FROM events WHERE id=:id AND status='active'",['id'=>$f['event_id']])===null)Response::error('conflict','This event is cancelled.',409);
             RateLimitMiddleware::consumeForUser($r->userId(),'poll_create',20,3600,'Please wait before creating more polls.');
@@ -72,21 +99,21 @@ final class PollController
         $options=Database::query('SELECT o.id,o.label,COUNT(v.id) votes FROM poll_options o LEFT JOIN poll_votes v ON v.option_id=o.id AND v.poll_id=o.poll_id WHERE o.poll_id=:p GROUP BY o.id,o.label,o.sort_order ORDER BY o.sort_order,o.id',['p'=>$p['id']]);foreach($options as &$o){$o['id']=(int)$o['id'];if($results)$o['votes']=(int)$o['votes'];else unset($o['votes']);}unset($o);
         $out=[];foreach(['id','group_id','created_by','memory_id','event_id','question','poll_type','results_visibility','closes_at'] as $k)$out[$k]=$p[$k];foreach(['id','group_id','created_by','memory_id','event_id'] as $k)if($out[$k]!==null)$out[$k]=(int)$out[$k];if($out['closes_at']!==null)$out['closes_at']=str_replace(' ','T',(string)$out['closes_at']).'Z';foreach(['anonymous','allow_add_options','allow_change_vote'] as $k)$out[$k]=(bool)$p[$k];
         $out['group_name']=Database::queryOne('SELECT name FROM `groups` WHERE id=:id',['id'=>$p['group_id']])['name']??'Circle';
-        return [...$out,'closed'=>$closed,'options'=>$options,'my_votes'=>$mine,'results_available'=>$results,'voter_count'=>$results?(int)(Database::queryOne('SELECT COUNT(DISTINCT user_id) n FROM poll_votes WHERE poll_id=:p',['p'=>$p['id']])['n']??0):null,'can_manage'=>(int)$p['created_by']===$user||MemberRepository::isAdmin((int)$p['group_id'],$user),'notification_allowed'=>true];
+        return [...$out,'closed'=>$closed,'options'=>$options,'my_votes'=>$mine,'results_available'=>$results,'voter_count'=>$results?(int)(Database::queryOne('SELECT COUNT(DISTINCT user_id) n FROM poll_votes WHERE poll_id=:p',['p'=>$p['id']])['n']??0):null,'can_manage'=>self::canManage($p,$user),'notification_allowed'=>true];
     }
     public static function vote(Request $r):void
     {
         $ids=$r->input('option_ids');if(array_keys($r->all())!==['option_ids']||!is_array($ids)||!array_is_list($ids)||count($ids)>12||count(array_unique(array_filter($ids,'is_int')))!==count($ids))Response::validationError('Choose valid options.');sort($ids);
-        Database::transaction(static function()use($r,$ids):void{$p=self::access($r,true);$old=array_map('intval',array_column(Database::query('SELECT option_id FROM poll_votes WHERE poll_id=:p AND user_id=:u ORDER BY option_id',['p'=>$p['id'],'u'=>$r->userId()]),'option_id'));if($old===$ids)return;if(self::closed($p))Response::error('conflict','This poll is closed.',409);if(!$p['allow_change_vote']&&$old!==[])Response::error('conflict','Votes cannot be changed in this poll.',409);if($p['poll_type']==='single'&&count($ids)>1)Response::validationError('Choose one option.');foreach($ids as $id)if(Database::queryOne('SELECT id FROM poll_options WHERE id=:id AND poll_id=:p',['id'=>$id,'p'=>$p['id']])===null)Response::validationError('Choose options from this poll.');RateLimitMiddleware::consumeForUser($r->userId(),'poll_vote',120,60,'Please wait before voting again.');Database::execute('DELETE FROM poll_votes WHERE poll_id=:p AND user_id=:u',['p'=>$p['id'],'u'=>$r->userId()]);foreach($ids as $id)Database::execute('INSERT INTO poll_votes(poll_id,option_id,user_id) VALUES(:p,:o,:u)',['p'=>$p['id'],'o'=>$id,'u'=>$r->userId()]);});self::show($r);
+        self::write(static function()use($r,$ids):void{$p=self::access($r,true);$old=array_map('intval',array_column(Database::query('SELECT option_id FROM poll_votes WHERE poll_id=:p AND user_id=:u ORDER BY option_id FOR UPDATE',['p'=>$p['id'],'u'=>$r->userId()]),'option_id'));if($old===$ids)return;if(self::closed($p))Response::error('conflict','This poll is closed.',409);if(!$p['allow_change_vote']&&$old!==[])Response::error('conflict','Votes cannot be changed in this poll.',409);if($p['poll_type']==='single'&&count($ids)>1)Response::validationError('Choose one option.');foreach($ids as $id)if(Database::queryOne('SELECT id FROM poll_options WHERE id=:id AND poll_id=:p FOR UPDATE',['id'=>$id,'p'=>$p['id']])===null)Response::validationError('Choose options from this poll.');RateLimitMiddleware::consumeForUser($r->userId(),'poll_vote',120,60,'Please wait before voting again.');Database::execute('DELETE FROM poll_votes WHERE poll_id=:p AND user_id=:u',['p'=>$p['id'],'u'=>$r->userId()]);foreach($ids as $id)Database::execute('INSERT INTO poll_votes(poll_id,option_id,user_id) VALUES(:p,:o,:u)',['p'=>$p['id'],'o'=>$id,'u'=>$r->userId()]);});self::show($r);
     }
     public static function addOption(Request $r):void
     {
         $label=$r->input('label');(new Validator())->string('label',$label,1,200)->bail();if(array_keys($r->all())!==['label']||trim($label)==='')Response::validationError('Add an option.');$label=trim($label);
-        Database::transaction(static function()use($r,$label):void{$p=self::access($r,true);if(self::closed($p))Response::error('conflict','This poll is closed.',409);if(!$p['allow_add_options'])Response::forbidden('Adding options is disabled.');$options=Database::query('SELECT label FROM poll_options WHERE poll_id=:p',['p'=>$p['id']]);foreach($options as $o)if(mb_strtolower((string)$o['label'])===mb_strtolower($label))return;if(count($options)>=12)Response::error('conflict','This poll already has12 options.',409);Database::execute('INSERT INTO poll_options(poll_id,label,sort_order,added_by) VALUES(:p,:l,:s,:u)',['p'=>$p['id'],'l'=>$label,'s'=>count($options),'u'=>$r->userId()]);});self::show($r);
+        self::write(static function()use($r,$label):void{$p=self::access($r,true);if(self::closed($p))Response::error('conflict','This poll is closed.',409);if(!$p['allow_add_options'])Response::forbidden('Adding options is disabled.');$options=Database::query('SELECT label FROM poll_options WHERE poll_id=:p FOR UPDATE',['p'=>$p['id']]);foreach($options as $o)if(mb_strtolower((string)$o['label'])===mb_strtolower($label))return;if(count($options)>=12)Response::error('conflict','This poll already has12 options.',409);Database::execute('INSERT INTO poll_options(poll_id,label,sort_order,added_by) VALUES(:p,:l,:s,:u)',['p'=>$p['id'],'l'=>$label,'s'=>count($options),'u'=>$r->userId()]);});self::show($r);
     }
     public static function close(Request $r):void
     {
-        if(!$r->jsonIsObject()||$r->all()!==[])Response::validationError('No fields are needed.');Database::transaction(static function()use($r):void{$p=self::access($r,true);if((int)$p['created_by']!==$r->userId()&&!MemberRepository::isAdmin((int)$p['group_id'],$r->userId()))Response::forbidden('Only the creator or group admins can close this poll.');Database::execute('UPDATE polls SET closed_at=COALESCE(closed_at,UTC_TIMESTAMP()) WHERE id=:id',['id'=>$p['id']]);PollNotifications::closed((int)$p['id'],$r->userId());});self::show($r);
+        if(!$r->jsonIsObject()||$r->all()!==[])Response::validationError('No fields are needed.');self::write(static function()use($r):void{$p=self::access($r,true);if(!self::canManage($p,$r->userId(),true))Response::forbidden('Only the creator or group admins can close this poll.');Database::execute('UPDATE polls SET closed_at=COALESCE(closed_at,UTC_TIMESTAMP()) WHERE id=:id',['id'=>$p['id']]);PollNotifications::closed((int)$p['id'],$r->userId());});self::show($r);
     }
     public static function voters(Request $r):void
     {
