@@ -13,13 +13,13 @@ final class NotificationPreferences
     public static function get(int $userId): array
     {
         $row = Database::queryOne('SELECT * FROM notification_preferences WHERE user_id = :uid', ['uid' => $userId]);
-        $categories = array_fill_keys(self::CATEGORIES, false);
+        $categories = array_fill_keys(self::CATEGORIES, true);
         if ($row !== null) {
             $stored = json_decode((string) $row['categories'], true);
-            foreach (self::CATEGORIES as $category) $categories[$category] = is_array($stored) && ($stored[$category] ?? false) === true;
+            foreach (self::CATEGORIES as $category) $categories[$category] = is_array($stored) ? (($stored[$category] ?? true) === true) : true;
         }
         return [
-            'enabled' => (bool) ($row['enabled'] ?? false), 'categories' => $categories,
+            'enabled' => (bool) ($row['enabled'] ?? true), 'categories' => $categories,
             'quiet_hours' => (bool) ($row['quiet_hours'] ?? true),
             'quiet_start' => (int) ($row['quiet_start'] ?? 1320), 'quiet_end' => (int) ($row['quiet_end'] ?? 420),
             'timezone' => (string) ($row['timezone'] ?? 'UTC'),
