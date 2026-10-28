@@ -18,6 +18,7 @@ Screen patterns:
 - **Home:** the logo and "Circle", then "Your circles": round group photos that filter Memories (tap again for all). The brand lockup no longer sits on Home; it stays on Welcome and access screens.
 - **Memory:** no card box. Avatar, name and a lock + audience + time line (audience is always visible); full-width photos; an action row with a vector heart, a reaction count that opens the summary, comments, the reaction picker and save; then the caption. Short words-only Memories (≤ 160 characters) read as a quote on a warm panel.
 - **Group:** a wide cover, the name as a headline, a caption meta line, then the tabs.
+- **Live Chats:** flat avatar-led inbox rows with real unread badges; incoming neutral/outgoing indigo bubbles with localized times; message actions in an accessible menu. Photo/input/send share a pinned row and stack/scroll at large text. Conversation options hold secondary controls; requests and accept/decline stay visible. See `chat-redesign.md`.
 - **Event:** details scroll; the answer bar is pinned in the thumb zone. Events list: Upcoming/Past and an icon-only List/Month toggle share one row.
 - **You:** a quiet cover with the avatar overlapping it, the name as a headline.
 

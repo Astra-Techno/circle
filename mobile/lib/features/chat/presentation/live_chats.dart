@@ -1,6 +1,7 @@
 import '../../profile/application/profile_providers.dart'
     show profilePhotoPickerProvider;
 import '../../../core/private_photo.dart';
+import 'live_chat_design.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -197,13 +198,6 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
               MediaQuery.textScalerOf(context).scale(1) >
               CircleLayout.largeTextThreshold;
           final composer = <Widget>[
-            if (active && data['kind'] == 'group' && data['group_id'] != null)
-              TextButton.icon(
-                onPressed: () =>
-                    context.push('/polls?group=${data['group_id']}'),
-                icon: const Icon(Icons.poll_outlined),
-                label: const Text('Group polls'),
-              ),
             if (_reply != null)
               ListTile(
                 title: Text('Replying to message $_reply'),
@@ -226,100 +220,114 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                     ),
                 ],
               ),
-            if (data['kind'] == 'group' || data['request_state'] == 'accepted')
-              OutlinedButton.icon(
-                onPressed: _busy || _photos.length >= 4
-                    ? null
-                    : () async {
-                        final api = ref.read(liveChatApiProvider);
-                        final picker = ref.read(profilePhotoPickerProvider);
-                        setState(() => _busy = true);
-                        final photo = await runCalmly(
-                          context,
-                          () => api.pickPhoto(chat, picker),
-                        );
-                        if (!mounted) return;
-                        if (photo != null &&
-                            identical(ref.read(liveChatApiProvider), api)) {
-                          _photos.add(photo);
-                        }
-                        setState(() => _busy = false);
-                      },
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: Text(_busy ? 'Please wait…' : 'Add photo'),
-              ),
-            TextField(
-              controller: _text,
-              enabled: !_busy,
-              minLines: 1,
-              maxLines: 5,
-              maxLength: 4000,
-              decoration: const InputDecoration(labelText: 'Message'),
-            ),
-            FilledButton.icon(
-              onPressed: _busy
-                  ? null
-                  : () async {
-                      final api = ref.read(liveChatApiProvider),
-                          body = _text.text;
-                      if (body.trim().isEmpty && _photos.isEmpty) {
-                        return;
-                      }
-                      final signature =
-                          '$chat\n$body\n$_reply\n${_photos.join(',')}';
-                      if (signature != _retrySignature) {
-                        _retrySignature = signature;
-                        _retryKey =
-                            'circle-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
-                      }
-                      setState(() => _busy = true);
-                      final ok = await runCalmly(context, () async {
-                        await api.send(chat, {
-                          'body': body,
-                          'client_id': _retryKey,
-                          if (_photos.isNotEmpty)
-                            'attachments': List<String>.of(_photos),
-                          if (_reply != null) 'reply_to_id': _reply,
-                        });
-                        return true;
-                      });
-                      if (!mounted) return;
-                      if (ok == true &&
-                          identical(ref.read(liveChatApiProvider), api)) {
-                        _text.clear();
-                        _photos.clear();
-                        _retryKey = null;
-                        _retrySignature = null;
-                        _reply = null;
-                        _before = null;
-                      }
-                      setState(() => _busy = false);
-                      _refresh();
-                    },
-              icon: const Icon(Icons.send_outlined),
-              label: Text(_busy ? 'Sending…' : 'Send'),
+            ChatComposerLayout(
+              expanded: inline,
+              children: [
+                if (data['kind'] == 'group' ||
+                    data['request_state'] == 'accepted')
+                  IconButton(
+                    onPressed: _busy || _photos.length >= 4
+                        ? null
+                        : () async {
+                            final api = ref.read(liveChatApiProvider);
+                            final picker = ref.read(profilePhotoPickerProvider);
+                            setState(() => _busy = true);
+                            final photo = await runCalmly(
+                              context,
+                              () => api.pickPhoto(chat, picker),
+                            );
+                            if (!mounted) return;
+                            if (photo != null &&
+                                identical(ref.read(liveChatApiProvider), api)) {
+                              _photos.add(photo);
+                            }
+                            setState(() => _busy = false);
+                          },
+                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    tooltip: _busy ? 'Please wait…' : 'Add photo',
+                  ),
+                TextField(
+                  controller: _text,
+                  enabled: !_busy,
+                  minLines: 1,
+                  maxLines: 5,
+                  maxLength: 4000,
+                  decoration: InputDecoration(
+                    hintText: 'Message',
+                    counterText: '',
+                    filled: true,
+                    fillColor: CircleAccents.of(context).recessed,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(CircleRadius.button),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: Space.sm),
+                IconButton.filled(
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          final api = ref.read(liveChatApiProvider),
+                              body = _text.text;
+                          if (body.trim().isEmpty && _photos.isEmpty) {
+                            return;
+                          }
+                          final signature =
+                              '$chat\n$body\n$_reply\n${_photos.join(',')}';
+                          if (signature != _retrySignature) {
+                            _retrySignature = signature;
+                            _retryKey =
+                                'circle-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
+                          }
+                          setState(() => _busy = true);
+                          final ok = await runCalmly(context, () async {
+                            await api.send(chat, {
+                              'body': body,
+                              'client_id': _retryKey,
+                              if (_photos.isNotEmpty)
+                                'attachments': List<String>.of(_photos),
+                              if (_reply != null) 'reply_to_id': _reply,
+                            });
+                            return true;
+                          });
+                          if (!mounted) return;
+                          if (ok == true &&
+                              identical(ref.read(liveChatApiProvider), api)) {
+                            _text.clear();
+                            _photos.clear();
+                            _retryKey = null;
+                            _retrySignature = null;
+                            _reply = null;
+                            _before = null;
+                          }
+                          setState(() => _busy = false);
+                          _refresh();
+                        },
+                  icon: const Icon(Icons.send_outlined),
+                  tooltip: _busy ? 'Sending…' : 'Send',
+                ),
+              ],
             ),
           ];
           final list = ListView(
             padding: CircleInsets.form,
             children: [
-              CircleHeading(
-                title: contacts
-                    ? 'New message'
-                    : id == null
-                    ? 'Chats'
-                    : data['name'] as String? ??
-                          (data['kind'] == 'direct'
-                              ? 'Direct message'
-                              : 'Group chat'),
-                subtitle: contacts
-                    ? 'Choose someone from your groups.'
-                    : id == null
-                    ? 'Keep your people close.'
-                    : active
-                    ? 'Your private conversation.'
-                    : 'Read-only. Sending is currently unavailable.',
-              ),
+              if (id == null)
+                CircleHeading(
+                  title: contacts ? 'New message' : 'Chats',
+                  subtitle: contacts
+                      ? 'Choose someone from your groups.'
+                      : 'Messages, all in one place.',
+                )
+              else
+                ChatConversationHeader(
+                  name: data['name'] as String? ?? 'Conversation',
+                  group: data['kind'] == 'group',
+                  groupId: data['group_id']?.toString(),
+                  person: data['other_id']?.toString(),
+                  active: active,
+                ),
               if (id == null && !contacts)
                 Wrap(
                   spacing: Space.md,
@@ -335,21 +343,78 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                     ),
                   ],
                 ),
-              TextButton.icon(
-                onPressed: _busy
-                    ? null
-                    : () {
-                        _refresh();
-                        ref.invalidate(liveChatContactsProvider);
-                      },
-                icon: const Icon(Icons.refresh),
-                label: const Text('Refresh'),
-              ),
-              if (id != null && data['other_id'] != null)
-                ServerBlockButton(
-                  person: ApiJson.id(data['other_id']),
-                  name: data['name'] as String? ?? 'this person',
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                leading: const Icon(Icons.tune_outlined),
+                title: Text(
+                  id == null ? 'Chat options' : 'Conversation options',
                 ),
+                children: [
+                  TextButton.icon(
+                    onPressed: _busy
+                        ? null
+                        : () {
+                            _refresh();
+                            ref.invalidate(liveChatContactsProvider);
+                          },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh'),
+                  ),
+                  if (id != null && data['other_id'] != null)
+                    ServerBlockButton(
+                      person: ApiJson.id(data['other_id']),
+                      name: data['name'] as String? ?? 'this person',
+                    ),
+                  if (id != null) ...[
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Mute this chat'),
+                      value: data['muted'] == true,
+                      onChanged: _busy
+                          ? null
+                          : (v) => _run((api) => api.state(chat, {'muted': v})),
+                    ),
+                    Wrap(
+                      spacing: Space.md,
+                      children: [
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => _run(
+                                  (api) => api.state(chat, {
+                                    'pinned': data['pinned'] != true,
+                                  }),
+                                ),
+                          child: Text(
+                            data['pinned'] == true ? 'Unpin' : 'Pin chat',
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => _run(
+                                  (api) => api.state(chat, {
+                                    'archived': data['archived'] != true,
+                                  }),
+                                ),
+                          child: Text(
+                            data['archived'] == true ? 'Unarchive' : 'Archive',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (active &&
+                      data['kind'] == 'group' &&
+                      data['group_id'] != null)
+                    TextButton.icon(
+                      onPressed: () =>
+                          context.push('/polls?group=${data['group_id']}'),
+                      icon: const Icon(Icons.poll_outlined),
+                      label: const Text('Group polls'),
+                    ),
+                ],
+              ),
               if (id != null) ...[
                 if (data['request_state'] == 'pending') ...[
                   Text(
@@ -378,43 +443,6 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                       ],
                     ),
                 ],
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Mute this chat'),
-                  value: data['muted'] == true,
-                  onChanged: _busy
-                      ? null
-                      : (v) => _run((api) => api.state(chat, {'muted': v})),
-                ),
-                Wrap(
-                  spacing: Space.md,
-                  children: [
-                    TextButton(
-                      onPressed: _busy
-                          ? null
-                          : () => _run(
-                              (api) => api.state(chat, {
-                                'pinned': data['pinned'] != true,
-                              }),
-                            ),
-                      child: Text(
-                        data['pinned'] == true ? 'Unpin' : 'Pin chat',
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: _busy
-                          ? null
-                          : () => _run(
-                              (api) => api.state(chat, {
-                                'archived': data['archived'] != true,
-                              }),
-                            ),
-                      child: Text(
-                        data['archived'] == true ? 'Unarchive' : 'Archive',
-                      ),
-                    ),
-                  ],
-                ),
               ],
               if (items.isEmpty)
                 CircleEmpty(
@@ -431,50 +459,171 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                 ),
               for (final item in items)
                 if (contacts)
-                  Card(
-                    child: ListTile(
-                      title: Text(item['display_name'] as String),
-                      trailing: const Icon(Icons.chat_bubble_outline),
-                      onTap: _busy
-                          ? null
-                          : () async {
-                              final api = ref.read(liveChatApiProvider);
-                              final opened = await runCalmly(
-                                context,
-                                () => api.direct(ApiJson.id(item['id'])),
-                              );
-                              if (context.mounted && opened != null) {
-                                context.go('/chats/c/$opened');
-                              }
-                            },
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: ChatIdentity(
+                      name: item['display_name'] as String,
+                      person: '${item['id']}',
                     ),
+                    title: Text(item['display_name'] as String),
+                    trailing: const Icon(Icons.chat_bubble_outline),
+                    onTap: _busy
+                        ? null
+                        : () async {
+                            final api = ref.read(liveChatApiProvider);
+                            final opened = await runCalmly(
+                              context,
+                              () => api.direct(ApiJson.id(item['id'])),
+                            );
+                            if (context.mounted && opened != null) {
+                              context.go('/chats/c/$opened');
+                            }
+                          },
                   )
                 else if (id == null)
-                  Card(
-                    child: ListTile(
-                      title: Text(item['name'] as String? ?? 'Conversation'),
-                      subtitle: Text(
-                        '${item['request_state'] == 'pending' ? (item['incoming'] == true ? 'Message request · ' : 'Waiting · ') : ''}${item['archived'] == true ? 'Archived · ' : ''}${item['pinned'] == true ? 'Pinned · ' : ''}${item['unread']} unread',
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.go('/chats/c/${item['id']}'),
-                    ),
+                  ChatInboxRow(
+                    name: item['name'] as String? ?? 'Conversation',
+                    group: item['kind'] == 'group',
+                    groupId: item['group_id']?.toString(),
+                    unread: (item['unread'] as num?)?.toInt() ?? 0,
+                    muted: item['muted'] == true,
+                    pinned: item['pinned'] == true,
+                    subtitle: item['request_state'] == 'pending'
+                        ? (item['incoming'] == true
+                              ? 'Message request'
+                              : 'Waiting for acceptance')
+                        : item['archived'] == true
+                        ? 'Archived conversation'
+                        : item['kind'] == 'group'
+                        ? 'Group conversation'
+                        : 'Direct conversation',
+                    onTap: () => context.go('/chats/c/${item['id']}'),
                   )
                 else
-                  Container(
-                    margin: const EdgeInsets.only(bottom: Space.md),
-                    padding: const EdgeInsets.all(Space.lg),
-                    decoration: CircleDepth.panel(
-                      context,
-                      radius: CircleRadius.card,
-                    ),
+                  ChatMessageBubble(
+                    mine:
+                        '${item['author_id']}' ==
+                        ref.read(liveChatApiProvider).scope.account,
+                    sentAt: DateTime.tryParse('${item['created_at']}'),
+                    actions:
+                        (active ||
+                            (data['kind'] == 'direct' &&
+                                item['removed'] != true &&
+                                '${item['author_id']}' !=
+                                    ref
+                                        .read(liveChatApiProvider)
+                                        .scope
+                                        .account))
+                        ? ChatMessageActions(
+                            children: [
+                              if (data['kind'] == 'direct' &&
+                                  item['removed'] != true &&
+                                  '${item['author_id']}' !=
+                                      ref
+                                          .read(liveChatApiProvider)
+                                          .scope
+                                          .account)
+                                TextButton(
+                                  onPressed: () {
+                                    final api = ref.read(liveChatApiProvider);
+                                    showReportSheet(
+                                      context,
+                                      title: 'Report this message',
+                                      explanation:
+                                          'This selected message and your optional note will be saved privately for server administrator review. The rest of your conversation is not shared. No alert is sent to the other person.',
+                                      confirmation:
+                                          'Report saved privately for review.',
+                                      submit: (reason, note) => api.report(
+                                        chat,
+                                        ApiJson.id(item['id']),
+                                        reason.name,
+                                        note,
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('Report message'),
+                                ),
+                              if (active)
+                                Wrap(
+                                  spacing: Space.sm,
+                                  children: [
+                                    TextButton(
+                                      onPressed: _busy
+                                          ? null
+                                          : () => setState(
+                                              () => _reply = int.parse(
+                                                ApiJson.id(item['id']),
+                                              ),
+                                            ),
+                                      child: const Text('Reply'),
+                                    ),
+                                    if (item['removed'] != true)
+                                      IconButton(
+                                        onPressed: _busy
+                                            ? null
+                                            : () => _run(
+                                                (api) => api.react(
+                                                  chat,
+                                                  ApiJson.id(item['id']),
+                                                  _loves(item) ? null : '❤️',
+                                                ),
+                                              ),
+                                        icon: Icon(
+                                          _loves(item)
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                        ),
+                                        tooltip: _loves(item)
+                                            ? 'Remove heart'
+                                            : 'React with heart',
+                                      ),
+                                    if ('${item['author_id']}' ==
+                                        ref
+                                            .read(liveChatApiProvider)
+                                            .scope
+                                            .account) ...[
+                                      if (item['removed'] != true)
+                                        TextButton(
+                                          onPressed: _busy
+                                              ? null
+                                              : () => _edit(chat, item),
+                                          child: const Text('Edit'),
+                                        ),
+                                      TextButton(
+                                        onPressed: _busy
+                                            ? null
+                                            : () => _run(
+                                                (api) => api.message(
+                                                  chat,
+                                                  ApiJson.id(item['id']),
+                                                  {
+                                                    'removed':
+                                                        item['removed'] != true,
+                                                  },
+                                                ),
+                                              ),
+                                        child: Text(
+                                          item['removed'] == true
+                                              ? 'Undo unsend'
+                                              : 'Unsend',
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                            ],
+                          )
+                        : null,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          item['display_name'] as String,
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
+                        if (data['kind'] == 'group' &&
+                            '${item['author_id']}' !=
+                                ref.read(liveChatApiProvider).scope.account)
+                          Text(
+                            item['display_name'] as String,
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
                         if (item['reply_to_id'] != null)
                           Text(
                             'Reply to message ${item['reply_to_id']}',
@@ -502,98 +651,6 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                             ApiJson.list(
                               item['reactions'],
                             ).map((v) => ApiJson.map(v)['emoji']).join(' '),
-                          ),
-                        if (data['kind'] == 'direct' &&
-                            item['removed'] != true &&
-                            '${item['author_id']}' !=
-                                ref.read(liveChatApiProvider).scope.account)
-                          TextButton(
-                            onPressed: () {
-                              final api = ref.read(liveChatApiProvider);
-                              showReportSheet(
-                                context,
-                                title: 'Report this message',
-                                explanation:
-                                    'This selected message and your optional note will be saved privately for server administrator review. The rest of your conversation is not shared. No alert is sent to the other person.',
-                                confirmation:
-                                    'Report saved privately for review.',
-                                submit: (reason, note) => api.report(
-                                  chat,
-                                  ApiJson.id(item['id']),
-                                  reason.name,
-                                  note,
-                                ),
-                              );
-                            },
-                            child: const Text('Report message'),
-                          ),
-                        if (active)
-                          Wrap(
-                            spacing: Space.sm,
-                            children: [
-                              TextButton(
-                                onPressed: _busy
-                                    ? null
-                                    : () => setState(
-                                        () => _reply = int.parse(
-                                          ApiJson.id(item['id']),
-                                        ),
-                                      ),
-                                child: const Text('Reply'),
-                              ),
-                              if (item['removed'] != true)
-                                IconButton(
-                                  onPressed: _busy
-                                      ? null
-                                      : () => _run(
-                                          (api) => api.react(
-                                            chat,
-                                            ApiJson.id(item['id']),
-                                            _loves(item) ? null : '❤️',
-                                          ),
-                                        ),
-                                  icon: Icon(
-                                    _loves(item)
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                  ),
-                                  tooltip: _loves(item)
-                                      ? 'Remove heart'
-                                      : 'React with heart',
-                                ),
-                              if ('${item['author_id']}' ==
-                                  ref
-                                      .read(liveChatApiProvider)
-                                      .scope
-                                      .account) ...[
-                                if (item['removed'] != true)
-                                  TextButton(
-                                    onPressed: _busy
-                                        ? null
-                                        : () => _edit(chat, item),
-                                    child: const Text('Edit'),
-                                  ),
-                                TextButton(
-                                  onPressed: _busy
-                                      ? null
-                                      : () => _run(
-                                          (api) => api.message(
-                                            chat,
-                                            ApiJson.id(item['id']),
-                                            {
-                                              'removed':
-                                                  item['removed'] != true,
-                                            },
-                                          ),
-                                        ),
-                                  child: Text(
-                                    item['removed'] == true
-                                        ? 'Undo unsend'
-                                        : 'Unsend',
-                                  ),
-                                ),
-                              ],
-                            ],
                           ),
                       ],
                     ),

@@ -149,15 +149,15 @@ void main() {
       c.read(circleRouterProvider).go('/chats/c/501');
       await settle(tester);
       picker.cancel = true;
-      await tapVisible(tester, find.text('Add photo'));
+      await tapVisible(tester, find.byTooltip('Add photo'));
       expect(
         f.server.adapter.requests.where((r) => r.path.contains('/uploads/')),
         isEmpty,
       );
       picker.cancel = false;
-      await tapVisible(tester, find.text('Add photo'));
+      await tapVisible(tester, find.byTooltip('Add photo'));
       expect(find.text('Photo 1'), findsOneWidget);
-      await tapVisible(tester, find.widgetWithText(FilledButton, 'Send'));
+      await tapVisible(tester, find.byTooltip('Send'));
       expect(f.messages.single['body'], '');
       expect(f.messages.single['attachments'], hasLength(1));
       expect(find.text('Photo 1'), findsNothing);
@@ -211,7 +211,7 @@ void main() {
     );
     c.read(circleRouterProvider).go('/chats/c/501');
     await settle(tester);
-    expect(find.text('Add photo'), findsNothing);
+    expect(find.byTooltip('Add photo'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 

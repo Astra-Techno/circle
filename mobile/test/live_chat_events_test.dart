@@ -90,6 +90,7 @@ class LiveFixture {
     if (r.path == '/chats/501') {
       return FakeResponse.ok({
         'id': 501,
+        'group_id': direct ? null : group,
         'name': direct ? 'Fictional Owner' : 'Fictional live circle',
         'other_id': direct ? owner : null,
         'kind': direct ? 'direct' : 'group',
@@ -202,7 +203,7 @@ void main() {
       await settle(tester);
       f.failOnce = true;
       await tester.enterText(find.byType(TextField), 'Fictional hello');
-      final send = find.widgetWithText(FilledButton, 'Send');
+      final send = find.byTooltip('Send');
       await tester.scrollUntilVisible(
         send,
         250,
@@ -416,6 +417,9 @@ void main() {
       c.read(circleRouterProvider).go('/chats/c/501');
       await settle(tester);
       expect(find.text('Accept request'), findsOneWidget);
+      await tester.ensureVisible(find.byTooltip('Message options').first);
+      await tester.tap(find.byTooltip('Message options').first);
+      await settle(tester);
       final report = find.text('Report message');
       await tester.scrollUntilVisible(
         report,
@@ -447,6 +451,84 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+  for (final width in [320.0, 900.0]) {
+    for (final brightness in Brightness.values) {
+      for (final scale in [1.0, 2.0]) {
+        testWidgets('populated chat redesign $width ${brightness.name} $scale', (
+          tester,
+        ) async {
+          final f = LiveFixture();
+          f.messages.addAll([
+            {
+              'id': 1,
+              'author_id': f.member,
+              'display_name': 'Fictional Member',
+              'body': 'Shall we meet at the park this weekend?',
+              'created_at': '2026-10-29T09:30:00Z',
+              'removed': false,
+              'edited': false,
+              'reactions': [],
+            },
+            {
+              'id': 2,
+              'author_id': f.owner,
+              'display_name': 'Fictional Owner',
+              'body': 'Sounds lovely. I will bring a picnic!',
+              'created_at': '2026-10-29T09:31:00Z',
+              'removed': false,
+              'edited': false,
+              'reactions': [],
+            },
+          ]);
+          final c = await openServerCircle(
+            tester,
+            f.server,
+            tokens: await storedSession(f.server, f.owner),
+            size: Size(width, 1000),
+          );
+          tester.platformDispatcher.textScaleFactorTestValue = scale;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+          c
+              .read(themeProvider.notifier)
+              .change(
+                brightness == Brightness.dark
+                    ? ThemeMode.dark
+                    : ThemeMode.light,
+              );
+          c.read(circleRouterProvider).go('/chats/c/501');
+          await settle(tester);
+          expect(find.text('Mute this chat'), findsNothing);
+          expect(find.text('Unsend'), findsNothing);
+          expect(tester.takeException(), isNull);
+          if (Platform.environment['CIRCLE_CAPTURE_UI'] == 'true') {
+            final boundary = tester.renderObject<RenderRepaintBoundary>(
+              find.byType(RepaintBoundary).first,
+            );
+            await tester.runAsync(() async {
+              final pic = await boundary.toImage();
+              final bytes = await pic.toByteData(
+                format: ui.ImageByteFormat.png,
+              );
+              await File(
+                '/tmp/circle-chat-redesign-$width-${brightness.name}-$scale.png',
+              ).writeAsBytes(bytes!.buffer.asUint8List());
+              pic.dispose();
+            });
+          }
+          final options = find.byTooltip('Message options').first;
+          await tester.ensureVisible(options);
+          await tester.tap(options);
+          await settle(tester);
+          await tester.tap(find.text('Reply'));
+          await settle(tester);
+          expect(find.text('Message options'), findsNothing);
+          expect(find.text('Replying to message 1'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await tester.pumpWidget(const SizedBox.shrink());
+        });
+      }
+    }
+  }
   for (final width in [320.0, 900.0]) {
     for (final brightness in Brightness.values) {
       for (final surface in ['chat', 'event', 'event-form']) {

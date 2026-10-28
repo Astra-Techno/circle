@@ -3,6 +3,7 @@
 Updated:29 October2026. Source, production deployment, APK publication and device acceptance are separate facts.
 
 ## Current base and rules
+- Current task: WhatsApp/Instagram-inspired live Chats visual refresh completed; avatar-led rows/unread badges, private group photos, opposing timed bubbles, compact pinned photo/input/send row and accessible action menus. See docs/chat-redesign.md. Existing requests/reporting/retry/session restrictions retained.
 - Active checkout /workspace/circle, main only. Owner approved default-on notifications with opt-outs; first-save regression fixed in the migration023 follow-up. See docs/notification-defaults.md. Safely pulled87912e1/399cd9d while preserving unfinished poll work. Editorial, photo-first supersedes older3D styling; preserve flat core tokens, pinned chat/RSVP controls and current navigation. See AGENTS.md/README§0/design-system.md.
 - Existing auth/groups/Memories/private media/reporting/blocking, live Chats/photos and Events/covers retained. Earlier missing profile-privacy WIP remains unimplemented.
 - OpenAPI0.4.3:99 operations/549 local references validated. Migration022 adds polls/outbox;023 changes only the notification enabled-column default for future rows; do not change applied migrations.
@@ -16,16 +17,18 @@ Updated:29 October2026. Source, production deployment, APK publication and devic
 
 ## Verified checks
 - Current full backend228 tests/4,136 assertions pass; PHPStan/composer valid. First-save, partial-category, saved opt-out/reenable and legacy-map regressions covered. Run one circle_test suite at a time with COMPOSER_PROCESS_TIMEOUT=900.
-- Current targeted app/API/settings/session/design28 tests pass; analyzer/format clean. Production Dart source unchanged, no APK rebuild needed. Earlier full Flutter729 passed/1 skipped/13 Windows-baseline golden mismatches; no functional failures. Final36 poll/chat/event/design tests pass; analyzer/format clean. Eight poll light/dark phone/tablet200% renders captured, representative layouts inspected. No Windows baseline regenerated here.
+- Chat refresh: analyzer/format clean; focused97 pass, final live-chat/media/group-photo/design51 pass. Full Flutter739 pass/1skip/13 existing Windows golden mismatches on Linux; no functional failures. Eight populated chat phone/tablet light/dark100/200% renders captured, representatives inspected. New signed1.0.22+23 APK published with matching metadata/site buttons; see docs/mobile-release-1.0.22.md. No physical-device test or production deployment.
+- Previous targeted app/API/settings/session/design28 tests pass; analyzer/format clean. Production Dart source unchanged, no APK rebuild needed. Earlier full Flutter729 passed/1 skipped/13 Windows-baseline golden mismatches; no functional failures. Final36 poll/chat/event/design tests pass; analyzer/format clean. Eight poll light/dark phone/tablet200% renders captured, representative layouts inspected. No Windows baseline regenerated here.
 - Missing-key native dry-run rejected unsigned release with intended error; private properties restored before real build. After tests use normal Flutter build tooling, without --no-pub, to regenerate release-only plugin registration.
 - No physical Android device attached; installation, native picking, two-phone voting and actual push/taps/reminders remain owner acceptance checks.
 
 ## Signing and APK
 - Pulled build21 SHA256daaae50082e21f0c35a40e0300b84869239d1ffcabfe8c43efafc4af4b411ab5 matches metadata but apksigner DOES NOT VERIFY (Missing META-INF/MANIFEST.MF). Build20 passes v2; do not trust metadata alone or overwrite21.
-- New1.0.21+22 signed APK verified:65,933,294bytes, SHA256c57ecc1eb8945309bace68d4b0517fe35a63b2f820345250c4a109f346751a0d. Package com.circlecommunity.mobile/versionCode22/minSdk24/targetSdk36/non-debuggable; production API/previewfalse/pushtrue.
+- Previous1.0.21+22 signed APK verified:65,933,294bytes, SHA256c57ecc1eb8945309bace68d4b0517fe35a63b2f820345250c4a109f346751a0d. Package com.circlecommunity.mobile/versionCode22/minSdk24/targetSdk36/non-debuggable; production API/previewfalse/pushtrue.
 - Same established build20 certificate157579dd08f44d8aebe9bc5b6e53e778d8ca642d97233d15c206f8f5185df01e; build20 can update without reinstall. Release now fails when private signing configuration is absent. Old-key installations still require reinstall.
 - Key/passwords outside Git under /workspace/toolchain/signing; owner backup /workspace/circle-signing-backup-2026-10-28.zip remains private and must be saved outside this temporary environment. Never generate a replacement or publish this backup.
-- Immutable APK22, metadata and both download buttons agree; previous20/21 bytes unchanged. Deployer still skips APK binaries; existing directory rewrite/download.php serves checked current-version repository fallback. See mobile-release-1.0.21.md for artifact/publication evidence.
+- Current immutable APK23 (66,031,742bytes; SHA256f920dc155b1036f0f873d33665ab534675749966b71273c1b630945a56f6e15f), metadata and both buttons agree; versionName1.0.22/versionCode23, same build20 certificate verified. APK22 bytes unchanged.
+- Previous publication APK22: previous20/21 bytes unchanged. Deployer still skips APK binaries; existing directory rewrite/download.php serves checked current-version repository fallback. See mobile-release-1.0.21.md for artifact/publication evidence.
 - Owner reported previous deployment done. Latest server follow-up requires migration023 (and022 if not yet applied). No production deployment from here. Environment proxy denied live-domain CONNECT403; production metadata/full APK/API not verified. Run existing hosted deployment link before testing polls.
 
 ## Environment
