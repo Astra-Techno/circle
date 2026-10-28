@@ -21,10 +21,10 @@ Updated:28 October2026. Source, deployment, APK and physical acceptance are sepa
 - Signed production APK build succeeds. No Android device attached; installation/native picking/two-phone access/actual push/reminder acceptance remain owner checks.
 
 ## Release/deployment
-- Candidate1.0.19+20 built/verified locally;65,851,130 bytes; SHA2562839ded341bf5b35e8111ee1206c99c9fa4dbb17dd6456eec4e06de2c6d5122f. Package com.circlecommunity.mobile/minSdk24/targetSdk36, non-debuggable, production API/previewfalse/pushtrue.
+- Source/APK commit0d07fde pushed to origin/main. Release1.0.19+20 built/verified;65,851,130 bytes; SHA2562839ded341bf5b35e8111ee1206c99c9fa4dbb17dd6456eec4e06de2c6d5122f. Package com.circlecommunity.mobile/minSdk24/targetSdk36, non-debuggable, production API/previewfalse/pushtrue.
 - Owner explicitly approved generating a new dedicated signing key and reinstall. Verified certificate SHA256157579dd08f44d8aebe9bc5b6e53e778d8ca642d97233d15c206f8f5185df01e. Build18/19 cannot update in place; uninstall clears local app data, server data remains. Future builds must reuse this key.
 - Private key under /workspace/toolchain/signing; owner-only backup /workspace/circle-signing-backup-2026-10-28.zip is outside Git/public downloads. Owner must save privately outside this temporary workspace. key.properties is ignored; release no longer silently uses a generated debug key.
-- New immutable APK/download metadata/both site links agree; previous immutable19 hash unchanged. Deployer still skips APK binaries; downloads/download.php and directory rewrite provide a checked exact-current-version repository fallback.
+- Full GitHub-hosted APK downloaded and size/SHA256 verified. New immutable APK/download metadata/both site links agree; previous immutable19 hash unchanged. Deployer still skips APK binaries; downloads/download.php and directory rewrite provide a checked exact-current-version repository fallback.
 - No production deployment in this batch. Live domain CONNECT tunnel is denied by environment proxy403, including an escalated read-only check. Owner must run existing hosted deployment link to apply017–021/update pages. Hosted metadata/full APK checksum and live services remain unverified here.
 
 ## Environment and next checks
