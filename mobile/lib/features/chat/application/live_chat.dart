@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+import 'dart:math';
+import '../../profile/application/profile_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_providers.dart';
 import '../../../core/api/api_json.dart';
@@ -62,6 +65,26 @@ class LiveChatApi {
       outbox.send(id, body, _deliver);
   Future<void> _deliver(String id, Map<String, Object?> body) async {
     await scope.change('POST', '/chats/${await resolve(id)}/messages', body);
+  }
+
+  Future<String?> pickPhoto(String id, ProfilePhotoPicker picker) async {
+    scope.check();
+    final picked = await picker.pick();
+    scope.check();
+    if (picked == null) return null;
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final key =
+        '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+    await scope.upload(
+      '/chats/${await resolve(id)}/uploads/$key',
+      picked.bytes,
+      picked.mimeType,
+    );
+    return key;
   }
 
   Future<void> flush() => outbox.flush(_deliver);
@@ -132,3 +155,11 @@ final liveChatPendingProvider =
       (ref) => ref.watch(liveChatApiProvider).outbox.pending(),
       retry: (_, _) => null,
     );
+
+final liveChatPhotoProvider = FutureProvider.autoDispose
+    .family<Uint8List, ({String chat, String photo})>((ref, p) async {
+      final client = ref.watch(liveChatApiProvider);
+      return client.scope.bytes(
+        '/chats/${await client.resolve(p.chat)}/media/${p.photo}',
+      );
+    }, retry: (_, _) => null);

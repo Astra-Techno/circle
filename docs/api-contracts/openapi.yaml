@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.4.0
+  version: 0.4.1
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -1148,17 +1148,24 @@ paths:
               type: object
               additionalProperties: false
               required:
-              - body
               - client_id
               properties:
                 body:
                   type: string
-                  minLength: 1
+                  minLength: 0
                   maxLength: 4000
                 client_id: &id002
                   type: string
                   pattern: ^[a-zA-Z0-9_-]{16,100}$
                 reply_to_id: *id001
+                attachments:
+                  type: array
+                  maxItems: 4
+                  uniqueItems: true
+                  items:
+                    type: string
+                    format: uuid
+              description: Text or up to four owned photo UUIDs in this conversation; text may be empty only with photos. Direct photo sharing requires an accepted request.
   /chats/{id}/messages/{messageId}:
     parameters:
     - name: id
@@ -1741,7 +1748,7 @@ paths:
       operationId: getLiveEvent
       tags:
       - Events
-      description: Exact active membership; event fields plus id/group_id/created_by/status/version/my_rsvp/can_manage/going_count.
+      description: Exact active membership; event fields plus id/group_id/created_by/status/version/cover_id/my_rsvp/can_manage/going_count. cover_id is a nullable UUID.
         Other peoples notes and mobile numbers never returned. Private no-store reads. Foreground REST polling,
         not WebSocket or E2E encryption.
       responses:
@@ -3251,6 +3258,245 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/RateLimited' }
         '500': { $ref: '#/components/responses/ServerError' }
+
+  /chats/{id}/uploads/{mediaId}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    put:
+      operationId: uploadLiveChatPhoto
+      tags:
+      - Chats
+      description: Current sending access; direct chat must be accepted. Stable caller UUID retries identical input
+        only. JPEG/PNG/WebP, max5 MiB/2048 pixels per side/4194304 pixels; inspect, decode, strip metadata and re-encode
+        server-side. Max60 uploads/account/hour. Recheck session/access after processing. Unattached photos expire
+        through existing hourly media cleanup after24h.
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/webp:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: JSON data.id is the upload UUID; attach in a subsequent message send.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Upload id or current event version conflicts.
+        '413':
+          description: Photo exceeds 5 MiB.
+        '415':
+          description: Unsupported content type.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Image processor unavailable; fails closed.
+  /chats/{id}/media/{mediaId}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    - name: mediaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      operationId: getLiveChatPhoto
+      tags:
+      - Chats
+      description: Bearer-authenticated private no-store bytes. Attached photo only for authorized conversation participants
+        within their immutable frozen message cutoff and visible unsend version. Pending direct recipients cannot
+        load photos. Unattached photo only for its uploader who can still send. size=thumb/medium/full (default medium).
+      responses:
+        '200':
+          description: Re-encoded image bytes; original metadata stripped.
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Upload id or current event version conflicts.
+        '413':
+          description: Photo exceeds 5 MiB.
+        '415':
+          description: Unsupported content type.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Image processor unavailable; fails closed.
+  /events/{eventId}/cover:
+    parameters:
+    - name: eventId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    get:
+      operationId: getLiveEventCover
+      tags:
+      - Events
+      description: Current exact-group membership. Private no-store bytes for current cover_id; size=thumb/medium/full.
+        Removed members/unknown events/covers return404.
+      responses:
+        '200':
+          description: Re-encoded image bytes; original metadata stripped.
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Upload id or current event version conflicts.
+        '413':
+          description: Photo exceeds 5 MiB.
+        '415':
+          description: Unsupported content type.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Image processor unavailable; fails closed.
+    put:
+      operationId: putLiveEventCover
+      tags:
+      - Events
+      description: Active event organizer or exact-group admin; query version is required. Same photo validation/re-encoding
+        limits as chat uploads. Recheck current session/role/version after processing. Changes increment event version,
+        cancel stale notifications and schedule current generic event update/reminder. Old cover inaccessible and
+        purged after24h.
+      parameters:
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/webp:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Updated event detail including version and cover_id.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Upload id or current event version conflicts.
+        '413':
+          description: Photo exceeds 5 MiB.
+        '415':
+          description: Unsupported content type.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Image processor unavailable; fails closed.
+    delete:
+      operationId: deleteLiveEventCover
+      tags:
+      - Events
+      description: Active organizer/exact-group admin and current query version; remove cover, increment version,
+        refresh notification/reminder references.
+      parameters:
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      responses:
+        '200':
+          description: Updated event detail with null cover_id.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Upload id or current event version conflicts.
+        '413':
+          description: Photo exceeds 5 MiB.
+        '415':
+          description: Unsupported content type.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Image processor unavailable; fails closed.
 
 components:
   securitySchemes:

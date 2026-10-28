@@ -203,7 +203,11 @@ void main() {
       f.failOnce = true;
       await tester.enterText(find.byType(TextField), 'Fictional hello');
       final send = find.widgetWithText(FilledButton, 'Send');
-      await tester.ensureVisible(send);
+      await tester.scrollUntilVisible(
+        send,
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(send);
       await settle(tester);
@@ -211,8 +215,14 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
         'Fictional hello',
       );
-      ScaffoldMessenger.of(tester.element(send)).clearSnackBars();
-      await tester.ensureVisible(send);
+      ScaffoldMessenger.of(
+        tester.element(find.byType(Scaffold).first),
+      ).clearSnackBars();
+      await tester.scrollUntilVisible(
+        send,
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(send);
       await settle(tester);
@@ -422,7 +432,11 @@ void main() {
       await tester.tap(find.text('Spam'));
       await settle(tester);
       final send = find.text('Send report');
-      await tester.ensureVisible(send);
+      await tester.scrollUntilVisible(
+        send,
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(send);
       await settle(tester);

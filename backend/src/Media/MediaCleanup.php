@@ -24,6 +24,18 @@ final class MediaCleanup
     public static function run(MediaStorage $storage, int $purgeAfterDays = self::DEFAULT_PURGE_AFTER_DAYS): array
     {
         $purgeAfterDays = max(0, $purgeAfterDays);
+        // Staged photos and replaced/removed event covers are private orphans.
+        // Lock and recheck before deleting so a concurrent send cannot lose a photo.
+        $featureRows = Database::query("SELECT f.id FROM feature_media f LEFT JOIN events e ON e.cover_id=f.id WHERE f.message_id IS NULL AND e.id IS NULL AND f.created_at<DATE_SUB(UTC_TIMESTAMP(),INTERVAL 24 HOUR) LIMIT 200");
+        foreach ($featureRows as $row) {
+            $prefix = Database::transaction(static function () use ($row): ?string {
+                $f = Database::queryOne('SELECT * FROM feature_media WHERE id=:id FOR UPDATE', ['id'=>$row['id']]);
+                if ($f === null || $f['message_id'] !== null || Database::queryOne('SELECT id FROM events WHERE cover_id=:id', ['id'=>$row['id']]) !== null) return null;
+                Database::execute('DELETE FROM feature_media WHERE id=:id', ['id'=>$row['id']]);
+                return $f['storage_prefix'];
+            });
+            if ($prefix !== null) $storage->deletePrefix($prefix);
+        }
         $orphans = 0;
         $purged = 0;
 

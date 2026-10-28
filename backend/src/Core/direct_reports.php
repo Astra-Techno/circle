@@ -10,7 +10,7 @@ if(($args[0]??'')==='reviewed' && ctype_digit($args[1]??'')){
  Database::execute("UPDATE direct_chat_reports SET state='reviewed',reviewed_at=UTC_TIMESTAMP() WHERE id=:id",['id'=>(int)$args[1]]);echo "Review state saved.\n";exit;
 }
 if(($args[0]??'')==='details' && ctype_digit($args[1]??'')){
- $row=Database::queryOne('SELECT * FROM direct_chat_reports WHERE id=:id',['id'=>(int)$args[1]]);echo json_encode($row,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)."\n";exit;
+ $row=Database::queryOne('SELECT * FROM direct_chat_reports WHERE id=:id',['id'=>(int)$args[1]]);if($row!==null)$row['photo_ids']=\Circle\Controllers\FeatureMediaController::attachments((int)$row['message_id']);echo json_encode($row,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)."\n";exit;
 }
 echo "Private direct-message reports. Access only as an authorized server operator.\n";
 echo "Commands: details ID | reviewed ID. Details contain personal data: do not copy to public logs.\n";

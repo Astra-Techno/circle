@@ -12,7 +12,7 @@ final class EventController
 {
     public const FIELDS=['title','description','event_type','venue','online_link','start_at','end_at','timezone','rsvp_deadline','max_capacity'];
     /** @return array<string,mixed> */
-    private static function access(Request $r,bool $write=false):array
+    public static function access(Request $r,bool $write=false):array
     {
         $e=Database::queryOne('SELECT * FROM events WHERE id=:id',['id'=>(int)$r->param('eventId')]);if($e===null)Response::notFound('This event is not available.');
         if($write){Database::queryOne('SELECT id FROM `groups` WHERE id=:g FOR UPDATE',['g'=>$e['group_id']]);$e=Database::queryOne('SELECT * FROM events WHERE id=:id FOR UPDATE',['id'=>$e['id']]);if($e===null)Response::notFound();self::session($r);}
@@ -87,6 +87,6 @@ final class EventController
      */
     private static function payload(array $e):array
     {
-        $out=[];foreach(['id','group_id','created_by',...self::FIELDS,'status','version'] as $key)$out[$key]=$e[$key];foreach(['id','group_id','created_by','max_capacity','version'] as $key)if($out[$key]!==null)$out[$key]=(int)$out[$key];foreach(['start_at','end_at','rsvp_deadline'] as $key)if($out[$key]!==null)$out[$key]=str_replace(' ','T',(string)$out[$key]).'Z';return $out;
+        $out=[];foreach(['id','group_id','created_by',...self::FIELDS,'status','version','cover_id'] as $key)$out[$key]=$e[$key];foreach(['id','group_id','created_by','max_capacity','version'] as $key)if($out[$key]!==null)$out[$key]=(int)$out[$key];foreach(['start_at','end_at','rsvp_deadline'] as $key)if($out[$key]!==null)$out[$key]=str_replace(' ','T',(string)$out[$key]).'Z';return $out;
     }
 }

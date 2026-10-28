@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'api_client.dart';
 import 'api_json.dart';
 
@@ -15,6 +16,40 @@ class ScopedApi {
         code: 'session_changed',
       );
     }
+  }
+
+  Future<Uint8List> bytes(String path) async {
+    check();
+    final result = await api.getBytes(
+      path,
+      expectedAccount: account,
+      expectedSession: session,
+    );
+    check();
+    return result;
+  }
+
+  Future<Map<String, Object?>> upload(
+    String path,
+    Uint8List bytes,
+    String mime,
+  ) async {
+    check();
+    final result = await api.putBytes(
+      path,
+      bytes,
+      contentType: mime,
+      expectedAccount: account,
+      expectedSession: session,
+    );
+    check();
+    return ApiJson.map(result);
+  }
+
+  Future<void> remove(String path) async {
+    check();
+    await api.delete(path, expectedAccount: account, expectedSession: session);
+    check();
   }
 
   Future<Map<String, Object?>> get(

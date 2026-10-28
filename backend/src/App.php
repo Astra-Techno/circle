@@ -149,6 +149,11 @@ final class App
             $r->get('/chats/{id}/messages/{messageId}', ChatController::pushMessage(...));
             $r->patch('/chats/{id}/messages/{messageId}', ChatController::changeMessage(...));
             $r->put('/chats/{id}/messages/{messageId}/reaction', ChatController::react(...));
+            $r->put('/chats/{id}/uploads/{mediaId}', \Circle\Controllers\FeatureMediaController::uploadChat(...));
+            $r->get('/chats/{id}/media/{mediaId}', \Circle\Controllers\FeatureMediaController::chatPhoto(...));
+            $r->put('/events/{eventId}/cover', \Circle\Controllers\FeatureMediaController::putCover(...));
+            $r->delete('/events/{eventId}/cover', \Circle\Controllers\FeatureMediaController::deleteCover(...));
+            $r->get('/events/{eventId}/cover', \Circle\Controllers\FeatureMediaController::cover(...));
             $r->get('/events', EventController::index(...));
             $r->post('/groups/{id}/events', EventController::create(...));
             $r->get('/events/{eventId}', EventController::show(...));

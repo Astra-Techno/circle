@@ -1,3 +1,6 @@
+import '../../profile/application/profile_providers.dart'
+    show profilePhotoPickerProvider;
+import '../../../core/private_photo.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -76,13 +79,27 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                   ),
                 for (final item in items)
                   Card(
-                    child: ListTile(
-                      title: Text(item['title'] as String),
-                      subtitle: Text(
-                        '${liveEventLabel(item)}\n${item['status'] == 'cancelled' ? 'Cancelled' : item['venue'] ?? ''}',
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.go('/events/e/${item['id']}'),
+                    child: Column(
+                      children: [
+                        if (item['cover_id'] case final String cover)
+                          PrivatePhoto(
+                            load: ref.watch(
+                              liveEventCoverProvider((
+                                event: '${item['id']}',
+                                cover: cover,
+                              )),
+                            ),
+                            label: 'Event cover',
+                          ),
+                        ListTile(
+                          title: Text(item['title'] as String),
+                          subtitle: Text(
+                            '${liveEventLabel(item)}\n${item['status'] == 'cancelled' ? 'Cancelled' : item['venue'] ?? ''}',
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => context.go('/events/e/${item['id']}'),
+                        ),
+                      ],
                     ),
                   ),
                 Wrap(
@@ -113,6 +130,62 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                 title: e['title'] as String,
                 subtitle: liveEventLabel(e),
               ),
+              if (e['cover_id'] case final String cover)
+                PrivatePhoto(
+                  load: ref.watch(
+                    liveEventCoverProvider((event: id, cover: cover)),
+                  ),
+                  label: 'Event cover',
+                ),
+              if (manage && active)
+                Wrap(
+                  spacing: Space.sm,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () async {
+                              final api = ref.read(liveEventsApiProvider);
+                              final picker = ref.read(
+                                profilePhotoPickerProvider,
+                              );
+                              setState(() => _busy = true);
+                              await runCalmly(
+                                context,
+                                () =>
+                                    api.cover(id, e['version'] as int, picker),
+                              );
+                              if (!mounted) return;
+                              setState(() => _busy = false);
+                              refreshLiveEvents(ref);
+                            },
+                      icon: const Icon(Icons.add_photo_alternate_outlined),
+                      label: Text(
+                        e['cover_id'] == null
+                            ? 'Add cover photo'
+                            : 'Change cover photo',
+                      ),
+                    ),
+                    if (e['cover_id'] != null)
+                      TextButton(
+                        onPressed: _busy
+                            ? null
+                            : () async {
+                                final api = ref.read(liveEventsApiProvider);
+                                setState(() => _busy = true);
+                                await runCalmly(
+                                  context,
+                                  () =>
+                                      api.removeCover(id, e['version'] as int),
+                                );
+                                if (!mounted) return;
+                                setState(() => _busy = false);
+                                refreshLiveEvents(ref);
+                              },
+                        child: const Text('Remove cover'),
+                      ),
+                  ],
+                ),
               if (!active) const Text('This event is cancelled.'),
               if ((e['description'] as String? ?? '').isNotEmpty)
                 Text(e['description'] as String),

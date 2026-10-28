@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import '../../profile/application/profile_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/data/latest.dart' as database;
 import 'package:timezone/timezone.dart' as zones;
@@ -74,6 +76,20 @@ final liveEventsApiProvider = Provider<LiveEventsApi>((ref) {
 class LiveEventsApi {
   LiveEventsApi(this.scope);
   final ScopedApi scope;
+  Future<void> cover(String id, int version, ProfilePhotoPicker picker) async {
+    scope.check();
+    final photo = await picker.pick();
+    scope.check();
+    if (photo == null) return;
+    await scope.upload(
+      '/events/$id/cover?version=$version',
+      photo.bytes,
+      photo.mimeType,
+    );
+  }
+
+  Future<void> removeCover(String id, int version) =>
+      scope.remove('/events/$id/cover?version=$version');
   Future<Map<String, Object?>> list(int offset, String? group) => scope.get(
     '/events',
     query: {'limit': 30, 'offset': offset, 'group_id': ?group},
@@ -113,5 +129,14 @@ final liveEventProvider = FutureProvider.autoDispose
 final liveAttendeesProvider = FutureProvider.autoDispose
     .family<Map<String, Object?>, ({String id, int offset})>(
       (ref, p) => ref.watch(liveEventsApiProvider).attendees(p.id, p.offset),
+      retry: (_, _) => null,
+    );
+
+final liveEventCoverProvider = FutureProvider.autoDispose
+    .family<Uint8List, ({String event, String cover})>(
+      (ref, p) => ref
+          .watch(liveEventsApiProvider)
+          .scope
+          .bytes('/events/${p.event}/cover'),
       retry: (_, _) => null,
     );

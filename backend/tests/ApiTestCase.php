@@ -80,7 +80,10 @@ abstract class ApiTestCase extends TestCase
         if ($token !== null) {
             $headers['Authorization'] = 'Bearer ' . $token;
         }
-        $request = new Request($method, $path, [], [], $headers, '127.0.0.1', $rawBody);
+        $query = [];
+        $parts = explode('?', $path, 2);
+        if (isset($parts[1])) parse_str($parts[1], $query);
+        $request = new Request($method, $path, [], $query, $headers, '127.0.0.1', $rawBody);
         try {
             App::handle($request);
         } catch (ResponseSent $sent) {

@@ -1,3 +1,6 @@
+import '../../profile/application/profile_providers.dart'
+    show profilePhotoPickerProvider;
+import '../../../core/private_photo.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -23,6 +26,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
   bool _visible = false;
   final _text = TextEditingController();
   bool _busy = false;
+  final _photos = <String>[];
   int _offset = 0;
   int? _before, _reply;
   String? _retrySignature, _retryKey;
@@ -104,6 +108,19 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant LiveChatsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.id != widget.id) {
+      _text.clear();
+      _photos.clear();
+      _retryKey = null;
+      _retrySignature = null;
+      _reply = null;
+      _before = null;
+    }
+  }
+
   Future<void> _run(Future<void> Function(LiveChatApi) action) async {
     final scope = ref.read(liveChatApiProvider);
     setState(() => _busy = true);
@@ -138,6 +155,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
   Widget build(BuildContext context) {
     ref.listen(liveChatApiProvider, (_, _) {
       _text.clear();
+      _photos.clear();
       _reply = null;
       _before = null;
       _offset = 0;
@@ -358,6 +376,17 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                               ? 'Message unsent'
                               : item['body'] as String,
                         ),
+                        if (item['removed'] != true)
+                          for (final photo in ApiJson.list(item['attachments']))
+                            PrivatePhoto(
+                              load: ref.watch(
+                                liveChatPhotoProvider((
+                                  chat: chat,
+                                  photo: photo as String,
+                                )),
+                              ),
+                              label: 'Chat photo',
+                            ),
                         if (item['edited'] == true) const Text('Edited'),
                         if (ApiJson.list(item['reactions']).isNotEmpty)
                           Text(
@@ -514,8 +543,17 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                                 : 'Pending · will retry while Chats is open',
                           ),
                           Text(
-                            ApiJson.map(pending['body'])['body'] as String? ??
-                                '',
+                            [
+                              if (ApiJson.list(
+                                ApiJson.map(pending['body'])['attachments'],
+                              ).isNotEmpty)
+                                '${ApiJson.list(ApiJson.map(pending['body'])['attachments']).length} photo(s)',
+                              if ((ApiJson.map(pending['body'])['body']
+                                          as String? ??
+                                      '')
+                                  .isNotEmpty)
+                                ApiJson.map(pending['body'])['body'] as String,
+                            ].join(' · '),
                           ),
                           Wrap(
                             spacing: Space.sm,
@@ -565,6 +603,42 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                       tooltip: 'Cancel reply',
                     ),
                   ),
+                if (_photos.isNotEmpty)
+                  Wrap(
+                    spacing: Space.sm,
+                    children: [
+                      for (final photo in _photos)
+                        InputChip(
+                          label: Text('Photo ${_photos.indexOf(photo) + 1}'),
+                          onDeleted: _busy
+                              ? null
+                              : () => setState(() => _photos.remove(photo)),
+                        ),
+                    ],
+                  ),
+                if (data['kind'] == 'group' ||
+                    data['request_state'] == 'accepted')
+                  OutlinedButton.icon(
+                    onPressed: _busy || _photos.length >= 4
+                        ? null
+                        : () async {
+                            final api = ref.read(liveChatApiProvider);
+                            final picker = ref.read(profilePhotoPickerProvider);
+                            setState(() => _busy = true);
+                            final photo = await runCalmly(
+                              context,
+                              () => api.pickPhoto(chat, picker),
+                            );
+                            if (!mounted) return;
+                            if (photo != null &&
+                                identical(ref.read(liveChatApiProvider), api)) {
+                              _photos.add(photo);
+                            }
+                            setState(() => _busy = false);
+                          },
+                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    label: Text(_busy ? 'Please wait…' : 'Add photo'),
+                  ),
                 TextField(
                   controller: _text,
                   enabled: !_busy,
@@ -579,8 +653,9 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                       : () async {
                           final api = ref.read(liveChatApiProvider),
                               body = _text.text;
-                          if (body.trim().isEmpty) return;
-                          final signature = '$chat\n$body\n$_reply';
+                          if (body.trim().isEmpty && _photos.isEmpty) return;
+                          final signature =
+                              '$chat\n$body\n$_reply\n${_photos.join(',')}';
                           if (signature != _retrySignature) {
                             _retrySignature = signature;
                             _retryKey =
@@ -591,6 +666,8 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                             await api.send(chat, {
                               'body': body,
                               'client_id': _retryKey,
+                              if (_photos.isNotEmpty)
+                                'attachments': List<String>.of(_photos),
                               if (_reply != null) 'reply_to_id': _reply,
                             });
                             return true;
@@ -599,6 +676,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                           if (ok == true &&
                               identical(ref.read(liveChatApiProvider), api)) {
                             _text.clear();
+                            _photos.clear();
                             _retryKey = null;
                             _retrySignature = null;
                             _reply = null;
