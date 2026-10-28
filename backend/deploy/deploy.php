@@ -319,13 +319,20 @@ if (is_dir($srcWebsiteDir)) {
     log_step('·', 'No website/ folder in repo — skipping landing page', 'muted');
 }
 
-// Copy downloads/ folder (APK + download page)
+// Copy downloads/ folder (metadata + download page only; skip large APK binaries)
 $srcDownloads = $repoRoot . '/downloads';
 if (is_dir($srcDownloads)) {
-    log_step('📱', 'Updating downloads (APK)…');
+    log_step('📱', 'Updating downloads (metadata + page; APK binaries skipped)…');
     $dlCopied = [];
-    rcopy($srcDownloads, BASE_DIR . '/downloads', [], $dlCopied);
-    log_step('✓', 'Downloads updated — ' . count($dlCopied) . ' file(s)', 'ok');
+    if (!is_dir(BASE_DIR . '/downloads')) @mkdir(BASE_DIR . '/downloads', 0755, true);
+    foreach (new DirectoryIterator($srcDownloads) as $item) {
+        if ($item->isDot() || $item->isDir()) continue;
+        // Skip APK binaries — they are too large for ZIP-based deploy; upload separately
+        if (str_ends_with(strtolower($item->getFilename()), '.apk')) continue;
+        copy($item->getPathname(), BASE_DIR . '/downloads/' . $item->getFilename());
+        $dlCopied[] = BASE_DIR . '/downloads/' . $item->getFilename();
+    }
+    log_step('✓', 'Downloads updated — ' . count($dlCopied) . ' file(s) (APK binaries excluded)', 'ok');
     log_step('📋', render_file_list($dlCopied, BASE_DIR), 'muted');
 } else {
     log_step('·', 'No downloads/ folder in repo — skipping', 'muted');
