@@ -17,8 +17,7 @@ import zipfile
 
 BUNDLE = 'com.circlecommunity.mobile'
 REQUIRED = ('IOS_TEAM_ID', 'IOS_CERTIFICATE_BASE64', 'IOS_CERTIFICATE_PASSWORD',
-            'IOS_PROFILE_BASE64', 'ASC_KEY_ID', 'ASC_ISSUER_ID',
-            'ASC_PRIVATE_KEY_BASE64')
+            'IOS_PROFILE_BASE64', 'ASC_KEY_ID', 'ASC_ISSUER_ID')
 
 
 def run(*args, data=None):
@@ -29,6 +28,8 @@ def run(*args, data=None):
 
 def preflight():
     missing = [name for name in REQUIRED if not os.environ.get(name)]
+    if not os.environ.get('ASC_PRIVATE_KEY') and not os.environ.get('ASC_PRIVATE_KEY_BASE64'):
+        missing.append('ASC_PRIVATE_KEY (P8 text) or ASC_PRIVATE_KEY_BASE64')
     if missing:
         raise ValueError('Add these secrets in the ios-testflight GitHub environment: '
                          + ', '.join(missing))
@@ -73,6 +74,20 @@ def decode(name, destination):
     destination.chmod(0o600)
 
 
+def write_api_key(destination):
+    # Phone users can paste the Apple-downloaded P8 text directly into GitHub,
+    # without an online base64 converter or sharing the key in chat.
+    raw = os.environ.get('ASC_PRIVATE_KEY', '').strip()
+    if raw:
+        destination.write_text(raw.replace('\r\n', '\n') + '\n')
+        destination.chmod(0o600)
+    else:
+        decode('ASC_PRIVATE_KEY_BASE64', destination)
+    text = destination.read_text().strip()
+    if not text.startswith('-----BEGIN PRIVATE KEY-----') or not text.endswith('-----END PRIVATE KEY-----'):
+        raise ValueError('App Store API key must contain the complete P8 private-key text.')
+
+
 def prepare():
     preflight()
     root, original = paths()
@@ -80,7 +95,9 @@ def prepare():
     root.chmod(0o700)
     decode('IOS_CERTIFICATE_BASE64', root / 'certificate.p12')
     decode('IOS_PROFILE_BASE64', root / 'profile.mobileprovision')
-    decode('ASC_PRIVATE_KEY_BASE64', root / f"AuthKey_{os.environ['ASC_KEY_ID']}.p8")
+    api_key_path = root / f"AuthKey_{os.environ['ASC_KEY_ID']}.p8"
+    write_api_key(api_key_path)
+    run('openssl', 'pkey', '-in', str(api_key_path), '-check', '-noout')
     profile = plistlib.loads(run('security', 'cms', '-D', '-i', str(root / 'profile.mobileprovision')))
     team = os.environ['IOS_TEAM_ID']
     profile_checks(profile, team, dt.datetime.now(dt.timezone.utc))

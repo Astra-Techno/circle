@@ -63,9 +63,25 @@ class SigningValidationTest(unittest.TestCase):
                     signing.decode('FICTIONAL_KEY', destination)
                 self.assertNotIn('not-base64-secret', str(raised.exception))
 
+    def test_api_key_accepts_raw_p8_text_or_existing_base64_without_logging_it(self):
+        import base64
+        pem = '-----BEGIN PRIVATE KEY-----\nfictional-not-a-real-key\n-----END PRIVATE KEY-----'
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / 'AuthKey.p8'
+            for env in [{'ASC_PRIVATE_KEY': pem},
+                        {'ASC_PRIVATE_KEY_BASE64': base64.b64encode(pem.encode()).decode()}]:
+                with patch.dict(os.environ, env, clear=True):
+                    signing.write_api_key(destination)
+                self.assertEqual(destination.read_text().strip(), pem)
+                self.assertEqual(destination.stat().st_mode & 0o777, 0o600)
+            with patch.dict(os.environ, {'ASC_PRIVATE_KEY': 'fictional-secret-invalid-key'}, clear=True):
+                with self.assertRaises(ValueError) as raised:
+                    signing.write_api_key(destination)
+                self.assertNotIn('fictional-secret-invalid-key', str(raised.exception))
+
     def test_signed_preflight_rejects_non_main(self):
         env = {key: 'fictional-secret' for key in signing.REQUIRED}
-        env.update(IOS_TEAM_ID='ABCDE12345', ASC_KEY_ID='ABCDE12345',
+        env.update(ASC_PRIVATE_KEY='fictional-present-key', IOS_TEAM_ID='ABCDE12345', ASC_KEY_ID='ABCDE12345',
                    ASC_ISSUER_ID='11111111-2222-3333-4444-555555555555',
                    GITHUB_REF='refs/heads/other')
         with patch.dict(os.environ, env, clear=True):

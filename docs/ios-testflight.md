@@ -51,7 +51,8 @@ Repository Settings → Environments → create **ios-testflight**, restrict dep
 | `IOS_PROFILE_BASE64` | Base64 of matching App Store `.mobileprovision` |
 | `ASC_KEY_ID` | App Store Connect team API Key ID |
 | `ASC_ISSUER_ID` | App Store Connect Issuer ID |
-| `ASC_PRIVATE_KEY_BASE64` | Base64 of the `.p8` API private key |
+| `ASC_PRIVATE_KEY` | Complete `.p8` text, including BEGIN/END PRIVATE KEY lines; paste directly into GitHub Secrets, never chat |
+| `ASC_PRIVATE_KEY_BASE64` | Optional alternative: base64 of the same `.p8`; existing setups still work |
 
 Base64 is encoding, not encryption. Encode files privately into local files, then put those values directly into GitHub's secret UI or use `gh secret set --env ios-testflight NAME < encoded-file`. Do not print them into shared logs. `python3 -c 'import base64,pathlib; pathlib.Path("encoded.txt").write_bytes(base64.b64encode(pathlib.Path("your-file.p12").read_bytes()))'` creates a base64 file without displaying it. Delete temporary encoded files after the secret is saved; retain an encrypted/offline backup of the actual identity.
 
@@ -105,3 +106,5 @@ Verification: actionlint clean;13 portable tests pass in the sealing virtual env
 The owner added the one-time setup token directly in GitHub. [Prepare40815281819](https://github.com/Astra-Techno/circle/actions/runs/40815281819) succeeded at reviewed source `128a56456ace4970688b1bccba454ee5fca1afe7`; the local sealer verified that exact run/repository/branch/workflow before reading inputs. [Import40815386432](https://github.com/Astra-Techno/circle/actions/runs/40815386432) succeeded: all four environment-secret PUT operations completed for IOS_TEAM_ID, IOS_CERTIFICATE_BASE64, IOS_CERTIFICATE_PASSWORD and IOS_PROFILE_BASE64. No plaintext signing material was committed, printed or uploaded as an artifact. The new ios-testflight environment is restricted to main.
 
 The temporary local encrypted dispatch file was removed; original private identity/profile remain outside Git. Current integration still gets403 when listing environment secrets, so the successful importer job is the verification evidence, not a local readback of secrets. The owner must remove IOS_SIGNING_SETUP_TOKEN from repository secrets and revoke the one-time PAT. App Store Connect API credentials/app record and an actual signed macOS build/TestFlight upload remain separate pending steps.
+
+For the remaining App Store API key, the workflow now accepts **ASC_PRIVATE_KEY** containing the raw P8 file text. This avoids a base64 conversion on iPhone. Preserve its BEGIN/END lines and line breaks. ASC_KEY_ID and ASC_ISSUER_ID are still required. Repository Actions secrets are also usable for these three names when the environment has no same-named override. Keep the P8 out of chat/source control. Both raw and prior base64 formats are tested; OpenSSL validates the actual private key before signing setup. This convenience does not grant App Store access or create an app record.
