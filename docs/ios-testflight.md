@@ -8,7 +8,7 @@ GitHub Actions provides the Mac. The owner needs a paid Apple Developer membersh
 
 - **validate** compiles the production iPhone app without Apple credentials. Its artifact is explicitly **UNSIGNED-NOT-INSTALLABLE**. It cannot be installed by tapping a website link.
 - **testflight** first validates, then signs, verifies and uploads an App Store IPA using secrets in the **ios-testflight** GitHub environment. Apple processes it before testers can install it. Upload success is not TestFlight processing/review or device acceptance.
-- The API is `https://circle.cloudkart24.com/api/v1`; preview is off. Android APK23 and the Android signing identity are unchanged.
+- The API is `https://circle.cloudkart24.com/api/v1`; preview is off. Android APK23 and the Android signing identity are unchanged. All three Runner configurations use an app-scoped Keychain entitlement for secure login storage; signed phone persistence still needs testing.
 - **iOS push notifications are currently disabled**, because the native notification-display/tap bridge supports Android only. Firebase/APNs and iOS bridge work is a separate task. Android-only contact/share tools also remain gated; ordinary in-app messaging and the copy-invite-link path remain available. Native iPhone behavior requires testing.
 
 ## One-time Apple setup (no Mac required)
@@ -71,3 +71,10 @@ Opening an App Store-signed IPA from a website does not install it. Use TestFlig
 ## Validation limits
 
 Linux can lint workflow/configuration and test signing/profile validation helpers; it cannot run Xcode or prove an iPhone install. Record the actual GitHub macOS run outcome separately. No signing credentials are currently supplied here, so there is no signed IPA, TestFlight upload or phone/push verification from this setup alone.
+
+## Recorded validation — 29 October 2026
+
+- [GitHub macOS run40804532410](https://github.com/Astra-Techno/circle/actions/runs/40804532410), source `dd66dfa`, succeeded: dependencies, analysis, platform-independent guard tests, unsigned iPhone release compilation, packaging and artifact upload. TestFlight job correctly skipped for target `validate`.
+- Artifact `ios-unsigned-validation-1` exists (11,683,213 bytes according to GitHub metadata); it is not an installable IPA. This environment could read run status but its network rejected the separate logs/artifact download hosts with403, so the artifact bytes were not inspected locally. Download through GitHub if needed.
+- `actionlint` clean; five portable signing/profile tests pass. All three native Runner configurations now reference an app-scoped Keychain entitlement as a follow-up, per the installed secure-storage plugin’s setup instructions. This signing-specific configuration has not been tested with a signed build.
+- Apple secrets remain unsupplied; no TestFlight upload, native session-persistence check or physical iPhone/push verification is claimed.

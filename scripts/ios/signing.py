@@ -167,7 +167,8 @@ def verify():
         raise ValueError('Exported IPA has an unexpected provisioning profile.')
     entitlements = plistlib.loads(run('codesign', '-d', '--entitlements', ':-', str(app)))
     if (entitlements.get('application-identifier') != f"{os.environ['IOS_TEAM_ID']}.{BUNDLE}" or
-            entitlements.get('get-task-allow', False)):
+            entitlements.get('get-task-allow', False) or
+            entitlements.get('keychain-access-groups') != [f"{os.environ['IOS_TEAM_ID']}.{BUNDLE}"]):
         raise ValueError('Exported IPA signing entitlements are invalid.')
     sha = hashlib.sha256(ipas[0].read_bytes()).hexdigest()
     (ipas[0].parent / 'SHA256SUMS.txt').write_text(f'{sha}  {ipas[0].name}\n')

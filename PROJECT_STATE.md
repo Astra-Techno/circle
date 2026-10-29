@@ -3,7 +3,7 @@
 Updated:29 October2026. Source, production deployment, APK publication and device acceptance are separate facts.
 
 ## Current base and rules
-- iOS: manual macOS validation/TestFlight workflow added, private signing helpers and no-Mac setup guide docs/ios-testflight.md. No Apple secrets supplied; iOS push remains gated off. Native CI outcome tracked separately from local lint. Android APK23 unchanged.
+- iOS: manual macOS validation/TestFlight workflow added; no-Mac guide docs/ios-testflight.md. Unsigned native compile/analysis/guard tests/artifact upload succeeded in run40804532410 at dd66dfa. Actionlint/5 signing-helper tests pass. Follow-up wires app-scoped Keychain entitlements; signed verification needs Apple secrets. No signed IPA/TestFlight upload/phone test; iOS push stays off. Android APK23 unchanged.
 - Current task: WhatsApp/Instagram-inspired live Chats visual refresh completed; avatar-led rows/unread badges, private group photos, opposing timed bubbles, compact pinned photo/input/send row and accessible action menus. See docs/chat-redesign.md. Existing requests/reporting/retry/session restrictions retained.
 - Active checkout /workspace/circle, main only. Owner approved default-on notifications with opt-outs; first-save regression fixed in the migration023 follow-up. See docs/notification-defaults.md. Safely pulled87912e1/399cd9d while preserving unfinished poll work. Editorial, photo-first supersedes older3D styling; preserve flat core tokens, pinned chat/RSVP controls and current navigation. See AGENTS.md/README§0/design-system.md.
 - Existing auth/groups/Memories/private media/reporting/blocking, live Chats/photos and Events/covers retained. Earlier missing profile-privacy WIP remains unimplemented.
