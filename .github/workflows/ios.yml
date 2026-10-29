@@ -1,0 +1,130 @@
+name: iOS build and TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Unsigned validation, or signed upload to TestFlight'
+        type: choice
+        options: [validate, testflight]
+        default: validate
+
+permissions:
+  contents: read
+
+concurrency:
+  group: circle-ios-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Compile iPhone app (unsigned)
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - name: Resolve locked dependencies
+        run: |
+          xcodebuild -version
+          python3 -m unittest discover -s ../scripts/ios -p 'test_*.py'
+          flutter pub get --enforce-lockfile
+      - name: Analyze and check platform-independent push guards
+        run: |
+          flutter analyze
+          flutter test test/design_system_guard_test.dart test/push_session_test.dart
+      - name: Compile release for iPhone (not installable)
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=CIRCLE_API_BASE_URL=https://circle.cloudkart24.com/api/v1 \
+            --dart-define=CIRCLE_PREVIEW=false \
+            --dart-define=CIRCLE_PUSH_ENABLED=false
+      - name: Package unsigned validation artifact
+        run: |
+          mkdir -p build/ios/validation
+          ditto -c -k --keepParent build/ios/iphoneos/Runner.app build/ios/validation/UNSIGNED-NOT-INSTALLABLE.zip
+          echo 'Compilation check only. Use the testflight workflow target for a signed install.' > build/ios/validation/README.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-validation-${{ github.run_number }}
+          path: mobile/build/ios/validation/
+          if-no-files-found: error
+          retention-days: 7
+
+  testflight:
+    name: Sign and upload to TestFlight
+    needs: validate
+    if: inputs.target == 'testflight' && github.ref == 'refs/heads/main'
+    runs-on: macos-15
+    environment: ios-testflight
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+      IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+      IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+      IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY_BASE64: ${{ secrets.ASC_PRIVATE_KEY_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check required Apple secrets
+        run: python3 ../scripts/ios/signing.py preflight
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - name: Import signing identity into temporary keychain
+        run: python3 ../scripts/ios/signing.py prepare
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Build signed App Store IPA
+        run: |
+          # Dedicated iOS sequence, with an increasing suffix for reruns.
+          IOS_BUILD="$((1000 + GITHUB_RUN_NUMBER)).${GITHUB_RUN_ATTEMPT}"
+          flutter build ipa --release --build-number "$IOS_BUILD" \
+            --export-options-plist "$RUNNER_TEMP/circle-ios/ExportOptions.plist" \
+            --dart-define=CIRCLE_API_BASE_URL=https://circle.cloudkart24.com/api/v1 \
+            --dart-define=CIRCLE_PREVIEW=false \
+            --dart-define=CIRCLE_PUSH_ENABLED=false
+      - name: Verify signature and installation metadata
+        run: python3 ../scripts/ios/signing.py verify
+      - name: Upload IPA to App Store Connect
+        run: |
+          IPA=$(find build/ios/ipa -maxdepth 1 -name '*.ipa' -print -quit)
+          test -n "$IPA"
+          API_PRIVATE_KEYS_DIR="$RUNNER_TEMP/circle-ios" xcrun altool \
+            --upload-app --type ios --file "$IPA" \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: circle-testflight-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            mobile/build/ios/ipa/*.ipa
+            mobile/build/ios/ipa/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove temporary signing material
+        if: always()
+        run: python3 ../scripts/ios/signing.py cleanup

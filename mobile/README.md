@@ -114,3 +114,7 @@ All fictional and session-local; ending the preview clears every album, report, 
 ## Validation
 
 `dart format --output=none --set-exit-if-changed .`, `flutter analyze`, and `flutter test`. Golden baselines in `test/goldens` are rendered on Windows; pixel differences are expected on other platforms. Native integration testing (`integration_test/`) requires an Android or iOS device or emulator.
+
+### iPhone builds without a Mac
+
+Use the manual [iOS build and TestFlight workflow](https://github.com/Astra-Techno/circle/actions/workflows/ios.yml). `validate` builds an unsigned compilation artifact; `testflight` signs and uploads after Apple secrets are configured. See [the setup and installation guide](../docs/ios-testflight.md). iOS push and Android-specific contact tools remain gated; a compiled app is not proof of native-device acceptance.
