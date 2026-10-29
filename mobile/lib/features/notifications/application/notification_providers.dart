@@ -6,16 +6,13 @@ import '../domain/notification_repository.dart';
 
 export '../domain/notification_repository.dart';
 
-/// The local mock. A new preview session (or ending one) starts afresh, so
-/// read state and settings are cleared.
+/// Activity isn't on the server yet: this session-local store backs the
+/// hidden Activity feature until a server activity API exists.
 final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
-  final entered = ref.watch(circlePreviewSessionProvider);
-  final showcase =
-      entered && ref.read(circlePreviewSessionProvider.notifier).showcase;
   return MockNotificationRepository(
-    groups: ref.watch(previewOnlyRepositoryProvider),
+    groups: ref.watch(circleRepositoryProvider),
     chat: ref.watch(chatRepositoryProvider),
-    showcase: showcase,
+    showcase: false,
     now: ref.watch(circleClockProvider),
   );
 });

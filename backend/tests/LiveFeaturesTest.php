@@ -32,6 +32,28 @@ final class LiveFeaturesTest extends ApiTestCase
         self::assertSame(200,$this->request('PATCH',$path.'/messages/'.$id,['removed'=>true],$a['token'])->status());self::assertSame('',$this->request('GET',$path,[],$b['token'])->data()['items'][0]['body']);self::assertSame(200,$this->request('PATCH',$path.'/messages/'.$id,['removed'=>false],$a['token'])->status());
         self::assertSame(200,$this->request('PUT',$path.'/messages/'.$id.'/reaction',['emoji'=>'❤️'],$b['token'])->status());self::assertCount(1,$this->request('GET',$path,[],$a['token'])->data()['items'][0]['reactions']);self::assertSame(200,$this->request('PUT',$path.'/messages/'.$id.'/reaction',['emoji'=>null],$b['token'])->status());self::assertCount(0,$this->request('GET',$path,[],$a['token'])->data()['items'][0]['reactions']);
     }
+    public function testInboxShowsLastVisibleMessageAndOrdersByActivity():void
+    {
+        $a=$this->user('Owner');$b=$this->user('Member');
+        $g1=$this->createGroup($a,'Older');$g2=$this->createGroup($a,'Newer');$this->join($a,$b,$g1);$this->join($a,$b,$g2);
+        $first=$this->request('POST','/api/v1/chats/'.$this->chatId($g1).'/messages',['body'=>'Fictional first','client_id'=>'fictional-inbox-0001'],$a['token'])->data()['id'];
+        $this->request('POST','/api/v1/chats/'.$this->chatId($g2).'/messages',['body'=>'Fictional second','client_id'=>'fictional-inbox-0002'],$a['token']);
+        $items=$this->request('GET','/api/v1/chats',[],$b['token'])->data()['items'];
+        self::assertSame(['Newer','Older'],array_column($items,'name'),'latest activity first');
+        self::assertSame('Fictional second',$items[0]['last_message']['body']);self::assertSame('Owner',$items[0]['last_message']['author_name']);self::assertSame((int)$a['id'],$items[0]['last_message']['author_id']);
+        self::assertMatchesRegularExpression('/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/',$items[0]['last_message']['created_at']);self::assertNull($items[0]['other_id']);
+        // A member who left keeps a preview frozen at their cutoff.
+        Database::transaction(static fn()=>MemberRepository::removeMember($g2,$b['id'],'left'));
+        $this->request('POST','/api/v1/chats/'.$this->chatId($g2).'/messages',['body'=>'Fictional after leaving','client_id'=>'fictional-inbox-0003'],$a['token']);
+        $frozen=array_column($this->request('GET','/api/v1/chats',[],$b['token'])->data()['items'],null,'name');
+        self::assertSame('Fictional second',$frozen['Newer']['last_message']['body']);
+        self::assertSame('Fictional after leaving',array_column($this->request('GET','/api/v1/chats',[],$a['token'])->data()['items'],null,'name')['Newer']['last_message']['body']);
+        // An unsent message leaves no text in the preview.
+        $this->request('PATCH','/api/v1/chats/'.$this->chatId($g1).'/messages/'.$first,['removed'=>true],$a['token']);
+        $older=array_column($this->request('GET','/api/v1/chats',[],$b['token'])->data()['items'],null,'name')['Older']['last_message'];
+        self::assertTrue($older['removed']);self::assertSame('',$older['body']);
+    }
+
     public function testDirectRequestsBlocksAndPrivacy():void
     {
         $a=$this->user('A');$b=$this->user('B');$other=$this->user('Other');$g=$this->createGroup($a);$this->join($a,$b,$g);

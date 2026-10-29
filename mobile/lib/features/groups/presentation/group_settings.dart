@@ -316,15 +316,9 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.flag_outlined),
               title: const Text('Reports and admin actions'),
-              subtitle: features.server
-                  ? const Text(
-                      'Review reports privately with this group’s admins.',
-                    )
-                  : Text(switch (widget.workspace.openReports[group.id] ?? 0) {
-                      0 => 'Nothing to review.',
-                      1 => '1 report to review.',
-                      final count => '$count reports to review.',
-                    }),
+              subtitle: const Text(
+                'Review reports privately with this group’s admins.',
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/groups/g/${group.id}/reports'),
             ),

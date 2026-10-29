@@ -22,20 +22,13 @@ class FakeLocator implements CountryLocator {
 }
 
 void main() {
-  test('release defaults to real API; explicit preview remains separate', () {
+  test('every build connects to the real API unless another is chosen', () {
+    expect(ApiConfig.forBuild()?.baseUrl.toString(), ApiConfig.deployedApi);
     expect(
-      ApiConfig.forBuild(release: true)?.baseUrl.toString(),
-      ApiConfig.deployedApi,
-    );
-    expect(ApiConfig.forBuild(release: true, preview: true), isNull);
-    expect(ApiConfig.forBuild(release: false), isNull);
-    expect(
-      ApiConfig.forBuild(
-        release: false,
-        baseUrl: 'https://example.test/api/v1',
-      )?.secure,
+      ApiConfig.forBuild(baseUrl: 'https://example.test/api/v1')?.secure,
       isTrue,
     );
+    expect(ApiConfig.forBuild(baseUrl: 'not a url'), isNull);
   });
   test('white is the initial appearance even on a dark device', () {
     final container = ProviderContainer();
@@ -54,7 +47,7 @@ void main() {
           overrides: [countryLocatorProvider.overrideWithValue(locator)],
           child: MaterialApp(
             theme: circleTheme(Brightness.light),
-            home: AccessForm(registering: false, onPreviewComplete: () {}),
+            home: AccessForm(registering: false, onSubmit: (_) async => null),
           ),
         ),
       );

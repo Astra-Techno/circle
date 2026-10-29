@@ -14,16 +14,9 @@ import '../core/two_pane.dart';
 import '../features/albums/presentation/album_detail.dart';
 import '../features/auth/domain/access_validation.dart';
 import '../features/auth/presentation/access_design.dart';
-import '../features/chat/presentation/chat_conversation.dart';
-import '../features/chat/presentation/chat_details.dart';
-import '../features/chat/presentation/chat_photos.dart';
-import '../features/chat/presentation/chat_inbox.dart';
 import '../features/chat/presentation/live_chats.dart';
-import '../features/chat/presentation/chat_new.dart';
-import '../features/chat/presentation/chat_privacy.dart';
 import '../features/profile/presentation/server_blocking.dart';
-import '../features/chat/presentation/chat_reply_privately.dart';
-import '../features/events/presentation/circle_events.dart';
+import '../features/events/application/events_filter.dart';
 import '../features/events/presentation/live_events.dart';
 import '../features/groups/domain/membership_rules.dart';
 import '../features/groups/presentation/circle_groups.dart';
@@ -37,7 +30,6 @@ import '../features/groups/presentation/invite_link_screen.dart';
 import '../features/memories/application/home_filter.dart';
 import '../features/memories/presentation/circle_memories.dart';
 import '../features/notifications/presentation/activity_screen.dart';
-import '../features/notifications/presentation/notification_settings.dart';
 import '../features/notifications/presentation/server_push_settings.dart';
 import '../features/notifications/presentation/push_presentation_host.dart';
 import '../features/profile/presentation/circle_you.dart';
@@ -72,7 +64,6 @@ String? circleReturnDestination(String? input) {
         '/polls',
         '/polls/new',
         '/chats/new',
-        '/chats/archived',
         '/you/privacy',
         '/you/notifications',
         '/you/account',
@@ -83,15 +74,11 @@ String? circleReturnDestination(String? input) {
         '/search',
       }.contains(path) ||
       RegExp(
-        r'^/(home/memory|chats/g|chats/c|chats/reply|groups/g|invite|events/e|polls/p)/[A-Za-z0-9_-]+$',
+        r'^/(home/memory|chats/g|chats/c|groups/g|invite|events/e|polls/p)/[A-Za-z0-9_-]+$',
       ).hasMatch(path) ||
       RegExp(r'^/polls/p/[A-Za-z0-9_-]+/voters$').hasMatch(path) ||
       RegExp(r'^/you/invitations/[A-Za-z0-9_-]+$').hasMatch(path) ||
       RegExp(r'^/groups/g/[A-Za-z0-9_-]+/invite/link$').hasMatch(path) ||
-      RegExp(r'^/chats/c/[A-Za-z0-9_-]+/details$').hasMatch(path) ||
-      RegExp(
-        r'^/chats/c/[A-Za-z0-9_-]+/photos/[A-Za-z0-9_-]+$',
-      ).hasMatch(path) ||
       RegExp(r'^/events/e/[A-Za-z0-9_-]+/(attendees|edit)$').hasMatch(path) ||
       RegExp(
         r'^/groups/g/[A-Za-z0-9_-]+/(settings|invite|reports)$',
@@ -119,34 +106,13 @@ Widget _page(BuildContext context, String title, Widget child) => Scaffold(
   body: SafeArea(child: child),
 );
 
-/// Shows [child] only where the session has [feature] (see
-/// [CircleFeatureGate]); the preview always does.
+/// Shows [child] only where the server offers [feature] (see
+/// [CircleFeatureGate]).
 Widget _gate(CircleFeature feature, Widget child) =>
     CircleFeatureGate(feature: feature, child: child);
 
-Widget _chatsPane([String? id]) => Consumer(
-  builder: (context, ref, _) {
-    if (ref.watch(circleFeaturesProvider).server) {
-      return _gate(
-        CircleFeature.liveChat,
-        LiveChatsScreen(key: ValueKey(id), id: id),
-      );
-    }
-    return _gate(
-      CircleFeature.chat,
-      CircleAdaptivePane(
-        kind: 'chats',
-        initial: id,
-        list: const ChatInboxScreen(),
-        detail: (id) => ChatConversationScreen(key: ValueKey(id), id: id),
-        placeholder: const CirclePanePlaceholder(
-          title: 'Choose a chat',
-          message: 'Pick a conversation on the left to read it here.',
-        ),
-      ),
-    );
-  },
-);
+Widget _chatsPane([String? id]) =>
+    _gate(CircleFeature.liveChat, LiveChatsScreen(key: ValueKey(id), id: id));
 
 Widget _groupsPane([String? id]) => CircleAdaptivePane(
   kind: 'groups',
@@ -159,28 +125,9 @@ Widget _groupsPane([String? id]) => CircleAdaptivePane(
   ),
 );
 
-Widget _eventsPane([String? id, String? group]) => Consumer(
-  builder: (context, ref, _) {
-    if (ref.watch(circleFeaturesProvider).server) {
-      return _gate(
-        CircleFeature.liveEvents,
-        LiveEventsScreen(key: ValueKey(id), id: id, group: group),
-      );
-    }
-    return _gate(
-      CircleFeature.events,
-      CircleAdaptivePane(
-        kind: 'events',
-        initial: id,
-        list: const CircleEvents(),
-        detail: (id) => CircleEventDetail(key: ValueKey(id), id: id),
-        placeholder: const CirclePanePlaceholder(
-          title: 'Choose an event',
-          message: 'Pick an event on the left to see its details here.',
-        ),
-      ),
-    );
-  },
+Widget _eventsPane([String? id, String? group]) => _gate(
+  CircleFeature.liveEvents,
+  LiveEventsScreen(key: ValueKey(id), id: id, group: group),
 );
 
 Widget _albumRoute(GoRouterState state, Widget Function(String id) builder) {
@@ -210,9 +157,6 @@ Widget _idRoute(GoRouterState state, Widget Function(String id) builder) {
 final circleRouterProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
   late final GoRouter router;
-  void enter(bool showcase) =>
-      ref.read(circlePreviewSessionProvider.notifier).enter(showcase: showcase);
-  // Server builds sign in for real; preview builds validate and discard.
   final server = ref.read(apiConfigProvider);
   final session = ref.read(serverSessionProvider.notifier);
   Future<String?> submit(AccessDetails details) => details.registering
@@ -266,18 +210,14 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (_, _) => _Welcome(onExploreDemo: () => enter(true)),
-      ),
+      GoRoute(path: '/', builder: (_, _) => const _Welcome()),
       GoRoute(
         path: '/register',
         builder: (_, state) => AccessForm(
           registering: true,
           next: circleReturnDestination(state.uri.queryParameters['next']),
-          onPreviewComplete: () => enter(false),
           connectedTo: server?.host,
-          onSubmit: server == null ? null : submit,
+          onSubmit: submit,
         ),
       ),
       GoRoute(
@@ -285,12 +225,9 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => AccessForm(
           registering: false,
           next: circleReturnDestination(state.uri.queryParameters['next']),
-          onPreviewComplete: () => enter(false),
           connectedTo: server?.host,
-          onSubmit: server == null ? null : submit,
-          notice: server == null
-              ? null
-              : ref.read(serverSessionProvider).notice,
+          onSubmit: submit,
+          notice: ref.read(serverSessionProvider).notice,
         ),
       ),
       GoRoute(
@@ -402,6 +339,7 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state, shell) => CircleAppShell(
           shell: shell,
           detail: circleIsDetailPath(state.uri.path),
+          path: state.uri.path,
         ),
         branches: [
           StatefulShellBranch(
@@ -443,84 +381,21 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'privacy',
-                    builder: (_, _) => ref.read(circleFeaturesProvider).server
-                        ? const LiveChatPrivacyScreen()
-                        : _gate(
-                            CircleFeature.privacy,
-                            const ChatPrivacyScreen(),
-                          ),
+                    builder: (_, _) => _gate(
+                      CircleFeature.liveChat,
+                      const LiveChatPrivacyScreen(),
+                    ),
                   ),
                   GoRoute(
                     path: 'new',
-                    builder: (_, _) => ref.read(circleFeaturesProvider).server
-                        ? const LiveChatsScreen(contacts: true)
-                        : _gate(CircleFeature.chat, const NewChatScreen()),
-                  ),
-                  GoRoute(
-                    path: 'archived',
-                    builder: (_, _) =>
-                        _gate(CircleFeature.chat, const ChatArchivedScreen()),
-                  ),
-                  // A group's chat, from its group space.
-                  GoRoute(
-                    path: 'g/:id',
-                    redirect: (_, state) {
-                      final id = state.pathParameters['id'] ?? '';
-                      return _idSegment.hasMatch(id)
-                          ? '/chats/c/g-$id'
-                          : '/chats';
-                    },
-                  ),
-                  GoRoute(
-                    path: 'reply/:id',
-                    builder: (_, state) => _gate(
-                      CircleFeature.chat,
-                      _idRoute(
-                        state,
-                        (id) =>
-                            ChatReplyPrivately(key: ValueKey(id), memoryId: id),
-                      ),
+                    builder: (_, _) => _gate(
+                      CircleFeature.liveChat,
+                      const LiveChatsScreen(contacts: true),
                     ),
                   ),
                   GoRoute(
                     path: 'c/:id',
                     builder: (_, state) => _idRoute(state, _chatsPane),
-                    routes: [
-                      GoRoute(
-                        path: 'details',
-                        builder: (_, state) => _gate(
-                          CircleFeature.chat,
-                          _idRoute(state, (id) => ChatDetailsScreen(id: id)),
-                        ),
-                      ),
-                      GoRoute(
-                        path: 'photos/:message',
-                        builder: (_, state) => _gate(
-                          CircleFeature.chat,
-                          _idRoute(state, (id) {
-                            final message =
-                                state.pathParameters['message'] ?? '';
-                            return _idSegment.hasMatch(message)
-                                ? ChatPhotoViewer(
-                                    conversationId: id,
-                                    messageId: message,
-                                    initialIndex:
-                                        int.tryParse(
-                                          state.uri.queryParameters['index'] ??
-                                              '',
-                                        ) ??
-                                        0,
-                                  )
-                                : const ReadingPane(
-                                    child: CircleEmpty(
-                                      title: 'This page is unavailable',
-                                      message: 'Return to your circles.',
-                                    ),
-                                  );
-                          }),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -612,9 +487,7 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                         ],
                         builder: (_, state) => _idRoute(
                           state,
-                          (id) => ref.read(circleFeaturesProvider).server
-                              ? ContactInviteScreen(groupId: id)
-                              : GroupInviteScreen(groupId: id),
+                          (id) => ContactInviteScreen(groupId: id),
                         ),
                       ),
                     ],
@@ -632,14 +505,9 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'new',
-                    builder: (_, state) =>
-                        ref.read(circleFeaturesProvider).server
-                        ? LiveEventForm(
-                            group: state.uri.queryParameters['group'],
-                          )
-                        : EventFormScreen(
-                            initialGroupId: state.uri.queryParameters['group'],
-                          ),
+                    builder: (_, state) => LiveEventForm(
+                      group: state.uri.queryParameters['group'],
+                    ),
                   ),
                   GoRoute(
                     path: 'e/:id',
@@ -649,19 +517,13 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                         path: 'attendees',
                         builder: (_, state) => _idRoute(
                           state,
-                          (id) => ref.read(circleFeaturesProvider).server
-                              ? LiveAttendeesScreen(id: id)
-                              : EventAttendees(id: id),
+                          (id) => LiveAttendeesScreen(id: id),
                         ),
                       ),
                       GoRoute(
                         path: 'edit',
-                        builder: (_, state) => _idRoute(
-                          state,
-                          (id) => ref.read(circleFeaturesProvider).server
-                              ? LiveEventForm(id: id)
-                              : EventFormScreen(eventId: id),
-                        ),
+                        builder: (_, state) =>
+                            _idRoute(state, (id) => LiveEventForm(id: id)),
                       ),
                     ],
                   ),
@@ -693,23 +555,16 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'privacy',
-                    builder: (_, _) => ref.read(circleFeaturesProvider).server
-                        ? _gate(
-                            CircleFeature.blocking,
-                            const ServerBlockingScreen(),
-                          )
-                        : _gate(
-                            CircleFeature.privacy,
-                            const ChatPrivacyScreen(),
-                          ),
+                    builder: (_, _) => _gate(
+                      CircleFeature.blocking,
+                      const ServerBlockingScreen(),
+                    ),
                   ),
                   GoRoute(
                     path: 'notifications',
                     builder: (_, _) => _gate(
                       CircleFeature.notificationSettings,
-                      ref.read(circleFeaturesProvider).server
-                          ? const ServerPushSettingsScreen()
-                          : const NotificationSettingsScreen(),
+                      const ServerPushSettingsScreen(),
                     ),
                   ),
                   GoRoute(
@@ -717,25 +572,11 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                     routes: [
                       GoRoute(
                         path: 'password',
-                        builder: (_, _) =>
-                            ref.read(circleFeaturesProvider).server
-                            ? const ChangePasswordScreen()
-                            : const CircleEmpty(
-                                title: 'Real accounts only',
-                                message:
-                                    'Password changes aren’t part of the fictional preview.',
-                              ),
+                        builder: (_, _) => const ChangePasswordScreen(),
                       ),
                       GoRoute(
                         path: 'sessions',
-                        builder: (_, _) =>
-                            ref.read(circleFeaturesProvider).server
-                            ? const SessionsScreen()
-                            : const CircleEmpty(
-                                title: 'Real accounts only',
-                                message:
-                                    'Device sessions aren’t part of the fictional preview.',
-                              ),
+                        builder: (_, _) => const SessionsScreen(),
                       ),
                     ],
                     builder: (_, _) => const AccountScreen(),
@@ -769,8 +610,7 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
 
 /// The welcome page, or a calm moment while a stored session is checked.
 class _Welcome extends ConsumerWidget {
-  const _Welcome({required this.onExploreDemo});
-  final VoidCallback onExploreDemo;
+  const _Welcome();
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (ref.watch(serverSessionProvider.select((s) => s.restoring))) {
@@ -785,10 +625,7 @@ class _Welcome extends ConsumerWidget {
         ),
       );
     }
-    return AccessWelcome(
-      onExploreDemo: onExploreDemo,
-      connectedTo: ref.watch(apiConfigProvider)?.host,
-    );
+    return AccessWelcome(connectedTo: ref.watch(apiConfigProvider)?.host);
   }
 }
 
@@ -814,11 +651,19 @@ class CircleExperience extends ConsumerWidget {
 const navigationMaxTextScale = 1.3;
 
 class CircleAppShell extends ConsumerWidget {
-  const CircleAppShell({super.key, required this.shell, required this.detail});
+  const CircleAppShell({
+    super.key,
+    required this.shell,
+    required this.detail,
+    this.path = '',
+  });
   final StatefulNavigationShell shell;
 
   /// True when a detail page (not a branch root) is showing.
   final bool detail;
+
+  /// The current location, for pages that draw their own top bar.
+  final String path;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -836,19 +681,14 @@ class CircleAppShell extends ConsumerWidget {
     final features = ref.watch(circleFeaturesProvider);
     final branches = [
       0,
-      if ((features.has(CircleFeature.chat) ||
-          features.has(CircleFeature.liveChat)))
-        1,
+      if (features.has(CircleFeature.liveChat)) 1,
       2,
-      if ((features.has(CircleFeature.events) ||
-          features.has(CircleFeature.liveEvents)))
-        3,
+      if (features.has(CircleFeature.liveEvents)) 3,
       4,
     ];
     // "New event" only when the viewer may create an event somewhere.
     final canCreateEvent =
-        (features.has(CircleFeature.events) ||
-            features.has(CircleFeature.liveEvents)) &&
+        features.has(CircleFeature.liveEvents) &&
         (workspace?.groups.any(
               (group) => MembershipRules.canCreateEvent(
                 group,
@@ -860,10 +700,10 @@ class CircleAppShell extends ConsumerWidget {
         ? null
         : switch (index) {
             0 => (label: 'Create Memory', location: composeLocation(filter)),
-            1
-                when (features.has(CircleFeature.chat) ||
-                    features.has(CircleFeature.liveChat)) =>
-              (label: 'New chat', location: '/chats/new'),
+            1 when features.has(CircleFeature.liveChat) => (
+              label: 'New chat',
+              location: '/chats/new',
+            ),
             2 => (label: 'New group', location: '/groups/new'),
             3 when canCreateEvent => (
               label: 'New event',
@@ -873,6 +713,11 @@ class CircleAppShell extends ConsumerWidget {
           };
     final theme = Theme.of(context);
     const titles = ['Memories', 'Chats', 'Groups', 'Events', 'You'];
+    // Like WhatsApp, an open live conversation is full screen: it draws its
+    // own bar (back, photo, name, options) and hides the tab dock.
+    if (RegExp(r'^/chats/c/[^/]+$').hasMatch(path)) {
+      return Scaffold(body: SafeArea(child: shell));
+    }
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: Space.hero * 2 + Space.sm,
@@ -957,8 +802,7 @@ class CircleAppShell extends ConsumerWidget {
                           selectedIcon: Icon(Icons.home_rounded),
                           label: 'Home',
                         ),
-                        if ((features.has(CircleFeature.chat) ||
-                            features.has(CircleFeature.liveChat)))
+                        if (features.has(CircleFeature.liveChat))
                           NavigationDestination(
                             icon: Icon(Icons.forum_outlined),
                             selectedIcon: Icon(Icons.forum_rounded),
@@ -969,8 +813,7 @@ class CircleAppShell extends ConsumerWidget {
                           selectedIcon: Icon(Icons.groups_rounded),
                           label: 'Groups',
                         ),
-                        if ((features.has(CircleFeature.events) ||
-                            features.has(CircleFeature.liveEvents)))
+                        if (features.has(CircleFeature.liveEvents))
                           NavigationDestination(
                             icon: Icon(Icons.event_outlined),
                             selectedIcon: Icon(Icons.event_rounded),

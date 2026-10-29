@@ -10,16 +10,15 @@ import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../groups/domain/group_tree.dart';
 import '../../workspace/application/workspace_providers.dart';
-import '../../workspace/presentation/feature_gate.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import '../application/media_providers.dart';
 import '../application/photo_uploads.dart';
-import 'memory_photos.dart';
 
-/// B3: Memory composer. The audience comes from context (`?group=`); with
-/// several groups and no context, the person must choose explicitly. Text,
-/// fictional photos and a poll can be mixed; at least one is needed.
-/// "Share Memory" is the one primary action; extras sit under "More options".
+/// B3: Memory composer, camera first (like Instagram): photos at the top,
+/// then a caption and who sees it. The audience comes from context
+/// (`?group=`); with several groups and no context, the person must choose
+/// explicitly. Photos or words are needed. "Share Memory" is the one primary
+/// action, pinned in the thumb zone; extras sit under "More options".
 class CircleCompose extends ConsumerStatefulWidget {
   const CircleCompose({super.key, this.initialGroupId});
   final String? initialGroupId;
@@ -32,18 +31,15 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
   final _text = TextEditingController();
   final _year = TextEditingController();
   final _place = TextEditingController();
-  final List<MemoryScene> _photos = [];
-
-  /// Optional captions for the preview's photos (≤ 140 each). A server has
-  /// no caption field yet, so they're only offered in the preview.
-  final Map<MemoryScene, TextEditingController> _captions = {};
-  String? _captionError;
-  PollForm? _poll;
   String? _groupId;
-  String? _audienceError, _textError, _yearError, _placeError, _pollError;
+  String? _audienceError, _textError, _yearError, _placeError;
+
+  /// Why sharing must wait (photos uploading or failed), shown just above
+  /// the pinned Share button so no message covers it.
+  String? _shareNotice;
   bool _busy = false;
 
-  /// Real photos on a server (null in the preview, which uses scenes).
+  /// The photos being uploaded to the server (null while signed out).
   PhotoUploads? _uploads;
   MemoryDraftStore? _draftStore;
   DraftLease? _draftLease;
@@ -154,11 +150,7 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
     _text.dispose();
     _year.dispose();
     _place.dispose();
-    _poll?.dispose();
     _uploads?.dispose();
-    for (final caption in _captions.values) {
-      caption.dispose();
-    }
     super.dispose();
   }
 
@@ -188,81 +180,45 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
     setState(() => _textError = null);
   }
 
-  Future<void> _pickPhotos() async {
-    final picked = await pickScenes(
-      context,
-      initial: _photos,
-      max: MemoryRules.maxPhotos,
-    );
-    if (picked != null && mounted) {
-      setState(() {
-        _photos
-          ..clear()
-          ..addAll(picked);
-        _textError = null;
-        _dropUnusedCaptions();
-      });
-    }
-  }
-
-  TextEditingController _caption(MemoryScene scene) =>
-      _captions.putIfAbsent(scene, TextEditingController.new);
-
-  void _dropUnusedCaptions() {
-    for (final scene in [..._captions.keys]) {
-      if (!_photos.contains(scene)) _captions.remove(scene)!.dispose();
-    }
-  }
-
   Future<void> _share(String? groupId) async {
     if (_busy || _resumeDraft != null) return;
     final uploads = _uploads;
     if (uploads != null && groupId != null) {
       if (uploads.busy) {
-        showCircleMessage(
-          context,
-          'Your photos are still uploading. Share again in a moment.',
+        setState(
+          () => _shareNotice =
+              'Your photos are still uploading. Share again in a moment.',
         );
         return;
       }
       if (uploads.hasFailed) {
-        showCircleMessage(
-          context,
-          'Retry or remove the photos that didn’t upload.',
+        setState(
+          () => _shareNotice = 'Retry or remove the photos that didn’t upload.',
         );
         return;
       }
     }
+    if (_shareNotice != null) setState(() => _shareNotice = null);
     final now = DateTime.now();
-    final poll = _poll?.draft();
     final content = MemoryRules.checkContent(
       text: _text.text,
-      photoCount: uploads?.count ?? _photos.length,
-      hasPoll: poll != null,
+      photoCount: uploads?.count ?? 0,
+      hasPoll: false,
     );
-    final pollCheck = poll == null ? null : PollRules.checkDraft(poll);
     final year = MemoryRules.parseYear(_year.text, now);
     final place = MemoryRules.checkPlace(_place.text);
-    final captions = [for (final scene in _photos) _captions[scene]?.text];
-    final captionCheck = captions
-        .map(PhotoCaptionRules.check)
-        .firstWhere((check) => !check.allowed, orElse: () => content);
     setState(() {
-      _captionError = captionCheck.allowed ? null : captionCheck.reason;
       _audienceError = groupId == null
           ? 'Choose who will see this Memory.'
           : null;
       _textError = content.reason;
-      _pollError = pollCheck?.reason;
       _yearError = year.result.reason;
       _placeError = place.reason;
     });
     if (groupId == null ||
         !content.allowed ||
-        !(pollCheck?.allowed ?? true) ||
         !year.result.allowed ||
-        !place.allowed ||
-        _captionError != null) {
+        !place.allowed) {
       return;
     }
     setState(() => _busy = true);
@@ -273,10 +229,7 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
           .createMemory(
             groupId,
             _text.text,
-            photos: [..._photos],
-            captions: captions,
             mediaIds: uploads?.readyIds ?? const [],
-            poll: poll,
             takenYear: year.year,
             place: _place.text,
           ),
@@ -328,242 +281,237 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
       _effectiveGroup = chosen;
       final tree = buildGroupTree(workspace.groups);
       final theme = Theme.of(context);
-      final features = ref.watch(circleFeaturesProvider);
       final uploads = _uploads;
       if (uploads != null) _target(chosen);
-      final photoCount = uploads?.count ?? _photos.length;
-      final optional = photoCount > 0 || _poll != null;
-      return ReadingPane(
-        child: ListView(
-          padding: CircleInsets.form,
-          children: [
-            const CircleHeading(
-              title: 'Something worth\nsharing.',
-              subtitle: 'A small moment can mean a lot to your circle.',
+      final photoCount = uploads?.count ?? 0;
+      final form = ListView(
+        padding: CircleInsets.form,
+        children: [
+          if (_resumeDraft != null) ...[
+            Text(
+              'Resume your saved text draft? Photos must be selected again.',
+              style: theme.textTheme.bodyMedium,
             ),
-            if (_resumeDraft != null) ...[
-              Text(
-                'Resume your saved text draft? Photos must be selected again.',
-                style: theme.textTheme.bodyMedium,
-              ),
-              Wrap(
-                spacing: Space.sm,
-                children: [
-                  TextButton(
-                    onPressed: () => _resolveDraft(true),
-                    child: const Text('Resume draft'),
-                  ),
-                  TextButton(
-                    onPressed: () => _resolveDraft(false),
-                    child: const Text('Discard draft'),
-                  ),
-                ],
-              ),
-            ],
-            if (_draftNotice != null)
-              Text(_draftNotice!, style: theme.textTheme.bodyMedium),
-            DropdownButtonFormField<String>(
-              initialValue: chosen,
-              isExpanded: true,
-              hint: const Text('Choose a group'),
-              decoration: InputDecoration(
-                labelText: 'Share with',
-                helperText: 'Only members of this exact group will see it.',
-                helperMaxLines: 3,
-                errorText: _audienceError,
-                errorMaxLines: 3,
-              ),
-              items: [
-                for (final entry in tree)
-                  DropdownMenuItem(
-                    value: entry.group.id,
-                    child: Text(
-                      entry.path.isEmpty
-                          ? entry.group.name
-                          : '${entry.group.name} · in ${entry.path.last}',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-              onChanged: (id) {
-                setState(() {
-                  _groupId = id;
-                  _audienceError = null;
-                });
-                _target(id);
-                _draftChanged();
-              },
-            ),
-            const SizedBox(height: Space.section),
-            TextField(
-              controller: _text,
-              readOnly: _resumeDraft != null,
-              minLines: 3,
-              maxLines: 8,
-              maxLength: MemoryRules.maxText,
-              decoration: InputDecoration(
-                labelText: 'Your Memory',
-                helperText: optional ? 'Words are optional here.' : null,
-                errorText: _textError,
-                errorMaxLines: 3,
-              ),
-            ),
-            const SizedBox(height: Space.sm),
             Wrap(
               spacing: Space.sm,
-              runSpacing: Space.sm,
               children: [
-                if (uploads != null)
-                  OutlinedButton.icon(
-                    onPressed: uploads.count >= MemoryRules.maxPhotos
-                        ? null
-                        : () => _pickDevicePhotos(uploads),
-                    icon: const Icon(Icons.add_photo_alternate_outlined),
-                    label: Text(
-                      uploads.isEmpty ? 'Add photos' : 'Add more photos',
-                    ),
-                  )
-                else
-                  OutlinedButton.icon(
-                    onPressed: _pickPhotos,
-                    icon: const Icon(Icons.add_photo_alternate_outlined),
-                    label: Text(
-                      _photos.isEmpty ? 'Add photos' : 'Change photos',
-                    ),
-                  ),
-                if (_poll == null && features.has(CircleFeature.polls))
-                  OutlinedButton.icon(
-                    onPressed: () => setState(() {
-                      _poll = PollForm();
-                      _textError = null;
-                    }),
-                    icon: const Icon(Icons.poll_outlined),
-                    label: const Text('Add a poll'),
-                  ),
+                TextButton(
+                  onPressed: () => _resolveDraft(true),
+                  child: const Text('Resume draft'),
+                ),
+                TextButton(
+                  onPressed: () => _resolveDraft(false),
+                  child: const Text('Discard draft'),
+                ),
               ],
             ),
-            if (uploads != null && !uploads.isEmpty) ...[
-              CircleSectionTitle(
-                '${uploads.count} of ${MemoryRules.maxPhotos} photos',
-              ),
+          ],
+          if (_draftNotice != null)
+            Text(_draftNotice!, style: theme.textTheme.bodyMedium),
+          // Photos first: one big tap opens the phone's photos.
+          if (uploads != null)
+            if (uploads.isEmpty)
+              _AddPhotosTile(onTap: () => _pickDevicePhotos(uploads))
+            else ...[
               UploadGrid(uploads: uploads, waitingForGroup: chosen == null),
-            ],
-            if (_photos.isNotEmpty) ...[
-              CircleSectionTitle(
-                '${_photos.length} of ${MemoryRules.maxPhotos} photos',
-              ),
-              Wrap(
-                spacing: Space.sm,
-                runSpacing: Space.sm,
-                children: [
-                  for (final scene in _photos)
-                    InputChip(
-                      avatar: Icon(memorySceneIcon(scene)),
-                      label: Text(scene.label),
-                      deleteButtonTooltipMessage: 'Remove ${scene.label} photo',
-                      onDeleted: () => setState(() {
-                        _photos.remove(scene);
-                        _dropUnusedCaptions();
-                      }),
-                    ),
-                ],
-              ),
-              // Optional, out of the way: one field per photo.
-              ExpansionTile(
-                key: const ValueKey('compose-captions'),
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: const EdgeInsets.only(bottom: Space.sm),
-                initiallyExpanded: _captionError != null,
-                title: const Text('Captions (optional)'),
-                subtitle: Text(
-                  _captionError ?? 'A few words under each photo',
-                  style: theme.textTheme.bodySmall,
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: uploads.count >= MemoryRules.maxPhotos
+                      ? null
+                      : () => _pickDevicePhotos(uploads),
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: Text(
+                    '$photoCount of ${MemoryRules.maxPhotos} · Add more photos',
+                  ),
                 ),
-                children: [
-                  for (final scene in _photos)
-                    Padding(
-                      padding: const EdgeInsets.only(top: Space.sm),
-                      child: TextField(
-                        controller: _caption(scene),
-                        maxLength: PhotoCaptionRules.maxLength,
-                        decoration: InputDecoration(
-                          labelText: 'Caption for ${scene.label}',
+              ),
+            ],
+          const SizedBox(height: Space.lg),
+          TextField(
+            controller: _text,
+            readOnly: _resumeDraft != null,
+            minLines: 2,
+            maxLines: 8,
+            maxLength: MemoryRules.maxText,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              labelText: 'Your Memory',
+              hintText: 'Write a caption…',
+              helperText: photoCount > 0 ? 'Words are optional here.' : null,
+              errorText: _textError,
+              errorMaxLines: 3,
+            ),
+          ),
+          const SizedBox(height: Space.sm),
+          DropdownButtonFormField<String>(
+            initialValue: chosen,
+            isExpanded: true,
+            hint: const Text('Choose a group'),
+            decoration: InputDecoration(
+              labelText: 'Share with',
+              prefixIcon: const Icon(Icons.lock_outline),
+              helperText: 'Only members of this exact group will see it.',
+              helperMaxLines: 3,
+              errorText: _audienceError,
+              errorMaxLines: 3,
+            ),
+            items: [
+              for (final entry in tree)
+                DropdownMenuItem(
+                  value: entry.group.id,
+                  child: Text(
+                    entry.path.isEmpty
+                        ? entry.group.name
+                        : '${entry.group.name} · in ${entry.path.last}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+            onChanged: (id) {
+              setState(() {
+                _groupId = id;
+                _audienceError = null;
+              });
+              _target(id);
+              _draftChanged();
+            },
+          ),
+          const SizedBox(height: Space.sm),
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(bottom: Space.md),
+            title: const Text('More options'),
+            subtitle: Text(
+              'When and where it was taken',
+              style: theme.textTheme.bodySmall,
+            ),
+            children: [
+              TextField(
+                controller: _year,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ],
+                decoration: InputDecoration(
+                  labelText: 'Year taken (optional)',
+                  helperText:
+                      'For older moments, ${MemoryRules.firstYear}–'
+                      '${DateTime.now().year}',
+                  errorText: _yearError,
+                  errorMaxLines: 3,
+                ),
+              ),
+              const SizedBox(height: Space.md),
+              TextField(
+                controller: _place,
+                maxLength: MemoryRules.maxPlace,
+                decoration: InputDecoration(
+                  labelText: 'Place (optional)',
+                  errorText: _placeError,
+                  errorMaxLines: 3,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+      // The one primary action stays in the thumb zone.
+      return ReadingPane(
+        child: Column(
+          children: [
+            Expanded(child: form),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  top: BorderSide(color: CircleAccents.of(context).hairline),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Space.section,
+                  Space.md,
+                  Space.section,
+                  Space.md,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_shareNotice != null) ...[
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          _shareNotice!,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
                         ),
                       ),
+                      const SizedBox(height: Space.sm),
+                    ],
+                    FilledButton(
+                      onPressed: _busy ? null : () => _share(chosen),
+                      child: Text(_busy ? 'Sharing…' : 'Share Memory'),
                     ),
-                ],
-              ),
-            ],
-            if (_poll != null) ...[
-              const SizedBox(height: Space.lg),
-              PollEditor(
-                form: _poll!,
-                error: _pollError,
-                onChanged: () => setState(() {}),
-                onRemove: () => setState(() {
-                  _poll!.dispose();
-                  _poll = null;
-                  _pollError = null;
-                }),
-              ),
-            ],
-            const SizedBox(height: Space.sm),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              childrenPadding: const EdgeInsets.only(bottom: Space.md),
-              title: const Text('More options'),
-              subtitle: Text(
-                'When and where it was taken',
-                style: theme.textTheme.bodySmall,
-              ),
-              children: [
-                TextField(
-                  controller: _year,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(4),
                   ],
-                  decoration: InputDecoration(
-                    labelText: 'Year taken (optional)',
-                    helperText:
-                        'For older moments, ${MemoryRules.firstYear}–'
-                        '${DateTime.now().year}',
-                    errorText: _yearError,
-                    errorMaxLines: 3,
-                  ),
                 ),
-                const SizedBox(height: Space.md),
-                TextField(
-                  controller: _place,
-                  maxLength: MemoryRules.maxPlace,
-                  decoration: InputDecoration(
-                    labelText: 'Place (optional)',
-                    errorText: _placeError,
-                    errorMaxLines: 3,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: Space.md),
-            FilledButton(
-              onPressed: _busy ? null : () => _share(chosen),
-              child: Text(
-                _busy
-                    ? (features.server ? 'Sharing…' : 'Saving locally…')
-                    : 'Share Memory',
               ),
-            ),
-            const SizedBox(height: Space.lg),
-            const PreviewNotice(
-              'Preview: photos are fictional illustrations, and everything '
-              'stays on this device until you end the preview.',
             ),
           ],
         ),
       );
     },
   );
+}
+
+/// The empty photo area at the top of the composer: one large target that
+/// opens the phone's photos.
+class _AddPhotosTile extends StatelessWidget {
+  const _AddPhotosTile({required this.onTap});
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    return Semantics(
+      button: true,
+      label: 'Add photos',
+      excludeSemantics: true,
+      child: Material(
+        color: accents.recessed,
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: AspectRatio(
+            aspectRatio: 4 / 3,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.add_photo_alternate_outlined,
+                  size: Space.large,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(height: Space.sm),
+                Text('Add photos', style: theme.textTheme.titleMedium),
+                Text(
+                  'Up to ${MemoryRules.maxPhotos}, from your phone',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: accents.caption,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// The composer's photos on a server: thumbnails from the device, each
@@ -708,212 +656,6 @@ class _UploadTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Poll fields held by a composer (Memories and chat).
-class PollForm {
-  PollForm() : options = [TextEditingController(), TextEditingController()];
-  final question = TextEditingController();
-  final List<TextEditingController> options;
-  bool multipleChoice = false, anonymous = false, allowChangeVote = true;
-  PollDuration duration = PollDuration.never;
-  PollResultsVisibility resultsVisibility = PollResultsVisibility.afterVoting;
-
-  PollDraft draft() => PollDraft(
-    question: question.text,
-    options: [for (final option in options) option.text],
-    multipleChoice: multipleChoice,
-    anonymous: anonymous,
-    duration: duration,
-    resultsVisibility: resultsVisibility,
-    allowChangeVote: allowChangeVote,
-  );
-
-  void dispose() {
-    question.dispose();
-    for (final option in options) {
-      option.dispose();
-    }
-  }
-}
-
-/// F1 in the composer: a question and two options are enough; settings
-/// already have calm defaults behind "More poll options".
-class PollEditor extends StatelessWidget {
-  const PollEditor({
-    super.key,
-    required this.form,
-    required this.onChanged,
-    this.onRemove,
-    this.error,
-  });
-  final PollForm form;
-  final VoidCallback onChanged;
-
-  /// Shows "Remove poll" when set (the Memory composer).
-  final VoidCallback? onRemove;
-  final String? error;
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final options = form.options;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: CircleAccents.of(context).hairline),
-        borderRadius: BorderRadius.circular(CircleRadius.inner),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(Space.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text('Poll', style: theme.textTheme.titleMedium),
-                  ),
-                ),
-                if (onRemove != null)
-                  TextButton(
-                    onPressed: onRemove,
-                    child: const Text('Remove poll'),
-                  ),
-              ],
-            ),
-            const SizedBox(height: Space.sm),
-            TextField(
-              controller: form.question,
-              maxLength: PollRules.maxQuestion,
-              decoration: const InputDecoration(labelText: 'Poll question'),
-            ),
-            for (final (index, option) in options.indexed)
-              Padding(
-                key: ObjectKey(option),
-                padding: const EdgeInsets.only(top: Space.sm),
-                child: TextField(
-                  controller: option,
-                  maxLength: PollRules.maxOption,
-                  decoration: InputDecoration(
-                    labelText: 'Option ${index + 1}',
-                    suffixIcon: options.length > PollRules.minOptions
-                        ? IconButton(
-                            tooltip: 'Remove option ${index + 1}',
-                            icon: const Icon(Icons.close),
-                            onPressed: () {
-                              options.removeAt(index).dispose();
-                              onChanged();
-                            },
-                          )
-                        : null,
-                  ),
-                ),
-              ),
-            if (options.length < PollRules.maxOptions)
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  onPressed: () {
-                    options.add(TextEditingController());
-                    onChanged();
-                  },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add option'),
-                ),
-              ),
-            if (error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: Space.xs),
-                child: Text(
-                  error!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              title: const Text('More poll options'),
-              children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Allow more than one answer'),
-                  value: form.multipleChoice,
-                  onChanged: (value) {
-                    form.multipleChoice = value;
-                    onChanged();
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Anonymous votes'),
-                  subtitle: const Text('Nobody sees who voted for what.'),
-                  value: form.anonymous,
-                  onChanged: (value) {
-                    form.anonymous = value;
-                    onChanged();
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('People can change their vote'),
-                  value: form.allowChangeVote,
-                  onChanged: (value) {
-                    form.allowChangeVote = value;
-                    onChanged();
-                  },
-                ),
-                const SizedBox(height: Space.sm),
-                DropdownButtonFormField<PollDuration>(
-                  initialValue: form.duration,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Closes'),
-                  items: [
-                    for (final duration in PollDuration.values)
-                      DropdownMenuItem(
-                        value: duration,
-                        child: Text(
-                          duration == PollDuration.never
-                              ? 'Never (close it yourself)'
-                              : 'After ${duration.label}',
-                        ),
-                      ),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) form.duration = value;
-                    onChanged();
-                  },
-                ),
-                const SizedBox(height: Space.md),
-                DropdownButtonFormField<PollResultsVisibility>(
-                  initialValue: form.resultsVisibility,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Who sees results',
-                  ),
-                  items: [
-                    for (final visibility in PollResultsVisibility.values)
-                      DropdownMenuItem(
-                        value: visibility,
-                        child: Text(
-                          visibility.label,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) form.resultsVisibility = value;
-                    onChanged();
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

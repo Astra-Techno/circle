@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../memories/presentation/memory_grid.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
@@ -38,8 +39,11 @@ class _CircleYouState extends ConsumerState<CircleYou> {
   Widget build(BuildContext context) => WorkspaceView(
     builder: (workspace) {
       final waiting = workspace.invitations.length;
-      final badge = ref.watch(activityBadgeProvider);
       final features = ref.watch(circleFeaturesProvider);
+      // Activity is hidden until the server offers it.
+      final badge = features.has(CircleFeature.activity)
+          ? ref.watch(activityBadgeProvider)
+          : 0;
       final account = ref.watch(serverAccountProvider);
       Widget entry({
         required IconData icon,
@@ -67,67 +71,6 @@ class _CircleYouState extends ConsumerState<CircleYou> {
               ProfileHeader(
                 key: const ValueKey('you-profile-card'),
                 account: account,
-              )
-            else
-              Column(
-                key: const ValueKey('you-profile-card'),
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Editorial header: a quiet cover with the avatar
-                  // overlapping it, then the name as a headline.
-                  Stack(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: Space.large),
-                        child: AspectRatio(
-                          aspectRatio: CircleProfileLayout.coverAspectRatio,
-                          child: DecoratedBox(
-                            decoration: CircleDepth.panel(
-                              context,
-                              radius: CircleRadius.card,
-                            ),
-                          ),
-                        ),
-                      ),
-                      PositionedDirectional(
-                        start: Space.lg,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(Space.xs),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Theme.of(context).colorScheme.surface,
-                          ),
-                          child: const CircleInitialAvatar(
-                            name: 'You',
-                            size: CircleAvatarSize.profile,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: Space.lg),
-                  Text(
-                    'You · Fictional preview',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: Space.sm),
-                  Text(
-                    'No real account or phone number is saved.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: CircleAccents.of(context).caption,
-                    ),
-                  ),
-                  const SizedBox(height: Space.lg),
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.groups_outlined),
-                      label: const Text('Your groups'),
-                      onPressed: () => context.go('/groups'),
-                    ),
-                  ),
-                ],
               ),
             const SizedBox(height: Space.section),
             if (waiting > 0)
@@ -170,34 +113,26 @@ class _CircleYouState extends ConsumerState<CircleYou> {
               entry(
                 icon: Icons.tune,
                 title: 'Notifications',
-                subtitle: features.server
-                    ? 'Your updates and quiet hours'
-                    : 'What reaches you, quiet hours, muted chats',
+                subtitle: 'Your updates and quiet hours',
                 location: '/you/notifications',
               ),
-            if (features.has(CircleFeature.privacy) ||
-                features.has(CircleFeature.blocking))
+            if (features.has(CircleFeature.blocking))
               entry(
                 icon: Icons.lock_outline,
-                title: features.server ? 'Privacy and blocking' : 'Privacy',
-                subtitle: features.server
-                    ? 'Manage blocked people'
-                    : 'Who can message you, close groups, blocked people',
+                title: 'Privacy and blocking',
+                subtitle: 'Manage blocked people',
                 location: '/you/privacy',
               ),
-            if (features.server)
-              entry(
-                icon: Icons.mark_email_unread_outlined,
-                title: 'Invitations',
-                subtitle: 'Choose which circles to join',
-                location: '/you/invitations',
-              ),
+            entry(
+              icon: Icons.mark_email_unread_outlined,
+              title: 'Invitations',
+              subtitle: 'Choose which circles to join',
+              location: '/you/invitations',
+            ),
             entry(
               icon: Icons.manage_accounts_outlined,
               title: 'Account',
-              subtitle: features.server
-                  ? 'Appearance, connection and sign out'
-                  : 'Appearance and ending this preview',
+              subtitle: 'Appearance, connection and sign out',
               location: '/you/account',
             ),
             const SizedBox(height: Space.md),
@@ -236,6 +171,14 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                   ),
               const SizedBox(height: Space.section),
             ],
+            const CircleSectionTitle('Your Memories'),
+            MemoryGrid(
+              memories: [
+                for (final memory in workspace.memories)
+                  if (memory.authorId == workspace.viewer) memory,
+              ],
+              empty: 'Memories you share appear here.',
+            ),
             const CircleSectionTitle('Saved Memories'),
             ScopedMemoryList(
               query: const MemoryQuery(saved: true),
@@ -292,23 +235,20 @@ class _CircleYouState extends ConsumerState<CircleYou> {
   );
 }
 
-/// H5: appearance, what comes before launch, and ending the preview.
+/// H5: appearance, password and devices, the connection and logging out.
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final features = ref.watch(circleFeaturesProvider);
-    final server = features.server;
     return ReadingPane(
       child: ListView(
         padding: CircleInsets.form,
         children: [
           CircleHeading(
             title: 'Account',
-            subtitle: server
-                ? 'How CIRCLE looks, and your account.'
-                : 'How CIRCLE looks, and your preview session.',
+            subtitle: 'How CIRCLE looks, and your account.',
           ),
           DropdownButtonFormField<ThemeMode>(
             initialValue: ref.watch(themeProvider),
@@ -327,7 +267,7 @@ class AccountScreen extends ConsumerWidget {
               if (mode != null) ref.read(themeProvider.notifier).change(mode);
             },
           ),
-          if (server) ...[
+          ...[
             ListTile(
               leading: const Icon(Icons.lock_outline),
               title: const Text('Change password'),
@@ -344,39 +284,28 @@ class AccountScreen extends ConsumerWidget {
             const CircleSectionTitle('Connection'),
             const Text('Connected server'),
             const SizedBox(height: Space.sm),
-            SelectableText(ref.watch(circleFeaturesProvider).host!),
+            Text(features.host),
           ],
           const CircleSectionTitle('Comes before launch'),
           Text(
-            server
-                ? 'Choosing a language, exporting '
-                      'your data and deleting your account come in a later '
-                      'milestone.'
-                : 'Changing your password, choosing a language, exporting your '
-                      'data and deleting your account arrive with real accounts. '
-                      'This preview has no account to change or delete.',
+            'Choosing a language, exporting your data and deleting your '
+            'account come in a later milestone.',
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: Space.section),
           CircleEmpty(
             title: 'Quiet by design',
-            message: server
-                ? (features.has(CircleFeature.notificationSettings)
-                      ? 'Choose which updates reach you in Notifications. CIRCLE never uploads your contacts. Logging out removes your session from this device.'
-                      : 'CIRCLE sends no notifications and never uploads your contacts. Logging out removes your session from this device.')
-                : 'No notifications, contact uploads or real accounts are used in this preview. All changes disappear when you end the session.',
+            message: features.has(CircleFeature.notificationSettings)
+                ? 'Choose which updates reach you in Notifications. CIRCLE never uploads your contacts. Logging out removes your session from this device.'
+                : 'CIRCLE sends no notifications and never uploads your contacts. Logging out removes your session from this device.',
           ),
           const SizedBox(height: Space.md),
           OutlinedButton(
             onPressed: () => runCalmly(
               context,
-              () => server
-                  ? ref.read(circleWorkspaceProvider.notifier).logOut()
-                  : ref.read(circlePreviewSessionProvider.notifier).leave(),
+              () => ref.read(circleWorkspaceProvider.notifier).logOut(),
             ),
-            child: Text(
-              server ? 'Log out' : 'End preview and clear local changes',
-            ),
+            child: const Text('Log out'),
           ),
         ],
       ),

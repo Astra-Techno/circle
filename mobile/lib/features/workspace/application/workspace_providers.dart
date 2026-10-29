@@ -2,7 +2,6 @@ import '../../../core/notifications/push_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_providers.dart';
 import '../data/api/api_circle_repository.dart';
-import '../data/mock_circle_repository.dart';
 import '../domain/circle_features.dart';
 import '../domain/circle_repository.dart';
 import 'server_session.dart';
@@ -11,10 +10,9 @@ export '../domain/circle_features.dart';
 export '../domain/circle_repository.dart';
 export 'server_session.dart';
 
-/// The person using the app: the signed-in server account's id, or the
-/// fictional "you" of the local preview.
+/// The person using the app: the signed-in account's id.
 final circleViewerProvider = Provider<String>(
-  (ref) => ref.watch(serverAccountProvider.select((a) => a?.id)) ?? 'you',
+  (ref) => ref.watch(serverAccountProvider.select((a) => a?.id)) ?? '',
 );
 
 /// The app's clock. Tests replace it to make dates predictable.
@@ -22,85 +20,42 @@ final circleClockProvider = Provider<DateTime Function()>(
   (ref) => DateTime.now,
 );
 
-/// The CIRCLE API while signed in to a server; otherwise the fictional,
-/// session-local mock (the preview and the "Explore fictional circles"
-/// tour). A new account gets a new repository, so nothing carries over.
+/// The CIRCLE API for the signed-in account. A new account gets a new
+/// repository, so nothing carries over. Signed out there is no data.
 final circleRepositoryProvider = Provider<CircleRepository>((ref) {
   final accountId = ref.watch(serverAccountProvider.select((a) => a?.id));
   final api = ref.watch(apiClientProvider);
-  if (accountId != null && api != null) {
-    final repository = ApiCircleRepository(
-      api: api,
-      viewer: accountId,
-      viewerName: ref.read(serverAccountProvider)?.displayName ?? 'You',
-      now: ref.watch(circleClockProvider),
-    );
-    ref.onDispose(repository.dispose);
-    return repository;
+  if (accountId == null || api == null) {
+    throw const CircleFailure('Log in to see your circles.');
   }
-  return MockCircleRepository(now: ref.watch(circleClockProvider));
+  final repository = ApiCircleRepository(
+    api: api,
+    viewer: accountId,
+    viewerName: ref.read(serverAccountProvider)?.displayName ?? 'You',
+    now: ref.watch(circleClockProvider),
+  );
+  ref.onDispose(repository.dispose);
+  return repository;
 });
 
-/// What this session can do and its one mode label (README §4.0).
-final circleFeaturesProvider = Provider<CircleFeatures>((ref) {
-  final signedIn = ref.watch(serverAccountProvider) != null;
-  final config = ref.watch(apiConfigProvider);
-  return signedIn && config != null
-      ? CircleFeatures.server(
-          config.host,
-          notifications: ref.watch(pushClientEnabledProvider),
-        )
-      : CircleFeatures.preview;
-});
+/// What the connected server offers. Features it doesn't offer yet are
+/// hidden, not shown as placeholders.
+final circleFeaturesProvider = Provider<CircleFeatures>(
+  (ref) => CircleFeatures.server(
+    ref.watch(apiConfigProvider)?.host ?? '',
+    notifications: ref.watch(pushClientEnabledProvider),
+  ),
+);
 
-/// The data behind preview-only features (chat, albums, activity). On a
-/// server these aren't available yet, so they get an empty local mock
-/// that never sees real groups instead of the API repository.
-final previewOnlyRepositoryProvider = Provider<CircleRepository>((ref) {
-  final repository = ref.watch(circleRepositoryProvider);
-  return repository is MockCircleRepository
-      ? repository
-      : MockCircleRepository(now: ref.watch(circleClockProvider));
-});
-
-/// Whether someone is inside the app: a preview session or a server
-/// account.
+/// Whether someone is signed in to the app.
 final circleSessionActiveProvider = Provider<bool>(
-  (ref) =>
-      ref.watch(circlePreviewSessionProvider) ||
-      ref.watch(serverAccountProvider) != null,
+  (ref) => ref.watch(serverAccountProvider) != null,
 );
 
 final circleWorkspaceProvider =
     AsyncNotifierProvider<CircleWorkspaceController, CircleWorkspace>(
       CircleWorkspaceController.new,
     );
-
-final circlePreviewSessionProvider =
-    NotifierProvider<CirclePreviewSession, bool>(CirclePreviewSession.new);
-
-class CirclePreviewSession extends Notifier<bool> {
-  @override
-  bool build() => false;
-
-  /// Whether this session explores the fictional showcase circles.
-  bool showcase = false;
-
-  /// Starts a local session; [showcase] loads the fictional circles.
-  Future<void> enter({required bool showcase}) async {
-    this.showcase = showcase;
-    await ref.read(circleRepositoryProvider).reset(showcase: showcase);
-    ref.invalidate(circleWorkspaceProvider);
-    state = true;
-  }
-
-  Future<void> leave() async {
-    showcase = false;
-    await ref.read(circleRepositoryProvider).reset(showcase: false);
-    ref.invalidate(circleWorkspaceProvider);
-    state = false;
-  }
-}
 
 /// Runs repository mutations for the current viewer, then reloads the
 /// workspace. Failures propagate as [CircleFailure] for calm UI messages.
@@ -163,6 +118,8 @@ class CircleWorkspaceController extends AsyncNotifier<CircleWorkspace> {
       if (repository is ApiCircleRepository) {
         await repository.flushPendingDeletes();
       }
+    } on CircleFailure {
+      // Already signed out: nothing is waiting to be sent.
     } finally {
       await ref.read(serverSessionProvider.notifier).logOut();
     }

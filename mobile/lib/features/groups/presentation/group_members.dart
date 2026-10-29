@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import '../../chat/application/chat_providers.dart';
-import '../../chat/presentation/chat_conversation.dart' show confirmBlock;
 import '../../moderation/presentation/report_sheet.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/group_visuals.dart';
@@ -120,24 +118,19 @@ class _GroupMembersState extends ConsumerState<GroupMembersTab> {
           const SizedBox(height: Space.md),
         ],
         CircleSectionTitle('Members (${members.length})'),
-        if (ref.watch(circleFeaturesProvider).server)
-          TextButton.icon(
-            onPressed: () => runCalmly(context, controller.refresh),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Refresh members'),
-          ),
-        for (final member
-            in ref.watch(circleFeaturesProvider).server
-                ? members.take(_visible)
-                : members)
+        TextButton.icon(
+          onPressed: () => runCalmly(context, controller.refresh),
+          icon: const Icon(Icons.refresh),
+          label: const Text('Refresh members'),
+        ),
+        for (final member in members.take(_visible))
           _MemberTile(
             group: group,
             workspace: workspace,
             person: member.key,
             role: member.value,
           ),
-        if (ref.watch(circleFeaturesProvider).server &&
-            _visible < members.length)
+        if (_visible < members.length)
           TextButton(
             onPressed: () => setState(() => _visible += 30),
             child: const Text('Show more members'),
@@ -167,13 +160,6 @@ class _GroupMembersState extends ConsumerState<GroupMembersTab> {
                 ),
               ),
             ),
-        ],
-        if (!ref.watch(circleFeaturesProvider).server) ...[
-          const SizedBox(height: Space.md),
-          Text(
-            'Fictional members only.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
         ],
       ],
     );
@@ -289,13 +275,6 @@ class _MemberTile extends ConsumerWidget {
                 title: Text('Report $name'),
                 onTap: () => Navigator.pop(context, 'report'),
               ),
-            if (features.has(CircleFeature.chat))
-              ListTile(
-                leading: const Icon(Icons.block),
-                title: Text('Block $name'),
-                subtitle: const Text('Stops their messages and requests.'),
-                onTap: () => Navigator.pop(context, 'block'),
-              ),
           ],
         ),
       ),
@@ -352,8 +331,6 @@ class _MemberTile extends ConsumerWidget {
           target: ReportTarget.member(person, groupId: group.id),
           what: name,
         );
-      case 'block':
-        await blockPerson(context, ref, person, name);
     }
   }
 }
@@ -363,21 +340,6 @@ String personLocation(String person, {String? groupId}) => Uri(
   path: '/people/$person',
   queryParameters: groupId == null ? null : {'group': groupId},
 ).toString();
-
-/// Confirms (blocking hides requests and stops messages), then blocks.
-Future<void> blockPerson(
-  BuildContext context,
-  WidgetRef ref,
-  String person,
-  String name,
-) async {
-  if (!await confirmBlock(context, name) || !context.mounted) return;
-  await runCalmly(
-    context,
-    () => ref.read(chatControllerProvider.notifier).block(person),
-    success: '$name blocked.',
-  );
-}
 
 /// Removal with the cascade warning: lists every visible subgroup the
 /// person also leaves, then removes them after confirmation.

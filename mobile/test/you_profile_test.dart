@@ -33,6 +33,7 @@ void main() {
     expect(currentUri(container).path, '/home');
     await tester.tap(find.widgetWithText(NavigationDestination, 'You'));
     await settle(tester);
+    await reveal(tester, find.text('Account'));
     await tester.tap(find.text('Account'));
     await settle(tester);
     await reveal(tester, find.text('circle.test'));

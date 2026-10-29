@@ -28,7 +28,7 @@ final inviteSharingProvider = Provider<InviteSharing>(
     bridge: ref.watch(inviteShareBridgeProvider),
     clock: ref.watch(circleClockProvider),
     current: (groupId) {
-      if (!ref.mounted || !ref.read(circleFeaturesProvider).server) return null;
+      if (!ref.mounted) return null;
       final workspace = ref.read(circleWorkspaceProvider).value;
       final account = ref.read(serverAccountProvider),
           api = ref.read(apiClientProvider);

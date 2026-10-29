@@ -5,15 +5,12 @@ import '../domain/album_repository.dart';
 
 export '../domain/album_repository.dart';
 
-/// The local mock albums. A new preview session (or ending one) starts from
-/// a fresh repository, so every album change is cleared.
+/// Albums aren't on the server yet: this session-local store backs the
+/// hidden Albums feature until a server album API exists.
 final albumRepositoryProvider = Provider<AlbumRepository>((ref) {
-  final entered = ref.watch(circlePreviewSessionProvider);
-  final showcase =
-      entered && ref.read(circlePreviewSessionProvider.notifier).showcase;
   return MockAlbumRepository(
-    groups: ref.watch(previewOnlyRepositoryProvider),
-    showcase: showcase,
+    groups: ref.watch(circleRepositoryProvider),
+    showcase: false,
     now: ref.watch(circleClockProvider),
   );
 });

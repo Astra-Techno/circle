@@ -73,6 +73,9 @@ class ServerBlockingScreen extends ConsumerStatefulWidget {
 class _BlockingState extends ConsumerState<ServerBlockingScreen> {
   int _offset = 0;
   bool _busy = false;
+
+  /// People from earlier pages; the list grows as it scrolls.
+  final _earlier = <Map<String, Object?>>[];
   Future<void> _unblock(BlockPage page, String id) async {
     if (_busy) {
       return;
@@ -85,7 +88,12 @@ class _BlockingState extends ConsumerState<ServerBlockingScreen> {
       success: 'Unblocked.',
     );
     if (mounted) {
-      setState(() => _busy = false);
+      // Start again from the top so the list matches the server.
+      setState(() {
+        _busy = false;
+        _offset = 0;
+        _earlier.clear();
+      });
     }
   }
 
@@ -133,7 +141,7 @@ class _BlockingState extends ConsumerState<ServerBlockingScreen> {
                 message:
                     'Use a member’s profile or an invitation to block someone.',
               ),
-            for (final item in page.items)
+            for (final item in [..._earlier, ...page.items])
               CircleRow(
                 child: Padding(
                   padding: const EdgeInsets.all(Space.md),
@@ -161,25 +169,14 @@ class _BlockingState extends ConsumerState<ServerBlockingScreen> {
                   ),
                 ),
               ),
-            Wrap(
-              spacing: Space.sm,
-              children: [
-                if (_offset > 0)
-                  TextButton(
-                    onPressed: _busy
-                        ? null
-                        : () => setState(() => _offset -= 30),
-                    child: const Text('Previous'),
-                  ),
-                if (page.more)
-                  TextButton(
-                    onPressed: _busy
-                        ? null
-                        : () => setState(() => _offset += 30),
-                    child: const Text('Next'),
-                  ),
-              ],
-            ),
+            if (page.more)
+              CircleLoadMore(
+                key: ValueKey('more-$_offset'),
+                onLoad: () => setState(() {
+                  _earlier.addAll(page.items);
+                  _offset += 30;
+                }),
+              ),
             const SizedBox(height: Space.md),
             const ExpansionTile(
               title: Text('What blocking changes'),

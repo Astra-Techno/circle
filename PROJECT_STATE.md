@@ -2,6 +2,11 @@
 
 Updated:29 October2026. Source, production deployment, APK publication and device acceptance are separate facts.
 
+## Local unfinished work (Linux snapshot, not Git, 29 Oct)
+- WhatsApp-style live Chats (inbox last message/time/unread, full-screen conversation, tailed bubbles, long-press options, auto read), 20px in-page headings, no tagline/duplicate create buttons, live Events cards/detail cleanup, group photo camera badges. Server: GET /chats adds other_id/last_message and activity ordering (OpenAPI 0.4.4) with test. pubspec 1.0.24+25.
+- Demo/preview mode removed from the app (owner, 29 Oct): no Explore tour, mock workspace moved to test/support, demo chat/events/polls/notification-settings/moderation screens deleted (real versions exist); Albums/Activity kept but hidden (no server version). Design: camera-first composer, Home circles by activity with new-Memory rings and first steps, 5 group tabs, infinite lists, profile Memory grids. Tests rewritten for the signed-in fake account (network always fails in tests).
+- Local checks after removal: Flutter 657+ pass/1 skip/only 13 Windows goldens fail; analyzer/format clean. Earlier WhatsApp batch: Flutter 746 pass; analyzer/format/design guard clean. Backend 228/229 (pre-existing time-dependent reminder test fails locally before and after), 5 GD skips, PHPStan clean. Packaged as ~/Downloads/circle-whatsapp-chat.zip + STEPS.md for /workspace/circle; needs deploy (server change) before the new inbox shows previews.
+
 ## Current base and rules
 - Current task: Android push rebuild24 fixes confirmed UTC/GMT/Asia/Calcutta quiet-hour exceptions using alias-preserving timezone data in Notifications and Events. Adds safe connection failures/HTTP status, live connected label and quiet-hour notice. Official scripts/build-android-release.sh always sets pushtrue/previewfalse/production API. See docs/android-push-troubleshooting.md. Actual phone/server delivery still unverified.
 - iOS retry: run40916247373 unsigned checks passed; first signing job could not acquire runner, retry reached prepare but security failed before build. Helper now reports fixed operation/error categories without private output and repackages the same P12 identity with macOS-compatible PBE. Native confirmation/upload pending.

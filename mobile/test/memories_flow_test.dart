@@ -26,173 +26,48 @@ Future<void> tapTooltip(WidgetTester tester, String tooltip) async {
 
 void main() {
   group('compose', () {
-    testWidgets('photos, poll, year and place render on the new card', (
+    testWidgets('caption, year and place render on the new card', (
       tester,
     ) async {
       final container = await openCircle(tester);
       await go(tester, container, '/compose?group=family');
+      // Photos first: no demo illustrations, only the phone's own photos.
+      expect(find.text('Beach walk'), findsNothing);
+      expect(find.text('Add a poll'), findsNothing);
       await enterField(tester, 'Your Memory', 'A day by the water.');
-      await tapText(tester, 'Add photos');
-      expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w is PreviewLabel &&
-              w.text ==
-                  'Preview: fictional illustrations — real uploads come later.',
-          skipOffstage: false,
-        ),
-        findsOneWidget,
-      );
-      for (final scene in ['Beach walk', 'Hill trip', 'Cricket match']) {
-        await tapText(tester, scene);
-      }
-      expect(find.text('3 of 10 chosen'), findsOneWidget);
-      await tapText(tester, 'Use 3 photos');
-      expect(find.text('3 of 10 photos'), findsOneWidget);
-      await tapTooltip(tester, 'Remove Cricket match photo');
-      expect(find.text('2 of 10 photos'), findsOneWidget);
-
-      await tapText(tester, 'Add a poll');
-      await enterField(tester, 'Poll question', 'Swim or walk next time?');
-      await enterField(tester, 'Option 1', 'Swim');
-      await enterField(tester, 'Option 2', 'Walk');
-      await tapText(tester, 'Add option');
-      await enterField(tester, 'Option 3', 'Nap');
-      await tapTooltip(tester, 'Remove option 3');
-      expect(find.widgetWithText(TextField, 'Option 3'), findsNothing);
-
       await tapText(tester, 'More options');
-      await enterField(tester, 'Year taken (optional)', '2007');
-      await enterField(tester, 'Place (optional)', 'Kodaikanal');
+      await enterField(tester, 'Year taken (optional)', '2019');
+      await enterField(tester, 'Place (optional)', 'Fictional lake');
       await tapText(tester, 'Share Memory');
-
       expect(currentUri(container).path, '/home');
-      final memory = workspaceOf(
-        container,
-      ).memories.firstWhere((m) => m.text == 'A day by the water.');
+      final memory = workspaceOf(container).memories.first;
+      expect(memory.text, 'A day by the water.');
       expect(memory.groupId, 'family');
-      expect(memory.photos.map((p) => p.scene), [
-        MemoryScene.beachWalk,
-        MemoryScene.hillTrip,
-      ]);
-      expect(memory.poll!.options.map((o) => o.label), ['Swim', 'Walk']);
-      expect(memory.takenLabel, 'Taken in 2007 · Kodaikanal');
-
-      expect(find.text('A day by the water.'), findsOneWidget);
-      expect(find.text('Taken in 2007 · Kodaikanal'), findsOneWidget);
-      expect(find.text('Swim or walk next time?'), findsOneWidget);
-      final semantics = tester.ensureSemantics();
-      expect(
-        find.bySemanticsLabel(
-          'Photo 2 of 2: fictional illustration, Hill trip',
-        ),
-        findsOneWidget,
-      );
-      semantics.dispose();
+      expect(memory.photos, isEmpty);
+      expect(memory.poll, isNull);
     });
 
-    testWidgets('a poll alone is enough; empty and invalid input is caught', (
-      tester,
-    ) async {
+    testWidgets('empty and invalid input is caught calmly', (tester) async {
       final container = await openCircle(tester);
       await go(tester, container, '/compose?group=club');
       final before = workspaceOf(container).memories.length;
       await tapText(tester, 'Share Memory');
       expect(
-        find.text(
-          'Write 1–2000 characters, or add a photo or a poll, before sharing.',
-        ),
+        find.text('Write 1–2000 characters, or add a photo, before sharing.'),
         findsOneWidget,
       );
-      await tapText(tester, 'Add a poll');
-      await enterField(tester, 'Poll question', 'Which café?');
-      await enterField(tester, 'Option 1', 'Corner café');
-      await enterField(tester, 'Option 2', 'corner café ');
+      await enterField(tester, 'Your Memory', 'Lakeside kiosk at noon.');
       await tapText(tester, 'More options');
       await enterField(tester, 'Year taken (optional)', '1900');
       await tapText(tester, 'Share Memory');
-      expect(find.text('Each option needs to be different.'), findsOneWidget);
       expect(
         find.text('Use a year from 1950 to ${DateTime.now().year}.'),
         findsOneWidget,
       );
       expect(workspaceOf(container).memories, hasLength(before));
-      await enterField(tester, 'Option 2', 'Lakeside kiosk');
       await enterField(tester, 'Year taken (optional)', '');
       await tapText(tester, 'Share Memory');
       expect(workspaceOf(container).memories, hasLength(before + 1));
-      final memory = workspaceOf(container).memories.first;
-      expect(memory.text, isEmpty);
-      expect(memory.poll!.question, 'Which café?');
-    });
-  });
-
-  group('polls', () {
-    testWidgets('vote reveals results; change vote; undo; who voted', (
-      tester,
-    ) async {
-      final container = await openCircle(tester);
-      await go(tester, container, '/home/memory/reunion-poll');
-      expect(find.text('Results appear after you vote.'), findsOneWidget);
-      expect(find.text('3 votes · Closes in 2 days'), findsOneWidget);
-      expect(find.textContaining('%'), findsNothing);
-      await tapText(tester, 'Riverside café');
-      expect(find.text('Vote saved.'), findsOneWidget);
-      expect(find.text('50% · 2'), findsNWidgets(2));
-      expect(find.text('4 votes · Closes in 2 days'), findsOneWidget);
-
-      await tapText(tester, 'Change vote');
-      expect(find.text('Choose one'), findsOneWidget);
-      await tapText(tester, 'The old canteen');
-      expect(find.text('75% · 3'), findsOneWidget);
-      expect(memoryOf(container, 'reunion-poll').poll!.myChoices, {
-        'reunion-canteen',
-      });
-      await tester.tap(find.text('Undo'));
-      await tester.pumpAndSettle();
-      expect(memoryOf(container, 'reunion-poll').poll!.myChoices, {
-        'reunion-cafe',
-      });
-
-      await tapText(tester, 'See who voted');
-      expect(find.text('Who voted'), findsOneWidget);
-      expect(find.text('Riverside café (2)'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byType(BottomSheet),
-          matching: find.text('You'),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('admins close a poll after confirming', (tester) async {
-      final container = await openCircle(tester);
-      await go(tester, container, '/home/memory/reunion-poll');
-      await tapText(tester, 'Close poll');
-      expect(find.text('Close this poll?'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, 'Close poll'));
-      await tester.pumpAndSettle();
-      final poll = memoryOf(container, 'reunion-poll').poll!;
-      expect(poll.closed, isTrue);
-      expect(find.text('Poll · Closed'), findsOneWidget);
-      expect(find.text('3 votes · Closed'), findsOneWidget);
-      expect(find.text('Close poll'), findsNothing);
-      expect(find.text('Change vote'), findsNothing);
-      // Closed: results show to everyone, including people who didn't vote.
-      expect(find.text('67% · 2'), findsOneWidget);
-    });
-
-    testWidgets('closed anonymous poll shows counts but no names', (
-      tester,
-    ) async {
-      final container = await openCircle(tester);
-      await go(tester, container, '/home/memory/route-poll');
-      expect(find.text('Anonymous votes'), findsOneWidget);
-      expect(find.text('67% · 2'), findsOneWidget);
-      expect(find.text('33% · 1'), findsOneWidget);
-      expect(find.text('See who voted'), findsNothing);
-      expect(find.text('Close poll'), findsNothing);
     });
   });
 
@@ -260,20 +135,8 @@ void main() {
       final replyX = tester.getTopLeft(find.byType(CommentBubble).last).dx;
       expect(replyX, greaterThan(parentX));
 
-      // Own comments can be deleted; others' cannot.
-      expect(find.text('Delete'), findsOneWidget);
-      await tapText(tester, 'Delete');
-      expect(find.text('Comment deleted.'), findsOneWidget);
-      expect(
-        memoryOf(container, 'table').comments.any((c) => c.id == reply.id),
-        isFalse,
-      );
-      await tester.tap(find.text('Undo'));
-      await tester.pumpAndSettle();
-      expect(
-        memoryOf(container, 'table').comments.any((c) => c.id == reply.id),
-        isTrue,
-      );
+      // Deleting comments isn't on the server yet, so it isn't offered.
+      expect(find.text('Delete'), findsNothing);
     });
 
     testWidgets('card preview shows the latest comment with its author', (
@@ -281,8 +144,9 @@ void main() {
     ) async {
       await openCircle(tester);
       final preview = find.byType(CommentBubble).first;
+      // The last text is the comment; the first is the author's initial.
       final text = tester.widget<Text>(
-        find.descendant(of: preview, matching: find.byType(Text)),
+        find.descendant(of: preview, matching: find.byType(Text)).last,
       );
       expect(text.textSpan!.toPlainText(), 'Mira: Holding you to that.');
     });
@@ -449,12 +313,6 @@ void main() {
       }
       // Compose with every section open.
       await go(tester, container, '/compose?group=family');
-      await tapText(tester, 'Add photos');
-      expect(tester.takeException(), isNull, reason: 'photo sheet');
-      await tapText(tester, 'Beach walk');
-      await tapText(tester, 'Use 1 photo');
-      await tapText(tester, 'Add a poll');
-      await tapText(tester, 'More poll options');
       await tapText(tester, 'More options');
       expect(tester.takeException(), isNull, reason: 'full compose');
       // Sheets on the detail page.
@@ -463,10 +321,6 @@ void main() {
       expect(tester.takeException(), isNull, reason: 'reaction picker');
       await tester.tap(find.widgetWithText(ChoiceChip, '🎉'));
       await tester.pumpAndSettle();
-      await go(tester, container, '/home/memory/reunion-poll');
-      await tapText(tester, 'Riverside café');
-      await tapText(tester, 'See who voted');
-      expect(tester.takeException(), isNull, reason: 'voters sheet');
     });
   }
 }

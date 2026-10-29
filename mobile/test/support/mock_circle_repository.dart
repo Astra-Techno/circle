@@ -1,5 +1,5 @@
-import '../../groups/domain/membership_rules.dart';
-import '../domain/circle_repository.dart';
+import 'package:mobile/features/groups/domain/membership_rules.dart';
+import 'package:mobile/features/workspace/domain/circle_repository.dart';
 
 /// Fictional classmates who make Northbank 2009 a large group (57 people).
 const northbankClassmates = {

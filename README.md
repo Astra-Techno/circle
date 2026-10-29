@@ -51,9 +51,9 @@ Notification policy (owner, 29 October 2026): account push and all current categ
 - Owner-approved dedicated build20 release certificate SHA-256: `157579dd08f44d8aebe9bc5b6e53e778d8ca642d97233d15c206f8f5185df01e`. Build18/build19 users must uninstall once; future updates must retain the build20 key. The private signing backup is never part of Git or public downloads.
 - Release builds must fail if private signing configuration is missing; never publish an unsigned APK. `apksigner verify` must pass on the final bytes and its certificate must match the established key. Build21 metadata claimed compatibility, but its artifact fails verification; use a newly signed higher build rather than overwriting it.
 - Increment `versionCode` for every changed application release, including a rebuild that changes runtime behavior. Keep `versionName`/build values consistent with the APK and metadata. Never replace an already published immutable versioned APK with different bytes.
-- Build production APKs with the intended HTTPS API and `CIRCLE_PREVIEW=false`; label any preview APK explicitly. Verify package id, version, minimum SDK and certificate from the built artifact. Keep release builds separate from concurrent Flutter test tooling that can regenerate Android plugin registration files. After tests, use normal `flutter build apk --release` tooling regeneration (without `--no-pub`) so release registration excludes test-only plugins.
+- Build production APKs with the intended HTTPS API. The app has no preview/demo mode (owner, 29 Oct 2026): every build connects to a server. Verify package id, version, minimum SDK and certificate from the built artifact. Keep release builds separate from concurrent Flutter test tooling that can regenerate Android plugin registration files. After tests, use normal `flutter build apk --release` tooling regeneration (without `--no-pub`) so release registration excludes test-only plugins.
 
-Production Android command: run `./scripts/build-android-release.sh` from the repository root with the established toolchain/signing inputs. It explicitly sets the production API, preview off and `CIRCLE_PUSH_ENABLED=true`. Keep the version/signature/publication checks above; that flag does not configure server delivery or grant Android permission.
+Production Android command: run `./scripts/build-android-release.sh` from the repository root with the established toolchain/signing inputs. It explicitly sets the production API and `CIRCLE_PUSH_ENABLED=true`. Keep the version/signature/publication checks above; that flag does not configure server delivery or grant Android permission.
 
 ### 0.5 Download publication and deployment
 
@@ -593,7 +593,7 @@ Current pending tasks, dependencies and next-release scope: [execution backlog](
 
 **Implemented server scope:**
 - Accounts, groups/subgroups, membership, invite links, join approvals, Memories, comments, reactions, saves and private Memory photo processing. The owner approved the initial API contract on 23 Oct; later reviewed additions include independent group/Saved pagination and server search. Keep the current contract and release records as the source of evidence.
-- Server release builds use the deployed HTTPS API. Explicit preview releases require `CIRCLE_PREVIEW=true`; fictional preview workflows are not persistent live services.
+- Every build uses the deployed HTTPS API unless `CIRCLE_API_BASE_URL` chooses another server. The fictional preview/demo mode was removed (owner, 29 Oct 2026); features the server doesn't offer yet are hidden. Fictional test data lives only under `mobile/test/`.
 
 **In progress / gaps:**
 - Source checkpoint N1c1 adds gated client envelope validation, encrypted scoped acceptance history and a lazy serialized SDK lifecycle; see [client scope and remaining work](docs/push-client-lifecycle.md). Dart startup/authentication do not call Firebase initialization. Display, tap handling and opt-in UI remain unfinished.

@@ -32,7 +32,7 @@ flutter test integration_test -d <android-device-id>
 
 ## Server mode (app ↔ backend)
 
-Release installations use `https://circle.cloudkart24.com/api/v1` unless overridden. A release should show **Create account**, not **Preview registration**. For an explicitly fictional release, pass `--dart-define=CIRCLE_PREVIEW=true`.
+Every build (debug and release) connects to `https://circle.cloudkart24.com/api/v1` unless `--dart-define=CIRCLE_API_BASE_URL=…` chooses another server. There is no preview/demo mode. Tests never touch the network: `test/support/circle_harness.dart` points the app at a test host whose requests all fail and uses the fictional `MockCircleRepository` test double.
 
 The initial appearance is white/light even on a dark device. The calling code starts at India +91. **Use my location for country code** asks for one-time foreground location on Android/iOS; no background permission or CIRCLE-side coordinate storage is used. Denial and lookup failures preserve manual country selection. Web/desktop use manual selection.
 

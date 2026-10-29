@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../workspace/application/workspace_providers.dart';
-import '../../workspace/presentation/feature_gate.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import '../domain/membership_rules.dart';
 import 'invite_share_actions.dart';
@@ -67,9 +66,7 @@ class GroupInviteScreen extends ConsumerWidget {
       final link = g.inviteLink;
       final linkText = link == null
           ? ''
-          : (features.server
-                    ? ref.watch(inviteSharingProvider).linkFor(g.id)
-                    : null) ??
+          : ref.watch(inviteSharingProvider).linkFor(g.id) ??
                 inviteLinkFor(link.token);
       final canManage = MembershipRules.canManageLink(g, viewer).allowed;
       final parent = workspace.group(g.parentId ?? '');
@@ -95,10 +92,8 @@ class GroupInviteScreen extends ConsumerWidget {
                   ? 'People who use the link wait for an admin to approve them.'
                   : 'People who use the link join right away.',
             ),
-            const PreviewNotice(
-              'Preview link — not shareable. It only works inside this preview.',
-              server:
-                  'Share this link only with people you know. Recipients can open CIRCLE or download the app, then review the invitation.',
+            const CircleNote(
+              'Share this link only with people you know. Recipients can open CIRCLE or download the app, then review the invitation.',
             ),
             if (link == null)
               FilledButton.icon(
@@ -130,23 +125,13 @@ class GroupInviteScreen extends ConsumerWidget {
                             ClipboardData(text: linkText),
                           );
                           if (context.mounted) {
-                            showCircleMessage(
-                              context,
-                              features.server
-                                  ? 'Copied.'
-                                  : 'Copied. It only opens inside this preview.',
-                            );
+                            showCircleMessage(context, 'Copied.');
                           }
                         },
                         icon: const Icon(Icons.copy),
-                        label: Text(
-                          features.server
-                              ? 'Copy invite link'
-                              : 'Copy preview link',
-                        ),
+                        label: const Text('Copy invite link'),
                       ),
-                      if (features.server &&
-                          !link.expiredAt(DateTime.now().toUtc()) &&
+                      if (!link.expiredAt(DateTime.now().toUtc()) &&
                           !link.exhausted)
                         InviteShareActions(groupId: g.id),
                     ],

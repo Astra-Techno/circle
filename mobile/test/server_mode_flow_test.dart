@@ -8,7 +8,7 @@ import 'package:mobile/core/circle_signed_image.dart';
 import 'package:mobile/features/memories/application/media_providers.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
 import 'package:mobile/features/auth/domain/access_validation.dart';
-import 'support/circle_harness.dart' show currentUri, openTab, reveal;
+import 'support/circle_harness.dart' show currentUri, reveal;
 import 'support/fake_api.dart';
 import 'support/server_harness.dart';
 
@@ -39,13 +39,13 @@ void main() {
     final tokens = MemoryTokenStore();
     final container = await openServerCircle(tester, server, tokens: tokens);
 
-    // One honest label: the server, not "Preview".
-    await reveal(tester, find.textContaining('Connected to circle.test'));
-    expect(find.textContaining('Connected to circle.test'), findsOneWidget);
+    // A real app: no demo tour, no preview wording.
+    expect(find.text('Explore fictional circles'), findsNothing);
     expect(find.textContaining('Nothing is sent or stored'), findsNothing);
-    expect(find.text('Explore fictional circles'), findsOneWidget);
     await tap(tester, find.text('Get Started'));
     expect(find.text('Preview registration'), findsNothing);
+    await reveal(tester, find.textContaining('sent to circle.test only'));
+    expect(find.textContaining('sent to circle.test only'), findsOneWidget);
     await enter(
       tester,
       find.widgetWithText(TextFormField, 'Name (optional)'),
@@ -159,26 +159,18 @@ void main() {
 
     container.read(circleRouterProvider).go('/groups/g/$family');
     await settle(tester);
-    for (final (tab, label) in [('Albums', 'Albums aren’t')]) {
-      await openTab(tester, tab);
-      await settle(tester);
-      expect(find.textContaining(label), findsOneWidget, reason: tab);
-      expect(find.text('Set as cover'), findsNothing);
-      expect(find.byTooltip('Month'), findsNothing);
-    }
-    // Deep links into preview-only screens are honest too.
-    for (final location in [
-      '/chats/c/g-1/photos/message-1',
-      '/activity',
-      '/you/notifications',
-    ]) {
+    // Albums aren't on the server yet: hidden, not a placeholder tab.
+    expect(find.widgetWithText(Tab, 'Albums'), findsNothing);
+    // Deep links to features the server lacks say so plainly.
+    for (final location in ['/activity', '/you/notifications']) {
       container.read(circleRouterProvider).go(location);
       await settle(tester);
       expect(
-        find.text('Not on the server yet'),
+        find.text('This page is unavailable'),
         findsOneWidget,
         reason: location,
       );
+      expect(find.text('Not on the server yet'), findsNothing);
     }
     // No fictional data was mixed in.
     expect(find.text('Mira (fictional)'), findsNothing);
@@ -337,7 +329,7 @@ void main() {
     expect(server.adapter.count('POST', '/auth/logout'), 1);
     expect(await tokens.read(), isNull);
     expect(currentUri(container).path, '/');
-    expect(container.read(circleViewerProvider), 'you');
+    expect(container.read(circleViewerProvider), '');
   });
 
   testWidgets('external custom invite survives sign-in redirect', (
@@ -353,18 +345,6 @@ void main() {
       currentUri(container).queryParameters['next'],
       '/invite/AbC_def-1234567890',
     );
-  });
-
-  testWidgets('the fictional tour stays separate from the server', (
-    tester,
-  ) async {
-    final server = FakeCircleServer();
-    final container = await openServerCircle(tester, server);
-    await tap(tester, find.text('Explore fictional circles'));
-    expect(currentUri(container).path, '/home');
-    expect(workspaceOf(container).groups, isNotEmpty);
-    expect(server.adapter.requests, isEmpty);
-    expect(container.read(apiClientProvider), isNotNull);
   });
 }
 

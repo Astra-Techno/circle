@@ -6,10 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../albums/presentation/albums_tab.dart';
-import '../../events/presentation/circle_events.dart';
 import '../../memories/presentation/circle_memories.dart';
 import '../../memories/presentation/scoped_memory_list.dart';
-import '../../moderation/presentation/report_sheet.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/feature_gate.dart';
 import '../../workspace/presentation/group_visuals.dart';
@@ -20,13 +18,15 @@ import 'circle_groups.dart';
 import 'group_members.dart';
 import 'group_reports.dart';
 
-const groupTabs = [
+/// The group's tabs, most used first. Albums appear only when the server
+/// offers them, so five tabs fit a phone without scrolling.
+List<String> groupTabsFor(CircleFeatures features) => [
   'Memories',
-  'Subgroups',
-  'Members',
-  'Events',
   'Chat',
-  'Albums',
+  'Events',
+  'Members',
+  'Subgroups',
+  if (features.has(CircleFeature.albums)) 'Albums',
 ];
 
 class CircleGroupDetail extends StatelessWidget {
@@ -93,10 +93,11 @@ class _GroupTabs extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => LayoutBuilder(
     builder: (context, constraints) {
+      final tabs = groupTabsFor(ref.watch(circleFeaturesProvider));
       final side = math.max(Space.lg, (constraints.maxWidth - 640) / 2);
       final padding = CircleInsets.page.copyWith(left: side, right: side);
       return DefaultTabController(
-        length: groupTabs.length,
+        length: tabs.length,
         child: NestedScrollView(
           headerSliverBuilder: (context, _) => [
             SliverPadding(
@@ -112,18 +113,37 @@ class _GroupTabs extends ConsumerWidget {
                 primary: false,
                 automaticallyImplyLeading: false,
                 toolbarHeight: 0,
-                bottom: TabBar(
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  padding: EdgeInsets.symmetric(horizontal: side - Space.sm),
-                  tabs: [for (final label in groupTabs) Tab(text: label)],
+                // Six tabs scroll; the faded edge shows there is more.
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(kTextTabBarHeight),
+                  child: CircleEdgeFade(
+                    child: TabBar(
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: side - Space.sm,
+                      ),
+                      tabs: [
+                        for (final label in tabs)
+                          Tab(
+                            child: ConstrainedBox(
+                              // With the label padding: a 48px tap target.
+                              constraints: const BoxConstraints(
+                                minWidth: Space.hero,
+                              ),
+                              child: Text(label, textAlign: TextAlign.center),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
           body: TabBarView(
             children: [
-              for (final (index, label) in groupTabs.indexed)
+              for (final label in tabs)
                 Builder(
                   builder: (context) => CustomScrollView(
                     key: PageStorageKey('group-${group.id}-$label'),
@@ -136,7 +156,7 @@ class _GroupTabs extends ConsumerWidget {
                       SliverPadding(
                         padding: padding,
                         sliver: SliverList.list(
-                          children: _tab(context, ref, index),
+                          children: _tab(context, ref, label),
                         ),
                       ),
                     ],
@@ -149,24 +169,30 @@ class _GroupTabs extends ConsumerWidget {
     },
   );
 
-  List<Widget> _tab(BuildContext context, WidgetRef ref, int index) {
-    switch (index) {
-      case 0:
+  List<Widget> _tab(BuildContext context, WidgetRef ref, String tab) {
+    switch (tab) {
+      case 'Memories':
         return [
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push(composeLocation(group.id)),
-              icon: const Icon(Icons.edit_outlined),
-              label: const Text('Share a Memory here'),
-            ),
+          // Both actions share one row and wrap only when space runs out.
+          Wrap(
+            spacing: Space.sm,
+            runSpacing: Space.sm,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => context.push(composeLocation(group.id)),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Share a Memory here'),
+              ),
+              if (ref
+                  .watch(circleFeaturesProvider)
+                  .has(CircleFeature.livePolls))
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/polls?group=${group.id}'),
+                  icon: const Icon(Icons.poll_outlined),
+                  label: const Text('Polls'),
+                ),
+            ],
           ),
-          if (ref.watch(circleFeaturesProvider).server)
-            OutlinedButton.icon(
-              onPressed: () => context.push('/polls?group=${group.id}'),
-              icon: const Icon(Icons.poll_outlined),
-              label: const Text('Polls · ask your circle'),
-            ),
           const SizedBox(height: Space.lg),
           ScopedMemoryList(
             query: MemoryQuery(groupId: group.id),
@@ -178,14 +204,16 @@ class _GroupTabs extends ConsumerWidget {
                 CircleMemoryCard(memory: memory, group: group),
           ),
         ];
-      case 1:
+      case 'Subgroups':
         return [SubgroupsTab(group: group, workspace: workspace)];
-      case 2:
+      case 'Members':
         return [GroupMembersTab(group: group, workspace: workspace)];
-      case 3:
-        if (ref.watch(circleFeaturesProvider).server) {
-          return [
-            CircleEmpty(
+      case 'Events':
+        return [
+          CircleFeatureGate(
+            feature: CircleFeature.liveEvents,
+            inline: true,
+            child: CircleEmpty(
               title: 'Events for ${group.name}',
               message: 'Make plans with this exact circle.',
               action: FilledButton.icon(
@@ -194,27 +222,16 @@ class _GroupTabs extends ConsumerWidget {
                 label: const Text('Open group events'),
               ),
             ),
-          ];
-        }
-        return [
-          CircleFeatureGate(
-            feature: CircleFeature.events,
-            inline: true,
-            child: GroupEventsTab(group: group, workspace: workspace),
           ),
         ];
-      case 4:
+      case 'Chat':
         return [
           CircleFeatureGate(
-            feature: ref.watch(circleFeaturesProvider).server
-                ? CircleFeature.liveChat
-                : CircleFeature.chat,
+            feature: CircleFeature.liveChat,
             inline: true,
             child: CircleEmpty(
               title: 'Talk with everyone in ${group.name}',
-              message: ref.watch(circleFeaturesProvider).server
-                  ? 'Private messages saved for this group.'
-                  : 'This group’s chat always includes exactly its members. Preview: messages stay on this device.',
+              message: 'Private messages saved for this group.',
               action: FilledButton.icon(
                 onPressed: () => context.go('/chats/g/${group.id}'),
                 icon: const Icon(Icons.forum_outlined),
@@ -272,45 +289,7 @@ class _GroupHeader extends ConsumerWidget {
               ],
             ),
           ),
-        if (ref.watch(circleFeaturesProvider).server)
-          GroupPhotoHeader(group: group)
-        else ...[
-          // Editorial header: a wide cover, then the name as a headline.
-          // The decorative cover steps aside at large text sizes so the
-          // tabs stay within reach.
-          if (MediaQuery.textScalerOf(context).scale(1) <=
-              CircleLayout.largeTextThreshold) ...[
-            Semantics(
-              image: true,
-              label: 'Original fictional illustration: ${group.name}',
-              excludeSemantics: true,
-              child: AspectRatio(
-                aspectRatio: CircleProfileLayout.coverAspectRatio,
-                child: DecoratedBox(
-                  decoration: CircleDepth.panel(
-                    context,
-                    radius: CircleRadius.card,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      circleTypeIcon(group.type),
-                      size: Space.large,
-                      color: CircleAccents.of(context).caption,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: Space.lg),
-          ],
-          Semantics(
-            header: true,
-            child: Text(
-              group.name,
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ),
-        ],
+        GroupPhotoHeader(group: group),
         const SizedBox(height: Space.sm),
         Text(
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -338,7 +317,11 @@ class _GroupHeader extends ConsumerWidget {
               ),
             if (requests > 0)
               OutlinedButton.icon(
-                onPressed: () => DefaultTabController.of(context).animateTo(2),
+                onPressed: () => DefaultTabController.of(context).animateTo(
+                  groupTabsFor(
+                    ref.read(circleFeaturesProvider),
+                  ).indexOf('Members'),
+                ),
                 icon: const Icon(Icons.how_to_reg_outlined),
                 label: Text(requests == 1 ? '1 request' : '$requests requests'),
               ),
@@ -455,25 +438,7 @@ class _JoinableTile extends ConsumerWidget {
             Wrap(
               spacing: Space.sm,
               runSpacing: Space.sm,
-              children: [
-                _joinAction(context, controller),
-                if (!reported && !ref.watch(circleFeaturesProvider).server)
-                  TextButton(
-                    onPressed: () => reportToAdmins(
-                      context,
-                      ref,
-                      target: ReportTarget.subgroup(
-                        preview.id,
-                        parentGroup: preview.parentId!,
-                      ),
-                      what: preview.name,
-                    ),
-                    child: Text(
-                      'Report',
-                      semanticsLabel: 'Report subgroup ${preview.name}',
-                    ),
-                  ),
-              ],
+              children: [_joinAction(context, controller)],
             ),
           ],
         ),

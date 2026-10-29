@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/chat/data/mock_chat_repository.dart';
 import 'package:mobile/features/chat/domain/chat_repository.dart';
-import 'package:mobile/features/workspace/data/mock_circle_repository.dart';
+import 'support/mock_circle_repository.dart';
 
 Matcher failsWith(String text) => throwsA(
   isA<CircleFailure>().having((f) => f.message, 'message', contains(text)),

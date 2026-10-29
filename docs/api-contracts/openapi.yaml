@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.4.3
+  version: 0.4.4
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -921,9 +921,12 @@ paths:
       tags:
       - Chats
       description: Own group conversations, direct requests and accepted/declined history. Bounded offset/limit.
-        Returns items(id/kind/group_id/name/request_state/incoming/unread/muted/pinned/archived),has_more; pinned
-        first. Archived rows are labelled and retained. Private no-store reads. Foreground REST polling, not
-        WebSocket or E2E encryption.
+        Returns items(id/kind/group_id/name/request_state/incoming/unread/muted/pinned/archived/other_id/last_message),has_more;
+        pinned first, then by latest visible message (conversation creation when empty). other_id is the other
+        person for direct conversations, otherwise null. last_message is null or {id, author_id, author_name,
+        body (latest visible version, at most 140 characters; empty when unsent), removed, photos (count, 0 when
+        unsent), created_at (UTC)}; a member who left a group sees the preview frozen at their cutoff. Archived
+        rows are labelled and retained. Private no-store reads. Foreground REST polling, not WebSocket or E2E encryption.
       responses:
         '200':
           description: Authorized result or committed action.

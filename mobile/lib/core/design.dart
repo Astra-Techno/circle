@@ -93,6 +93,9 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     required this.title,
     required this.caption,
     required this.activeDot,
+    required this.chatWallpaper,
+    required this.chatIncoming,
+    required this.chatOutgoing,
   });
 
   /// Love and reactions: the primary indigo (a vector heart, never emoji).
@@ -115,6 +118,10 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
   /// drawn with a ring of the surface colour.
   final Color activeDot;
 
+  /// Chat (WhatsApp-style): the conversation background behind bubbles,
+  /// incoming bubbles and the viewer's own (outgoing) bubbles.
+  final Color chatWallpaper, chatIncoming, chatOutgoing;
+
   static const light = CircleAccents(
     heart: Color(0xFF3B2E8C),
     heartText: Color(0xFF3B2E8C),
@@ -130,6 +137,9 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     title: Color(0xFF1C1B22),
     caption: Color(0xFF6B6878),
     activeDot: Color(0xFF3F7A68),
+    chatWallpaper: Color(0xFFEFEAE2),
+    chatIncoming: Color(0xFFFFFFFF),
+    chatOutgoing: Color(0xFFE4DEFA),
   );
 
   static const dark = CircleAccents(
@@ -147,6 +157,9 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     title: Color(0xFFF2EFEA),
     caption: Color(0xFFA19DAA),
     activeDot: Color(0xFF9CCFB9),
+    chatWallpaper: Color(0xFF0E0D12),
+    chatIncoming: Color(0xFF1F1E25),
+    chatOutgoing: Color(0xFF332B66),
   );
 
   static CircleAccents of(BuildContext context) =>
@@ -429,10 +442,11 @@ ThemeData circleTheme(Brightness brightness) {
     tabBarTheme: TabBarThemeData(
       labelColor: accents.title,
       unselectedLabelColor: accents.caption,
-      labelStyle: text.labelLarge,
-      unselectedLabelStyle: text.labelLarge?.copyWith(
+      labelStyle: text.labelMedium,
+      unselectedLabelStyle: text.labelMedium?.copyWith(
         fontWeight: FontWeight.w400,
       ),
+      labelPadding: const EdgeInsets.symmetric(horizontal: Space.sm),
       indicatorColor: colors.primary,
       indicatorSize: TabBarIndicatorSize.label,
       dividerColor: accents.hairline,
@@ -507,6 +521,27 @@ ThemeData circleTheme(Brightness brightness) {
         padding: const EdgeInsets.symmetric(horizontal: Space.md),
       ),
     ),
+  );
+}
+
+/// Fades the trailing edge of a horizontally scrolling row (tabs, chips) so
+/// an item cut by the screen edge reads as "scroll for more".
+class CircleEdgeFade extends StatelessWidget {
+  const CircleEdgeFade({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => ShaderMask(
+    blendMode: BlendMode.dstIn,
+    shaderCallback: (rect) {
+      final rtl = Directionality.of(context) == TextDirection.rtl;
+      return LinearGradient(
+        begin: rtl ? Alignment.centerRight : Alignment.centerLeft,
+        end: rtl ? Alignment.centerLeft : Alignment.centerRight,
+        colors: const [Colors.black, Colors.black, Colors.transparent],
+        stops: const [0, 0.88, 1],
+      ).createShader(rect);
+    },
+    child: child,
   );
 }
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/circle_brand.dart';
 import 'package:mobile/features/auth/domain/access_validation.dart';
-import 'package:mobile/features/workspace/application/workspace_providers.dart';
 import 'support/circle_harness.dart';
 
 Future<void> fillAccess(WidgetTester tester, {required String password}) async {
@@ -68,46 +67,29 @@ void main() {
     },
   );
 
-  testWidgets(
-    'registration validates, clears input and opens an empty workspace',
-    (tester) async {
-      final container = await openCircle(tester, entered: false);
-      await tapText(tester, 'Get Started');
-      await tapText(tester, 'Preview registration');
-      expect(find.text('Enter your mobile number.'), findsOneWidget);
-      expect(find.text('Enter your password.'), findsOneWidget);
-      expect(container.read(circlePreviewSessionProvider), isFalse);
-      await fillAccess(tester, password: 'short');
-      await tapText(tester, 'Preview registration');
-      expect(find.textContaining('Use 6–128 characters'), findsOneWidget);
-      await fillAccess(tester, password: 'a fictional passphrase');
-      await tester.tap(find.byTooltip('Show password'));
-      await tester.pumpAndSettle();
-      expect(find.byTooltip('Hide password'), findsOneWidget);
-      await tapText(tester, 'Preview registration');
-      expect(container.read(circlePreviewSessionProvider), isTrue);
-      expect(workspaceOf(container).groups, isEmpty);
-      expect(find.text('A little space for your people'), findsOneWidget);
-      // Ending the preview returns to welcome; the form starts empty again.
-      await container.read(circlePreviewSessionProvider.notifier).leave();
-      await tester.pumpAndSettle();
-      await tapText(tester, 'Get Started');
-      // Mobile field resets to empty (dial code is in the dropdown).
-      expect(fieldText(tester, 'access-mobile'), isEmpty);
-      expect(fieldText(tester, 'access-password'), isEmpty);
-    },
-  );
+  testWidgets('registration validates calmly before anything is sent', (
+    tester,
+  ) async {
+    await openCircle(tester, entered: false);
+    await tapText(tester, 'Get Started');
+    await tapText(tester, 'Create account');
+    expect(find.text('Enter your mobile number.'), findsOneWidget);
+    expect(find.text('Enter your password.'), findsOneWidget);
+    await fillAccess(tester, password: 'short');
+    await tapText(tester, 'Create account');
+    expect(find.textContaining('Use 6–128 characters'), findsOneWidget);
+    await fillAccess(tester, password: 'a fictional passphrase');
+    await tester.tap(find.byTooltip('Show password'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Hide password'), findsOneWidget);
+  });
 
   testWidgets('login never requires an invitation or OTP', (tester) async {
-    final container = await openCircle(tester, entered: false);
+    await openCircle(tester, entered: false);
     await tapText(tester, 'Log in');
     await reveal(tester, find.textContaining('OTP'));
     expect(find.textContaining('OTP'), findsOneWidget);
-    await fillAccess(tester, password: 'fictional password');
-    await tapText(tester, 'Preview log in');
-    expect(container.read(circlePreviewSessionProvider), isTrue);
-    // Logging in never joins the fictional groups: the workspace is empty.
-    expect(find.text('A little space for your people'), findsOneWidget);
+    expect(find.text('Explore fictional circles'), findsNothing);
   });
 
   testWidgets('forms offer password-manager autofill hints', (tester) async {
@@ -141,9 +123,10 @@ void main() {
       '/register?next=%2Fgroups%2Fg%2Fclub',
     );
     await tapText(tester, 'Have an account? Log in');
-    await fillAccess(tester, password: 'fictional password');
-    await tapText(tester, 'Preview log in');
-    expect(currentUri(container).path, '/groups/g/club');
+    expect(
+      currentUri(container).toString(),
+      '/login?next=%2Fgroups%2Fg%2Fclub',
+    );
   });
 
   for (final size in [
@@ -162,10 +145,10 @@ void main() {
       );
       expect(tester.takeException(), isNull);
       await tapText(tester, 'Get Started');
-      await reveal(tester, find.text('Preview registration'));
+      await reveal(tester, find.text('Create account'));
       expect(tester.takeException(), isNull);
       await tapText(tester, 'Have an account? Log in');
-      await reveal(tester, find.text('Preview log in'));
+      await reveal(tester, find.widgetWithText(FilledButton, 'Log in'));
       expect(tester.takeException(), isNull);
     });
   }

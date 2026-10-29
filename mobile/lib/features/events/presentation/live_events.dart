@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import 'event_visuals.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../notifications/application/push_settings.dart'
     show deviceTimezoneProvider;
@@ -29,6 +30,39 @@ class LiveEventsScreen extends ConsumerStatefulWidget {
 class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
   int _offset = 0;
   bool _busy = false;
+
+  /// Events from earlier pages; the list grows as it scrolls.
+  final _earlier = <Map<String, Object?>>[];
+
+  Widget _eventList(List<Map<String, Object?>> items, {Widget? end}) =>
+      RefreshIndicator(
+        // The header's + plans an event; pull down to refresh.
+        onRefresh: () async {
+          setState(() {
+            _offset = 0;
+            _earlier.clear();
+          });
+          refreshLiveEvents(ref);
+        },
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: CircleInsets.page,
+          children: [
+            if (items.isEmpty)
+              const CircleEmpty(
+                title: 'Something to look forward to',
+                message: 'Plan the first event for one of your circles.',
+              ),
+            for (final item in items)
+              _LiveEventCard(
+                item: item,
+                onTap: () => context.go('/events/e/${item['id']}'),
+              ),
+            ?end,
+          ],
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final id = widget.id;
@@ -37,11 +71,19 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
         : ref.watch(liveEventProvider(id));
     return ReadingPane(
       child: load.when(
-        loading: () => const CircleSkeletonPage(
-          shape: CircleSkeletonShape.cards,
-          count: 3,
-          label: 'Loading events',
-        ),
+        loading: () => id == null && _earlier.isNotEmpty
+            ? _eventList(
+                _earlier,
+                end: const Padding(
+                  padding: EdgeInsets.all(Space.lg),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            : const CircleSkeletonPage(
+                shape: CircleSkeletonShape.cards,
+                count: 3,
+                label: 'Loading events',
+              ),
         error: (_, _) => CircleEmpty(
           title: 'Events couldn’t load',
           message: 'Check your connection and group access.',
@@ -52,72 +94,18 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
         ),
         data: (e) {
           if (id == null) {
-            final items = ApiJson.list(e['items']).map(ApiJson.map);
-            return ListView(
-              padding: CircleInsets.form,
-              children: [
-                const CircleHeading(
-                  title: 'Events',
-                  subtitle: 'Make time for your people.',
-                ),
-                FilledButton.icon(
-                  onPressed: () => context.go(
-                    '/events/new${widget.group == null ? '' : '?group=${widget.group}'}',
-                  ),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Plan an event'),
-                ),
-                TextButton.icon(
-                  onPressed: () => refreshLiveEvents(ref),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh'),
-                ),
-                if (items.isEmpty)
-                  const CircleEmpty(
-                    title: 'Something to look forward to',
-                    message: 'Plan the first event for one of your circles.',
-                  ),
-                for (final item in items)
-                  Card(
-                    child: Column(
-                      children: [
-                        if (item['cover_id'] case final String cover)
-                          PrivatePhoto(
-                            load: ref.watch(
-                              liveEventCoverProvider((
-                                event: '${item['id']}',
-                                cover: cover,
-                              )),
-                            ),
-                            label: 'Event cover',
-                          ),
-                        ListTile(
-                          title: Text(item['title'] as String),
-                          subtitle: Text(
-                            '${liveEventLabel(item)}\n${item['status'] == 'cancelled' ? 'Cancelled' : item['venue'] ?? ''}',
-                          ),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => context.go('/events/e/${item['id']}'),
-                        ),
-                      ],
-                    ),
-                  ),
-                Wrap(
-                  spacing: Space.md,
-                  children: [
-                    if (_offset > 0)
-                      TextButton(
-                        onPressed: () => setState(() => _offset -= 30),
-                        child: const Text('Previous'),
-                      ),
-                    if (e['has_more'] == true)
-                      TextButton(
-                        onPressed: () => setState(() => _offset += 30),
-                        child: const Text('Next'),
-                      ),
-                  ],
-                ),
-              ],
+            final items = ApiJson.list(e['items']).map(ApiJson.map).toList();
+            return _eventList(
+              [..._earlier, ...items],
+              end: e['has_more'] == true
+                  ? CircleLoadMore(
+                      key: ValueKey('more-$_offset'),
+                      onLoad: () => setState(() {
+                        _earlier.addAll(items);
+                        _offset += 30;
+                      }),
+                    )
+                  : null,
             );
           }
           final mine = e['my_rsvp'],
@@ -130,7 +118,11 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
               ).isAfter(DateTime.now().toUtc());
           final chosen = mine is Map ? mine['status'] : null;
           Widget choiceButton(MapEntry<String, String> choice) {
-            final label = Text(choice.value, textAlign: TextAlign.center);
+            // One line that shrinks rather than wrapping a word.
+            final label = FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(choice.value, maxLines: 1, softWrap: false),
+            );
             return chosen == choice.key
                 ? FilledButton(onPressed: () {}, child: label)
                 : OutlinedButton(
@@ -162,172 +154,218 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                   );
           }
 
-          final details = ListView(
-            padding: CircleInsets.form,
-            children: [
-              CircleHeading(
-                title: e['title'] as String,
-                subtitle: liveEventLabel(e),
-              ),
-              if (e['cover_id'] case final String cover)
-                PrivatePhoto(
-                  load: ref.watch(
-                    liveEventCoverProvider((event: id, cover: cover)),
+          final theme = Theme.of(context);
+          final caption = theme.textTheme.bodySmall?.copyWith(
+            color: CircleAccents.of(context).caption,
+          );
+          final zone = e['timezone'] as String;
+          final venue = e['venue'] as String? ?? '';
+          final link = e['online_link'] as String? ?? '';
+          Future<void> busy(Future<void> Function() work) async {
+            setState(() => _busy = true);
+            await work();
+            if (!mounted) return;
+            setState(() => _busy = false);
+            refreshLiveEvents(ref);
+          }
+
+          Future<void> manageAction(String action) async {
+            final api = ref.read(liveEventsApiProvider);
+            final version = e['version'] as int;
+            switch (action) {
+              case 'cover':
+                final picker = ref.read(profilePhotoPickerProvider);
+                await busy(
+                  () =>
+                      runCalmly(context, () => api.cover(id, version, picker)),
+                );
+              case 'remove-cover':
+                await busy(
+                  () => runCalmly(context, () => api.removeCover(id, version)),
+                );
+              case 'edit':
+                context.go('/events/e/$id/edit');
+              case 'cancel':
+                if (!await confirmCircleAction(
+                  context,
+                  title: 'Cancel this event?',
+                  message:
+                      'The group will see the cancellation. Existing RSVPs stay on record.',
+                  confirm: 'Cancel event',
+                )) {
+                  return;
+                }
+                if (!context.mounted) return;
+                await busy(
+                  () => runCalmly(
+                    context,
+                    () => api.update(id, {
+                      'version': version,
+                      'status': 'cancelled',
+                    }),
+                    success: 'Event cancelled.',
                   ),
-                  label: 'Event cover',
-                ),
-              if (manage && active)
-                Wrap(
-                  spacing: Space.sm,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: _busy
-                          ? null
-                          : () async {
-                              final api = ref.read(liveEventsApiProvider);
-                              final picker = ref.read(
-                                profilePhotoPickerProvider,
-                              );
-                              setState(() => _busy = true);
-                              await runCalmly(
-                                context,
-                                () =>
-                                    api.cover(id, e['version'] as int, picker),
-                              );
-                              if (!mounted) return;
-                              setState(() => _busy = false);
-                              refreshLiveEvents(ref);
-                            },
-                      icon: const Icon(Icons.add_photo_alternate_outlined),
-                      label: Text(
-                        e['cover_id'] == null
-                            ? 'Add cover photo'
-                            : 'Change cover photo',
+                );
+            }
+          }
+
+          Widget row(
+            IconData icon,
+            String title, {
+            String? subtitle,
+            VoidCallback? onTap,
+          }) => ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(icon),
+            title: Text(title),
+            subtitle: subtitle == null ? null : Text(subtitle),
+            trailing: onTap == null ? null : const Icon(Icons.chevron_right),
+            onTap: onTap,
+          );
+          final going = (e['going_count'] as num?)?.toInt() ?? 0;
+          final details = RefreshIndicator(
+            onRefresh: () async => refreshLiveEvents(ref),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: CircleInsets.form,
+              children: [
+                if (e['cover_id'] case final String cover)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: Space.lg),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(CircleRadius.card),
+                      child: PrivatePhoto(
+                        load: ref.watch(
+                          liveEventCoverProvider((event: id, cover: cover)),
+                        ),
+                        label: 'Event cover',
                       ),
                     ),
-                    if (e['cover_id'] != null)
-                      TextButton(
-                        onPressed: _busy
-                            ? null
-                            : () async {
-                                final api = ref.read(liveEventsApiProvider);
-                                setState(() => _busy = true);
-                                await runCalmly(
-                                  context,
-                                  () =>
-                                      api.removeCover(id, e['version'] as int),
-                                );
-                                if (!mounted) return;
-                                setState(() => _busy = false);
-                                refreshLiveEvents(ref);
-                              },
-                        child: const Text('Remove cover'),
+                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    EventDateBlock(
+                      wall: liveEventWall(e['start_at'] as String, zone),
+                    ),
+                    const SizedBox(width: Space.lg),
+                    Expanded(
+                      child: Semantics(
+                        header: true,
+                        child: Text(
+                          e['title'] as String,
+                          style: theme.textTheme.titleLarge,
+                        ),
+                      ),
+                    ),
+                    if (manage && active)
+                      PopupMenuButton<String>(
+                        tooltip: 'Event options',
+                        enabled: !_busy,
+                        onSelected: manageAction,
+                        itemBuilder: (_) => [
+                          PopupMenuItem(
+                            value: 'cover',
+                            child: Text(
+                              e['cover_id'] == null
+                                  ? 'Add cover photo'
+                                  : 'Change cover photo',
+                            ),
+                          ),
+                          if (e['cover_id'] != null)
+                            const PopupMenuItem(
+                              value: 'remove-cover',
+                              child: Text('Remove cover'),
+                            ),
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Edit event'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'cancel',
+                            child: Text('Cancel event'),
+                          ),
+                        ],
                       ),
                   ],
                 ),
-              OutlinedButton.icon(
-                onPressed: () =>
-                    context.push('/polls?group=${e['group_id']}&event=$id'),
-                icon: const Icon(Icons.poll_outlined),
-                label: const Text('Event polls'),
-              ),
-              if (!active) const Text('This event is cancelled.'),
-              if ((e['description'] as String? ?? '').isNotEmpty)
-                Text(e['description'] as String),
-              if ((e['venue'] as String? ?? '').isNotEmpty)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.place_outlined),
-                  title: Text(e['venue'] as String),
-                ),
-              if ((e['online_link'] as String? ?? '').isNotEmpty)
-                SelectableText(e['online_link'] as String),
-              if (e['end_at'] != null)
-                Text(
-                  'Ends: ${liveEventWall(e['end_at'] as String, e['timezone'] as String)}',
-                ),
-              if (e['rsvp_deadline'] != null)
-                Text(
-                  'RSVP by ${liveEventWall(e['rsvp_deadline'] as String, e['timezone'] as String)}',
-                ),
-              Text(
-                '${e['going_count']} attending${e['max_capacity'] == null ? '' : ' · capacity ${e['max_capacity']}'}',
-              ),
-              Text(
-                mine is Map
-                    ? 'Your RSVP: ${mine['status']}'
-                    : 'You haven’t replied yet.',
-              ),
-              if (canRsvp) ...[
-                TextButton(
-                  onPressed: _busy
+                const SizedBox(height: Space.lg),
+                if (!active)
+                  const EventNotice(
+                    icon: Icons.event_busy_outlined,
+                    text: 'This event is cancelled.',
+                  ),
+                row(
+                  Icons.schedule_rounded,
+                  liveEventLabel(e),
+                  subtitle: e['end_at'] == null
                       ? null
-                      : () {
-                          final api = ref.read(liveEventsApiProvider);
-                          showModalBottomSheet<void>(
-                            context: context,
-                            isScrollControlled: true,
-                            useSafeArea: true,
-                            builder: (_) => _RsvpSheet(
-                              api: api,
-                              id: id,
-                              mine: mine is Map
-                                  ? Map<String, Object?>.from(mine)
-                                  : const {},
-                            ),
-                          );
-                        },
-                  child: const Text('Guests and RSVP note'),
+                      : 'Ends ${formatDay(liveEventWall(e['end_at'] as String, zone), today: DateTime.now())} · ${formatTime(liveEventWall(e['end_at'] as String, zone))}',
                 ),
+                if (venue.isNotEmpty) row(Icons.place_outlined, venue),
+                if (link.isNotEmpty)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.link),
+                    title: SelectableText(link),
+                  ),
+                if (e['rsvp_deadline'] != null)
+                  row(
+                    Icons.event_available_outlined,
+                    'RSVP by ${formatDay(liveEventWall(e['rsvp_deadline'] as String, zone), today: DateTime.now())} · ${formatTime(liveEventWall(e['rsvp_deadline'] as String, zone))}',
+                  ),
+                row(
+                  Icons.groups_outlined,
+                  'Who’s coming?',
+                  subtitle:
+                      '$going going${e['max_capacity'] == null ? '' : ' · room for ${e['max_capacity']}'}',
+                  onTap: () => context.go('/events/e/$id/attendees'),
+                ),
+                row(
+                  Icons.poll_outlined,
+                  'Event polls',
+                  onTap: () =>
+                      context.push('/polls?group=${e['group_id']}&event=$id'),
+                ),
+                if (canRsvp && mine is Map)
+                  row(
+                    Icons.edit_note_outlined,
+                    'Guests and RSVP note',
+                    onTap: _busy
+                        ? null
+                        : () {
+                            final api = ref.read(liveEventsApiProvider);
+                            showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              useSafeArea: true,
+                              builder: (_) => _RsvpSheet(
+                                api: api,
+                                id: id,
+                                mine: Map<String, Object?>.from(mine),
+                              ),
+                            );
+                          },
+                  ),
+                if ((e['description'] as String? ?? '').isNotEmpty) ...[
+                  const CircleSectionTitle('About'),
+                  Text(
+                    e['description'] as String,
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                ],
+                if (!canRsvp)
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.lg),
+                    child: Text(
+                      mine is Map
+                          ? 'Your RSVP: ${_answerLabel(mine['status'])}'
+                          : 'You haven’t replied yet.',
+                      style: caption,
+                    ),
+                  ),
               ],
-              TextButton(
-                onPressed: () => context.go('/events/e/$id/attendees'),
-                child: const Text('Who’s coming?'),
-              ),
-              if (active && manage) ...[
-                OutlinedButton(
-                  onPressed: () => context.go('/events/e/$id/edit'),
-                  child: const Text('Edit event'),
-                ),
-                TextButton(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          final api = ref.read(liveEventsApiProvider),
-                              version = e['version'];
-                          if (!await confirmCircleAction(
-                            context,
-                            title: 'Cancel this event?',
-                            message:
-                                'The group will see the cancellation. Existing RSVPs stay on record.',
-                            confirm: 'Cancel event',
-                          )) {
-                            return;
-                          }
-                          if (!context.mounted) return;
-                          setState(() => _busy = true);
-                          await runCalmly(
-                            context,
-                            () => api.update(id, {
-                              'version': version,
-                              'status': 'cancelled',
-                            }),
-                            success: 'Event cancelled.',
-                          );
-                          if (mounted) {
-                            setState(() => _busy = false);
-                            refreshLiveEvents(ref);
-                          }
-                        },
-                  child: const Text('Cancel event'),
-                ),
-              ],
-              TextButton.icon(
-                onPressed: () => refreshLiveEvents(ref),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Refresh event'),
-              ),
-            ],
+            ),
           );
           // Answers sit in the thumb zone, pinned below the details.
           return Column(
@@ -350,16 +388,31 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                       Space.section,
                       Space.lg,
                     ),
-                    child: Row(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        for (final (index, choice) in {
-                          'going': 'Going',
-                          'maybe': 'Maybe',
-                          'not_going': 'Can’t go',
-                        }.entries.indexed) ...[
-                          if (index > 0) const SizedBox(width: Space.sm),
-                          Expanded(child: choiceButton(choice)),
-                        ],
+                        Text(
+                          chosen == null
+                              ? 'Are you coming?'
+                              : 'Your answer: ${_answerLabel(chosen)}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: CircleAccents.of(context).caption,
+                              ),
+                        ),
+                        const SizedBox(height: Space.sm),
+                        Row(
+                          children: [
+                            for (final (index, choice) in {
+                              'going': 'Going',
+                              'maybe': 'Maybe',
+                              'not_going': 'Can’t go',
+                            }.entries.indexed) ...[
+                              if (index > 0) const SizedBox(width: Space.sm),
+                              Expanded(child: choiceButton(choice)),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -367,6 +420,88 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// One upcoming event in the live list: optional cover, the date badge,
+/// title and when/where, like the preview cards.
+class _LiveEventCard extends ConsumerWidget {
+  const _LiveEventCard({required this.item, required this.onTap});
+  final Map<String, Object?> item;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final caption = theme.textTheme.bodySmall?.copyWith(
+      color: CircleAccents.of(context).caption,
+    );
+    final cancelled = item['status'] == 'cancelled';
+    final venue = item['venue'] as String? ?? '';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.lg),
+      child: Material(
+        color: theme.colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(CircleRadius.card),
+          side: BorderSide(color: CircleAccents.of(context).hairline),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (item['cover_id'] case final String cover)
+                PrivatePhoto(
+                  load: ref.watch(
+                    liveEventCoverProvider((
+                      event: '${item['id']}',
+                      cover: cover,
+                    )),
+                  ),
+                  label: 'Event cover',
+                ),
+              Padding(
+                padding: const EdgeInsets.all(Space.lg),
+                child: Row(
+                  children: [
+                    EventDateBlock(
+                      wall: liveEventWall(
+                        item['start_at'] as String,
+                        item['timezone'] as String,
+                      ),
+                    ),
+                    const SizedBox(width: Space.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['title'] as String,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: Space.xs),
+                          Text(liveEventLabel(item), style: caption),
+                          if (cancelled || venue.isNotEmpty)
+                            Text(
+                              cancelled ? 'Cancelled' : venue,
+                              style: caption,
+                            ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: CircleAccents.of(context).caption,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -832,12 +967,54 @@ class LiveAttendeesScreen extends ConsumerStatefulWidget {
 
 class _AttendeesState extends ConsumerState<LiveAttendeesScreen> {
   int _offset = 0;
+
+  /// People from earlier pages; the list grows as it scrolls.
+  final _earlier = <Map<String, Object?>>[];
+
+  Widget _list(List<Map<String, Object?>> people, {Widget? end}) => ListView(
+    padding: CircleInsets.form,
+    children: [
+      const CircleHeading(
+        title: 'Who’s coming?',
+        subtitle: 'Notes and mobile numbers stay private.',
+      ),
+      if (people.isEmpty)
+        const CircleEmpty(
+          title: 'No answers yet',
+          message:
+              'When people answer Going, Maybe or Can’t go, they show up here.',
+        ),
+      for (final person in people)
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: CircleInitialAvatar(name: person['display_name'] as String),
+          title: Text(person['display_name'] as String),
+          subtitle: Text(
+            [
+              _answerLabel(person['status']),
+              if (((person['guest_count'] as num?)?.toInt() ?? 0) > 0)
+                '+${person['guest_count']} with them',
+            ].join(' · '),
+          ),
+        ),
+      ?end,
+    ],
+  );
+
   @override
   Widget build(BuildContext context) => ReadingPane(
     child: ref
         .watch(liveAttendeesProvider((id: widget.id, offset: _offset)))
         .when(
-          loading: () => const CircleSkeletonPage(label: 'Loading attendees'),
+          loading: () => _earlier.isNotEmpty
+              ? _list(
+                  _earlier,
+                  end: const Padding(
+                    padding: EdgeInsets.all(Space.lg),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                )
+              : const CircleSkeletonPage(label: 'Loading attendees'),
           error: (_, _) => CircleEmpty(
             title: 'Attendees couldn’t load',
             message: 'Check your connection and membership.',
@@ -846,37 +1023,31 @@ class _AttendeesState extends ConsumerState<LiveAttendeesScreen> {
               child: const Text('Try again'),
             ),
           ),
-          data: (data) => ListView(
-            padding: CircleInsets.form,
-            children: [
-              const CircleHeading(
-                title: 'Who’s coming?',
-                subtitle: 'Notes and mobile numbers stay private.',
-              ),
-              for (final person in ApiJson.list(data['items']).map(ApiJson.map))
-                ListTile(
-                  title: Text(person['display_name'] as String),
-                  subtitle: Text(
-                    '${person['status']} · ${person['guest_count']} guests',
-                  ),
-                ),
-              Wrap(
-                spacing: Space.md,
-                children: [
-                  if (_offset > 0)
-                    TextButton(
-                      onPressed: () => setState(() => _offset -= 30),
-                      child: const Text('Previous'),
-                    ),
-                  if (data['has_more'] == true)
-                    TextButton(
-                      onPressed: () => setState(() => _offset += 30),
-                      child: const Text('Next'),
-                    ),
-                ],
-              ),
-            ],
-          ),
+          data: (data) {
+            final people = ApiJson.list(
+              data['items'],
+            ).map(ApiJson.map).toList();
+            return _list(
+              [..._earlier, ...people],
+              end: data['has_more'] == true
+                  ? CircleLoadMore(
+                      key: ValueKey('more-$_offset'),
+                      onLoad: () => setState(() {
+                        _earlier.addAll(people);
+                        _offset += 30;
+                      }),
+                    )
+                  : null,
+            );
+          },
         ),
   );
 }
+
+/// "Going", "Maybe" or "Can’t go" for a saved RSVP status.
+String _answerLabel(Object? status) => switch (status) {
+  'going' => 'Going',
+  'maybe' => 'Maybe',
+  'not_going' => 'Can’t go',
+  _ => '$status',
+};

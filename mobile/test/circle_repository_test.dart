@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/features/workspace/data/mock_circle_repository.dart';
+import 'support/mock_circle_repository.dart';
 import 'package:mobile/features/workspace/domain/circle_repository.dart';
 
 final fails = throwsA(isA<CircleFailure>());

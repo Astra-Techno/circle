@@ -1,9 +1,7 @@
 import '../../../core/circle_failure.dart';
 
-/// Parts of CIRCLE that the API contract (0.3.1) doesn't cover yet. The
-/// local preview has all of them (fictional and session-local); a real
-/// server session shows an honest "not on the server yet" state instead of
-/// mixing mock data into real groups.
+/// Feature families of CIRCLE. The connected server offers a subset;
+/// anything it doesn't offer yet is hidden from the app.
 enum CircleFeature {
   events('Events', plural: true),
   polls('Polls', plural: true),
@@ -33,19 +31,11 @@ enum CircleFeature {
       '$label ${plural ? 'aren’t' : 'isn’t'} on the server yet.';
 }
 
-/// What the current session can do, and how it is labelled.
+/// What the connected server offers.
 class CircleFeatures {
-  const CircleFeatures._({required this.host, required this.available});
-
-  /// The fictional, session-local preview: everything works locally.
-  static const preview = CircleFeatures._(
-    host: null,
-    available: {...CircleFeature.values},
-  );
-
-  /// Enable each family only after its real server implementation is verified.
-  /// Chats and Events remain required work in docs/pending-work.md.
-  const CircleFeatures.server(String this.host, {bool notifications = false})
+  /// Enable each family only after its real server implementation is
+  /// verified.
+  const CircleFeatures.server(this.host, {bool notifications = false})
     : available = notifications
           ? const {
               CircleFeature.liveChat,
@@ -65,18 +55,13 @@ class CircleFeatures {
               CircleFeature.blocking,
             };
 
-  /// Null in the preview; the server's host in server mode.
-  final String? host;
+  /// The connected server's host, e.g. "circle.cloudkart24.com".
+  final String host;
 
   /// Features that work in this session.
   final Set<CircleFeature> available;
 
-  bool get server => host != null;
-
   bool has(CircleFeature feature) => available.contains(feature);
-
-  /// The header's one mode label: "PREVIEW" or the server's host.
-  String get label => host ?? 'PREVIEW';
 }
 
 /// The calm failure for an action the server doesn't offer yet.

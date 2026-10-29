@@ -28,9 +28,6 @@ class AlbumsTab extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const PreviewLabel(
-          'Preview: albums use fictional illustrations. Nothing is uploaded.',
-        ),
         Align(
           alignment: AlignmentDirectional.centerStart,
           child: OutlinedButton.icon(

@@ -21,7 +21,7 @@ class GroupAvatar extends ConsumerWidget {
     final group = ref.watch(circleWorkspaceProvider).value?.group(groupId);
     final version = group?.avatarVersion;
     ImageProvider<Object>? image;
-    if (ref.watch(circleFeaturesProvider).server && version != null) {
+    if (version != null) {
       final bytes = ref
           .watch(
             groupPhotoBytesProvider((
@@ -192,35 +192,82 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
             ),
           );
     }
+    // The banner steps aside at large text sizes so the tabs stay within
+    // reach; the picture and name remain.
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) >
+        CircleLayout.largeTextThreshold;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AspectRatio(
-          aspectRatio: CircleProfileLayout.coverAspectRatio,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              cover,
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(Space.sm),
-                  child: IconButton.filledTonal(
-                    tooltip: 'Refresh group photos',
-                    onPressed: _busy ? null : _refresh,
-                    icon: const Icon(Icons.refresh),
+        if (!largeText)
+          AspectRatio(
+            aspectRatio: CircleProfileLayout.coverAspectRatio,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                cover,
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(Space.sm),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton.filledTonal(
+                          tooltip: 'Refresh group photos',
+                          onPressed: _busy ? null : _refresh,
+                          icon: const Icon(Icons.refresh),
+                        ),
+                        // Admins change the banner from a camera on it.
+                        if (admin) ...[
+                          const SizedBox(width: Space.sm),
+                          IconButton.filledTonal(
+                            tooltip: group.coverVersion == null
+                                ? 'Add banner'
+                                : 'Change banner',
+                            onPressed: _busy
+                                ? null
+                                : () => _change(ProfilePhotoKind.cover),
+                            icon: const Icon(Icons.photo_camera_outlined),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         const SizedBox(height: Space.md),
         Center(
-          child: GroupAvatar(
-            groupId: group.id,
-            type: group.type,
-            size: CircleAvatarSize.hero,
+          child: SizedBox.square(
+            dimension: CircleAvatarSize.hero.diameter + Space.lg,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                GroupAvatar(
+                  groupId: group.id,
+                  type: group.type,
+                  size: CircleAvatarSize.hero,
+                ),
+                // Like the profile photo: a small camera for admins.
+                if (admin)
+                  PositionedDirectional(
+                    end: 0,
+                    bottom: 0,
+                    child: IconButton.filledTonal(
+                      tooltip: group.avatarVersion == null
+                          ? 'Add group picture'
+                          : 'Change group picture',
+                      onPressed: _busy
+                          ? null
+                          : () => _change(ProfilePhotoKind.avatar),
+                      icon: const Icon(Icons.photo_camera_outlined),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: Space.sm),
@@ -232,33 +279,30 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
         ),
-        if (_busy) const LinearProgressIndicator(),
-        if (admin)
+        // With the banner hidden at large text, its controls move here.
+        if (largeText)
           Wrap(
             alignment: WrapAlignment.center,
             spacing: Space.sm,
-            runSpacing: Space.sm,
             children: [
-              OutlinedButton.icon(
-                onPressed: _busy
-                    ? null
-                    : () => _change(ProfilePhotoKind.avatar),
-                icon: const Icon(Icons.photo_camera_outlined),
-                label: Text(
-                  group.avatarVersion == null
-                      ? 'Add group picture'
-                      : 'Change group picture',
-                ),
+              IconButton.filledTonal(
+                tooltip: 'Refresh group photos',
+                onPressed: _busy ? null : _refresh,
+                icon: const Icon(Icons.refresh),
               ),
-              OutlinedButton.icon(
-                onPressed: _busy ? null : () => _change(ProfilePhotoKind.cover),
-                icon: const Icon(Icons.panorama_outlined),
-                label: Text(
-                  group.coverVersion == null ? 'Add banner' : 'Change banner',
+              if (admin)
+                IconButton.filledTonal(
+                  tooltip: group.coverVersion == null
+                      ? 'Add banner'
+                      : 'Change banner',
+                  onPressed: _busy
+                      ? null
+                      : () => _change(ProfilePhotoKind.cover),
+                  icon: const Icon(Icons.panorama_outlined),
                 ),
-              ),
             ],
           ),
+        if (_busy) const LinearProgressIndicator(),
       ],
     );
   }

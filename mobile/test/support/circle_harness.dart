@@ -2,13 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 import 'package:mobile/app/circle_experience.dart';
+import 'package:mobile/core/api/api_providers.dart';
 import 'package:mobile/core/theme_controller.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
+import 'fake_api.dart';
+import 'mock_circle_repository.dart';
 
-/// Pumps the real app. [entered] starts a preview session; [showcase]
-/// loads the fictional circles; [now] fixes the app's clock, or [clock]
-/// supplies one a test can move forward.
+/// The fake account the fictional test data belongs to.
+const testViewer = 'you';
+
+/// Pumps the real app signed in to a fictional account whose data comes
+/// from [MockCircleRepository] (a test double; the app has no demo mode).
+/// [entered] false shows the signed-out welcome; [showcase] loads the
+/// fictional circles; [now] fixes the app's clock, or [clock] supplies one a
+/// test can move forward. The network is never touched: the API points at
+/// a test host and every request fails.
 Future<ProviderContainer> openCircle(
   WidgetTester tester, {
   bool entered = true,
@@ -32,23 +42,30 @@ Future<ProviderContainer> openCircle(
     tester.platformDispatcher.clearTextScaleFactorTestValue();
     tester.platformDispatcher.clearPlatformBrightnessTestValue();
   });
+  final appClock = clock ?? (now == null ? null : () => now);
+  final repository = MockCircleRepository(showcase: showcase, now: appClock);
   final container = ProviderContainer(
     overrides: [
-      if (clock != null)
-        circleClockProvider.overrideWithValue(clock)
-      else if (now != null)
-        circleClockProvider.overrideWithValue(() => now),
+      if (appClock != null) circleClockProvider.overrideWithValue(appClock),
+      apiConfigProvider.overrideWithValue(
+        ApiConfig.parse('https://circle.test/api/v1'),
+      ),
+      apiHttpAdapterProvider.overrideWithValue(
+        FakeHttpAdapter(
+          (_) async =>
+              const FakeResponse.network(DioExceptionType.connectionError),
+        ),
+      ),
+      tokenStoreProvider.overrideWithValue(MemoryTokenStore()),
+      circleRepositoryProvider.overrideWithValue(repository),
+      circleViewerProvider.overrideWithValue(entered ? testViewer : ''),
+      circleSessionActiveProvider.overrideWithValue(entered),
     ],
   );
   addTearDown(container.dispose);
   container
       .read(themeProvider.notifier)
       .change(brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light);
-  if (entered) {
-    await container
-        .read(circlePreviewSessionProvider.notifier)
-        .enter(showcase: showcase);
-  }
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
@@ -116,6 +133,14 @@ Uri currentUri(ProviderContainer container) {
 /// Scrolls the tab bar to [label] if needed and selects it.
 Future<void> openTab(WidgetTester tester, String label) async {
   final tab = find.widgetWithText(Tab, label);
+  // At large text the tabs can sit below a tall header: scroll to them.
+  if (tab.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(
+      tab,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
   await tester.ensureVisible(tab);
   await tester.pumpAndSettle();
   await tester.tap(tab);

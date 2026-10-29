@@ -24,7 +24,6 @@ It always invokes `flutter build apk --release` with:
 
 ```text
 --dart-define=CIRCLE_API_BASE_URL=https://circle.cloudkart24.com/api/v1
---dart-define=CIRCLE_PREVIEW=false
 --dart-define=CIRCLE_PUSH_ENABLED=true
 ```
 

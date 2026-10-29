@@ -49,10 +49,10 @@ void main() {
     await settle(tester);
     Future<void> choose(String button, String action) async {
       await Scrollable.ensureVisible(
-        tester.element(find.text(button)),
+        tester.element(find.byTooltip(button)),
         alignment: 0.5,
       );
-      await tester.tap(find.text(button));
+      await tester.tap(find.byTooltip(button));
       await settle(tester);
       await tester.tap(find.text(action));
       await settle(tester);
@@ -118,8 +118,8 @@ void main() {
       expect(server.adapter.count('PUT', '/groups/$id/photos/avatar'), 0);
       c.read(circleRouterProvider).go('/groups/g/$id');
       await settle(tester);
-      expect(find.text('Add group picture'), findsNothing);
-      expect(find.text('Change banner'), findsNothing);
+      expect(find.byTooltip('Add group picture'), findsNothing);
+      expect(find.byTooltip('Change banner'), findsNothing);
       expect(find.byKey(ValueKey('group-cover-$id')), findsOneWidget);
       server.groups[id]!['cover_version'] = 'fictional-replacement';
       await tester.tap(find.byTooltip('Refresh group photos'));
@@ -207,8 +207,10 @@ void main() {
             );
         c.read(circleRouterProvider).go('/groups/g/$id');
         await settle(tester);
-        expect(find.byKey(ValueKey('group-cover-$id')), findsOneWidget);
-        expect(find.text('Change group picture'), findsOneWidget);
+        // At 200% text the banner steps aside; its controls stay.
+        expect(find.byKey(ValueKey('group-cover-$id')), findsNothing);
+        expect(find.byTooltip('Change banner'), findsOneWidget);
+        expect(find.byTooltip('Change group picture'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 100)),

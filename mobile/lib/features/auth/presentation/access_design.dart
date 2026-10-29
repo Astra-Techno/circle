@@ -10,13 +10,11 @@ import '../domain/access_validation.dart';
 import '../application/country_provider.dart';
 
 /// Welcome with the owner's complete supplied CIRCLE identity.
-/// Create account and Log in are the two clear choices; the
-/// fictional tour is a quiet third option for the prototype.
+/// Create account and Log in are the two clear choices.
 class AccessWelcome extends StatelessWidget {
-  const AccessWelcome({super.key, this.onExploreDemo, this.connectedTo});
-  final VoidCallback? onExploreDemo;
+  const AccessWelcome({super.key, this.connectedTo});
 
-  /// The server's host in server builds; null in the preview.
+  /// The connected server's host.
   final String? connectedTo;
   @override
   Widget build(BuildContext context) {
@@ -89,14 +87,6 @@ class AccessWelcome extends StatelessWidget {
             ),
           ),
         ),
-        if (onExploreDemo != null) ...[
-          const SizedBox(height: Space.sm),
-          TextButton.icon(
-            onPressed: onExploreDemo,
-            icon: const Icon(Icons.explore_outlined),
-            label: const Text('Explore fictional circles'),
-          ),
-        ],
         const SizedBox(height: Space.lg),
         _PreviewNote(connectedTo: connectedTo, welcome: true),
         const SizedBox(height: Space.md),
@@ -507,22 +497,18 @@ class AccessForm extends ConsumerStatefulWidget {
   const AccessForm({
     super.key,
     required this.registering,
-    required this.onPreviewComplete,
+    required this.onSubmit,
     this.next,
-    this.onSubmit,
     this.connectedTo,
     this.notice,
   });
   final bool registering;
 
-  /// Called after valid input has been cleared. Nothing is sent or stored.
-  final VoidCallback onPreviewComplete;
+  /// Sends the details to the server and returns a calm error, or null
+  /// once signed in.
+  final Future<String?> Function(AccessDetails details) onSubmit;
 
-  /// Server builds: sends the details for real and returns a calm error,
-  /// or null once signed in. Null in the preview.
-  final Future<String?> Function(AccessDetails details)? onSubmit;
-
-  /// The server's host, shown once instead of the preview note.
+  /// The connected server's host, shown once.
   final String? connectedTo;
 
   /// A calm message to show once, e.g. "Your session ended…".
@@ -591,18 +577,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
 
   void _submit() {
     if (_busy || !_form.currentState!.validate()) return;
-    if (widget.onSubmit != null) {
-      _send(widget.onSubmit!);
-      return;
-    }
-    // This prototype must never retain, log, transmit or authenticate input.
-    _name.clear();
-    _mobile.clear();
-    _password.clear();
-    FocusScope.of(context).unfocus();
-    // Nothing was verified, so password managers are told not to save.
-    TextInput.finishAutofillContext(shouldSave: false);
-    widget.onPreviewComplete();
+    _send(widget.onSubmit);
   }
 
   /// Server builds: register or log in for real. The password is sent
@@ -659,7 +634,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
       ),
       const SizedBox(height: Space.section),
       _PreviewNote(connectedTo: widget.connectedTo),
-      if (widget.notice != null && widget.onSubmit != null) ...[
+      if (widget.notice != null) ...[
         const SizedBox(height: Space.md),
         CircleNote(widget.notice!),
       ],
@@ -824,11 +799,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
               FilledButton(
                 onPressed: _busy || _locating ? null : _submit,
                 child: Text(
-                  widget.onSubmit == null
-                      ? (widget.registering
-                            ? 'Preview registration'
-                            : 'Preview log in')
-                      : _busy
+                  _busy
                       ? (widget.registering
                             ? 'Creating your account\u2026'
                             : 'Logging in\u2026')
@@ -897,16 +868,14 @@ class _Brand extends StatelessWidget {
 class _PreviewNote extends StatelessWidget {
   const _PreviewNote({this.connectedTo, this.welcome = false});
 
-  /// Server builds name the server once instead of the preview note.
+  /// The connected server's host, named once.
   final String? connectedTo;
   final bool welcome;
   @override
   Widget build(BuildContext context) => Text(
-    connectedTo == null
-        ? 'Design preview \u00b7 use fictional details only. Nothing is sent or stored.'
-        : welcome
-        ? 'Connected to $connectedTo. Explore fictional circles is a separate tour that stays on this device.'
-        : 'Connected to $connectedTo. Your details are sent to this server only.',
+    welcome
+        ? 'Your circles stay private to the people you choose.'
+        : 'Your details are sent to ${connectedTo ?? 'CIRCLE'} only.',
     textAlign: TextAlign.center,
     style: Theme.of(context).textTheme.bodySmall?.copyWith(
       color: Theme.of(context).colorScheme.onSurfaceVariant,

@@ -172,9 +172,6 @@ class AlbumDetailScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: Space.md),
-          const PreviewLabel(
-            'Preview: fictional illustrations. Nothing is uploaded.',
-          ),
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: FilledButton.icon(

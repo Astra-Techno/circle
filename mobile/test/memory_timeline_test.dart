@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
-import 'package:mobile/features/workspace/data/mock_circle_repository.dart';
+import 'support/mock_circle_repository.dart';
 
 class PendingPageRepository extends MockCircleRepository
     implements MemoryQueryReader {

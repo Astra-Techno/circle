@@ -10,7 +10,7 @@ import '../../workspace/presentation/feature_gate.dart';
 import '../../workspace/presentation/group_visuals.dart';
 import 'circle_memories.dart' show memoryTimeLabel;
 import 'memory_photos.dart';
-import 'memory_poll_card.dart';
+import '../../chat/application/live_chat.dart';
 import 'memory_reactions_sheet.dart';
 import 'mention_text.dart';
 
@@ -64,8 +64,13 @@ class CircleMemoryCard extends ConsumerWidget {
         case _MemoryAction.save:
           await runCalmly(context, () => controller.save(memory.id));
         case _MemoryAction.replyPrivately:
-          // Opens the 1:1 chat with the author with this Memory attached.
-          context.go('/chats/reply/${memory.id}');
+          // Opens (or starts) the direct chat with the author.
+          final api = ref.read(liveChatApiProvider);
+          final chat = await runCalmly(
+            context,
+            () => api.direct(memory.authorId),
+          );
+          if (chat != null && context.mounted) context.go('/chats/c/$chat');
         case _MemoryAction.edit:
           await showModalBottomSheet<void>(
             context: context,
@@ -191,10 +196,10 @@ class CircleMemoryCard extends ConsumerWidget {
                       value: _MemoryAction.save,
                       child: Text(memory.saved ? 'Unsave' : 'Save'),
                     ),
-                    if (!mine && features.has(CircleFeature.chat))
+                    if (!mine && features.has(CircleFeature.liveChat))
                       const PopupMenuItem(
                         value: _MemoryAction.replyPrivately,
-                        child: Text('Reply privately'),
+                        child: Text('Message privately'),
                       ),
                     if (!mine &&
                         !reported &&
@@ -267,16 +272,6 @@ class CircleMemoryCard extends ConsumerWidget {
                   Expanded(child: Text(taken, style: caption)),
                 ],
               ),
-            ),
-          if (memory.poll != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Space.section,
-                Space.sm,
-                Space.section,
-                0,
-              ),
-              child: MemoryPollCard(memoryId: memory.id, poll: memory.poll!),
             ),
           // Actions: vector heart + count, comments, reaction picker, save.
           Padding(
@@ -554,7 +549,6 @@ class CommentBubble extends ConsumerWidget {
         ),
       ),
     );
-    if (!ref.watch(circleFeaturesProvider).server) return bubble;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

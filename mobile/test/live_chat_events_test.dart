@@ -71,6 +71,20 @@ class LiveFixture {
             'muted': muted,
             'pinned': false,
             'archived': false,
+            'other_id': null,
+            'last_message': messages.isEmpty
+                ? null
+                : {
+                    'id': messages.last['id'],
+                    'author_id': messages.last['author_id'],
+                    'author_name': messages.last['display_name'],
+                    'body': messages.last['removed'] == true
+                        ? ''
+                        : messages.last['body'],
+                    'removed': messages.last['removed'] == true,
+                    'photos': 0,
+                    'created_at': messages.last['created_at'],
+                  },
           },
         ],
         'has_more': false,
@@ -251,7 +265,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Going'));
     await settle(tester);
-    expect(find.text('Your RSVP: going'), findsOneWidget);
+    expect(find.text('Your answer: Going'), findsOneWidget);
     c.read(circleRouterProvider).go('/events/e/91/edit');
     await settle(tester);
     await tester.enterText(
@@ -417,8 +431,9 @@ void main() {
       c.read(circleRouterProvider).go('/chats/c/501');
       await settle(tester);
       expect(find.text('Accept request'), findsOneWidget);
-      await tester.ensureVisible(find.byTooltip('Message options').first);
-      await tester.tap(find.byTooltip('Message options').first);
+      // Long-press a message for its options (WhatsApp style).
+      await tester.ensureVisible(find.text('Fictional introduction'));
+      await tester.longPress(find.text('Fictional introduction'));
       await settle(tester);
       final report = find.text('Report message');
       await tester.scrollUntilVisible(
@@ -515,14 +530,20 @@ void main() {
               pic.dispose();
             });
           }
-          final options = find.byTooltip('Message options').first;
-          await tester.ensureVisible(options);
-          await tester.tap(options);
+          final options = find.text('Shall we meet at the park this weekend?');
+          // The conversation is reversed: drag down to reach older messages.
+          await tester.dragUntilVisible(
+            options,
+            find.byType(ListView).first,
+            const Offset(0, 200),
+          );
+          await tester.pumpAndSettle();
+          await tester.longPress(options);
           await settle(tester);
           await tester.tap(find.text('Reply'));
           await settle(tester);
           expect(find.text('Message options'), findsNothing);
-          expect(find.text('Replying to message 1'), findsOneWidget);
+          expect(find.text('Replying to Fictional Member'), findsOneWidget);
           expect(tester.takeException(), isNull);
           await tester.pumpWidget(const SizedBox.shrink());
         });

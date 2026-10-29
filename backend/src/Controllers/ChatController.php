@@ -45,14 +45,19 @@ final class ChatController
     public static function inbox(Request $r):void
     {
         Response::header('Cache-Control','private, no-store');$limit=$r->queryInt('limit',30,1,100);$offset=$r->queryInt('offset',0,0,1000000);
-        $rows=Database::query("SELECT c.*,g.name,other.display_name,COALESCE(s.muted,0) muted,COALESCE(s.pinned,0) pinned,COALESCE(s.archived,0) archived,
+        // The last message this viewer may see (a left member's copy stays frozen at their cutoff) drives the preview and ordering.
+        $rows=Database::query("SELECT c.*,g.name,other.display_name,IF(c.pair_low=:other_me,c.pair_high,c.pair_low) other_id,COALESCE(s.muted,0) muted,COALESCE(s.pinned,0) pinned,COALESCE(s.archived,0) archived,
+         lm.id last_id,lm.author_id last_author_id,lu.display_name last_author_name,lm.created_at last_at,lv.body last_body,lv.removed last_removed,(SELECT COUNT(*) FROM feature_media fm WHERE fm.message_id=lm.id) last_photos,
          (SELECT COUNT(*) FROM chat_messages m WHERE m.conversation_id=c.id AND m.author_id<>:author AND m.id>COALESCE(s.read_id,0) AND EXISTS(SELECT 1 FROM chat_versions v WHERE v.removed=0 AND v.id=(SELECT MAX(x.id) FROM chat_versions x WHERE x.message_id=m.id AND (c.kind='direct' OR gm.status='active' OR x.id<=COALESCE(gm.chat_frozen_id,0))))) unread
          FROM conversations c LEFT JOIN `groups` g ON g.id=c.group_id LEFT JOIN group_members gm ON gm.group_id=c.group_id AND gm.user_id=:member
          LEFT JOIN users other ON other.id=IF(c.pair_low=:who,c.pair_high,c.pair_low)
          LEFT JOIN chat_states s ON s.conversation_id=c.id AND s.user_id=:state_user
+         LEFT JOIN chat_messages lm ON lm.id=(SELECT MAX(m2.id) FROM chat_messages m2 WHERE m2.conversation_id=c.id AND EXISTS(SELECT 1 FROM chat_versions x WHERE x.message_id=m2.id AND (c.kind='direct' OR gm.status='active' OR x.id<=COALESCE(gm.chat_frozen_id,0))))
+         LEFT JOIN chat_versions lv ON lv.id=(SELECT MAX(x.id) FROM chat_versions x WHERE x.message_id=lm.id AND (c.kind='direct' OR gm.status='active' OR x.id<=COALESCE(gm.chat_frozen_id,0)))
+         LEFT JOIN users lu ON lu.id=lm.author_id
          WHERE (c.kind='group' AND gm.user_id IS NOT NULL) OR (c.kind='direct' AND (c.pair_low=:low OR c.pair_high=:high))
-         ORDER BY COALESCE(s.pinned,0) DESC,c.id DESC LIMIT :lim OFFSET :off",['author'=>$r->userId(),'member'=>$r->userId(),'who'=>$r->userId(),'state_user'=>$r->userId(),'low'=>$r->userId(),'high'=>$r->userId(),'lim'=>$limit+1,'off'=>$offset]);
-        $more=count($rows)>$limit;if($more)array_pop($rows);$out=[];foreach($rows as $c)$out[]=['id'=>(int)$c['id'],'kind'=>$c['kind'],'group_id'=>$c['group_id']===null?null:(int)$c['group_id'],'name'=>$c['kind']==='group'?$c['name']:$c['display_name'],'request_state'=>$c['request_state'],'incoming'=>$c['kind']==='direct' && (int)$c['requested_by']!==$r->userId(),'unread'=>(int)$c['unread'],'muted'=>(bool)$c['muted'],'pinned'=>(bool)$c['pinned'],'archived'=>(bool)$c['archived']];Response::ok(['items'=>$out,'has_more'=>$more]);
+         ORDER BY COALESCE(s.pinned,0) DESC,COALESCE(lm.created_at,c.created_at) DESC,c.id DESC LIMIT :lim OFFSET :off",['author'=>$r->userId(),'member'=>$r->userId(),'who'=>$r->userId(),'other_me'=>$r->userId(),'state_user'=>$r->userId(),'low'=>$r->userId(),'high'=>$r->userId(),'lim'=>$limit+1,'off'=>$offset]);
+        $more=count($rows)>$limit;if($more)array_pop($rows);$out=[];foreach($rows as $c)$out[]=['id'=>(int)$c['id'],'kind'=>$c['kind'],'group_id'=>$c['group_id']===null?null:(int)$c['group_id'],'name'=>$c['kind']==='group'?$c['name']:$c['display_name'],'request_state'=>$c['request_state'],'incoming'=>$c['kind']==='direct' && (int)$c['requested_by']!==$r->userId(),'unread'=>(int)$c['unread'],'muted'=>(bool)$c['muted'],'pinned'=>(bool)$c['pinned'],'archived'=>(bool)$c['archived'],'other_id'=>$c['kind']==='direct'?(int)$c['other_id']:null,'last_message'=>$c['last_id']===null?null:['id'=>(int)$c['last_id'],'author_id'=>(int)$c['last_author_id'],'author_name'=>$c['last_author_name'],'body'=>$c['last_removed']?'':mb_substr((string)$c['last_body'],0,140),'removed'=>(bool)$c['last_removed'],'photos'=>$c['last_removed']?0:(int)$c['last_photos'],'created_at'=>str_replace(' ','T',substr((string)$c['last_at'],0,19)).'Z']];Response::ok(['items'=>$out,'has_more'=>$more]);
     }
     public static function direct(Request $r):void
     {

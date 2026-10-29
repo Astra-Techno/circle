@@ -7,6 +7,7 @@ import '../../groups/domain/group_tree.dart';
 import '../../groups/presentation/group_photos.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
+import '../application/circle_seen.dart';
 import '../application/home_filter.dart';
 import 'memory_card.dart';
 
@@ -27,9 +28,16 @@ class CircleHome extends ConsumerWidget {
       final memories = workspace.memories
           .where((memory) => groupId == null || memory.groupId == groupId)
           .toList();
-      final ordered = buildGroupTree(workspace.groups);
-      void select(String? id) =>
-          ref.read(homeGroupFilterProvider.notifier).select(id);
+      final seen = ref.watch(circleSeenProvider).value;
+      final circles = homeCircles(workspace, seen);
+      void select(String? id) {
+        ref.read(homeGroupFilterProvider.notifier).select(id);
+        final latest = id == null ? null : circles.latest[id];
+        if (latest != null) {
+          ref.read(circleSeenProvider.notifier).markSeen(id!, latest);
+        }
+      }
+
       final more = workspace.hasMoreMemories;
       return ReadingPane(
         child: RefreshIndicator(
@@ -66,19 +74,20 @@ class CircleHome extends ConsumerWidget {
                               size: CircleAvatarSize.large,
                             ),
                           ),
-                          for (final entry in ordered)
+                          for (final circle in circles.ordered)
                             _CircleStory(
-                              key: ValueKey('home-circle-${entry.group.id}'),
-                              label: entry.group.name,
-                              selected: groupId == entry.group.id,
+                              key: ValueKey('home-circle-${circle.group.id}'),
+                              label: circle.group.name,
+                              selected: groupId == circle.group.id,
+                              fresh: circle.fresh,
                               onTap: () => select(
-                                groupId == entry.group.id
+                                groupId == circle.group.id
                                     ? null
-                                    : entry.group.id,
+                                    : circle.group.id,
                               ),
                               avatar: GroupAvatar(
-                                groupId: entry.group.id,
-                                type: entry.group.type,
+                                groupId: circle.group.id,
+                                type: circle.group.type,
                                 size: CircleAvatarSize.large,
                               ),
                             ),
@@ -91,25 +100,9 @@ class CircleHome extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                           horizontal: Space.section,
                         ),
-                        child: CircleEmpty(
-                          title: workspace.groups.isEmpty
-                              ? 'A little space for your people'
-                              : 'Every circle starts with a story',
-                          message: workspace.groups.isEmpty
-                              ? 'Create a group for family, friends or your team, or open an invite link. Nothing is shared until you choose a group.'
-                              : 'Share the first Memory with this group.',
-                          action: FilledButton.icon(
-                            // Group creation lives in the Groups branch.
-                            onPressed: () => workspace.groups.isEmpty
-                                ? context.go('/groups/new')
-                                : context.push(composeLocation(groupId)),
-                            icon: const Icon(Icons.add),
-                            label: Text(
-                              workspace.groups.isEmpty
-                                  ? 'Create a group'
-                                  : 'Share a Memory',
-                            ),
-                          ),
+                        child: _FirstSteps(
+                          workspace: workspace,
+                          groupId: groupId,
                         ),
                       ),
                   ],
@@ -236,9 +229,14 @@ class _CircleStory extends StatelessWidget {
     required this.selected,
     required this.onTap,
     required this.avatar,
+    this.fresh = false,
   });
   final String label;
   final bool selected;
+
+  /// New Memories since this person last opened the circle: an indigo
+  /// ring, like an unseen story.
+  final bool fresh;
   final VoidCallback onTap;
   final Widget avatar;
   @override
@@ -248,7 +246,10 @@ class _CircleStory extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: selected ? '$label, showing' : 'Show $label',
+      label: [
+        selected ? '$label, showing' : 'Show $label',
+        if (fresh) 'new Memories',
+      ].join(', '),
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
@@ -259,16 +260,16 @@ class _CircleStory extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: Space.sm),
             child: Column(
               children: [
-                // A 2px ring marks the circle in view.
+                // An indigo ring: new Memories, or the circle in view.
                 Container(
                   padding: const EdgeInsets.all(Space.xs),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: selected
+                      color: selected || fresh
                           ? colors.primary
                           : CircleAccents.of(context).hairline,
-                      width: 2,
+                      width: fresh ? 3 : 2,
                     ),
                   ),
                   child: avatar,
@@ -294,6 +295,134 @@ class _CircleStory extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The Home circles row: circles with the newest Memories first, then the
+/// remaining top-level groups. Quiet subgroups stay in Groups. [latest] is
+/// each circle's newest Memory; a circle is fresh when someone else shared
+/// after this person last opened it.
+({
+  List<({CircleGroup group, bool fresh})> ordered,
+  Map<String, DateTime> latest,
+})
+homeCircles(CircleWorkspace workspace, CircleSeen? seen) {
+  final latest = <String, DateTime>{};
+  final latestFromOthers = <String, DateTime>{};
+  for (final memory in workspace.memories) {
+    final at = memory.createdAt;
+    if (at.isAfter(latest[memory.groupId] ?? DateTime(0))) {
+      latest[memory.groupId] = at;
+    }
+    if (memory.authorId != workspace.viewer &&
+        at.isAfter(latestFromOthers[memory.groupId] ?? DateTime(0))) {
+      latestFromOthers[memory.groupId] = at;
+    }
+  }
+  final active = [
+    for (final group in workspace.groups)
+      if (latest.containsKey(group.id)) group,
+  ]..sort((a, b) => latest[b.id]!.compareTo(latest[a.id]!));
+  final ordered = [
+    ...active,
+    for (final entry in buildGroupTree(workspace.groups))
+      if (!entry.group.isSubgroup && !latest.containsKey(entry.group.id))
+        entry.group,
+  ];
+  return (
+    ordered: [
+      for (final group in ordered)
+        (
+          group: group,
+          fresh:
+              seen != null &&
+              (latestFromOthers[group.id]?.isAfter(seen.seenAt(group.id)) ??
+                  false),
+        ),
+    ],
+    latest: latest,
+  );
+}
+
+/// The empty Home: three first steps, each ticked once done.
+class _FirstSteps extends StatelessWidget {
+  const _FirstSteps({required this.workspace, required this.groupId});
+  final CircleWorkspace workspace;
+  final String? groupId;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasGroup = workspace.groups.isNotEmpty;
+    final hasPeople = workspace.groups.any((group) => group.roles.length > 1);
+    final firstGroup = hasGroup ? workspace.groups.first.id : null;
+    Widget step(
+      int number,
+      String title,
+      String message, {
+      required bool done,
+      required VoidCallback? onTap,
+    }) => ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: done
+          ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+          : CircleInitialAvatar(name: '$number', size: CircleAvatarSize.small),
+      title: Text(
+        title,
+        style: done
+            ? theme.textTheme.titleMedium?.copyWith(
+                color: CircleAccents.of(context).caption,
+              )
+            : theme.textTheme.titleMedium,
+      ),
+      subtitle: Text(message),
+      trailing: done || onTap == null ? null : const Icon(Icons.chevron_right),
+      onTap: done ? null : onTap,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        CircleEmpty(
+          title: hasGroup
+              ? 'Every circle starts with a story'
+              : 'A little space for your people',
+          message: hasGroup
+              ? 'Share the first Memory with this group.'
+              : 'Create a group for family, friends or your team, or open an invite link. Nothing is shared until you choose a group.',
+          action: FilledButton.icon(
+            // Group creation lives in the Groups branch.
+            onPressed: () => hasGroup
+                ? context.push(composeLocation(groupId))
+                : context.go('/groups/new'),
+            icon: const Icon(Icons.add),
+            label: Text(hasGroup ? 'Share a Memory' : 'Create a group'),
+          ),
+        ),
+        const CircleSectionTitle('First steps'),
+        step(
+          1,
+          'Create or join a circle',
+          'Family, friends, your team or a club.',
+          done: hasGroup,
+          onTap: () => context.go('/groups/new'),
+        ),
+        step(
+          2,
+          'Invite your people',
+          'Share a link or choose from your contacts.',
+          done: hasPeople,
+          onTap: firstGroup == null
+              ? null
+              : () => context.push('/groups/g/$firstGroup/invite'),
+        ),
+        step(
+          3,
+          'Share your first Memory',
+          'A photo or a few words.',
+          done: workspace.memories.isNotEmpty,
+          onTap: hasGroup ? () => context.push(composeLocation(groupId)) : null,
+        ),
+      ],
     );
   }
 }

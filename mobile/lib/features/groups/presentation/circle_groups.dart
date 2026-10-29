@@ -41,35 +41,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
         child: ListView(
           padding: CircleInsets.page,
           children: [
-            const CircleIntroPanel(
-              title: 'Your kind of company.',
-              subtitle: 'A little closer to the people who matter.',
-              icon: Icons.diversity_2_outlined,
-            ),
-            const SizedBox(height: Space.section),
-            if (ref.watch(circleFeaturesProvider).server)
-              const ContactInvitationEntry(),
-            if (!ref.watch(circleFeaturesProvider).server &&
-                workspace.invitations.isNotEmpty) ...[
-              ExpansionTile(
-                key: const PageStorageKey('group-invitations'),
-                initiallyExpanded: workspace.groups.isEmpty,
-                tilePadding: const EdgeInsets.symmetric(horizontal: Space.lg),
-                childrenPadding: const EdgeInsets.all(Space.sm),
-                leading: const CircleInitialAvatar(
-                  icon: Icons.mark_email_unread_outlined,
-                ),
-                title: const Text('Invitations for you'),
-                subtitle: Text(
-                  '${workspace.invitations.length} waiting to be reviewed',
-                ),
-                children: [
-                  for (final invitation in workspace.invitations)
-                    InvitationCard(invitation: invitation),
-                ],
-              ),
-              const SizedBox(height: Space.lg),
-            ],
+            const ContactInvitationEntry(),
             if (workspace.groups.isNotEmpty)
               TextField(
                 decoration: const InputDecoration(
@@ -263,82 +235,6 @@ class CircleGroupTile extends ConsumerWidget {
               Divider(height: 1, indent: avatar.diameter + Space.md),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A direct invitation waiting for the viewer's consent.
-class InvitationCard extends ConsumerWidget {
-  const InvitationCard({super.key, required this.invitation});
-  final InvitationView invitation;
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final controller = ref.read(circleWorkspaceProvider.notifier);
-    final id = invitation.invitation.id;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Space.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              invitation.groupName,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: Space.xs),
-            Text(
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              [
-                '${invitation.inviterName} invited you',
-                '${invitation.memberCount} members',
-                if (invitation.parentName != null)
-                  'in ${invitation.parentName}',
-              ].join(' · '),
-            ),
-            const SizedBox(height: Space.md),
-            Wrap(
-              spacing: Space.sm,
-              runSpacing: Space.sm,
-              children: [
-                FilledButton(
-                  onPressed: () async {
-                    final outcome = await runCalmly(
-                      context,
-                      () => controller.respondToInvitation(id, accept: true),
-                    );
-                    if (outcome == null || !context.mounted) return;
-                    showCircleMessage(
-                      context,
-                      outcome == JoinOutcome.joined
-                          ? 'You joined ${invitation.groupName}.'
-                          : 'Request sent. An admin of ${invitation.groupName} will review it.',
-                    );
-                  },
-                  child: Text(
-                    'Accept',
-                    semanticsLabel:
-                        'Accept invitation to ${invitation.groupName}',
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => runCalmly(
-                    context,
-                    () => controller.respondToInvitation(id, accept: false),
-                    success: 'Invitation declined.',
-                  ),
-                  child: Text(
-                    'Decline',
-                    semanticsLabel:
-                        'Decline invitation to ${invitation.groupName}',
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );

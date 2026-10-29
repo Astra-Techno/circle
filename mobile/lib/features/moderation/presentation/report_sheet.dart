@@ -49,12 +49,8 @@ Future<bool> reportToAdmins(
   return showReportSheet(
     context,
     title: 'Report $what',
-    explanation: ref.read(circleFeaturesProvider).server
-        ? "Only this group’s admins review reports. Your account and optional note aren’t shown in their queue."
-        : target.kind == ReportKind.subgroup
-        ? 'Admins of the group above it can remove it. They see its name, '
-              'size and the reasons, never who reported it.'
-        : 'Admins of this group see the reason, never who reported it.',
+    explanation:
+        "Only this group’s admins review reports. Your account and optional note aren’t shown in their queue.",
     confirmation: 'Thanks — admins of this group will review it.',
     submit: (reason, note) {
       if (!context.mounted ||
@@ -145,8 +141,6 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
             const SizedBox(height: Space.xs),
             Text(widget.explanation, style: theme.textTheme.bodySmall),
             const SizedBox(height: Space.sm),
-            if (!ref.watch(circleFeaturesProvider).server)
-              const PreviewLabel('Preview: reports stay on this device.'),
             Text('What’s wrong?', style: theme.textTheme.titleMedium),
             RadioGroup<ReportReason>(
               groupValue: _reason,

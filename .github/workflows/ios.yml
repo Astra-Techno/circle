@@ -49,7 +49,6 @@ jobs:
         run: |
           flutter build ios --release --no-codesign \
             --dart-define=CIRCLE_API_BASE_URL=https://circle.cloudkart24.com/api/v1 \
-            --dart-define=CIRCLE_PREVIEW=false \
             --dart-define=CIRCLE_PUSH_ENABLED=false
       - name: Package unsigned validation artifact
         run: |
@@ -107,7 +106,6 @@ jobs:
           flutter build ipa --release --build-number "$IOS_BUILD" \
             --export-options-plist "$RUNNER_TEMP/circle-ios/ExportOptions.plist" \
             --dart-define=CIRCLE_API_BASE_URL=https://circle.cloudkart24.com/api/v1 \
-            --dart-define=CIRCLE_PREVIEW=false \
             --dart-define=CIRCLE_PUSH_ENABLED=false
       - name: Verify signature and installation metadata
         run: python3 ../scripts/ios/signing.py verify

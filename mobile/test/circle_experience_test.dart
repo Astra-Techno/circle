@@ -4,15 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/circle_brand.dart';
 import 'package:mobile/app/circle_experience.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
-import 'package:mobile/features/workspace/presentation/feature_gate.dart';
 import 'support/circle_harness.dart';
 
 void main() {
   testWidgets(
-    'welcome offers open registration and an explicit fictional tour',
+    'welcome has no demo tour; signed in, Home opens on your circles',
     (tester) async {
       await openCircle(tester, entered: false);
-      await tapText(tester, 'Explore fictional circles');
+      expect(find.text('Explore fictional circles'), findsNothing);
+      expect(find.text('Get Started'), findsOneWidget);
+      await openCircle(tester);
       // Home opens on the "Your circles" row (editorial redesign).
       expect(find.byKey(const ValueKey('home-circle-family')), findsOneWidget);
       expect(find.text('Circle'), findsOneWidget);
@@ -33,20 +34,12 @@ void main() {
   );
 
   testWidgets(
-    'mobile/password preview grants no sample memberships; first group and Memory work',
+    'a new account has no sample memberships; first group and Memory work',
     (tester) async {
-      final container = await openCircle(tester, entered: false);
-      await tapText(tester, 'Get Started');
-      await tester.enterText(
-        find.byKey(const ValueKey('access-mobile')),
-        '9876543210',
-      );
-      await tester.enterText(
-        find.byKey(const ValueKey('access-password')),
-        'a fictional passphrase',
-      );
-      await tapText(tester, 'Preview registration');
+      final container = await openCircle(tester, showcase: false);
       expect(workspaceOf(container).groups, isEmpty);
+      // The first-run guide starts with creating a circle.
+      expect(find.text('First steps'), findsOneWidget);
       expect(workspaceOf(container).invitations, isEmpty);
       await tapText(tester, 'Create a group');
       await tester.enterText(find.byType(TextField), 'Our weekend circle');
@@ -213,51 +206,30 @@ void main() {
       final comment = workspaceOf(container).memories.first.comments.last;
       expect(comment.text, 'See you next Sunday.');
       expect(comment.authorName, 'You');
-      await tester.tap(find.widgetWithText(NavigationDestination, 'Events'));
-      await tester.pumpAndSettle();
-      await tapText(tester, 'A Sunday well spent');
-      await tapText(tester, 'Going');
-      expect(
-        workspaceOf(container).event('lunch')!.rsvpOf('you')?.status,
-        Attendance.going,
-      );
-      await tapText(tester, 'Clear my answer');
-      expect(workspaceOf(container).event('lunch')!.rsvpOf('you'), isNull);
       await tester.tap(find.widgetWithText(NavigationDestination, 'You'));
       await tester.pumpAndSettle();
       await reveal(tester, find.textContaining('Same table'));
       expect(find.textContaining('Same table'), findsOneWidget);
-      // Ending the preview lives under You › Account (H5).
+      // Logging out lives under You › Account (H5).
       await tapText(tester, 'Account');
-      ScaffoldMessenger.of(
-        tester.element(find.byType(Scaffold).first),
-      ).clearSnackBars();
-      await tester.pumpAndSettle();
-      await tapText(tester, 'End preview and clear local changes');
-      expect(container.read(circlePreviewSessionProvider), false);
-      await container
-          .read(circlePreviewSessionProvider.notifier)
-          .enter(showcase: false);
-      await tester.pumpAndSettle();
-      expect(workspaceOf(container).memories, isEmpty);
+      await reveal(tester, find.text('Log out'));
+      expect(find.text('Log out'), findsOneWidget);
+      expect(find.text('End preview and clear local changes'), findsNothing);
     },
   );
 
   testWidgets(
-    'protected route resumes after entry without granting unauthorized access',
+    'protected routes ask to log in and never grant unauthorized access',
     (tester) async {
       final container = await openCircle(tester, entered: false);
       await go(tester, container, '/groups/g/private-plans');
       expect(find.text('Good to have\nyou back.'), findsOneWidget);
-      await tester.enterText(
-        find.byKey(const ValueKey('access-mobile')),
-        '9876543210',
+      expect(
+        currentUri(container).queryParameters['next'],
+        '/groups/g/private-plans',
       );
-      await tester.enterText(
-        find.byKey(const ValueKey('access-password')),
-        'fictional password',
-      );
-      await tapText(tester, 'Preview log in');
+      final signedIn = await openCircle(tester);
+      await go(tester, signedIn, '/groups/g/private-plans');
       expect(find.text('This circle is private'), findsOneWidget);
     },
   );
@@ -308,6 +280,12 @@ void main() {
       final container = await openCircle(tester);
       await openMembers(tester, container, 'college');
       expect(find.byTooltip('Manage Mira'), findsNothing, reason: 'owner');
+      // Members load 30 at a time.
+      while (find.byTooltip('Manage Sam').evaluate().isEmpty) {
+        await reveal(tester, find.text('Show more members'));
+        await tester.tap(find.text('Show more members'));
+        await tester.pumpAndSettle();
+      }
       await reveal(tester, find.byTooltip('Manage Sam'));
       await tester.tap(find.byTooltip('Manage Sam'));
       await tester.pumpAndSettle();
@@ -345,15 +323,10 @@ void main() {
       tester,
     ) async {
       final container = await openCircle(tester);
-      await go(tester, container, '/groups/g/club');
-      await tapText(tester, 'Invite people');
+      // The link lives behind the contact-first invite screen.
+      await go(tester, container, '/groups/g/club/invite/link');
       expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w is PreviewNotice &&
-              w.text.startsWith('Preview link — not shareable.'),
-          skipOffstage: false,
-        ),
+        find.textContaining('Share this link only with people you know.'),
         findsOneWidget,
       );
       expect(find.text('circle://invite/sunday-miles-preview'), findsOneWidget);
@@ -371,65 +344,6 @@ void main() {
       expect(find.text('This invite link no longer works'), findsOneWidget);
     });
 
-    testWidgets('direct add creates a pending invitation needing consent', (
-      tester,
-    ) async {
-      final container = await openCircle(tester);
-      await go(tester, container, '/groups/g/cse/invite');
-      expect(find.text('Add people from Northbank 2009'), findsOneWidget);
-      await reveal(tester, find.bySemanticsLabel('Invite Noor'));
-      await tester.tap(find.bySemanticsLabel('Invite Noor'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Invitation sent. Noor needs to accept.'),
-        findsOneWidget,
-      );
-      expect(workspaceOf(container).group('cse')!.isMember('noor'), isFalse);
-      expect(
-        workspaceOf(container).sentInvitations.map((i) => i.invitee),
-        contains('noor'),
-      );
-      expect(find.bySemanticsLabel('Invite Noor'), findsNothing);
-    });
-
-    testWidgets('invitations inbox accepts and declines', (tester) async {
-      final container = await openCircle(tester);
-      await tester.tap(find.widgetWithText(NavigationDestination, 'Groups'));
-      await tester.pumpAndSettle();
-      expect(find.text('Invitations for you'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('Accept invitation to Board games'),
-        findsNothing,
-      );
-      await tester.tap(find.text('Invitations for you'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Dev invited you · 2 members · in Studio North'),
-        findsOneWidget,
-      );
-      await reveal(
-        tester,
-        find.bySemanticsLabel('Accept invitation to Board games'),
-      );
-      await tester.tap(
-        find.bySemanticsLabel('Accept invitation to Board games'),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('You joined Board games.'), findsOneWidget);
-      expect(workspaceOf(container).group('board'), isNotNull);
-      await reveal(
-        tester,
-        find.bySemanticsLabel('Decline invitation to Cousins’ corner'),
-      );
-      await tester.tap(
-        find.bySemanticsLabel('Decline invitation to Cousins’ corner'),
-      );
-      await tester.pumpAndSettle();
-      expect(workspaceOf(container).invitations, isEmpty);
-      expect(find.text('Invitations for you'), findsNothing);
-      expect(workspaceOf(container).group('cousins'), isNull);
-    });
-
     testWidgets('opening a link previews, asks to join and shows pending', (
       tester,
     ) async {
@@ -437,7 +351,11 @@ void main() {
       await tester.tap(find.widgetWithText(NavigationDestination, 'Groups'));
       await tester.pumpAndSettle();
       await tapText(tester, 'Open an invite link');
-      await tester.tap(find.text('chapter-verse-preview'));
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Invite link or code'),
+        'circle://invite/chapter-verse-preview',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Open'));
       await tester.pumpAndSettle();
       expect(find.text('Chapter & verse'), findsOneWidget);
       expect(find.text('Club · 2 members'), findsOneWidget);
@@ -631,9 +549,7 @@ void main() {
       );
       for (final route in [
         '/home',
-        '/chats',
         '/groups',
-        '/events',
         '/you',
         '/groups/g/friends',
         '/groups/new',
@@ -655,11 +571,10 @@ void main() {
       await go(tester, container, '/groups/g/college');
       for (final tab in [
         'Memories',
-        'Subgroups',
-        'Members',
-        'Events',
         'Chat',
-        'Albums',
+        'Events',
+        'Members',
+        'Subgroups',
       ]) {
         await openTab(tester, tab);
         expect(tester.takeException(), isNull, reason: tab);

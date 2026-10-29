@@ -23,6 +23,74 @@ class LivePollScreen extends ConsumerStatefulWidget {
 
 class _PollState extends ConsumerState<LivePollScreen> {
   int _offset = 0;
+
+  /// Polls from earlier pages; the list grows as it scrolls.
+  final _earlier = <Map<String, Object?>>[];
+
+  Widget _pollList(List<Map<String, Object?>> items, {Widget? end}) => Column(
+    children: [
+      Expanded(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            setState(() {
+              _offset = 0;
+              _earlier.clear();
+            });
+            refreshPolls(ref);
+          },
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: CircleInsets.form,
+            children: [
+              if (items.isEmpty)
+                const CircleEmpty(
+                  title: 'Ask your circle',
+                  message: 'Start with a question and two options.',
+                ),
+              for (final poll in items)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.poll_outlined),
+                    title: Text(poll['question'] as String),
+                    subtitle: Text(
+                      '${poll['group_name'] ?? 'Circle'} · ${poll['closed'] == true ? 'Closed' : 'Open'} · ${poll['anonymous'] == true ? 'Anonymous' : 'Named'} votes',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/polls/p/${poll['id']}'),
+                  ),
+                ),
+              ?end,
+            ],
+          ),
+        ),
+      ),
+      // The one primary action, in the thumb zone.
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+          Space.section,
+          Space.sm,
+          Space.section,
+          Space.lg,
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => context.push(
+              Uri(
+                path: '/polls/new',
+                queryParameters: {
+                  'group': ?widget.group,
+                  'event': ?widget.event,
+                },
+              ).toString(),
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('Create a poll'),
+          ),
+        ),
+      ),
+    ],
+  );
   bool _busy = false;
   Set<int>? _chosen;
   String? _choiceScope;
@@ -52,11 +120,19 @@ class _PollState extends ConsumerState<LivePollScreen> {
         : ref.watch(livePollProvider(id));
     return ReadingPane(
       child: load.when(
-        loading: () => const CircleSkeletonPage(
-          shape: CircleSkeletonShape.cards,
-          count: 3,
-          label: 'Loading polls',
-        ),
+        loading: () => id == null && _earlier.isNotEmpty
+            ? _pollList(
+                _earlier,
+                end: const Padding(
+                  padding: EdgeInsets.all(Space.lg),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              )
+            : const CircleSkeletonPage(
+                shape: CircleSkeletonShape.cards,
+                count: 3,
+                label: 'Loading polls',
+              ),
         error: (_, _) => CircleEmpty(
           title: 'Polls couldn’t load',
           message: 'Check your connection and group access.',
@@ -67,64 +143,18 @@ class _PollState extends ConsumerState<LivePollScreen> {
         ),
         data: (p) {
           if (id == null) {
-            final items = ApiJson.list(p['items']).map(ApiJson.map);
-            return ListView(
-              padding: CircleInsets.form,
-              children: [
-                const CircleHeading(
-                  title: 'Polls',
-                  subtitle: 'Decide together, in your circle.',
-                ),
-                FilledButton.icon(
-                  onPressed: () => context.push(
-                    Uri(
-                      path: '/polls/new',
-                      queryParameters: {
-                        'group': ?widget.group,
-                        'event': ?widget.event,
-                      },
-                    ).toString(),
-                  ),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Create a poll'),
-                ),
-                TextButton.icon(
-                  onPressed: () => refreshPolls(ref),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh'),
-                ),
-                if (items.isEmpty)
-                  const CircleEmpty(
-                    title: 'Ask your circle',
-                    message: 'Start with a question and two options.',
-                  ),
-                for (final poll in items)
-                  Card(
-                    child: ListTile(
-                      title: Text(poll['question'] as String),
-                      subtitle: Text(
-                        '${poll['group_name'] ?? 'Circle'} · ${poll['closed'] == true ? 'Closed' : 'Open'} · ${poll['anonymous'] == true ? 'Anonymous' : 'Named'} votes',
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.push('/polls/p/${poll['id']}'),
-                    ),
-                  ),
-                Wrap(
-                  spacing: Space.sm,
-                  children: [
-                    if (_offset > 0)
-                      TextButton(
-                        onPressed: () => setState(() => _offset -= 30),
-                        child: const Text('Previous'),
-                      ),
-                    if (p['has_more'] == true)
-                      TextButton(
-                        onPressed: () => setState(() => _offset += 30),
-                        child: const Text('Next'),
-                      ),
-                  ],
-                ),
-              ],
+            final items = ApiJson.list(p['items']).map(ApiJson.map).toList();
+            return _pollList(
+              [..._earlier, ...items],
+              end: p['has_more'] == true
+                  ? CircleLoadMore(
+                      key: ValueKey('more-$_offset'),
+                      onLoad: () => setState(() {
+                        _earlier.addAll(items);
+                        _offset += 30;
+                      }),
+                    )
+                  : null,
             );
           }
           final api = ref.watch(livePollApiProvider),
@@ -584,44 +614,61 @@ class LivePollVoters extends ConsumerStatefulWidget {
 
 class _VotersState extends ConsumerState<LivePollVoters> {
   int _offset = 0;
+
+  /// Voters from earlier pages; the list grows as it scrolls.
+  final _earlier = <Map<String, Object?>>[];
+
+  Widget _list(List<Map<String, Object?>> rows, {Widget? end}) => ListView(
+    padding: CircleInsets.form,
+    children: [
+      const CircleHeading(
+        title: 'Who voted',
+        subtitle: 'Visible only to this circle.',
+      ),
+      for (final row in rows)
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: CircleInitialAvatar(name: row['display_name'] as String),
+          title: Text(row['display_name'] as String),
+          subtitle: Text(row['label'] as String),
+        ),
+      ?end,
+    ],
+  );
+
   @override
   Widget build(BuildContext context) => ReadingPane(
     child: ref
         .watch(livePollVotersProvider((id: widget.id, offset: _offset)))
         .when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => _earlier.isNotEmpty
+              ? _list(
+                  _earlier,
+                  end: const Padding(
+                    padding: EdgeInsets.all(Space.lg),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                )
+              : const Center(child: CircularProgressIndicator()),
           error: (_, _) => const CircleEmpty(
             title: 'Voters are private',
             message: 'Check poll settings and current group access.',
           ),
-          data: (data) => ListView(
-            padding: CircleInsets.form,
-            children: [
-              const CircleHeading(
-                title: 'Who voted',
-                subtitle: 'Visible only to this circle.',
-              ),
-              for (final row in ApiJson.list(data['items']).map(ApiJson.map))
-                ListTile(
-                  title: Text(row['display_name'] as String),
-                  subtitle: Text(row['label'] as String),
-                ),
-              Wrap(
-                children: [
-                  if (_offset > 0)
-                    TextButton(
-                      onPressed: () => setState(() => _offset -= 30),
-                      child: const Text('Previous'),
-                    ),
-                  if (data['has_more'] == true)
-                    TextButton(
-                      onPressed: () => setState(() => _offset += 30),
-                      child: const Text('Next'),
-                    ),
-                ],
-              ),
-            ],
-          ),
+          data: (data) {
+            final rows = ApiJson.list(data['items']).map(ApiJson.map).toList();
+            return _list(
+              [..._earlier, ...rows],
+              end: data['has_more'] == true
+                  ? CircleLoadMore(
+                      key: ValueKey('more-$_offset'),
+                      onLoad: () => setState(() {
+                        _earlier.addAll(rows);
+                        _offset += 30;
+                      }),
+                    )
+                  : null,
+            );
+          },
         ),
   );
 }

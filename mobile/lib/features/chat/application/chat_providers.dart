@@ -5,17 +5,14 @@ import '../domain/chat_repository.dart';
 
 export '../domain/chat_repository.dart';
 
-/// The local mock chat. A new preview session (or ending one) starts from
-/// a fresh repository, so every conversation and setting is cleared.
+/// Session-local chat data behind the hidden Activity feature (Activity
+/// isn't on the server yet). Live Chats use the server (live_chat.dart).
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
-  final entered = ref.watch(circlePreviewSessionProvider);
-  final showcase =
-      entered && ref.read(circlePreviewSessionProvider.notifier).showcase;
-  final circle = ref.watch(previewOnlyRepositoryProvider);
+  final circle = ref.watch(circleRepositoryProvider);
   return MockChatRepository(
     groups: circle,
     moderation: circle,
-    showcase: showcase,
+    showcase: false,
     now: ref.watch(circleClockProvider),
   );
 });

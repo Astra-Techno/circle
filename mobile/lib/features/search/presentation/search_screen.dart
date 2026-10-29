@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import '../../workspace/presentation/feature_gate.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../memories/presentation/scoped_memory_list.dart';
 import '../application/search_providers.dart';
@@ -72,10 +71,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
           ),
           const SizedBox(height: Space.sm),
-          const PreviewNotice(
-            'Preview: searches only your fictional circles on this device.',
-            server:
-                'Searches your groups, their members and all Memories you can access.',
+          const CircleNote(
+            'Searches your groups, their members and all Memories you can access.',
           ),
           if (!ready) ...[
             Text(

@@ -21,7 +21,7 @@ abstract final class MembershipRules {
     CircleGroup? parent,
   }) {
     if (person.trim().isEmpty) {
-      return const RuleResult.denied('Enter the local preview first.');
+      return const RuleResult.denied('Log in first.');
     }
     if (parent == null) return _ok;
     if (!parent.isMember(person)) {

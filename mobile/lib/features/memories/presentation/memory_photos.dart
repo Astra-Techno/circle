@@ -208,10 +208,6 @@ class _PhotoPagerState extends State<PhotoPager> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (photos.any((photo) => !photo.uploaded))
-              const PreviewLabel(
-                'Fictional illustrations. Real photos come later.',
-              ),
             Expanded(
               child: PageView.builder(
                 controller: _pages,
@@ -395,9 +391,6 @@ class _ScenePickerState extends State<_ScenePicker> {
                 child: Text('Add photos', style: theme.textTheme.titleLarge),
               ),
               const SizedBox(height: Space.sm),
-              const PreviewLabel(
-                'Preview: fictional illustrations — real uploads come later.',
-              ),
               Text(
                 '${_selected.length} of ${widget.max} chosen',
                 style: theme.textTheme.labelLarge,

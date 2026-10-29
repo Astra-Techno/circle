@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/albums/data/mock_album_repository.dart';
 import 'package:mobile/features/albums/domain/album_repository.dart';
-import 'package:mobile/features/workspace/data/mock_circle_repository.dart';
+import 'support/mock_circle_repository.dart';
 
 final fixed = DateTime.utc(2026, 10, 23, 12);
 Matcher failsWith(String text) => throwsA(

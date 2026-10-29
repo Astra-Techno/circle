@@ -303,19 +303,19 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                       ),
                     ),
                   ),
+                  // A round camera in the cover's corner, like the group
+                  // banner, so it never sits on the cover itself.
                   PositionedDirectional(
-                    top: Space.sm,
+                    top: coverHeight - Space.large - Space.sm,
                     end: Space.sm,
-                    child: FilledButton.tonalIcon(
+                    child: IconButton.filledTonal(
+                      tooltip: account.coverVersion == null
+                          ? 'Add cover'
+                          : 'Change cover',
                       onPressed: _busy
                           ? null
                           : () => _photo(ProfilePhotoKind.cover),
                       icon: const Icon(Icons.photo_camera_outlined),
-                      label: Text(
-                        account.coverVersion == null
-                            ? 'Add cover'
-                            : 'Change cover',
-                      ),
                     ),
                   ),
                   PositionedDirectional(

@@ -48,7 +48,7 @@ void main() {
     await settle(tester);
     final original = container.read(serverAccountProvider)!.avatarVersion;
     expect(original, isNotNull);
-    await tester.tap(find.text('Add cover'));
+    await tester.tap(find.byTooltip('Add cover'));
     await settle(tester);
     await tester.tap(find.text('Choose a photo'));
     await settle(tester);

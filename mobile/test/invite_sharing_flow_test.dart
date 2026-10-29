@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile/core/api/api_client.dart';
 import 'package:mobile/app/circle_experience.dart';
-import 'support/circle_harness.dart' show openCircle;
+
 import 'support/server_harness.dart';
 import 'support/fake_api.dart';
 
@@ -123,14 +123,4 @@ void main() {
       });
     }
   }
-  testWidgets('fictional preview never opens real contact/share controls', (
-    tester,
-  ) async {
-    final container = await openCircle(tester);
-    container.read(circleRouterProvider).go('/groups/g/club/invite');
-    await tester.pumpAndSettle();
-    expect(find.text('Copy preview link'), findsOneWidget);
-    expect(find.text('WhatsApp'), findsNothing);
-    expect(find.text('SMS'), findsNothing);
-  });
 }

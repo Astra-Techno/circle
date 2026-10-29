@@ -104,7 +104,7 @@ abstract final class MemoryRules {
     }
     if (value.isEmpty && photoCount == 0 && !hasPoll) {
       return const RuleResult.denied(
-        'Write 1–2000 characters, or add a photo or a poll, before sharing.',
+        'Write 1–2000 characters, or add a photo, before sharing.',
       );
     }
     return const RuleResult.allowed();

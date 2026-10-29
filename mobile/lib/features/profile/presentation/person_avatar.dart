@@ -26,9 +26,7 @@ class PersonAvatar extends ConsumerWidget {
         ? null
         : ref.watch(circleWorkspaceProvider).value;
     ImageProvider<Object>? image;
-    if (account != null &&
-        workspace?.viewer == account.id &&
-        ref.watch(circleFeaturesProvider).server) {
+    if (account != null && workspace?.viewer == account.id) {
       if (person == account.id && account.avatarVersion != null) {
         final bytes = ref
             .watch(

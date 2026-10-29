@@ -33,9 +33,9 @@ class CircleIntroPanel extends StatelessWidget {
           header: true,
           child: Text(
             title,
-            style: largeText
-                ? theme.textTheme.titleLarge
-                : theme.textTheme.headlineMedium,
+            // In-page openings sit below the page title, so they stay a
+            // size smaller than it.
+            style: theme.textTheme.titleLarge,
           ),
         ),
         if (!largeText) ...[
@@ -252,7 +252,7 @@ class CircleHeading extends StatelessWidget {
           Text(
             // Intros are one calm line; manual breaks were for big headlines.
             title.replaceAll('\n', ' '),
-            style: theme.textTheme.headlineMedium,
+            style: theme.textTheme.titleLarge,
           ),
           const SizedBox(height: Space.sm),
           Text(
@@ -563,17 +563,6 @@ class CircleNote extends StatelessWidget {
   );
 }
 
-/// Formerly one small label per screen for mock behaviour. The owner removed
-/// on-screen preview labels (28 Oct 2026); callers keep their text so the
-/// behaviour stays documented in code, but nothing is drawn. Real notices
-/// use [CircleNote].
-class PreviewLabel extends StatelessWidget {
-  const PreviewLabel(this.text, {super.key});
-  final String text;
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
-}
-
 /// A small text badge, e.g. a role. [strong] marks the most important one.
 class CircleBadge extends StatelessWidget {
   const CircleBadge(this.label, {super.key, this.strong = false});
@@ -695,34 +684,35 @@ VoidCallback undoDetached(
 }
 
 /// The honest state for something the connected server doesn't offer yet.
-/// One calm card, no buttons that lead nowhere.
-class CircleNotOnServer extends StatelessWidget {
-  const CircleNotOnServer({super.key, required this.message});
 
-  /// e.g. "Events aren’t on the server yet."
-  final String message;
+/// The end of a list with more to load: asks for the next page as soon as
+/// it scrolls into view (no Next/Previous buttons), showing a small spinner
+/// meanwhile.
+class CircleLoadMore extends StatefulWidget {
+  const CircleLoadMore({super.key, required this.onLoad});
+  final VoidCallback onLoad;
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Space.section),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.cloud_off_outlined,
-              size: 40,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: Space.lg),
-            Text(
-              'Not on the server yet',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: Space.sm),
-            Text('$message It’s coming in a later milestone.'),
-          ],
+  State<CircleLoadMore> createState() => _CircleLoadMoreState();
+}
+
+class _CircleLoadMoreState extends State<CircleLoadMore> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onLoad();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: Space.lg),
+    child: Center(
+      child: Semantics(
+        label: 'Loading more',
+        child: const SizedBox.square(
+          dimension: Space.section,
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
     ),

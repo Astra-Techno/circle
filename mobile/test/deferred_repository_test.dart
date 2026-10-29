@@ -4,7 +4,7 @@ import 'package:mobile/features/chat/data/mock_chat_repository.dart';
 import 'package:mobile/features/chat/domain/chat_repository.dart';
 import 'package:mobile/features/notifications/data/mock_notification_repository.dart';
 import 'package:mobile/features/notifications/domain/notification_repository.dart';
-import 'package:mobile/features/workspace/data/mock_circle_repository.dart';
+import 'support/mock_circle_repository.dart';
 
 final fixed = DateTime.utc(2026, 10, 23, 12);
 

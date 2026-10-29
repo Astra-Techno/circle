@@ -283,7 +283,7 @@ class CircleTextEditor extends StatefulWidget {
     this.validate,
     this.focusNode,
     this.header,
-    this.busyLabel = 'Saving locally…',
+    this.busyLabel = 'Saving…',
     this.mentionMembers = const [],
     this.viewer = '',
     this.blocked = const {},

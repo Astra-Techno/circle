@@ -27,9 +27,7 @@ class WorkspaceView extends ConsumerWidget {
             children: [
               CircleEmpty(
                 title: 'Your circles couldn’t load',
-                message: !ref.watch(circleFeaturesProvider).server
-                    ? 'Try loading the local preview again.'
-                    : error is CircleFailure
+                message: error is CircleFailure
                     ? error.message
                     : 'Check your connection and try again.',
                 action: FilledButton(

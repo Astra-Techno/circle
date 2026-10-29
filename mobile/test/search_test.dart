@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/chat/data/mock_chat_repository.dart';
 import 'package:mobile/features/search/domain/search_rules.dart';
-import 'package:mobile/features/workspace/data/mock_circle_repository.dart';
+import 'support/mock_circle_repository.dart';
 import 'package:mobile/features/workspace/domain/circle_repository.dart';
 
 final fixed = DateTime.utc(2026, 10, 23, 12);

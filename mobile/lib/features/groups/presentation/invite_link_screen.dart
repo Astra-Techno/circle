@@ -4,36 +4,20 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../workspace/application/workspace_providers.dart';
-import '../../workspace/presentation/feature_gate.dart';
 import '../../workspace/presentation/group_visuals.dart';
 
-/// Fictional codes from the showcase, offered so the flow can be tried.
-const showcaseInviteExamples = [
-  'chapter-verse-preview',
-  'garden-plot-preview',
-  'quiz-night-preview',
-  'hill-trip-preview',
-];
-
-/// Asks for a pasted preview link or code, then opens its preview.
+/// Asks for a pasted invite link or code, then opens its invitation.
 Future<void> openInviteLinkDialog(BuildContext context, WidgetRef ref) async {
-  final showcase = ref.read(circlePreviewSessionProvider.notifier).showcase;
-  final server = ref.read(circleFeaturesProvider).server;
   final token = await showDialog<String>(
     context: context,
-    builder: (context) =>
-        _InviteLinkDialog(showcase: showcase && !server, server: server),
+    builder: (context) => const _InviteLinkDialog(),
   );
   if (token == null || token.isEmpty || !context.mounted) return;
   context.push('/invite/${Uri.encodeComponent(token)}');
 }
 
 class _InviteLinkDialog extends StatefulWidget {
-  const _InviteLinkDialog({required this.showcase, this.server = false});
-  final bool showcase;
-
-  /// Server tokens are case-sensitive and longer than preview codes.
-  final bool server;
+  const _InviteLinkDialog();
   @override
   State<_InviteLinkDialog> createState() => _InviteLinkDialogState();
 }
@@ -48,17 +32,8 @@ class _InviteLinkDialogState extends State<_InviteLinkDialog> {
   }
 
   void _open([String? value]) {
-    if (widget.server) {
-      final token = serverInviteToken(value ?? _input.text);
-      if (token == null) {
-        setState(() => _error = 'Paste the whole link or code.');
-        return;
-      }
-      Navigator.of(context).pop(token);
-      return;
-    }
-    final token = normalizeInviteToken(value ?? _input.text);
-    if (!RegExp(r'^[a-z0-9_-]{1,80}$').hasMatch(token)) {
+    final token = serverInviteToken(value ?? _input.text);
+    if (token == null) {
       setState(() => _error = 'Paste the whole link or code.');
       return;
     }
@@ -86,25 +61,6 @@ class _InviteLinkDialogState extends State<_InviteLinkDialog> {
           ),
           onSubmitted: _open,
         ),
-        if (widget.showcase) ...[
-          const SizedBox(height: Space.lg),
-          Text(
-            'Fictional examples',
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-          const SizedBox(height: Space.sm),
-          Wrap(
-            spacing: Space.sm,
-            runSpacing: Space.sm,
-            children: [
-              for (final example in showcaseInviteExamples)
-                ActionChip(
-                  label: Text(example),
-                  onPressed: () => _open(example),
-                ),
-            ],
-          ),
-        ],
       ],
     ),
     actions: [
@@ -179,9 +135,6 @@ class _InviteLinkScreenState extends ConsumerState<InviteLinkScreen> {
             return ListView(
               padding: CircleInsets.form,
               children: [
-                const PreviewNotice(
-                  'Preview: this simulates opening an invite link. Nothing is sent.',
-                ),
                 if (preview == null)
                   const CircleSkeleton(
                     shape: CircleSkeletonShape.cards,

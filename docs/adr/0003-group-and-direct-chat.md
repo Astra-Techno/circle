@@ -20,6 +20,8 @@ Status: scope accepted by the owner, 22 Oct 2026. Real-time technology to be cho
   - Rejoining restores normal access.
 - v1 encrypts in transit and stores messages privately on the server. End-to-end encryption for 1:1 chats must be decided before public launch (M7).
 
+- **Visual layout updated (owner decision, 29 Oct 2026):** Chats now look like **WhatsApp** (inbox with last message and time, wallpaper, tailed bubbles, long-press options, rounded composer). The Instagram Direct behaviours above (requests, no delivery ticks, reactions) stay; see `docs/chat-redesign.md`.
+
 ## Context
 
 The README originally excluded chat. The owner now requires both group and 1:1 chat. Chat depends on reliable membership and notifications, and it adds real-time infrastructure beside a PHP REST API.

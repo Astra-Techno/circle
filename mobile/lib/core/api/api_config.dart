@@ -1,13 +1,9 @@
-import 'package:flutter/foundation.dart';
-
-/// Where the CIRCLE API lives. Server mode is chosen at build time:
+/// Where the CIRCLE API lives. Every build connects to a server: the
+/// deployed API by default, or another one chosen at build time:
 ///
 /// ```sh
 /// flutter run --dart-define=CIRCLE_API_BASE_URL=http://10.0.2.2:8080/api/v1
 /// ```
-///
-/// Debug builds default to the local preview. Release builds connect to the
-/// deployed API. CIRCLE_PREVIEW=true explicitly selects a fictional build.
 class ApiConfig {
   ApiConfig._(this.baseUrl);
 
@@ -34,25 +30,18 @@ class ApiConfig {
     return ApiConfig._(uri.replace(path: path));
   }
 
-  /// The build-time configuration, or null in preview builds.
+  /// The deployed CIRCLE API.
   static const deployedApi = 'https://circle.cloudkart24.com/api/v1';
 
-  /// Release installations connect to the deployed API unless explicitly
-  /// built as a fictional preview. Tests/debug retain their local default.
+  /// The build-time server, or the deployed API. Null only when an explicit
+  /// CIRCLE_API_BASE_URL is invalid.
   static ApiConfig? fromEnvironment() {
     const explicit = String.fromEnvironment('CIRCLE_API_BASE_URL');
-    return forBuild(
-      release: kReleaseMode,
-      preview: const bool.fromEnvironment('CIRCLE_PREVIEW'),
-      baseUrl: explicit.isEmpty ? null : explicit,
-    );
+    return forBuild(baseUrl: explicit.isEmpty ? null : explicit);
   }
 
-  static ApiConfig? forBuild({
-    required bool release,
-    bool preview = false,
-    String? baseUrl,
-  }) => preview ? null : parse(baseUrl ?? (release ? deployedApi : ''));
+  static ApiConfig? forBuild({String? baseUrl}) =>
+      parse(baseUrl ?? deployedApi);
 
   /// The API base, e.g. `http://10.0.2.2:8080/api/v1` (no trailing slash).
   final Uri baseUrl;

@@ -87,10 +87,6 @@ class ActivityScreen extends ConsumerWidget {
           child: ListView(
             padding: CircleInsets.form,
             children: [
-              const PreviewLabel(
-                'Preview: no notifications are sent. Activity comes from '
-                'your fictional circles.',
-              ),
               if (feed.unread > 0)
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
