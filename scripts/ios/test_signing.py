@@ -79,6 +79,20 @@ class SigningValidationTest(unittest.TestCase):
                     signing.write_api_key(destination)
                 self.assertNotIn('fictional-secret-invalid-key', str(raised.exception))
 
+    def test_command_failure_reports_operation_without_private_arguments_or_output(self):
+        import subprocess
+        failure = subprocess.CalledProcessError(
+            1, ['security', 'import', 'fictional-secret-path', '-P', 'fictional-password'],
+            stderr=b'MAC verification failed fictional-private-output')
+        with patch.object(signing.subprocess, 'run', side_effect=failure):
+            with self.assertRaises(ValueError) as raised:
+                signing.run(*failure.cmd)
+        message = str(raised.exception)
+        self.assertIn('import failed', message)
+        self.assertIn('encryption compatibility', message)
+        for secret in ('fictional-secret-path', 'fictional-password', 'fictional-private-output'):
+            self.assertNotIn(secret, message)
+
     def test_signed_preflight_rejects_non_main(self):
         env = {key: 'fictional-secret' for key in signing.REQUIRED}
         env.update(ASC_PRIVATE_KEY='fictional-present-key', IOS_TEAM_ID='ABCDE12345', ASC_KEY_ID='ABCDE12345',

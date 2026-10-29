@@ -22,8 +22,26 @@ REQUIRED = ('IOS_TEAM_ID', 'IOS_CERTIFICATE_BASE64', 'IOS_CERTIFICATE_PASSWORD',
 
 def run(*args, data=None):
     # Never print commands: signing commands contain private keychain passwords.
-    return subprocess.run(args, input=data, stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE, check=True).stdout
+    try:
+        return subprocess.run(args, input=data, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE, check=True).stdout
+    except subprocess.CalledProcessError as error:
+        # Only fixed operation names and recognized error categories leave this helper.
+        operation = args[1] if args[0] == 'security' else args[0]
+        allowed = {'cms', 'list-keychains', 'create-keychain', 'set-keychain-settings',
+                   'unlock-keychain', 'import', 'set-key-partition-list',
+                   'find-identity', 'delete-keychain', 'openssl', 'codesign', 'ditto'}
+        operation = operation if operation in allowed else 'signing command'
+        detail = ''
+        for marker, explanation in (
+                (b'MAC verification failed', 'PKCS12 password or encryption compatibility rejected'),
+                (b'User interaction is not allowed', 'keychain requires interactive access'),
+                (b'Unknown format in import', 'unsupported certificate container'),
+                (b'item could not be found', 'required keychain item not found')):
+            if marker.lower() in (error.stderr or b'').lower():
+                detail = ': ' + explanation
+                break
+        raise ValueError(f'{operation} failed (exit {error.returncode}){detail}.') from None
 
 
 def preflight():
@@ -116,7 +134,24 @@ def prepare():
     run('security', 'create-keychain', '-p', password, keychain)
     run('security', 'set-keychain-settings', '-lut', '21600', keychain)
     run('security', 'unlock-keychain', '-p', password, keychain)
-    run('security', 'import', str(root / 'certificate.p12'), '-k', keychain,
+    # Apple Security can reject modern OpenSSL PKCS12 encryption despite a valid
+    # password. Repackage the SAME identity using macOS-compatible PKCS12 PBE.
+    # The intermediate private PEM exists only in the private runner directory.
+    private_pem = root / 'identity.pem'
+    compatible_p12 = root / 'apple-compatible.p12'
+    try:
+        private_pem.touch(mode=0o600)
+        run('openssl', 'pkcs12', '-in', str(root / 'certificate.p12'),
+            '-out', str(private_pem), '-nodes',
+            '-passin', 'env:IOS_CERTIFICATE_PASSWORD')
+        compatible_p12.touch(mode=0o600)
+        run('openssl', 'pkcs12', '-export', '-in', str(private_pem),
+            '-out', str(compatible_p12), '-keypbe', 'PBE-SHA1-3DES',
+            '-certpbe', 'PBE-SHA1-3DES', '-macalg', 'sha1',
+            '-passout', 'env:IOS_CERTIFICATE_PASSWORD')
+    finally:
+        private_pem.unlink(missing_ok=True)
+    run('security', 'import', str(compatible_p12), '-k', keychain,
         '-P', os.environ['IOS_CERTIFICATE_PASSWORD'], '-T', '/usr/bin/codesign', '-T', '/usr/bin/security')
     run('security', 'set-key-partition-list', '-S', 'apple-tool:,apple:', '-s', '-k', password, keychain)
     run('security', 'list-keychains', '-d', 'user', '-s', keychain, *json.loads(original.read_text()))
