@@ -110,12 +110,7 @@ jobs:
       - name: Verify signature and installation metadata
         run: python3 ../scripts/ios/signing.py verify
       - name: Upload IPA to App Store Connect
-        run: |
-          IPA=$(find build/ios/ipa -maxdepth 1 -name '*.ipa' -print -quit)
-          test -n "$IPA"
-          API_PRIVATE_KEYS_DIR="$RUNNER_TEMP/circle-ios" xcrun altool \
-            --upload-app --type ios --file "$IPA" \
-            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+        run: python3 ../scripts/ios/upload.py
       - uses: actions/upload-artifact@v4
         with:
           name: circle-testflight-${{ github.run_number }}-${{ github.run_attempt }}
