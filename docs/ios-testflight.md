@@ -78,3 +78,7 @@ Linux can lint workflow/configuration and test signing/profile validation helper
 - Artifact `ios-unsigned-validation-1` exists (11,683,213 bytes according to GitHub metadata); it is not an installable IPA. This environment could read run status but its network rejected the separate logs/artifact download hosts with403, so the artifact bytes were not inspected locally. Download through GitHub if needed.
 - `actionlint` clean; five portable signing/profile tests pass. All three native Runner configurations now reference an app-scoped Keychain entitlement as a follow-up, per the installed secure-storage plugin’s setup instructions. This signing-specific configuration has not been tested with a signed build.
 - Apple secrets remain unsupplied; no TestFlight upload, native session-persistence check or physical iPhone/push verification is claimed.
+
+## Existing CSR download
+
+The cloud workspace generated a matching signing key/CSR on29 October2026. [Download the public CSR ZIP](https://raw.githubusercontent.com/Astra-Techno/circle/main/downloads/circle-ios-csr.zip), extract it in Files and upload the `.csr` to Apple Distribution certificate creation. It contains no private key. Reuse this CSR with the retained matching private key; generating another key would not match a certificate issued for this CSR. The private backup remains outside Git as `/workspace/circle-ios-signing-private-backup.zip`; workspace links may not download in every client. Retain that backup securely outside the temporary environment when private download access is available.
