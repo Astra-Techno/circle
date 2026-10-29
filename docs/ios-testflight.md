@@ -82,3 +82,20 @@ Linux can lint workflow/configuration and test signing/profile validation helper
 ## Existing CSR download
 
 The cloud workspace generated a matching signing key/CSR on29 October2026. [Download the public CSR ZIP](https://raw.githubusercontent.com/Astra-Techno/circle/main/downloads/circle-ios-csr.zip), extract it in Files and upload the `.csr` to Apple Distribution certificate creation. It contains no private key. Reuse this CSR with the retained matching private key; generating another key would not match a certificate issued for this CSR. The private backup remains outside Git as `/workspace/circle-ios-signing-private-backup.zip`; workspace links may not download in every client. Retain that backup securely outside the temporary environment when private download access is available.
+
+## Download-free signing transfer (when private ZIP links fail)
+
+Use the manual **iOS signing setup (no downloads)** workflow. No signing key, password, P12 or profile needs to be pasted into chat or downloaded from this client. Existing signing inputs remain private outside Git.
+
+One-time owner setup:
+
+1. Open [fine-grained token creation](https://github.com/settings/personal-access-tokens/new). Name it `CIRCLE iOS setup`, use a short expiration (one day), choose the owner of `Astra-Techno/circle`, and grant access to **Only select repositories → circle**. Under Repository permissions, set **Environments → Read and write**. No Contents/Actions/Secrets scope is needed beyond automatic metadata access.
+2. Copy the generated token directly into [a new repository Actions secret](https://github.com/Astra-Techno/circle/settings/secrets/actions/new) named **IOS_SIGNING_SETUP_TOKEN**. Do not send the token in chat, a workflow input or a source file.
+3. Tell the assistant the secret is ready, without its value. The assistant can run `prepare`, verify the exact reviewed workflow commit/run through GitHub's authenticated API, seal the existing four inputs to that environment's public encryption key, and run `import` with ciphertext only.
+4. After successful import, remove the setup secret and revoke its one-time token. The four resulting environment secrets remain available to the signed build. The App Store Connect API credentials and app record are still required for TestFlight upload.
+
+The setup workflow creates the environment only if missing and restricts that new environment to main. It preserves existing environment protections. All jobs are main-only; only the four named signing secrets are accepted. The public encryption key is published as job metadata so the assistant can fetch it through the Jobs API even when separate log/artifact hosts are blocked. It is not an Apple private key.
+
+The local sealer (`scripts/ios/seal_for_github.py`, dependency pinned in `requirements-sealing.txt`) checks the workflow path, repository, branch, successful run and exact reviewed commit **before reading private inputs**. Never obtain the encryption key from an arbitrary repository file or user-supplied URL. GitHub's environment private key alone can decrypt the sealed transfer. Workflow inputs contain only ciphertext; plaintext signing data is never committed, printed or uploaded as an artifact. Key rotation/mismatch is rejected before import. Partial API failures are reported without values; a retry of the same matching bundle is idempotent.
+
+Verification: actionlint clean;13 portable tests pass in the sealing virtual environment, including rejection of changed keys/unapproved secret names, preservation of existing environment protections, main-only new environments and sealed-box round trips that reject a different private key. Actual GitHub import remains pending the owner's one-time setup secret; the existing integration's environment-creation request returned403. No new APK or signed iOS build was made for this setup helper.

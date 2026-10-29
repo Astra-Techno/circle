@@ -1,0 +1,58 @@
+name: iOS signing setup (no downloads)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Prepare public encryption key, or import already-sealed signing inputs'
+        type: choice
+        options: [prepare, import]
+        default: prepare
+      sealed_payload:
+        description: 'Encrypted inputs only; never enter a P12, password, token or private key here'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: circle-ios-signing-setup
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main' && inputs.action == 'prepare'
+    runs-on: ubuntu-latest
+    outputs:
+      key_id: ${{ steps.key.outputs.key_id }}
+      public_key: ${{ steps.key.outputs.public_key }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: key
+        name: Fetch GitHub environment public encryption key
+        env:
+          IOS_SIGNING_SETUP_TOKEN: ${{ secrets.IOS_SIGNING_SETUP_TOKEN }}
+        run: python3 scripts/ios/github_secret_setup.py prepare
+  public-key:
+    needs: prepare
+    # Public key only. The job metadata is readable through GitHub's API even
+    # when this client's network cannot download Actions logs/artifacts.
+    name: "Public iOS key | ${{ needs.prepare.outputs.key_id }} | ${{ needs.prepare.outputs.public_key }}"
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'GitHub encryption key ready. No signing credentials are in this output.'
+  import:
+    if: github.ref == 'refs/heads/main' && inputs.action == 'import'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Store sealed values as private environment secrets
+        env:
+          IOS_SIGNING_SETUP_TOKEN: ${{ secrets.IOS_SIGNING_SETUP_TOKEN }}
+          SEALED_PAYLOAD: ${{ inputs.sealed_payload }}
+        run: python3 scripts/ios/github_secret_setup.py import
