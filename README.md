@@ -53,6 +53,8 @@ Notification policy (owner, 29 October 2026): account push and all current categ
 - Increment `versionCode` for every changed application release, including a rebuild that changes runtime behavior. Keep `versionName`/build values consistent with the APK and metadata. Never replace an already published immutable versioned APK with different bytes.
 - Build production APKs with the intended HTTPS API and `CIRCLE_PREVIEW=false`; label any preview APK explicitly. Verify package id, version, minimum SDK and certificate from the built artifact. Keep release builds separate from concurrent Flutter test tooling that can regenerate Android plugin registration files. After tests, use normal `flutter build apk --release` tooling regeneration (without `--no-pub`) so release registration excludes test-only plugins.
 
+Production Android command: run `./scripts/build-android-release.sh` from the repository root with the established toolchain/signing inputs. It explicitly sets the production API, preview off and `CIRCLE_PUSH_ENABLED=true`. Keep the version/signature/publication checks above; that flag does not configure server delivery or grant Android permission.
+
 ### 0.5 Download publication and deployment
 
 - A release consists of one verified immutable `downloads/circle-<version>-<build>.apk`, plus matching `downloads/release.json`, `downloads/index.html` and `website/index.html` links. Preserve earlier immutable releases. Current publication uses versioned links; do not restore the removed stable alias. Hosts that skip APK copying use the checked current-release download redirect.

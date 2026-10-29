@@ -269,8 +269,57 @@ void main() {
           enabled: scenario != 'disabled',
         );
         expect(await coordinator.start(), isFalse, reason: scenario);
+        expect(coordinator.connectionProblem, switch (scenario) {
+          'failure' => PushConnectionProblem.firebase,
+          'denied' => PushConnectionProblem.permission,
+          'platform' => PushConnectionProblem.unsupported,
+          _ => PushConnectionProblem.buildDisabled,
+        });
         expect(calls, 0);
         expect(gateway.requests, 0);
+        coordinator.dispose();
+        await flush();
+        await gateway.close();
+      }
+    },
+  );
+
+  test(
+    'missing token and failed registration have distinct safe connection stages',
+    () async {
+      for (final missingToken in [true, false]) {
+        final gateway = Gateway()
+          ..tokenValue = missingToken ? null : 'fictional-device';
+        final current = binding(
+          '1',
+          (r) async => FakeResponse.error(503, 'server_error'),
+        );
+        final coordinator = PushSessionCoordinator(
+          gateway: gateway,
+          current: () async => current,
+          ledger: PushLedger(MemoryLocalSettingsStore()),
+          enabled: true,
+        );
+        expect(await coordinator.start(requestPermission: true), isFalse);
+        await flush();
+        expect(
+          coordinator.connectionProblem,
+          missingToken
+              ? PushConnectionProblem.token
+              : PushConnectionProblem.registration,
+        );
+        expect(
+          coordinator.connectionExplanation,
+          isNot(contains('fictional-device')),
+        );
+        if (!missingToken) {
+          expect(coordinator.connectionExplanation, contains('HTTP 503'));
+        }
+        await coordinator.stop();
+        expect(
+          coordinator.connectionProblem,
+          PushConnectionProblem.disconnected,
+        );
         coordinator.dispose();
         await flush();
         await gateway.close();

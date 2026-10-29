@@ -87,7 +87,53 @@ class TrackingCoordinator extends PushSessionCoordinator {
   }
 }
 
+class ReactiveCoordinator extends TrackingCoordinator {
+  bool registered = false;
+  @override
+  bool get active => registered;
+  void registeredNow() {
+    registered = true;
+    connectionRevision.value++;
+  }
+}
+
 void main() {
+  testWidgets('connection label updates when passive registration completes', (
+    tester,
+  ) async {
+    final coordinator = ReactiveCoordinator();
+    final container = ProviderContainer(
+      overrides: [
+        pushSettingsProvider.overrideWith(DefaultOnChoices.new),
+        pushSessionCoordinatorProvider.overrideWithValue(coordinator),
+      ],
+    );
+    addTearDown(container.dispose);
+    addTearDown(coordinator.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: circleTheme(Brightness.light),
+          home: const Scaffold(body: ServerPushSettingsScreen()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Notifications are connected on this phone.'),
+      findsNothing,
+    );
+    coordinator.registeredNow();
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Notifications are connected on this phone.'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets(
     'default-on account can turn off notifications without changing category choices or requesting permission',
     (tester) async {

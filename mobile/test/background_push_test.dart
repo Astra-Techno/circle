@@ -38,6 +38,7 @@ class Mutex implements PushMutex {
 void main() {
   for (final mode in [
     'success',
+    'utc_default_daytime',
     'offline',
     'expired',
     'not_member',
@@ -81,6 +82,12 @@ void main() {
                 return FakeResponse.ok({
                   ...preferences(),
                   if (mode == 'disabled') 'enabled': false,
+                  if (mode == 'utc_default_daytime') ...{
+                    'quiet_hours': true,
+                    'quiet_start': 1320,
+                    'quiet_end': 420,
+                    'timezone': 'UTC',
+                  },
                   if (mode == 'quiet') ...{
                     'quiet_hours': true,
                     'quiet_start': 0,
@@ -114,7 +121,12 @@ void main() {
         await processor.receive(data);
         expect(paths, isNot(contains('/auth/refresh')));
         expect(initial.refreshToken, 'fictional-refresh');
-        expect(shown, ['success', 'show_failed'].contains(mode) ? 1 : 0);
+        expect(
+          shown,
+          ['success', 'utc_default_daytime', 'show_failed'].contains(mode)
+              ? 1
+              : 0,
+        );
         final pending = await ledger.pending(scope(initial), now);
         expect(
           pending.length,

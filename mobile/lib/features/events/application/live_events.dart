@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 import '../../profile/application/profile_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/data/latest.dart' as database;
+// Keep the process-wide database compatible with saved notification aliases.
+import 'package:timezone/data/latest_all.dart' as database;
 import 'package:timezone/timezone.dart' as zones;
 import '../../../core/api/api_providers.dart';
 import '../../../core/api/scoped_api.dart';

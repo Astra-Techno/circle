@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/features/events/application/live_events.dart'
+    show liveEventZones;
 import 'package:mobile/core/api/api_providers.dart';
 import 'package:mobile/features/workspace/application/server_session.dart';
 import 'package:mobile/features/notifications/application/push_settings.dart';
@@ -16,6 +18,67 @@ class AcceptingCoordinator extends TrackingCoordinator {
 }
 
 void main() {
+  PushPreferences quiet(String zone) => PushPreferences(
+    enabled: true,
+    categories: {PushCategory.memories: true},
+    quietHours: true,
+    quietStart: 1320,
+    quietEnd: 420,
+    timezone: zone,
+  );
+  test(
+    'UTC default quiet hours allow daytime and preserve overnight suppression',
+    () {
+      expect(
+        pushQuietNow(quiet('UTC'), DateTime.utc(2026, 10, 29, 12)),
+        isFalse,
+      );
+      expect(
+        pushQuietNow(quiet('UTC'), DateTime.utc(2026, 10, 29, 23)),
+        isTrue,
+      );
+      expect(
+        pushQuietNow(quiet('GMT'), DateTime.utc(2026, 10, 29, 12)),
+        isFalse,
+      );
+    },
+  );
+  test('Android legacy India time zone matches its canonical quiet hours', () {
+    for (final hour in [2, 10, 20]) {
+      final now = DateTime.utc(2026, 10, 29, hour);
+      expect(
+        pushQuietNow(quiet('Asia/Calcutta'), now),
+        pushQuietNow(quiet('Asia/Kolkata'), now),
+      );
+    }
+    expect(
+      pushQuietNow(quiet('Asia/Calcutta'), DateTime.utc(2026, 10, 29, 2)),
+      isFalse,
+    );
+    expect(
+      pushQuietNow(quiet('Asia/Calcutta'), DateTime.utc(2026, 10, 29, 20)),
+      isTrue,
+    );
+  });
+  test(
+    'device time zone picker accepts UTC and backward-compatible aliases',
+    () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      expect(
+        container.read(pushTimezonesProvider),
+        containsAll(['UTC', 'GMT', 'Asia/Calcutta', 'Asia/Kolkata']),
+      );
+    },
+  );
+
+  test('opening Events cannot remove notification time zone aliases', () {
+    final now = DateTime.utc(2026, 10, 29, 12);
+    expect(pushQuietNow(quiet('UTC'), now), isFalse);
+    expect(liveEventZones(), contains('UTC'));
+    expect(pushQuietNow(quiet('UTC'), now), isFalse);
+    expect(pushQuietNow(quiet('Asia/Calcutta'), now), isFalse);
+  });
   test(
     'real controller serializes partial writes and restores failed choices without permission',
     () async {

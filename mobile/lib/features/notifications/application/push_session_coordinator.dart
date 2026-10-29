@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_providers.dart';
 import '../../../core/local_settings.dart';
@@ -11,6 +12,36 @@ import '../domain/push_envelope.dart';
 import 'push_ledger.dart';
 
 export '../domain/push_envelope.dart' show PushReception;
+
+/// Safe connection stages only; never expose provider errors or device tokens.
+enum PushConnectionProblem {
+  disconnected('This phone is not connected. Try connecting again.'),
+  buildDisabled(
+    'Notifications are not included in this app build. Install the latest CIRCLE update.',
+  ),
+  unsupported('Phone notifications are not supported on this device yet.'),
+  session(
+    'Your notification session changed. Sign in again, then connect this phone.',
+  ),
+  firebase(
+    'The phone notification service could not start. Update CIRCLE and check your internet connection.',
+  ),
+  permission(
+    'Allow CIRCLE notifications in your phone settings, then try again.',
+  ),
+  token(
+    'Google notification registration could not finish. Check internet access and Google Play services, then retry.',
+  ),
+  registration(
+    'CIRCLE could not register this phone with the server. Check your connection and try again.',
+  ),
+  delivery(
+    'The phone notification connection could not finish. Restart CIRCLE and try again.',
+  );
+
+  const PushConnectionProblem(this.message);
+  final String message;
+}
 
 class PushBinding {
   PushBinding(this.api, this.scope) : sessionRevision = api.sessionRevision;
@@ -44,7 +75,36 @@ class PushSessionCoordinator {
   bool _disposed = false, _initialized = false, _healthy = false;
   PushBinding? _binding;
   String? _registeredToken;
+  PushConnectionProblem _problem = PushConnectionProblem.disconnected;
+  int? _registrationStatus;
+  final connectionRevision = ValueNotifier<int>(0);
+  void _changed() {
+    scheduleMicrotask(() {
+      if (!_disposed) connectionRevision.value++;
+    });
+  }
+
+  String get connectionExplanation {
+    final problem = connectionProblem;
+    final status = _registrationStatus;
+    return problem == PushConnectionProblem.registration && status != null
+        ? '${problem.message} (HTTP $status)'
+        : problem.message;
+  }
+
+  PushConnectionProblem get connectionProblem => !gateway.supported
+      ? PushConnectionProblem.unsupported
+      : !enabled
+      ? PushConnectionProblem.buildDisabled
+      : _problem;
   final _knownTokens = <String>{};
+
+  void _record(PushConnectionProblem problem, int epoch) {
+    if (!_disposed && epoch == _epoch) {
+      _problem = problem;
+      _changed();
+    }
+  }
 
   Future<T> _queue<T>(Future<T> Function() operation) {
     final result = _tail.then((_) => operation());
@@ -74,28 +134,40 @@ class PushSessionCoordinator {
     final epoch = _epoch;
     final future = _queue(() async {
       PushBinding? binding;
+      var stage = PushConnectionProblem.session;
+      if (epoch == _epoch) _registrationStatus = null;
+      _record(PushConnectionProblem.disconnected, epoch);
       try {
         binding = await current();
         if (binding == null || !await _valid(binding, epoch)) return false;
         if (_binding != null &&
             (_binding!.scope.key != binding.scope.key ||
                 !identical(_binding!.api, binding.api))) {
-          unawaited(stop());
+          unawaited(stop(clearProblem: false));
           return false;
         }
         if (_healthy && _binding?.scope.key == binding.scope.key) {
+          stage = PushConnectionProblem.permission;
           final allowed = await gateway.permission(request: requestPermission);
           if (!allowed) {
-            unawaited(stop());
+            _record(PushConnectionProblem.permission, epoch);
+            unawaited(stop(clearProblem: false));
             return false;
           }
           if (!await _valid(binding, epoch)) return false;
+          stage = PushConnectionProblem.token;
           final token = await gateway.token();
-          if (!await _valid(binding, epoch) || token == null) return false;
+          if (!await _valid(binding, epoch)) return false;
+          if (token == null) {
+            _record(PushConnectionProblem.token, epoch);
+            unawaited(stop(clearProblem: false));
+            return false;
+          }
           final registered =
               token == _registeredToken ||
               await _register(binding, epoch, token);
           if (registered && await _valid(binding, epoch)) {
+            stage = PushConnectionProblem.delivery;
             final pendingTap = await gateway.initialMessage();
             if (pendingTap != null) {
               _receive(pendingTap, binding, epoch, PushAction.open);
@@ -104,16 +176,20 @@ class PushSessionCoordinator {
           return registered;
         }
         _cancelListeners();
+        stage = PushConnectionProblem.firebase;
         if (!_initialized) {
           await gateway.initialize();
           _initialized = true;
         }
         if (!await _valid(binding, epoch)) return false;
+        stage = PushConnectionProblem.permission;
         if (!await gateway.permission(request: requestPermission)) {
-          unawaited(stop());
+          _record(PushConnectionProblem.permission, epoch);
+          unawaited(stop(clearProblem: false));
           return false;
         }
         if (!await _valid(binding, epoch)) return false;
+        stage = PushConnectionProblem.firebase;
         await gateway.activate();
         if (!await _valid(binding, epoch)) return false;
         _binding = binding;
@@ -124,7 +200,7 @@ class PushSessionCoordinator {
               unawaited(_queue(() => _register(captured, epoch, token)));
             },
             onError: (Object _) {
-              unawaited(stop());
+              unawaited(stop(clearProblem: false));
             },
           ),
         );
@@ -132,7 +208,7 @@ class PushSessionCoordinator {
           gateway.foreground.listen(
             (data) => _receive(data, captured, epoch, PushAction.display),
             onError: (Object _) {
-              unawaited(stop());
+              unawaited(stop(clearProblem: false));
             },
           ),
         );
@@ -140,23 +216,27 @@ class PushSessionCoordinator {
           gateway.opened.listen(
             (data) => _receive(data, captured, epoch, PushAction.open),
             onError: (Object _) {
-              unawaited(stop());
+              unawaited(stop(clearProblem: false));
             },
           ),
         );
+        stage = PushConnectionProblem.token;
         final token = await gateway.token();
+        if (token == null) _record(PushConnectionProblem.token, epoch);
         if (token == null || !await _register(binding, epoch, token)) {
           if (epoch == _epoch) {
-            unawaited(stop());
+            unawaited(stop(clearProblem: false));
           }
           return false;
         }
+        stage = PushConnectionProblem.delivery;
         final initial = await gateway.initialMessage();
         if (initial != null) _receive(initial, binding, epoch, PushAction.open);
         return await _valid(binding, epoch);
       } catch (_) {
         if (epoch == _epoch) {
-          unawaited(stop());
+          _problem = stage;
+          unawaited(stop(clearProblem: false));
         }
         return false;
       }
@@ -173,11 +253,13 @@ class PushSessionCoordinator {
   Future<bool> _register(PushBinding binding, int epoch, String token) async {
     if (!RegExp(r'^[A-Za-z0-9:_-]{1,512}$').hasMatch(token) ||
         !await _valid(binding, epoch)) {
+      if (epoch == _epoch) _problem = PushConnectionProblem.token;
       return false;
     }
+    var stage = PushConnectionProblem.registration;
     try {
       if (_knownTokens.length >= 8 && !_knownTokens.contains(token)) {
-        unawaited(stop());
+        unawaited(stop(clearProblem: false));
         return false;
       }
       _knownTokens.add(token);
@@ -190,12 +272,14 @@ class PushSessionCoordinator {
         expectedSession: binding.sessionRevision,
       );
       if (!await _valid(binding, epoch)) return false;
+      stage = PushConnectionProblem.delivery;
       await gateway.bindScope(binding.scope.key);
       if (!await _valid(binding, epoch)) {
         await gateway.bindScope(null);
         return false;
       }
       _healthy = true;
+      _changed();
       if (previous != null &&
           previous != token &&
           await _valid(binding, epoch)) {
@@ -210,8 +294,16 @@ class PushSessionCoordinator {
         } catch (_) {}
       }
       return true;
-    } catch (_) {
-      if (epoch == _epoch) _healthy = false;
+    } catch (error) {
+      if (epoch == _epoch) {
+        _healthy = false;
+        _problem = stage;
+        final status = error is ApiError ? error.status : null;
+        _registrationStatus = status != null && status >= 100 && status <= 599
+            ? status
+            : null;
+        _changed();
+      }
       return false;
     }
   }
@@ -298,7 +390,11 @@ class PushSessionCoordinator {
   }
 
   /// Safe to call unawaited from authentication; local invalidation is immediate.
-  Future<void> stop() {
+  Future<void> stop({bool clearProblem = true}) {
+    if (clearProblem) {
+      _problem = PushConnectionProblem.disconnected;
+      _registrationStatus = null;
+    }
     _epoch++;
     unawaited(gateway.bindScope(null).catchError((Object _) {}));
     _starting = null;
@@ -309,6 +405,7 @@ class PushSessionCoordinator {
     _knownTokens.clear();
     _binding = null;
     _registeredToken = null;
+    _changed();
     return _queue(() async {
       if (_initialized) {
         try {
@@ -339,8 +436,9 @@ class PushSessionCoordinator {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
-    unawaited(stop());
+    unawaited(stop(clearProblem: false));
     unawaited(_accepted.close());
+    connectionRevision.dispose();
   }
 }
 

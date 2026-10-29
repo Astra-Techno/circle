@@ -6,6 +6,7 @@ class Gateway implements FcmGateway {
   bool supported = true;
   bool allowed = true, failInit = false;
   int initialized = 0, activated = 0, deactivated = 0, requests = 0;
+  String? tokenValue = 'fictional-device';
   Completer<void>? initGate;
   final tokens = StreamController<String>.broadcast(sync: true);
   final messages = StreamController<Map<String, dynamic>>.broadcast(sync: true);
@@ -36,7 +37,7 @@ class Gateway implements FcmGateway {
   }
 
   @override
-  Future<String?> token() async => 'fictional-device';
+  Future<String?> token() async => tokenValue;
   @override
   Stream<String> get tokenChanges => tokens.stream;
   @override

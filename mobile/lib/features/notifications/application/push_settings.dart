@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/data/latest.dart' as database;
+// PHP and Android can return backward-compatible names such as UTC and Asia/Calcutta.
+import 'package:timezone/data/latest_all.dart' as database;
 import 'package:timezone/timezone.dart' as zones;
 import '../../../core/api/api_providers.dart';
 import '../../../core/circle_failure.dart';
@@ -95,9 +96,7 @@ class PushSettings extends AsyncNotifier<PushPreferences> {
             );
           }
           if (!started) {
-            throw const CircleFailure(
-              'Check notification permission in phone settings, then try again.',
-            );
+            throw CircleFailure(coordinator.connectionExplanation);
           }
           if (!_current(generation, api, account)) {
             throw const CircleFailure(
@@ -118,7 +117,9 @@ class PushSettings extends AsyncNotifier<PushPreferences> {
       } catch (_) {
         if (_current(generation, api, account)) {
           state = AsyncData(previous);
-          if (requestPermission) unawaited(coordinator.stop());
+          if (requestPermission) {
+            unawaited(coordinator.stop(clearProblem: false));
+          }
         }
         rethrow;
       }
