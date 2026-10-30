@@ -2,6 +2,10 @@
 
 Updated: 27 October 2026. This is the current execution backlog for Claude and Codex. Product scope remains in README; historical audit evidence remains in implementation-roadmap.md. Status must be rechecked against Git and the live server before implementation. “Planned” does not mean implemented or authorized as a finished release.
 
+## UI audit priority update — 30 October 2026
+
+See [the evidence-based UI audit](ui-audit-2026-10-30.md). Reviewed source1f94998; findings are backlog, not implemented fixes. Prioritize UI01–05 (invite/search failure recovery, dirty forms, iOS invitation capability mismatch and real photo delivery), then UI06–08 (route titles/focused tasks/stable loading chrome), UI09/11/12 (honest profile grids and forms), and UI10/13/14 (notification/invitation/settings polish). Keep previous privacy and authorization constraints. Hidden Albums/Activity remain hidden. This update changes UI execution priority only; historical feature statuses below require checking against PROJECT_STATE.md before reuse.
+
 ## Next batch: stable core and complete profiles
 
 Finish this batch before adding another live feature family. Keep existing auth, groups, Memories and photos working. Full push delivery may stay disabled until its later acceptance checks pass.
