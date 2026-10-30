@@ -9,7 +9,7 @@ GitHub Actions provides the Mac. The owner needs a paid Apple Developer membersh
 - **validate** compiles the production iPhone app without Apple credentials. Its artifact is explicitly **UNSIGNED-NOT-INSTALLABLE**. It cannot be installed by tapping a website link.
 - **testflight** first validates, then signs, verifies and uploads an App Store IPA using secrets in the **ios-testflight** GitHub environment. Apple processes it before testers can install it. Upload success is not TestFlight processing/review or device acceptance.
 - The API is `https://circle.cloudkart24.com/api/v1`; preview is off. Android APK23 and the Android signing identity are unchanged. All three Runner configurations use an app-scoped Keychain entitlement for secure login storage; signed phone persistence still needs testing.
-- **iOS push notifications are currently disabled**, because the native notification-display/tap bridge supports Android only. Firebase/APNs and iOS bridge work is a separate task. Android-only contact/share tools also remain gated; ordinary in-app messaging and the copy-invite-link path remain available. Native iPhone behavior requires testing.
+- **Installed build1.0.24 has push disabled. New1.0.25 sources add iOS push**, requiring the regenerated production-push profile secret, Firebase production APNs key, backend deployment and a new tested build. See docs/ios-push.md. Android-only contact/share tools also remain gated; ordinary in-app messaging and the copy-invite-link path remain available. Native iPhone behavior requires testing.
 
 ## One-time Apple setup (no Mac required)
 

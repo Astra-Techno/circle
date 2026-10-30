@@ -60,7 +60,7 @@ final class NotificationWorker
                 $report = $row['kind'] === 'group.report';
                 $category = $row['kind'] === 'memory.created' ? 'memories' : 'replies_reactions';
                 $device = Database::queryOne("SELECT dt.fcm_token FROM device_tokens dt
-                    WHERE dt.id = :did AND dt.user_id = :uid AND dt.session_id = :sid AND dt.platform = 'android'
+                    WHERE dt.id = :did AND dt.user_id = :uid AND dt.session_id = :sid AND dt.platform IN ('android','ios')
                     AND EXISTS (SELECT 1 FROM refresh_tokens rt WHERE rt.user_id = dt.user_id AND rt.session_id = dt.session_id
                         AND rt.revoked_at IS NULL AND rt.expires_at > :now)",
                     ['did' => $row['device_id'], 'uid' => $row['user_id'], 'sid' => $row['session_id'], 'now' => $now]);

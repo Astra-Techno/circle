@@ -73,6 +73,7 @@ jobs:
       run:
         working-directory: mobile
     env:
+      CIRCLE_IOS_PUSH_ENABLED: 'true'
       IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
       IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
       IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
@@ -106,7 +107,7 @@ jobs:
           flutter build ipa --release --build-number "$IOS_BUILD" \
             --export-options-plist "$RUNNER_TEMP/circle-ios/ExportOptions.plist" \
             --dart-define=CIRCLE_API_BASE_URL=https://circle.cloudkart24.com/api/v1 \
-            --dart-define=CIRCLE_PUSH_ENABLED=false
+            --dart-define=CIRCLE_PUSH_ENABLED=true
       - name: Verify signature and installation metadata
         run: python3 ../scripts/ios/signing.py verify
       - name: Upload IPA to App Store Connect

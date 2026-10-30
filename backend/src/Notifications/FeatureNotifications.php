@@ -40,7 +40,7 @@ final class FeatureNotifications
         $category=$message!==null?'chats':'events';if(!NotificationPreferences::eligible($user,$category,$group))return;
         if($message!==null&&!self::chatEligible($message,$user))return;
         Database::execute("INSERT INTO notification_outbox(event_key,kind,user_id,device_id,session_id,group_id,chat_message_id,event_id,event_version,available_at,expires_at)
-        SELECT :key,:kind,dt.user_id,dt.id,dt.session_id,:g,:message,:event,:version,:at,:expires FROM device_tokens dt WHERE dt.user_id=:u AND dt.platform='android' AND dt.session_id IS NOT NULL AND EXISTS(SELECT 1 FROM refresh_tokens rt WHERE rt.user_id=dt.user_id AND rt.session_id=dt.session_id AND rt.revoked_at IS NULL AND rt.expires_at>UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE event_key=notification_outbox.event_key",['key'=>$key,'kind'=>$kind,'g'=>$group,'message'=>$message,'event'=>$event,'version'=>$version,'at'=>$at,'expires'=>$expires,'u'=>$user]);
+        SELECT :key,:kind,dt.user_id,dt.id,dt.session_id,:g,:message,:event,:version,:at,:expires FROM device_tokens dt WHERE dt.user_id=:u AND dt.platform IN ('android','ios') AND dt.session_id IS NOT NULL AND EXISTS(SELECT 1 FROM refresh_tokens rt WHERE rt.user_id=dt.user_id AND rt.session_id=dt.session_id AND rt.revoked_at IS NULL AND rt.expires_at>UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE event_key=notification_outbox.event_key",['key'=>$key,'kind'=>$kind,'g'=>$group,'message'=>$message,'event'=>$event,'version'=>$version,'at'=>$at,'expires'=>$expires,'u'=>$user]);
     }
     public static function chatEligible(int $message,int $viewer):bool
     {

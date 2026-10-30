@@ -35,7 +35,7 @@ final class NotificationOutbox
              FROM group_invitations gi
              JOIN users u ON u.id = gi.recipient_id AND u.status = 'active'
              JOIN notification_preferences np ON np.user_id = u.id AND np.enabled = 1
-             JOIN device_tokens dt ON dt.user_id = u.id AND dt.session_id IS NOT NULL AND dt.platform = 'android'
+             JOIN device_tokens dt ON dt.user_id = u.id AND dt.session_id IS NOT NULL AND dt.platform IN ('android','ios')
              WHERE gi.id = :id AND gi.status = 'pending' AND gi.expires_at > UTC_TIMESTAMP()
              AND JSON_UNQUOTE(JSON_EXTRACT(np.categories, '$.groups')) = 'true'
              AND EXISTS (SELECT 1 FROM refresh_tokens rt WHERE rt.user_id = dt.user_id AND rt.session_id = dt.session_id
@@ -54,7 +54,7 @@ final class NotificationOutbox
             SELECT :key,'group.report',gm.user_id,dt.id,dt.session_id,gm.group_id,NULL,:target,DATE_ADD(UTC_TIMESTAMP(),INTERVAL 24 HOUR)
             FROM group_members gm JOIN users u ON u.id=gm.user_id AND u.status='active'
             JOIN notification_preferences np ON np.user_id=u.id AND np.enabled=1
-            JOIN device_tokens dt ON dt.user_id=u.id AND dt.session_id IS NOT NULL AND dt.platform='android'
+            JOIN device_tokens dt ON dt.user_id=u.id AND dt.session_id IS NOT NULL AND dt.platform IN ('android','ios')
             WHERE gm.group_id=:gid AND gm.status='active' AND gm.role='admin' AND gm.user_id<>:actor
             AND JSON_UNQUOTE(JSON_EXTRACT(np.categories,'$.groups'))='true'
             AND EXISTS(SELECT 1 FROM refresh_tokens rt WHERE rt.user_id=dt.user_id AND rt.session_id=dt.session_id AND rt.revoked_at IS NULL AND rt.expires_at>UTC_TIMESTAMP())
@@ -95,7 +95,7 @@ final class NotificationOutbox
              JOIN group_members gm ON gm.group_id = m.group_id AND gm.status = 'active'
              JOIN users u ON u.id = gm.user_id AND u.status = 'active'
              JOIN notification_preferences np ON np.user_id = u.id AND np.enabled = 1
-             JOIN device_tokens dt ON dt.user_id = u.id AND dt.session_id IS NOT NULL AND dt.platform = 'android'
+             JOIN device_tokens dt ON dt.user_id = u.id AND dt.session_id IS NOT NULL AND dt.platform IN ('android','ios')
              WHERE m.id = :mid AND m.status = 'active' AND gm.user_id <> {$actor}
              AND JSON_UNQUOTE(JSON_EXTRACT(np.categories, :category)) = 'true'
              AND EXISTS (SELECT 1 FROM refresh_tokens rt WHERE rt.user_id = dt.user_id AND rt.session_id = dt.session_id

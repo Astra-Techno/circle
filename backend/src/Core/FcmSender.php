@@ -37,8 +37,7 @@ final class FcmSender implements \Circle\Notifications\PushTransport
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $accessToken, 'Content-Type: application/json'],
-            CURLOPT_POSTFIELDS => json_encode(['message' => ['token' => $token, 'data' => $data,
-                'android' => ['priority' => 'normal', 'ttl' => $ttl . 's']]], JSON_THROW_ON_ERROR),
+            CURLOPT_POSTFIELDS => json_encode(['message' => self::message($token, $data, $ttl)], JSON_THROW_ON_ERROR),
             CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 10,
             CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
             CURLOPT_HEADERFUNCTION => static function ($handle, string $line) use (&$retryAfter): int {
@@ -51,6 +50,20 @@ final class FcmSender implements \Circle\Notifications\PushTransport
         curl_close($ch);
         if ($status === 401) self::$accessToken = null;
         return self::classify($status, is_string($response) ? $response : '', $retryAfter);
+    }
+
+    /** @param array<string,string> $data
+     * @return array<string,mixed>
+     */
+    public static function message(string $token, array $data, int $ttl): array
+    {
+        return ['token' => $token, 'data' => $data,
+            'android' => ['priority' => 'normal', 'ttl' => $ttl . 's'],
+            'apns' => ['headers' => ['apns-push-type' => 'alert', 'apns-priority' => '10',
+                'apns-collapse-id' => hash('sha256', $data['event_id'] ?? ''),
+                'apns-expiration' => (string)(time() + $ttl)],
+                'payload' => ['aps' => ['alert' => ['title' => 'CIRCLE',
+                    'body' => 'You have a new update. Open CIRCLE to view it.'], 'sound' => 'default']]]];
     }
 
     public static function classify(int $status, string $body, string $retryAfter = ''): \Circle\Notifications\PushResult

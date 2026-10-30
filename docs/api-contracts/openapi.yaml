@@ -4029,7 +4029,7 @@ components:
       type: object
       additionalProperties: false
       description: |
-        FCM data-only payload. Contains references, never private text, names, media URLs,
+        FCM data payload; Android is data-only, while iOS also receives a generic APNs alert. Contains references, never private text, names, media URLs,
         bearer tokens or a provider-controlled route. Client must verify canonical API URL,
         current recipient and SHA-256 of its JWT sid against session_scope, expiry,
         supported type and deduplication before displaying or routing. Dedup keys must

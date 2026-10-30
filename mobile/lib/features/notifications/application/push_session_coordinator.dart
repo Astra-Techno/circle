@@ -30,7 +30,7 @@ enum PushConnectionProblem {
     'Allow CIRCLE notifications in your phone settings, then try again.',
   ),
   token(
-    'Google notification registration could not finish. Check internet access and Google Play services, then retry.',
+    'Phone notification registration could not finish. Check internet access and retry.',
   ),
   registration(
     'CIRCLE could not register this phone with the server. Check your connection and try again.',
@@ -267,7 +267,12 @@ class PushSessionCoordinator {
       _registeredToken = token; // Track ambiguous network outcomes for cleanup.
       await binding.api.post(
         '/devices/register',
-        body: {'fcm_token': token, 'platform': 'android'},
+        body: {
+          'fcm_token': token,
+          'platform': defaultTargetPlatform == TargetPlatform.iOS
+              ? 'ios'
+              : 'android',
+        },
         expectedAccount: binding.scope.account,
         expectedSession: binding.sessionRevision,
       );

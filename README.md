@@ -34,7 +34,7 @@ ChatGPT/Codex and Claude follow the efficient workflow in `AGENTS.md`. Start wit
 ### 0.3 Firebase and push notifications
 
 - Treat Firebase as optional infrastructure: missing configuration, denied permission, SDK/plugin errors or token-registration failure must not prevent app startup, login, session restoration or logout. Auth revocation, local token cleanup and private-image cleanup must run independently of push deregistration success.
-- Ask for notification permission in context after an explained user action, following §4.0. Do not prompt on every login or restored session.
+- Ask for notification permission in context after an explained user action, following §4.0. Do not prompt on every login or restored session. Owner update30Oct: request device notification permission on first app launch after installation, independently of login; denial or service failure must not block use. Tokens are registered only for authenticated sessions.
 - Scope initialization, registration, pending callbacks and listeners to the account, API server and session. Make initialization idempotent; cancel listeners on logout/account changes and dispose. Reject stale completions and prevent an old session from reassigning a device to the wrong account.
 - Validate device-token types/lengths and platform values before SQL. Document the endpoints and test authenticated registration, reassignment, deregistration, validation, logout and account switching.
 - Wiring is required: business events must call the delivery path, foreground behavior must be implemented, and notification taps must navigate to an allowed internal destination with normal access checks. Android foreground notifications are not automatically displayed merely because the device runs Android 13+.

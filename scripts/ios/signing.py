@@ -66,6 +66,8 @@ def profile_checks(profile, team, now):
         raise ValueError('Provisioning profile belongs to a different Apple team.')
     if entitlements.get('application-identifier') != f'{team}.{BUNDLE}':
         raise ValueError('Use an explicit App Store profile for ' + BUNDLE)
+    if os.environ.get('CIRCLE_IOS_PUSH_ENABLED') == 'true' and entitlements.get('aps-environment') != 'production':
+        raise ValueError('Replace IOS_PROFILE_BASE64 with the regenerated production push profile.')
     expires = profile.get('ExpirationDate')
     if not isinstance(expires, dt.datetime) or expires.replace(tzinfo=dt.timezone.utc) <= now:
         raise ValueError('Provisioning profile has expired or has no expiration date.')
@@ -222,6 +224,8 @@ def verify():
             entitlements.get('get-task-allow', False) or
             entitlements.get('keychain-access-groups') != [f"{os.environ['IOS_TEAM_ID']}.{BUNDLE}"]):
         raise ValueError('Exported IPA signing entitlements are invalid.')
+    if os.environ.get('CIRCLE_IOS_PUSH_ENABLED') == 'true' and entitlements.get('aps-environment') != 'production':
+        raise ValueError('Exported IPA is missing production APNs entitlement.')
     sha = hashlib.sha256(ipas[0].read_bytes()).hexdigest()
     (ipas[0].parent / 'SHA256SUMS.txt').write_text(f'{sha}  {ipas[0].name}\n')
     print(f'Verified signed IPA: version {info["CFBundleShortVersionString"]}, build {expected}.')

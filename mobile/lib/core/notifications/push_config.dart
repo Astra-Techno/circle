@@ -5,5 +5,6 @@ final pushClientEnabledProvider = Provider<bool>(
   (ref) =>
       const bool.fromEnvironment('CIRCLE_PUSH_ENABLED', defaultValue: false) &&
       !kIsWeb &&
-      defaultTargetPlatform == TargetPlatform.android,
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS),
 );

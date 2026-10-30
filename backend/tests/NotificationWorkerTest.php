@@ -395,14 +395,28 @@ final class NotificationWorkerTest extends ApiTestCase
         self::assertStringNotContainsString('secret provider', json_encode($row, JSON_THROW_ON_ERROR));
     }
 
-    public function testUnconfiguredIosPlatformIsExcludedFromCaptureAndDelivery(): void
+    public function testIosPlatformIsCapturedAndDeliveredWithScopedReferences(): void
     {
         $f = $this->fixture();
         $this->request('POST', '/api/v1/devices/register', ['fcm_token' => 'fictional-device-' . $f['member']['id'], 'platform' => 'ios'], $f['member']['token']);
         $this->createMemory($f['owner'], $f['group']);
-        self::assertCount(1, Database::query('SELECT id FROM notification_outbox'));
-        $transport = new FakePushTransport(); self::assertSame(1, (new NotificationWorker($transport))->run()['cancelled']);
-        self::assertCount(0, $transport->calls);
+        self::assertCount(2, Database::query('SELECT id FROM notification_outbox'));
+        $transport = new FakePushTransport(); self::assertSame(2, (new NotificationWorker($transport))->run()['sent']);
+        self::assertCount(2, $transport->calls);
+        self::assertSame((string)$f['member']['id'], $transport->calls[1]['data']['recipient_id']);
+        self::assertArrayNotHasKey('body', $transport->calls[1]['data']);
+    }
+
+    public function testApnsAlertIsGenericAndRetainsScopedData(): void
+    {
+        $data=['event_id'=>'fictional-event','recipient_id'=>'42','type'=>'chat.message'];
+        $message=FcmSender::message('fictional-token',$data,120);
+        self::assertSame($data,$message['data']);
+        self::assertSame('normal',$message['android']['priority']);
+        self::assertSame('alert',$message['apns']['headers']['apns-push-type']);
+        self::assertSame('CIRCLE',$message['apns']['payload']['aps']['alert']['title']);
+        self::assertSame('You have a new update. Open CIRCLE to view it.',$message['apns']['payload']['aps']['alert']['body']);
+        self::assertSame(hash('sha256','fictional-event'),$message['apns']['headers']['apns-collapse-id']);
     }
 
     public function testProviderResponseClassificationDoesNotTreatProject404AsInvalidToken(): void

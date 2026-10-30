@@ -21,13 +21,22 @@ abstract interface class FcmGateway {
 
 /// Lazy adapter: constructing providers never touches Firebase/plugin state.
 class FirebaseFcmGateway implements FcmGateway {
+  static Future<void>? _initializing;
   FirebaseMessaging get _sdk => FirebaseMessaging.instance;
   @override
   bool get supported =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
   @override
   Future<void> initialize() async {
-    if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+    if (Firebase.apps.isNotEmpty) return;
+    final work = _initializing ??= Firebase.initializeApp().then<void>((_) {});
+    try {
+      await work;
+    } finally {
+      if (identical(_initializing, work)) _initializing = null;
+    }
   }
 
   @override
@@ -45,7 +54,18 @@ class FirebaseFcmGateway implements FcmGateway {
   @override
   Future<void> bindScope(String? scope) => const NativePushBridge().bind(scope);
   @override
-  Future<String?> token() => _sdk.getToken();
+  Future<String?> token() async {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      // APNs registration can complete after the permission dialog closes.
+      for (var attempt = 0; attempt < 10; attempt++) {
+        if (await _sdk.getAPNSToken() != null) return _sdk.getToken();
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
+      return null;
+    }
+    return _sdk.getToken();
+  }
+
   @override
   Future<void> deactivate() async {
     try {

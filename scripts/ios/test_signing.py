@@ -93,6 +93,13 @@ class SigningValidationTest(unittest.TestCase):
         for secret in ('fictional-secret-path', 'fictional-password', 'fictional-private-output'):
             self.assertNotIn(secret, message)
 
+    def test_push_release_requires_production_profile(self):
+        with patch.dict(os.environ, {'CIRCLE_IOS_PUSH_ENABLED': 'true'}):
+            with self.assertRaisesRegex(ValueError, 'IOS_PROFILE_BASE64'):
+                signing.profile_checks(self.profile, 'ABCDE12345', self.now)
+            self.profile['Entitlements']['aps-environment'] = 'production'
+            signing.profile_checks(self.profile, 'ABCDE12345', self.now)
+
     def test_signed_preflight_rejects_non_main(self):
         env = {key: 'fictional-secret' for key in signing.REQUIRED}
         env.update(ASC_PRIVATE_KEY='fictional-present-key', IOS_TEAM_ID='ABCDE12345', ASC_KEY_ID='ABCDE12345',
