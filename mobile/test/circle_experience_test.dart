@@ -8,6 +8,21 @@ import 'support/circle_harness.dart';
 
 void main() {
   testWidgets(
+    'scrolling down frees navigation space and scrolling up restores it',
+    (tester) async {
+      await openCircle(tester);
+      final scroll = find.byType(CustomScrollView).first;
+      expect(find.byType(NavigationBar), findsOneWidget);
+      await tester.drag(scroll, const Offset(0, -600));
+      await tester.pumpAndSettle();
+      expect(find.byType(NavigationBar), findsNothing);
+      await tester.drag(scroll, const Offset(0, 180));
+      await tester.pumpAndSettle();
+      expect(find.byType(NavigationBar), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'welcome has no demo tour; signed in, Home opens on your circles',
     (tester) async {
       await openCircle(tester, entered: false);

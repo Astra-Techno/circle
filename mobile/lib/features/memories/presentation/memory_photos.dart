@@ -300,6 +300,15 @@ class MemoryPhotoTile extends ConsumerWidget {
         large: large,
       );
     }
+    final request = (
+      mediaId: mediaId,
+      size: large ? MediaSize.medium : MediaSize.thumb,
+    );
+    void retry() {
+      ref.read(mediaRepositoryProvider)?.forget(mediaId, request.size);
+      ref.invalidate(signedMediaUrlProvider(request));
+    }
+
     final link = ref.watch(
       signedMediaUrlProvider((
         mediaId: mediaId,
@@ -317,6 +326,7 @@ class MemoryPhotoTile extends ConsumerWidget {
       data: (url) {
         final image = CircleSignedImage(
           url: url,
+          onRetry: retry,
           semanticsLabel: semanticsLabel,
           onTap: onTap,
           more: more,
@@ -326,8 +336,15 @@ class MemoryPhotoTile extends ConsumerWidget {
         return large ? InteractiveViewer(maxScale: 4, child: image) : image;
       },
       loading: () => frame(const CirclePhotoPlaceholder(loading: true)),
-      error: (_, _) =>
-          frame(const CirclePhotoPlaceholder(message: 'Photo unavailable')),
+      error: (_, _) => CirclePhotoFrame(
+        semanticsLabel: '$semanticsLabel. Photo unavailable. Tap to retry.',
+        onTap: retry,
+        more: null,
+        large: large,
+        child: const CirclePhotoPlaceholder(
+          message: 'Photo unavailable. Tap to retry',
+        ),
+      ),
     );
   }
 }

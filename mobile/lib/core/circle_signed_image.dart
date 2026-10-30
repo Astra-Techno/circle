@@ -9,13 +9,14 @@ import 'design.dart';
 /// accepts a [SignedMediaUrl]: a short-lived link the media API issued for
 /// the configured server. While loading, or when the link fails, it shows
 /// a calm placeholder instead of a broken image.
-class CircleSignedImage extends StatelessWidget {
+class CircleSignedImage extends StatefulWidget {
   const CircleSignedImage({
     super.key,
     required this.url,
     required this.semanticsLabel,
     this.fit = BoxFit.cover,
     this.onTap,
+    this.onRetry,
     this.more,
     this.large = false,
   });
@@ -23,6 +24,7 @@ class CircleSignedImage extends StatelessWidget {
   final String semanticsLabel;
   final BoxFit fit;
   final VoidCallback? onTap;
+  final VoidCallback? onRetry;
 
   /// A "+3 more" pill over the photo.
   final String? more;
@@ -31,21 +33,57 @@ class CircleSignedImage extends StatelessWidget {
   final bool large;
 
   @override
+  State<CircleSignedImage> createState() => _CircleSignedImageState();
+}
+
+class _CircleSignedImageState extends State<CircleSignedImage> {
+  bool _failed = false;
+  int _attempt = 0;
+  @override
+  void didUpdateWidget(covariant CircleSignedImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) _failed = false;
+  }
+
+  Future<void> _retry() async {
+    await NetworkImage(widget.url.toString()).evict();
+    if (!mounted) return;
+    setState(() {
+      _failed = false;
+      _attempt++;
+    });
+    widget.onRetry?.call();
+  }
+
+  @override
   Widget build(BuildContext context) => CirclePhotoFrame(
-    semanticsLabel: semanticsLabel,
-    onTap: onTap,
-    more: more,
-    large: large,
+    semanticsLabel: _failed && widget.onRetry != null
+        ? '${widget.semanticsLabel}. Photo unavailable. Tap to retry.'
+        : widget.semanticsLabel,
+    onTap: _failed && widget.onRetry != null ? _retry : widget.onTap,
+    more: _failed ? null : widget.more,
+    large: widget.large,
     child: Image.network(
-      url.toString(),
-      fit: fit,
+      widget.url.toString(),
+      key: ValueKey(_attempt),
+      fit: widget.fit,
       gaplessPlayback: true,
       filterQuality: FilterQuality.medium,
       loadingBuilder: (context, child, progress) => progress == null
           ? child
           : const CirclePhotoPlaceholder(loading: true),
-      errorBuilder: (context, _, _) =>
-          const CirclePhotoPlaceholder(message: 'Photo unavailable'),
+      errorBuilder: (context, _, _) {
+        if (!_failed) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_failed) setState(() => _failed = true);
+          });
+        }
+        return CirclePhotoPlaceholder(
+          message: widget.onRetry == null
+              ? 'Photo unavailable'
+              : 'Photo unavailable. Tap to retry',
+        );
+      },
     ),
   );
 }
@@ -90,7 +128,11 @@ class CirclePhotoFrame extends StatelessWidget {
             children: [
               child,
               if (more != null)
-                Center(child: CirclePill(more!, tone: CircleTone.strong)),
+                PositionedDirectional(
+                  end: Space.sm,
+                  bottom: Space.sm,
+                  child: CirclePill(more!, tone: CircleTone.strong),
+                ),
             ],
           ),
         ),
@@ -127,8 +169,8 @@ class CirclePhotoPlaceholder extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.image_not_supported_outlined,
-                        size: 32,
-                        color: colors.secondary,
+                        size: Space.lg,
+                        color: colors.onSurfaceVariant,
                       ),
                       if (message != null) ...[
                         const SizedBox(height: Space.xs),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../application/contact_invitations.dart';
+import '../../../core/design.dart';
+import '../../../core/circle_components.dart';
 
 /// Inbox discovery remains available when OS notifications are disabled.
 class ContactInvitationEntry extends ConsumerStatefulWidget {
@@ -64,30 +66,43 @@ class _ContactInvitationEntryState extends ConsumerState<ContactInvitationEntry>
     ref.listen(contactInvitationClientProvider, (_, next) {
       if (mounted) setState(() => _count = null);
     });
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.mark_email_unread_outlined),
-        title: const Text('Invitations for you'),
-        subtitle: Text(
-          _error
-              ? 'Couldn’t check invitations. Tap refresh to retry.'
-              : _busy
-              ? 'Checking invitations…'
-              : _count == null
-              ? 'Review your invitations'
-              : _count == 0
-              ? 'No invitations waiting'
-              : '$_count waiting on the latest page',
-        ),
-        trailing: IconButton(
-          tooltip: 'Refresh invitations',
-          onPressed: _busy ? null : _load,
-          icon: const Icon(Icons.refresh),
-        ),
-        onTap: () async {
-          await context.push('/you/invitations');
-          if (mounted) _load();
-        },
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) >
+        CircleLayout.largeTextThreshold;
+    final refresh = IconButton(
+      tooltip: 'Refresh invitations',
+      onPressed: _busy ? null : _load,
+      icon: const Icon(Icons.refresh),
+    );
+    return CircleRow(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ListTile(
+            leading: largeText
+                ? null
+                : const Icon(Icons.mark_email_unread_outlined),
+            title: const Text('Invitations for you'),
+            subtitle: Text(
+              _error
+                  ? 'Couldn’t check invitations. Tap refresh to retry.'
+                  : _busy
+                  ? 'Checking invitations…'
+                  : _count == null
+                  ? 'Review your invitations'
+                  : _count == 0
+                  ? 'No invitations waiting'
+                  : '$_count waiting on the latest page',
+            ),
+            trailing: largeText ? null : refresh,
+            onTap: () async {
+              await context.push('/you/invitations');
+              if (mounted) _load();
+            },
+          ),
+          if (largeText)
+            Align(alignment: AlignmentDirectional.centerEnd, child: refresh),
+        ],
       ),
     );
   }

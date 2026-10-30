@@ -935,46 +935,12 @@ class CircleFloatingHeader extends StatelessWidget {
   }
 }
 
-/// A SliverAppBar for list screens (Chats, Groups, Events): collapses from
-/// a large title to a compact toolbar, always pinned at top.
+/// Root lists share one floating title/actions row. Never render a second
+/// expanded title underneath the compact toolbar.
 class CircleCollapsingHeader extends StatelessWidget {
   const CircleCollapsingHeader({super.key});
   @override
-  Widget build(BuildContext context) {
-    final data = CircleTabHeaderData.of(context);
-    if (data == null) return const SliverToBoxAdapter();
-    final compactHeight = kToolbarHeight;
-    final expandedHeight = Space.hero * 2 + Space.sm + Space.lg;
-    return SliverAppBar(
-      pinned: true,
-      floating: false,
-      automaticallyImplyLeading: false,
-      expandedHeight: expandedHeight,
-      toolbarHeight: compactHeight,
-      titleSpacing: Space.section,
-      title: _headerTitleCompact(context, data),
-      actions: [
-        ...data.actions,
-        const SizedBox(width: Space.xs),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        collapseMode: CollapseMode.pin,
-        background: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(
-              left: Space.section,
-              right: Space.section,
-              bottom: Space.sm,
-            ),
-            child: Align(
-              alignment: AlignmentDirectional.bottomStart,
-              child: _headerTitle(context, data, large: true),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const CircleFloatingHeader();
 }
 
 Widget _headerTitle(
@@ -998,37 +964,6 @@ Widget _headerTitle(
                 ? theme.textTheme.headlineMedium
                 : data.titleStyle ?? theme.textTheme.headlineMedium,
           ),
-        ),
-      ),
-      if (data.fab != null)
-        IconButton(
-          tooltip: data.fab!.label,
-          onPressed: () => GoRouter.of(context).push(data.fab!.location),
-          icon: const Icon(Icons.add_box_outlined),
-        ),
-    ],
-  );
-}
-
-Widget _headerTitleCompact(BuildContext context, CircleTabHeaderData data) {
-  final theme = Theme.of(context);
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      if (data.logo != null) ...[
-        SizedBox(
-          width: Space.lg,
-          height: Space.lg,
-          child: FittedBox(child: data.logo!),
-        ),
-        const SizedBox(width: Space.sm),
-      ],
-      Flexible(
-        child: Text(
-          data.title,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-          style: theme.textTheme.titleLarge,
         ),
       ),
       if (data.fab != null)

@@ -1,6 +1,5 @@
 import '../features/polls/presentation/live_polls.dart';
 import '../features/profile/presentation/account_security_screens.dart';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -650,7 +649,7 @@ class CircleExperience extends ConsumerWidget {
 /// the bar never takes over the screen at very large text sizes.
 const navigationMaxTextScale = 1.3;
 
-class CircleAppShell extends ConsumerWidget {
+class CircleAppShell extends ConsumerStatefulWidget {
   const CircleAppShell({
     super.key,
     required this.shell,
@@ -666,15 +665,57 @@ class CircleAppShell extends ConsumerWidget {
   final String path;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CircleAppShell> createState() => _CircleAppShellState();
+}
+
+class _CircleAppShellState extends ConsumerState<CircleAppShell> {
+  bool _navigationVisible = true;
+  double _travel = 0;
+  double _restoreTravel = 0;
+
+  @override
+  void didUpdateWidget(covariant CircleAppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.path != widget.path) {
+      _navigationVisible = true;
+      _travel = 0;
+    }
+  }
+
+  bool _scroll(ScrollNotification notification) {
+    if (widget.detail ||
+        notification.depth != 0 ||
+        notification.metrics.axis != Axis.vertical ||
+        MediaQuery.accessibleNavigationOf(context)) {
+      return false;
+    }
+    if (notification is ScrollUpdateNotification &&
+        notification.dragDetails != null) {
+      final delta = notification.scrollDelta ?? 0;
+      if (delta == 0) return false;
+      if ((_travel > 0) != (delta > 0)) _travel = 0;
+      _travel += delta;
+      final show = notification.metrics.pixels <= 0 || _travel < -Space.md;
+      final hide =
+          notification.metrics.pixels > kToolbarHeight && _travel > Space.lg;
+      if (show && !_navigationVisible) {
+        setState(() => _navigationVisible = true);
+      }
+      if (hide && _navigationVisible) {
+        setState(() => _navigationVisible = false);
+      }
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shell = widget.shell, detail = widget.detail, path = widget.path;
+
     final index = shell.currentIndex;
     final largeText =
         MediaQuery.textScalerOf(context).scale(1) >
         CircleLayout.largeTextThreshold;
-    final textScale = math.min(
-      MediaQuery.textScalerOf(context).scale(1),
-      navigationMaxTextScale,
-    );
     final filter = ref.watch(homeGroupFilterProvider);
     final eventsFilter = ref.watch(eventsGroupFilterProvider);
     final workspace = ref.watch(circleWorkspaceProvider).value;
@@ -718,54 +759,67 @@ class CircleAppShell extends ConsumerWidget {
     if (RegExp(r'^/chats/c/[^/]+$').hasMatch(path)) {
       return Scaffold(body: SafeArea(child: shell));
     }
-    final bottomNav = SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(Space.lg, 0, Space.lg, Space.sm),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DecoratedBox(
-              decoration: CircleDepth.dock(context),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(CircleRadius.sheet),
+    final bottomNav = AnimatedSize(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 180),
+      alignment: Alignment.bottomCenter,
+      child:
+          detail ||
+              _navigationVisible ||
+              MediaQuery.accessibleNavigationOf(context)
+          ? DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  top: BorderSide(color: CircleAccents.of(context).hairline),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
                 child: MediaQuery.withClampedTextScaling(
                   maxScaleFactor: navigationMaxTextScale,
                   child: NavigationBar(
-                    height: Space.hero * 2 + Space.sm * textScale,
+                    height: Space.hero * 2,
                     selectedIndex: branches.contains(index)
                         ? branches.indexOf(index)
                         : 0,
                     labelBehavior:
                         NavigationDestinationLabelBehavior.alwaysShow,
-                    onDestinationSelected: (target) => shell.goBranch(
-                      branches[target],
-                      initialLocation: branches[target] == index,
-                    ),
+                    onDestinationSelected: (target) {
+                      setState(() {
+                        _navigationVisible = true;
+                        _travel = 0;
+                      });
+                      shell.goBranch(
+                        branches[target],
+                        initialLocation: branches[target] == index,
+                      );
+                    },
                     destinations: [
-                      NavigationDestination(
+                      const NavigationDestination(
                         icon: Icon(Icons.home_outlined),
                         selectedIcon: Icon(Icons.home_rounded),
                         label: 'Home',
                       ),
                       if (features.has(CircleFeature.liveChat))
-                        NavigationDestination(
+                        const NavigationDestination(
                           icon: Icon(Icons.forum_outlined),
                           selectedIcon: Icon(Icons.forum_rounded),
                           label: 'Chats',
                         ),
-                      NavigationDestination(
+                      const NavigationDestination(
                         icon: Icon(Icons.groups_outlined),
                         selectedIcon: Icon(Icons.groups_rounded),
                         label: 'Groups',
                       ),
                       if (features.has(CircleFeature.liveEvents))
-                        NavigationDestination(
+                        const NavigationDestination(
                           icon: Icon(Icons.event_outlined),
                           selectedIcon: Icon(Icons.event_rounded),
                           label: 'Events',
                         ),
-                      NavigationDestination(
+                      const NavigationDestination(
                         icon: Icon(Icons.person_outline),
                         selectedIcon: Icon(Icons.person_rounded),
                         label: 'You',
@@ -774,10 +828,8 @@ class CircleAppShell extends ConsumerWidget {
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
+            )
+          : const SizedBox(width: double.infinity, height: 0),
     );
 
     // Detail pages keep a traditional AppBar with Back.
@@ -817,16 +869,38 @@ class CircleAppShell extends ConsumerWidget {
           )
         : null;
     return Scaffold(
-      body: SafeArea(
-        child: CircleTabHeaderData(
-          title: index == 0 ? 'Circle' : titles[index],
-          titleStyle: largeText
-              ? theme.textTheme.titleLarge
-              : theme.textTheme.headlineMedium,
-          logo: logo,
-          actions: const [SearchButton(), ActivityBell()],
-          fab: fab,
-          child: shell,
+      body: Listener(
+        onPointerMove: (event) {
+          // Restore navigation even if a refresh replaces the scroller with
+          // an error/empty panel. Observe pointers without stealing gestures.
+          if (_navigationVisible || detail) return;
+          if (event.delta.dy > event.delta.dx.abs()) {
+            _restoreTravel += event.delta.dy;
+            if (_restoreTravel > Space.md) {
+              setState(() {
+                _navigationVisible = true;
+                _restoreTravel = 0;
+              });
+            }
+          } else {
+            _restoreTravel = 0;
+          }
+        },
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _scroll,
+          child: SafeArea(
+            top: false,
+            child: CircleTabHeaderData(
+              title: index == 0 ? 'Circle' : titles[index],
+              titleStyle: largeText
+                  ? theme.textTheme.titleLarge
+                  : theme.textTheme.headlineMedium,
+              logo: logo,
+              actions: const [SearchButton(), ActivityBell()],
+              fab: fab,
+              child: shell,
+            ),
+          ),
         ),
       ),
       bottomNavigationBar: bottomNav,

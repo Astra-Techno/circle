@@ -127,6 +127,10 @@ class ApiMediaRepository {
     return url;
   }
 
+  /// Explicit user retry obtains a new link rather than reusing a failed one.
+  void forget(String mediaId, MediaSize size) =>
+      _links.remove('$mediaId/${size.name}');
+
   /// Forgets every cached link (logout).
   void clear() {
     _links.clear();

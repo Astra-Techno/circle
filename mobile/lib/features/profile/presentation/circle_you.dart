@@ -64,168 +64,180 @@ class _CircleYouState extends ConsumerState<CircleYou> {
         ),
       );
       return ReadingPane(
-        child: ListView(
-          padding: CircleInsets.page,
-          children: [
-            if (account != null)
-              ProfileHeader(
-                key: const ValueKey('you-profile-card'),
-                account: account,
-              ),
-            const SizedBox(height: Space.section),
-            if (waiting > 0)
-              CircleRow(
-                child: ListTile(
-                  leading: const CircleInitialAvatar(
-                    icon: Icons.mark_email_unread_outlined,
-                  ),
-                  title: Text(
-                    waiting == 1
-                        ? '1 invitation waiting'
-                        : '$waiting invitations waiting',
-                  ),
-                  subtitle: const Text('Review them in Groups.'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.go('/groups'),
-                ),
-              ),
-            if (features.has(CircleFeature.activity))
-              entry(
-                icon: Icons.notifications_outlined,
-                title: 'Activity',
-                subtitle: 'Mentions, replies, invitations and event updates',
-                location: '/activity',
-                badgeLabel: badge == 0
-                    ? null
-                    : Padding(
-                        padding: const EdgeInsetsDirectional.only(
-                          end: Space.sm,
+        child: CustomScrollView(
+          slivers: [
+            const CircleFloatingHeader(),
+            SliverPadding(
+              padding: CircleInsets.page,
+              sliver: SliverList.list(
+                children: [
+                  if (account != null)
+                    ProfileHeader(
+                      key: const ValueKey('you-profile-card'),
+                      account: account,
+                    ),
+                  const SizedBox(height: Space.section),
+                  if (waiting > 0)
+                    CircleRow(
+                      child: ListTile(
+                        leading: const CircleInitialAvatar(
+                          icon: Icons.mark_email_unread_outlined,
                         ),
-                        child: Badge(
-                          label: Text(
-                            '$badge',
-                            semanticsLabel: '$badge need you',
+                        title: Text(
+                          waiting == 1
+                              ? '1 invitation waiting'
+                              : '$waiting invitations waiting',
+                        ),
+                        subtitle: const Text('Review them in Groups.'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.go('/groups'),
+                      ),
+                    ),
+                  if (features.has(CircleFeature.activity))
+                    entry(
+                      icon: Icons.notifications_outlined,
+                      title: 'Activity',
+                      subtitle:
+                          'Mentions, replies, invitations and event updates',
+                      location: '/activity',
+                      badgeLabel: badge == 0
+                          ? null
+                          : Padding(
+                              padding: const EdgeInsetsDirectional.only(
+                                end: Space.sm,
+                              ),
+                              child: Badge(
+                                label: Text(
+                                  '$badge',
+                                  semanticsLabel: '$badge need you',
+                                ),
+                              ),
+                            ),
+                    ),
+                  if (features.has(CircleFeature.notificationSettings))
+                    entry(
+                      icon: Icons.tune,
+                      title: 'Notifications',
+                      subtitle: 'Your updates and quiet hours',
+                      location: '/you/notifications',
+                    ),
+                  if (features.has(CircleFeature.blocking))
+                    entry(
+                      icon: Icons.lock_outline,
+                      title: 'Privacy and blocking',
+                      subtitle: 'Manage blocked people',
+                      location: '/you/privacy',
+                    ),
+                  entry(
+                    icon: Icons.mark_email_unread_outlined,
+                    title: 'Invitations',
+                    subtitle: 'Choose which circles to join',
+                    location: '/you/invitations',
+                  ),
+                  entry(
+                    icon: Icons.manage_accounts_outlined,
+                    title: 'Account',
+                    subtitle: 'Appearance, connection and sign out',
+                    location: '/you/account',
+                  ),
+                  const SizedBox(height: Space.md),
+                  if (account != null) ...[
+                    if (_loadError != null)
+                      TextButton.icon(
+                        onPressed: _refreshProfile,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry loading profile details'),
+                      ),
+                    const CircleSectionTitle('Personal details'),
+                    const CirclePill('Only you', icon: Icons.lock_outline),
+                    const SizedBox(height: Space.sm),
+                    if ([
+                      account.currentCity,
+                      account.hometown,
+                      account.work,
+                      account.education,
+                    ].every((value) => value.isEmpty))
+                      const Text(
+                        'Add your city, hometown, work and education in Edit profile.',
+                      ),
+                    for (final detail in [
+                      (
+                        Icons.location_city_outlined,
+                        'Lives in',
+                        account.currentCity,
+                      ),
+                      (Icons.home_outlined, 'From', account.hometown),
+                      (Icons.work_outline, 'Work', account.work),
+                      (Icons.school_outlined, 'Education', account.education),
+                    ])
+                      if (detail.$3.isNotEmpty)
+                        CircleRow(
+                          child: ListTile(
+                            leading: Icon(detail.$1),
+                            title: Text(detail.$2),
+                            subtitle: Text(detail.$3),
                           ),
                         ),
-                      ),
-              ),
-            if (features.has(CircleFeature.notificationSettings))
-              entry(
-                icon: Icons.tune,
-                title: 'Notifications',
-                subtitle: 'Your updates and quiet hours',
-                location: '/you/notifications',
-              ),
-            if (features.has(CircleFeature.blocking))
-              entry(
-                icon: Icons.lock_outline,
-                title: 'Privacy and blocking',
-                subtitle: 'Manage blocked people',
-                location: '/you/privacy',
-              ),
-            entry(
-              icon: Icons.mark_email_unread_outlined,
-              title: 'Invitations',
-              subtitle: 'Choose which circles to join',
-              location: '/you/invitations',
-            ),
-            entry(
-              icon: Icons.manage_accounts_outlined,
-              title: 'Account',
-              subtitle: 'Appearance, connection and sign out',
-              location: '/you/account',
-            ),
-            const SizedBox(height: Space.md),
-            if (account != null) ...[
-              if (_loadError != null)
-                TextButton.icon(
-                  onPressed: _refreshProfile,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry loading profile details'),
-                ),
-              const CircleSectionTitle('Personal details'),
-              const CirclePill('Only you', icon: Icons.lock_outline),
-              const SizedBox(height: Space.sm),
-              if ([
-                account.currentCity,
-                account.hometown,
-                account.work,
-                account.education,
-              ].every((value) => value.isEmpty))
-                const Text(
-                  'Add your city, hometown, work and education in Edit profile.',
-                ),
-              for (final detail in [
-                (Icons.location_city_outlined, 'Lives in', account.currentCity),
-                (Icons.home_outlined, 'From', account.hometown),
-                (Icons.work_outline, 'Work', account.work),
-                (Icons.school_outlined, 'Education', account.education),
-              ])
-                if (detail.$3.isNotEmpty)
-                  CircleRow(
-                    child: ListTile(
-                      leading: Icon(detail.$1),
-                      title: Text(detail.$2),
-                      subtitle: Text(detail.$3),
-                    ),
-                  ),
-              const SizedBox(height: Space.section),
-            ],
-            const CircleSectionTitle('Your Memories'),
-            MemoryGrid(
-              memories: [
-                for (final memory in workspace.memories)
-                  if (memory.authorId == workspace.viewer) memory,
-              ],
-              empty: 'Memories you share appear here.',
-            ),
-            const CircleSectionTitle('Saved Memories'),
-            ScopedMemoryList(
-              query: const MemoryQuery(saved: true),
-              empty: Container(
-                padding: const EdgeInsets.all(Space.section),
-                decoration: CircleDepth.panel(
-                  context,
-                  radius: CircleRadius.card,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: CircleInitialAvatar(
-                        icon: Icons.bookmarks_outlined,
-                        size: CircleAvatarSize.large,
-                      ),
-                    ),
-                    const SizedBox(height: Space.lg),
-                    Text(
-                      'Keep a Memory close',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: Space.sm),
-                    const Text(
-                      'Save a Memory from your circles and find it here whenever you want.',
-                    ),
-                    const SizedBox(height: Space.lg),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.photo_library_outlined),
-                      label: const Text('Browse Memories'),
-                      onPressed: () => context.go('/home'),
-                    ),
+                    const SizedBox(height: Space.section),
                   ],
-                ),
-              ),
-              itemBuilder: (_, memory) => CircleRow(
-                child: ListTile(
-                  title: Text(
-                    memory.summary,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  const CircleSectionTitle('Your Memories'),
+                  MemoryGrid(
+                    memories: [
+                      for (final memory in workspace.memories)
+                        if (memory.authorId == workspace.viewer) memory,
+                    ],
+                    empty: 'Memories you share appear here.',
                   ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/home/memory/${memory.id}'),
-                ),
+                  const CircleSectionTitle('Saved Memories'),
+                  ScopedMemoryList(
+                    query: const MemoryQuery(saved: true),
+                    empty: Container(
+                      padding: const EdgeInsets.all(Space.section),
+                      decoration: CircleDepth.panel(
+                        context,
+                        radius: CircleRadius.card,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: CircleInitialAvatar(
+                              icon: Icons.bookmarks_outlined,
+                              size: CircleAvatarSize.large,
+                            ),
+                          ),
+                          const SizedBox(height: Space.lg),
+                          Text(
+                            'Keep a Memory close',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: Space.sm),
+                          const Text(
+                            'Save a Memory from your circles and find it here whenever you want.',
+                          ),
+                          const SizedBox(height: Space.lg),
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.photo_library_outlined),
+                            label: const Text('Browse Memories'),
+                            onPressed: () => context.go('/home'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    itemBuilder: (_, memory) => CircleRow(
+                      child: ListTile(
+                        title: Text(
+                          memory.summary,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push('/home/memory/${memory.id}'),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

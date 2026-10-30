@@ -200,6 +200,8 @@ class CircleGroupTile extends ConsumerWidget {
                         children: [
                           Text(
                             group.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           Text(

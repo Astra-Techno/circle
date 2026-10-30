@@ -279,6 +279,21 @@ void main() {
       }
     });
 
+    test('explicit retry discards an otherwise valid cached link', () async {
+      var fetches = 0;
+      final media = mediaFor((_) {
+        fetches++;
+        return FakeResponse.ok({
+          'url': '/media/files/m1/thumb?expires=$fetches&sig=${'a' * 64}',
+          'expires_at': '2030-01-01T00:00:00Z',
+        });
+      }, now: () => DateTime.utc(2026));
+      final old = await media.link('m1', MediaSize.thumb);
+      expect(await media.link('m1', MediaSize.thumb), old);
+      media.forget('m1', MediaSize.thumb);
+      expect(await media.link('m1', MediaSize.thumb), isNot(old));
+      expect(fetches, 2);
+    });
     test('cached until ~30 seconds before expiry', () async {
       var now = DateTime.utc(2026, 10, 23, 10);
       var fetches = 0;

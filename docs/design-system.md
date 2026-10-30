@@ -12,7 +12,7 @@ Five rules, enforced through `mobile/lib/core/design.dart` and the shared kit:
 4. **Four sizes, two weights.** 28 / 20 / 16 / 13 at 400 / 600 only, all in **Plus Jakarta Sans** (owner rejected the serif, 28 Oct 2026). Headlines use −0.02em tracking. Body stays 16.
 5. **No overflow.** Screens scroll as one list; one-line labels ellipsize or scale down (`RsvpBar`) instead of breaking words; decorative covers step aside at large text.
 
-Surfaces are flat: no gradients or shadows except one soft shadow on the floating dock. Buttons are pills (`CircleRadius.button` 24); cards, tiles and menus 16; sheets 24.
+Surfaces are flat: no gradients or decorative shadows. Owner30Oct: replace the floating pill dock with a slim full-width navigation bar and a subtle top separator. Buttons are pills (`CircleRadius.button` 24); cards, tiles and menus 16; sheets 24.
 
 Screen patterns:
 - **Home:** the logo and "Circle", then "Your circles": round group photos that filter Memories (tap again for all). The brand lockup no longer sits on Home; it stays on Welcome and access screens.
@@ -280,3 +280,9 @@ The signed-in shell shows CIRCLE and the current screen title, without a server 
 You starts with a raised lavender profile card using the shared CircleDepth.profilePanel lighting, complete name wrapping, and working Edit profile / Your groups actions. Editing a display name uses the existing reviewed PATCH /me operation through the API client and session notifier. Success updates session identity and stored account details; validation and save failures preserve the previous name and keep the form available for retry.
 
 The introductory paragraph is removed. Saved Memories uses a bookmark illustration, concise explanation and Browse Memories action when empty. Populated saved items retain their existing navigation. Settings rows remain simple; unsupported live features are not invented to fill empty space. Verify narrow phones at 200% text, dark mode, error recovery and name persistence.
+
+## Immersive scrolling and single headings (owner, 30 Oct 2026)
+
+Root tabs use one floating header with one title and one create action. Do not render compact and expanded titles simultaneously. Home, Chats, Groups, Events and You use the same header behavior: scroll down to clear the header, scroll up to restore it. The slim bottom navigation hides after a deliberate downward vertical drag and returns on upward movement or route change. Horizontal carousels do not hide it; accessibility navigation keeps it visible, and reduced-motion settings disable the transition. Full-screen conversations retain their own header/composer. Safe system insets remain respected.
+
+Failed Memory photos offer an explicit retry that refreshes the signed URL and evicts the failed image. Keep the media frame stable to avoid scroll jumps; use neutral error styling, no purple oversized icon or centered count badge over an error. Live photo recovery still needs a real-device/server check.
