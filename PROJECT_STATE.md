@@ -40,6 +40,7 @@ Updated:30 October2026. Source, production deployment, APK publication and devic
 - No physical Android device attached; installation, native picking, two-phone voting and actual push/taps/reminders remain owner acceptance checks.
 
 ## Signing and APK
+- Current1.0.26+27: 64735850bytes; SHA2562df36b51ce398a12cbd1f6624e76ccf1e201983da22db6917c5aa73a61e691ac. Existing signing identity verified; immutable APK/metadata/site buttons published together. iOS run41018674534 initiated from0cb7aa4; Apple completion separate.
 - New current Android1.0.25+26: 64637550bytes, SHA25680af7eb27596db9588ffb7ede3b65bc992f80ff4e419fdb90064b82a187ccabb, immutable APK26 and release metadata/both buttons updated. Signature matches established build20 identity; production API/pushtrue verified from command. Build236.6s. Prior APK24 unchanged. Hosting deployment and device acceptance separate; see docs/mobile-release-1.0.25.md.
 - Previous signed1.0.23+24: 66,605,182bytes, SHA2566eab8373df8e4a8b188cdb971a44490e06101a4dbc6ed331c7d3b265acae8561, same established certificate verified. Immutable APK24/metadata/both site buttons agree; APK23 unchanged. Actual production build sets CIRCLE_PUSH_ENABLED=true. See docs/mobile-release-1.0.23.md. No physical-device notification verification or live-site deployment.
 - Pulled build21 SHA256daaae50082e21f0c35a40e0300b84869239d1ffcabfe8c43efafc4af4b411ab5 matches metadata but apksigner DOES NOT VERIFY (Missing META-INF/MANIFEST.MF). Build20 passes v2; do not trust metadata alone or overwrite21.
