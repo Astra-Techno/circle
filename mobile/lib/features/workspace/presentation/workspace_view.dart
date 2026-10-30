@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
-import '../../../core/design.dart';
 import '../application/workspace_providers.dart';
 
 /// Shows loading/error states for the workspace and builds [builder] with
@@ -16,14 +15,15 @@ class WorkspaceView extends ConsumerWidget {
         // Keep showing data while a mutation reloads it.
         skipLoadingOnReload: true,
         data: builder,
-        loading: () => const CircleSkeletonPage(
-          shape: CircleSkeletonShape.cards,
-          count: 3,
-          label: 'Loading your circles',
+        loading: () => const CircleStatePanel(
+          child: CircleSkeleton(
+            shape: CircleSkeletonShape.cards,
+            count: 3,
+            label: 'Loading your circles',
+          ),
         ),
-        error: (error, _) => ReadingPane(
-          child: ListView(
-            padding: CircleInsets.page,
+        error: (error, _) => CircleStatePanel(
+          child: Column(
             children: [
               CircleEmpty(
                 title: 'Your circles couldn’t load',

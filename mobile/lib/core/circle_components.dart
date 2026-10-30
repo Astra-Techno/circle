@@ -221,6 +221,61 @@ class CircleSceneTile extends StatelessWidget {
   }
 }
 
+/// Keeps root-tab navigation available during loading and recovery states.
+class CircleStatePanel extends StatelessWidget {
+  const CircleStatePanel({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => CustomScrollView(
+    slivers: [
+      if (CircleTabHeaderData.of(context) != null) const CircleFloatingHeader(),
+      SliverPadding(
+        padding: CircleInsets.page,
+        sliver: SliverToBoxAdapter(child: child),
+      ),
+    ],
+  );
+}
+
+/// Marks a page whose title is already owned by its toolbar.
+class CirclePageTitle extends InheritedWidget {
+  const CirclePageTitle({super.key, required this.title, required super.child});
+  final String title;
+  @override
+  bool updateShouldNotify(CirclePageTitle oldWidget) =>
+      title != oldWidget.title;
+}
+
+/// A keyboard-safe editor with a reachable primary action. At large text sizes
+/// the action scrolls with the form so it cannot consume the whole viewport.
+class CircleEditorLayout extends StatelessWidget {
+  const CircleEditorLayout({super.key, required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.textScalerOf(context).scale(16) > 24) {
+      return ListView(padding: CircleInsets.form, children: children);
+    }
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: CircleInsets.form,
+            children: children.sublist(0, children.length - 1),
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: CircleInsets.page,
+            child: SizedBox(width: double.infinity, child: children.last),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// The short intro at the top of a page. The app bar already names the
 /// page, so this stays calm: one warm line and an optional explanation.
 class CircleHeading extends StatelessWidget {
@@ -250,12 +305,17 @@ class CircleHeading extends StatelessWidget {
             ),
             const SizedBox(height: Space.xs),
           ],
-          Text(
-            // Intros are one calm line; manual breaks were for big headlines.
-            title.replaceAll('\n', ' '),
-            style: theme.textTheme.titleLarge,
-          ),
-          const SizedBox(height: Space.sm),
+          if (context
+                  .dependOnInheritedWidgetOfExactType<CirclePageTitle>()
+                  ?.title !=
+              title) ...[
+            Text(
+              // Intros are one calm line; manual breaks were for big headlines.
+              title.replaceAll('\n', ' '),
+              style: theme.textTheme.titleLarge,
+            ),
+            const SizedBox(height: Space.sm),
+          ],
           Text(
             subtitle,
             style: theme.textTheme.bodyMedium?.copyWith(

@@ -92,7 +92,8 @@ class _InviteLinkScreenState extends ConsumerState<InviteLinkScreen> {
   }
 
   Future<InvitePreview> _load() =>
-      ref.read(circleWorkspaceProvider.notifier).previewInvite(widget.token);
+      ref.read(circleWorkspaceProvider.notifier).previewInvite(widget.token)
+        ..ignore();
 
   Future<void> _join(GroupPreview group) async {
     setState(() => _busy = true);
@@ -104,7 +105,9 @@ class _InviteLinkScreenState extends ConsumerState<InviteLinkScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (outcome == null) {
-      setState(() => _preview = _load());
+      setState(() {
+        _preview = _load();
+      });
       return;
     }
     showCircleMessage(
@@ -135,7 +138,19 @@ class _InviteLinkScreenState extends ConsumerState<InviteLinkScreen> {
             return ListView(
               padding: CircleInsets.form,
               children: [
-                if (preview == null)
+                if (snapshot.hasError)
+                  CircleEmpty(
+                    title: 'This invite couldn’t load',
+                    message:
+                        'Check your connection and try again. Your invitation has not been changed.',
+                    action: FilledButton(
+                      onPressed: () => setState(() {
+                        _preview = _load();
+                      }),
+                      child: const Text('Try again'),
+                    ),
+                  )
+                else if (preview == null)
                   const CircleSkeleton(
                     shape: CircleSkeletonShape.cards,
                     count: 1,

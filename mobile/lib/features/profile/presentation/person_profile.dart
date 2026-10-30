@@ -1,5 +1,5 @@
-import '../../groups/presentation/group_photos.dart';
 import '../application/profile_providers.dart';
+import '../../groups/presentation/group_photos.dart';
 import 'profile_photo.dart';
 import 'server_blocking.dart';
 import '../../chat/application/live_chat.dart';
@@ -93,27 +93,6 @@ class PersonProfileScreen extends ConsumerWidget {
                   name: name,
                 ),
               ),
-              Center(
-                child: TextButton.icon(
-                  onPressed: () {
-                    ref.read(personPhotoCacheProvider).clear();
-                    ref.invalidate(
-                      sharedProfilePhotoBytesProvider((
-                        person: person,
-                        kind: ProfilePhotoKind.avatar,
-                      )),
-                    );
-                    ref.invalidate(
-                      sharedProfilePhotoBytesProvider((
-                        person: person,
-                        kind: ProfilePhotoKind.cover,
-                      )),
-                    );
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Refresh photos'),
-                ),
-              ),
             ],
             const SizedBox(height: Space.md),
             Semantics(
@@ -141,14 +120,53 @@ class PersonProfileScreen extends ConsumerWidget {
                 icon: const Icon(Icons.chat_bubble_outline),
                 label: Text('Message $name'),
               ),
+            ExpansionTile(
+              title: const Text('Photo options'),
+              children: [
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () {
+                      ref.read(personPhotoCacheProvider).clear();
+                      ref.invalidate(
+                        sharedProfilePhotoBytesProvider((
+                          person: person,
+                          kind: ProfilePhotoKind.avatar,
+                        )),
+                      );
+                      ref.invalidate(
+                        sharedProfilePhotoBytesProvider((
+                          person: person,
+                          kind: ProfilePhotoKind.cover,
+                        )),
+                      );
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh photos'),
+                  ),
+                ),
+              ],
+            ),
             const CircleSectionTitle('Recent Memories'),
             MemoryGrid(
               memories: [
                 for (final memory in workspace.memories)
                   if (memory.authorId == person) memory,
               ],
-              empty: '$name hasn’t shared recently in your circles.',
+              empty: workspace.hasMoreMemories
+                  ? 'No Memories from $name in the items loaded so far.'
+                  : 'No Memories from $name are currently shared with you.',
             ),
+            if (workspace.hasMoreMemories)
+              TextButton.icon(
+                onPressed: () => runCalmly(
+                  context,
+                  () => ref
+                      .read(circleWorkspaceProvider.notifier)
+                      .loadMoreMemories(),
+                ),
+                icon: const Icon(Icons.expand_more),
+                label: const Text('Load older Memories'),
+              ),
             CircleSectionTitle('Groups in common (${shared.length})'),
             for (final group in shared)
               CircleRow(

@@ -1,6 +1,7 @@
 # CIRCLE project state
 
 Updated:30 October2026. Source, production deployment, APK publication and device acceptance are separate facts.
+- Release work: 1.0.26+27 packages UI audit fixes (recovery, focused layouts, route titles, dirty-form guards, validation, profile pagination and settings clarity). UI05 production photo root cause and physical-device acceptance remain unverified. See docs/ui-audit-2026-10-30.md.
 
 ## Recent committed app changes (ab18b02, reviewed 30 Oct)
 - WhatsApp-style live Chats (inbox last message/time/unread, full-screen conversation, tailed bubbles, long-press options, auto read), 20px in-page headings, no tagline/duplicate create buttons, live Events cards/detail cleanup, group photo camera badges. Server: GET /chats adds other_id/last_message and activity ordering (OpenAPI 0.4.4) with test. pubspec 1.0.24+25.
@@ -29,6 +30,7 @@ Updated:30 October2026. Source, production deployment, APK publication and devic
 - Other backlog: video/documents, forwarding/sharing, activity/search, albums, broader profile-field privacy/deletion/export/recovery. See live-polls.md/live-chat-events.md/pending-work.md.
 
 ## Verified checks
+- UI release1.0.26+27: analyzer clean; final focused50 pass. Full667pass/1skip/18fail before final corrections;13 Windows golden differences and5 non-golden failures, all5 covered and passed in final focused run. No backend changes. Production photo diagnosis/native acceptance pending.
 - Review30Oct: focused live Chats/Events/media/Memories/server-mode/design tests69 passed. No backend changes or production API checks performed in this review.
 - Push24: full Flutter746 pass/1skip/13 existing Windows golden differences on Linux; no functional failures. Analyzer/format clean. The initial full run exposed6 UTC-alias settings failures; final run resolves them and adds daytime background/alias/Events regression coverage. No backend changes.
 - Current full backend228 tests/4,136 assertions pass; PHPStan/composer valid. First-save, partial-category, saved opt-out/reenable and legacy-map regressions covered. Run one circle_test suite at a time with COMPOSER_PROCESS_TIMEOUT=900.

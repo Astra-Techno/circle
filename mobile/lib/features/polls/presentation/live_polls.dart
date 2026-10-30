@@ -1,3 +1,4 @@
+import '../../../core/form_exit_guard.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -303,6 +304,10 @@ class LivePollForm extends ConsumerStatefulWidget {
 }
 
 class _FormState extends ConsumerState<LivePollForm> {
+  bool _submitted = false;
+  final _questionFocus = FocusNode();
+  String? _validation;
+  final _edits = FormExitController();
   final _question = TextEditingController();
   final _options = [TextEditingController(), TextEditingController()];
   String? _group, _key, _signature;
@@ -321,6 +326,7 @@ class _FormState extends ConsumerState<LivePollForm> {
 
   @override
   void dispose() {
+    _questionFocus.dispose();
     _question.dispose();
     for (final c in _options) {
       c.dispose();
@@ -338,233 +344,301 @@ class _FormState extends ConsumerState<LivePollForm> {
             .toList() ??
         [];
     final selected = groups.any((g) => g.id == _group) ? _group : null;
-    return ReadingPane(
-      child: ListView(
-        padding: CircleInsets.form,
-        children: [
-          const CircleHeading(
-            title: 'Create a poll',
-            subtitle: 'A question, a few choices, your circle.',
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: selected,
-            decoration: const InputDecoration(labelText: 'Share with'),
-            isExpanded: true,
-            items: [
-              for (final g in groups)
-                DropdownMenuItem(value: g.id, child: Text(g.name)),
-            ],
-            onChanged: _busy || (widget.event != null && widget.group != null)
-                ? null
-                : (v) => setState(() => _group = v),
-          ),
-          TextField(
-            controller: _question,
-            enabled: !_busy,
-            maxLength: 500,
-            decoration: const InputDecoration(labelText: 'Question'),
-          ),
-          for (final (i, c) in _options.indexed)
-            TextField(
-              controller: c,
-              enabled: !_busy,
-              maxLength: 200,
+    return UnsavedForm(
+      controller: _edits,
+      fields: [_question, ..._options],
+      fingerprint: () => jsonEncode([
+        _question.text,
+        _options.map((c) => c.text).toList(),
+        _group,
+        _multiple,
+        _anonymous,
+        _add,
+        _change,
+        _visibility,
+        _end?.toIso8601String(),
+      ]),
+      child: ReadingPane(
+        child: CircleEditorLayout(
+          children: [
+            const CircleHeading(
+              title: 'Create a poll',
+              subtitle: 'A question, a few choices, your circle.',
+            ),
+            DropdownButtonFormField<String>(
+              initialValue: selected,
               decoration: InputDecoration(
-                labelText: 'Option ${i + 1}',
-                suffixIcon: _options.length <= 2
-                    ? null
-                    : IconButton(
-                        tooltip: 'Remove option ${i + 1}',
-                        onPressed: _busy
-                            ? null
-                            : () => setState(() {
-                                _options.removeAt(i).dispose();
-                              }),
-                        icon: const Icon(Icons.close),
-                      ),
+                labelText: 'Share with',
+                errorText: _submitted && selected == null
+                    ? 'Choose a group.'
+                    : null,
               ),
-            ),
-          if (_options.length < 12)
-            TextButton.icon(
-              onPressed: _busy
+              isExpanded: true,
+              items: [
+                for (final g in groups)
+                  DropdownMenuItem(value: g.id, child: Text(g.name)),
+              ],
+              onChanged: _busy || (widget.event != null && widget.group != null)
                   ? null
-                  : () => setState(() => _options.add(TextEditingController())),
-              icon: const Icon(Icons.add),
-              label: const Text('Add option'),
+                  : (v) => setState(() => _group = v),
             ),
-          ExpansionTile(
-            title: const Text('More options'),
-            children: [
-              SwitchListTile(
-                title: const Text('Multiple choices'),
-                value: _multiple,
-                onChanged: _busy ? null : (v) => setState(() => _multiple = v),
+            TextField(
+              controller: _question,
+              focusNode: _questionFocus,
+              onChanged: (_) {
+                if (_submitted) setState(() {});
+              },
+              enabled: !_busy,
+              maxLength: 500,
+              decoration: InputDecoration(
+                labelText: 'Question',
+                errorText: _submitted && _question.text.trim().isEmpty
+                    ? 'Enter a question.'
+                    : null,
               ),
-              SwitchListTile(
-                title: const Text('Anonymous votes'),
-                subtitle: const Text(
-                  'Nobody in the app can see who chose each option.',
+            ),
+            for (final (i, c) in _options.indexed)
+              TextField(
+                controller: c,
+                enabled: !_busy,
+                maxLength: 200,
+                decoration: InputDecoration(
+                  labelText: 'Option ${i + 1}',
+                  errorText:
+                      _submitted &&
+                          (c.text.trim().isEmpty ||
+                              _options
+                                      .where(
+                                        (v) =>
+                                            v.text.trim().toLowerCase() ==
+                                            c.text.trim().toLowerCase(),
+                                      )
+                                      .length >
+                                  1)
+                      ? 'Enter a different, non-empty option.'
+                      : null,
+                  suffixIcon: _options.length <= 2
+                      ? null
+                      : IconButton(
+                          tooltip: 'Remove option ${i + 1}',
+                          onPressed: _busy
+                              ? null
+                              : () => setState(() {
+                                  _options.removeAt(i).dispose();
+                                }),
+                          icon: const Icon(Icons.close),
+                        ),
                 ),
-                value: _anonymous,
-                onChanged: _busy ? null : (v) => setState(() => _anonymous = v),
               ),
-              SwitchListTile(
-                title: const Text('Members can add options'),
-                value: _add,
-                onChanged: _busy ? null : (v) => setState(() => _add = v),
-              ),
-              SwitchListTile(
-                title: const Text('Allow changing votes'),
-                value: _change,
-                onChanged: _busy ? null : (v) => setState(() => _change = v),
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: _visibility,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Show results'),
-                items: const [
-                  DropdownMenuItem(value: 'always', child: Text('Always')),
-                  DropdownMenuItem(
-                    value: 'after_voting',
-                    child: Text('After voting'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'after_closing',
-                    child: Text('After closing'),
-                  ),
-                ],
-                onChanged: _busy
-                    ? null
-                    : (v) => setState(() => _visibility = v!),
-              ),
-              TextButton(
+            if (_options.length < 12)
+              TextButton.icon(
                 onPressed: _busy
                     ? null
-                    : () async {
-                        final d = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now().add(
-                            const Duration(days: 1),
-                          ),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime(2037, 12, 31),
-                        );
-                        if (d == null || !context.mounted) return;
-                        final t = await showTimePicker(
-                          context: context,
-                          initialTime: const TimeOfDay(hour: 18, minute: 0),
-                        );
-                        if (t != null && mounted) {
-                          setState(
-                            () => _end = DateTime(
-                              d.year,
-                              d.month,
-                              d.day,
-                              t.hour,
-                              t.minute,
-                            ),
-                          );
-                        }
-                      },
-                child: Text(
-                  _end == null
-                      ? 'Set an end time (optional)'
-                      : 'Ends $_end · device time',
-                ),
+                    : () =>
+                          setState(() => _options.add(TextEditingController())),
+                icon: const Icon(Icons.add),
+                label: const Text('Add option'),
               ),
-              if (_end != null)
-                TextButton(
-                  onPressed: _busy ? null : () => setState(() => _end = null),
-                  child: const Text('Remove end time'),
+            ExpansionTile(
+              title: const Text('More options'),
+              children: [
+                SwitchListTile(
+                  title: const Text('Multiple choices'),
+                  value: _multiple,
+                  onChanged: _busy
+                      ? null
+                      : (v) => setState(() => _multiple = v),
                 ),
-            ],
-          ),
-          FilledButton.icon(
-            onPressed: _busy
-                ? null
-                : () async {
-                    final api = ref.read(livePollApiProvider), g = selected;
-                    if (g == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Choose a group first.')),
-                      );
-                      return;
-                    }
-                    final eventId = widget.event == null
-                        ? null
-                        : int.tryParse(widget.event!);
-                    if (widget.event != null &&
-                        (eventId == null || eventId < 1)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'This event link is invalid. Open the event again.',
+                SwitchListTile(
+                  title: const Text('Anonymous votes'),
+                  subtitle: const Text(
+                    'Nobody in the app can see who chose each option.',
+                  ),
+                  value: _anonymous,
+                  onChanged: _busy
+                      ? null
+                      : (v) => setState(() => _anonymous = v),
+                ),
+                SwitchListTile(
+                  title: const Text('Members can add options'),
+                  value: _add,
+                  onChanged: _busy ? null : (v) => setState(() => _add = v),
+                ),
+                SwitchListTile(
+                  title: const Text('Allow changing votes'),
+                  value: _change,
+                  onChanged: _busy ? null : (v) => setState(() => _change = v),
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: _visibility,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Show results'),
+                  items: const [
+                    DropdownMenuItem(value: 'always', child: Text('Always')),
+                    DropdownMenuItem(
+                      value: 'after_voting',
+                      child: Text('After voting'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'after_closing',
+                      child: Text('After closing'),
+                    ),
+                  ],
+                  onChanged: _busy
+                      ? null
+                      : (v) => setState(() => _visibility = v!),
+                ),
+                TextButton(
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          final d = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now().add(
+                              const Duration(days: 1),
+                            ),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2037, 12, 31),
+                          );
+                          if (d == null || !context.mounted) return;
+                          final t = await showTimePicker(
+                            context: context,
+                            initialTime: const TimeOfDay(hour: 18, minute: 0),
+                          );
+                          if (t != null && mounted) {
+                            setState(
+                              () => _end = DateTime(
+                                d.year,
+                                d.month,
+                                d.day,
+                                t.hour,
+                                t.minute,
+                              ),
+                            );
+                          }
+                        },
+                  child: Text(
+                    _end == null
+                        ? 'Set an end time (optional)'
+                        : 'Ends $_end · device time',
+                  ),
+                ),
+                if (_end != null)
+                  TextButton(
+                    onPressed: _busy ? null : () => setState(() => _end = null),
+                    child: const Text('Remove end time'),
+                  ),
+              ],
+            ),
+            if (_validation != null)
+              Semantics(liveRegion: true, child: Text(_validation!)),
+            FilledButton.icon(
+              onPressed: _busy
+                  ? null
+                  : () async {
+                      setState(() {
+                        _submitted = true;
+                        _validation = null;
+                      });
+                      final api = ref.read(livePollApiProvider), g = selected;
+                      if (g == null) {
+                        setState(() => _validation = 'Choose a group first.');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Choose a group first.'),
                           ),
-                        ),
-                      );
-                      return;
-                    }
-                    if (_end != null && !_end!.isAfter(DateTime.now())) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Choose a future end time.'),
-                        ),
-                      );
-                      return;
-                    }
-                    final labels = _options.map((c) => c.text.trim()).toList();
-                    if (_question.text.trim().isEmpty ||
-                        labels.any((v) => v.isEmpty) ||
-                        labels.map((v) => v.toLowerCase()).toSet().length !=
-                            labels.length) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Add a question and at least two different, non-empty options.',
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-                    final body = <String, Object?>{
-                      'question': _question.text.trim(),
-                      'options': _options.map((c) => c.text.trim()).toList(),
-                      'poll_type': _multiple ? 'multiple' : 'single',
-                      'anonymous': _anonymous,
-                      'allow_add_options': _add,
-                      'allow_change_vote': _change,
-                      'results_visibility': _visibility,
-                      'closes_at': _end?.toUtc().toIso8601String().replaceFirst(
-                        '.000Z',
-                        'Z',
-                      ),
-                      if (widget.event != null) 'event_id': eventId,
-                    };
-                    final signature = jsonEncode([g, body]);
-                    if (signature != _signature) {
-                      _signature = signature;
-                      _key =
-                          'circle-poll-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
-                    }
-                    setState(() => _busy = true);
-                    final result = await runCalmly(
-                      context,
-                      () => api.create(g, {...body, 'client_id': _key}),
-                    );
-                    if (!mounted) return;
-                    setState(() => _busy = false);
-                    if (result != null) {
-                      api.scope.check();
-                      refreshPolls(ref);
-                      if (context.mounted) {
-                        context.go('/polls/p/${result['id']}');
+                        );
+                        return;
                       }
-                    }
-                  },
-            icon: const Icon(Icons.poll_outlined),
-            label: Text(_busy ? 'Creating…' : 'Post poll'),
-          ),
-        ],
+                      final eventId = widget.event == null
+                          ? null
+                          : int.tryParse(widget.event!);
+                      if (widget.event != null &&
+                          (eventId == null || eventId < 1)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'This event link is invalid. Open the event again.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      if (_end != null && !_end!.isAfter(DateTime.now())) {
+                        setState(
+                          () => _validation = 'Choose a future end time.',
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Choose a future end time.'),
+                          ),
+                        );
+                        return;
+                      }
+                      final labels = _options
+                          .map((c) => c.text.trim())
+                          .toList();
+                      if (_question.text.trim().isEmpty ||
+                          labels.any((v) => v.isEmpty) ||
+                          labels.map((v) => v.toLowerCase()).toSet().length !=
+                              labels.length) {
+                        setState(
+                          () => _validation =
+                              'Add a question and at least two different, non-empty options.',
+                        );
+                        if (_question.text.trim().isEmpty) {
+                          _questionFocus.requestFocus();
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Add a question and at least two different, non-empty options.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      final body = <String, Object?>{
+                        'question': _question.text.trim(),
+                        'options': _options.map((c) => c.text.trim()).toList(),
+                        'poll_type': _multiple ? 'multiple' : 'single',
+                        'anonymous': _anonymous,
+                        'allow_add_options': _add,
+                        'allow_change_vote': _change,
+                        'results_visibility': _visibility,
+                        'closes_at': _end
+                            ?.toUtc()
+                            .toIso8601String()
+                            .replaceFirst('.000Z', 'Z'),
+                        if (widget.event != null) 'event_id': eventId,
+                      };
+                      final signature = jsonEncode([g, body]);
+                      if (signature != _signature) {
+                        _signature = signature;
+                        _key =
+                            'circle-poll-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
+                      }
+                      setState(() => _busy = true);
+                      final result = await runCalmly(
+                        context,
+                        () => api.create(g, {...body, 'client_id': _key}),
+                      );
+                      if (!mounted) return;
+                      setState(() => _busy = false);
+                      if (result != null) {
+                        api.scope.check();
+                        _edits.commit();
+                        refreshPolls(ref);
+                        if (context.mounted) {
+                          context.go('/polls/p/${result['id']}');
+                        }
+                      }
+                    },
+              icon: const Icon(Icons.poll_outlined),
+              label: Text(_busy ? 'Creating…' : 'Post poll'),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -186,8 +186,21 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                       for (final memory in workspace.memories)
                         if (memory.authorId == workspace.viewer) memory,
                     ],
-                    empty: 'Memories you share appear here.',
+                    empty: workspace.hasMoreMemories
+                        ? 'Your Memories may be in older items. Load more below.'
+                        : 'Memories you share appear here.',
                   ),
+                  if (workspace.hasMoreMemories)
+                    TextButton.icon(
+                      onPressed: () => runCalmly(
+                        context,
+                        () => ref
+                            .read(circleWorkspaceProvider.notifier)
+                            .loadMoreMemories(),
+                      ),
+                      icon: const Icon(Icons.expand_more),
+                      label: const Text('Load older Memories'),
+                    ),
                   const CircleSectionTitle('Saved Memories'),
                   ScopedMemoryList(
                     query: const MemoryQuery(saved: true),
@@ -252,7 +265,6 @@ class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final features = ref.watch(circleFeaturesProvider);
     return ReadingPane(
       child: ListView(
@@ -293,17 +305,16 @@ class AccountScreen extends ConsumerWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/you/account/sessions'),
             ),
-            const CircleSectionTitle('Connection'),
-            const Text('Connected server'),
-            const SizedBox(height: Space.sm),
-            Text(features.host),
+            ExpansionTile(
+              title: const Text('Connection details'),
+              children: [
+                ListTile(
+                  title: const Text('Connected server'),
+                  subtitle: Text(features.host),
+                ),
+              ],
+            ),
           ],
-          const CircleSectionTitle('Comes before launch'),
-          Text(
-            'Choosing a language, exporting your data and deleting your '
-            'account come in a later milestone.',
-            style: theme.textTheme.bodyMedium,
-          ),
           const SizedBox(height: Space.section),
           CircleEmpty(
             title: 'Quiet by design',

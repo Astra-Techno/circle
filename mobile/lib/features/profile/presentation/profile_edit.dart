@@ -1,3 +1,4 @@
+import '../../../core/form_exit_guard.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,7 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
+  final _edits = FormExitController();
   final _form = GlobalKey<FormState>();
   final _fields = <String, TextEditingController>{
     for (final key in [
@@ -113,6 +115,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       return;
     }
     if (error == null) {
+      _edits.commit();
       showCircleMessage(context, 'Profile updated.');
       context.pop();
     } else {
@@ -172,89 +175,94 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         ),
       );
     }
-    return ReadingPane(
-      child: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: CircleInsets.form,
-              children: [
-                const CircleHeading(
-                  title: 'Edit profile',
-                  subtitle: 'Make this little space feel like you.',
-                ),
-                Form(
-                  key: _form,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const CircleSectionTitle('Profile'),
-                      const Text(
-                        'Your name and bio are visible to members of your groups.',
-                      ),
-                      const SizedBox(height: Space.lg),
-                      _field('display_name', 'Display name'),
-                      _field('about', 'Bio (optional)', max: 500, lines: 3),
-                      const CircleSectionTitle('Personal details'),
-                      const Text(
-                        'Only you can see these optional details. Leave a field empty to remove it.',
-                      ),
-                      const SizedBox(height: Space.lg),
-                      _field('current_city', 'Current city (optional)'),
-                      _field('hometown', 'Hometown (optional)'),
-                      _field('work', 'Work (optional)'),
-                      _field(
-                        'education',
-                        'Education (optional)',
-                        max: 150,
-                        lines: 2,
-                      ),
-                      if (_mobile.isNotEmpty)
-                        TextFormField(
-                          initialValue: _mobile,
-                          readOnly: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Mobile number (read-only)',
-                          ),
-                        ),
-                      if (_error != null) ...[
-                        const SizedBox(height: Space.lg),
-                        Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            _error!,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                          ),
-                        ),
-                      ],
-                    ],
+    return UnsavedForm(
+      controller: _edits,
+      fields: _fields.values.toList(),
+      fingerprint: () => _fields.values.map((c) => c.text).join('\u0000'),
+      child: ReadingPane(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: CircleInsets.form,
+                children: [
+                  const CircleHeading(
+                    title: 'Edit profile',
+                    subtitle: 'Make this little space feel like you.',
                   ),
-                ),
-              ],
+                  Form(
+                    key: _form,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const CircleSectionTitle('Profile'),
+                        const Text(
+                          'Your name and bio are visible to members of your groups.',
+                        ),
+                        const SizedBox(height: Space.lg),
+                        _field('display_name', 'Display name'),
+                        _field('about', 'Bio (optional)', max: 500, lines: 3),
+                        const CircleSectionTitle('Personal details'),
+                        const Text(
+                          'Only you can see these optional details. Leave a field empty to remove it.',
+                        ),
+                        const SizedBox(height: Space.lg),
+                        _field('current_city', 'Current city (optional)'),
+                        _field('hometown', 'Hometown (optional)'),
+                        _field('work', 'Work (optional)'),
+                        _field(
+                          'education',
+                          'Education (optional)',
+                          max: 150,
+                          lines: 2,
+                        ),
+                        if (_mobile.isNotEmpty)
+                          TextFormField(
+                            initialValue: _mobile,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Mobile number (read-only)',
+                            ),
+                          ),
+                        if (_error != null) ...[
+                          const SizedBox(height: Space.lg),
+                          Semantics(
+                            liveRegion: true,
+                            child: Text(
+                              _error!,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(Space.lg),
-            child: Wrap(
-              spacing: Space.sm,
-              runSpacing: Space.sm,
-              alignment: WrapAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: _saving ? null : () => context.pop(),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: Text(_saving ? 'Saving…' : 'Save changes'),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.all(Space.lg),
+              child: Wrap(
+                spacing: Space.sm,
+                runSpacing: Space.sm,
+                alignment: WrapAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: _saving ? null : () => context.pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: _saving ? null : _save,
+                    child: Text(_saving ? 'Saving…' : 'Save changes'),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

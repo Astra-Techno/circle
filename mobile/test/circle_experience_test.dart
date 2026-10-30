@@ -344,6 +344,8 @@ void main() {
         find.textContaining('Share this link only with people you know.'),
         findsOneWidget,
       );
+      await tester.tap(find.text('Link details'));
+      await tester.pumpAndSettle();
       expect(find.text('circle://invite/sunday-miles-preview'), findsOneWidget);
       expect(find.textContaining('3 of 25 uses'), findsOneWidget);
       await tapText(tester, 'More options');

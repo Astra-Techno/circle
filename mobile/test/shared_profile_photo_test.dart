@@ -50,6 +50,8 @@ void main() {
       expect(server.adapter.count('GET', '/profiles/$owner/photos/cover'), 1);
       expect(server.adapter.count('GET', '/me/photos/avatar'), 0);
       server.profilePhotos.clear();
+      await tester.tap(find.text('Photo options'));
+      await settle(tester);
       await tester.tap(find.text('Refresh photos'));
       await settle(tester);
       expect(find.byKey(ValueKey('shared-avatar-$owner')), findsNothing);

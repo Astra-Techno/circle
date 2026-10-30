@@ -36,6 +36,9 @@ void main() {
     await reveal(tester, find.text('Account'));
     await tester.tap(find.text('Account'));
     await settle(tester);
+    await reveal(tester, find.text('Connection details'));
+    await tester.tap(find.text('Connection details'));
+    await settle(tester);
     await reveal(tester, find.text('circle.test'));
     expect(find.text('circle.test'), findsOneWidget);
   });

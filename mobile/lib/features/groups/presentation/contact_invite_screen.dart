@@ -27,7 +27,7 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _choose();
+      if (mounted && ref.read(inviteShareBridgeProvider).supported) _choose();
     });
   }
 
@@ -168,11 +168,18 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-            FilledButton.icon(
-              onPressed: _busy ? null : _choose,
-              icon: const Icon(Icons.person_add_alt_1),
-              label: const Text('Choose contact'),
-            ),
+            if (ref.watch(inviteShareBridgeProvider).supported)
+              FilledButton.icon(
+                onPressed: _busy ? null : _choose,
+                icon: const Icon(Icons.person_add_alt_1),
+                label: const Text('Choose contact'),
+              )
+            else ...[
+              const CircleNote(
+                'Copy the invitation and paste it into Messages or WhatsApp. You choose who receives it.',
+              ),
+              const SizedBox(height: Space.sm),
+            ],
             const SizedBox(height: Space.sm),
             OutlinedButton.icon(
               onPressed: _busy ? null : _copy,

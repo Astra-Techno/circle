@@ -992,30 +992,34 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
             ? (contacts
                   ? _contactsList(_earlier, const {'has_more': false})
                   : _inbox(const {'has_more': false}, _earlier))
-            : const CircleSkeletonPage(
-                shape: CircleSkeletonShape.cards,
-                count: 3,
-                label: 'Loading chats',
+            : const CircleStatePanel(
+                child: CircleSkeleton(
+                  shape: CircleSkeletonShape.cards,
+                  count: 3,
+                  label: 'Loading chats',
+                ),
               ),
-        error: (_, _) => Column(
-          children: [
-            if (id != null)
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: BackButton(onPressed: _back),
+        error: (_, _) => CircleStatePanel(
+          child: Column(
+            children: [
+              if (id != null)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: BackButton(onPressed: _back),
+                ),
+              CircleEmpty(
+                title: 'Chats couldn’t load',
+                message: 'Check your connection and access.',
+                action: TextButton(
+                  onPressed: () {
+                    _refresh();
+                    ref.invalidate(liveChatContactsProvider);
+                  },
+                  child: const Text('Try again'),
+                ),
               ),
-            CircleEmpty(
-              title: 'Chats couldn’t load',
-              message: 'Check your connection and access.',
-              action: TextButton(
-                onPressed: () {
-                  _refresh();
-                  ref.invalidate(liveChatContactsProvider);
-                },
-                child: const Text('Try again'),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         data: (data) {
           final items = ApiJson.list(data['items']).map(ApiJson.map).toList();

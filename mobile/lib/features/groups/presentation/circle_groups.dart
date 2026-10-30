@@ -1,3 +1,4 @@
+import '../../../core/form_exit_guard.dart';
 import 'group_photos.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -261,6 +262,7 @@ class CircleCreateGroup extends ConsumerStatefulWidget {
 }
 
 class _CircleCreateGroupState extends ConsumerState<CircleCreateGroup> {
+  final _edits = FormExitController();
   final _name = TextEditingController();
   CircleType _type = CircleType.friends;
   bool _listed = true;
@@ -287,7 +289,10 @@ class _CircleCreateGroupState extends ConsumerState<CircleCreateGroup> {
             parentId: widget.parentId,
             hidden: !_listed,
           );
-      if (mounted) context.go('/groups/g/${group.id}');
+      if (mounted) {
+        _edits.commit();
+        context.go('/groups/g/${group.id}');
+      }
     } on CircleFailure catch (error) {
       if (mounted) setState(() => _error = error.message);
     } finally {
@@ -320,78 +325,83 @@ class _CircleCreateGroupState extends ConsumerState<CircleCreateGroup> {
           );
         }
       }
-      return ReadingPane(
-        child: ListView(
-          padding: CircleInsets.form,
-          children: [
-            CircleHeading(
-              title: parent == null
-                  ? 'Bring your\npeople together.'
-                  : 'Make a little\nroom within.',
-              subtitle: parent == null
-                  ? 'A private group, with you as its owner.'
-                  : 'A subgroup of ${parent.name}, with you as its owner. Only members of ${parent.name} can join it.',
-            ),
-            TextField(
-              controller: _name,
-              decoration: InputDecoration(
-                labelText: 'Group name',
-                hintText: 'Something your people will recognise',
-                errorText: _error,
-                errorMaxLines: 4,
+      return UnsavedForm(
+        controller: _edits,
+        fields: [_name],
+        fingerprint: () => '${_name.text}\u0000$_type\u0000$_listed',
+        child: ReadingPane(
+          child: ListView(
+            padding: CircleInsets.form,
+            children: [
+              CircleHeading(
+                title: parent == null
+                    ? 'Bring your\npeople together.'
+                    : 'Make a little\nroom within.',
+                subtitle: parent == null
+                    ? 'A private group, with you as its owner.'
+                    : 'A subgroup of ${parent.name}, with you as its owner. Only members of ${parent.name} can join it.',
               ),
-              maxLength: 60,
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: Space.section),
-            DropdownButtonFormField<CircleType>(
-              initialValue: _type,
-              decoration: const InputDecoration(labelText: 'Kind of group'),
-              items: [
-                for (final type in CircleType.values)
-                  DropdownMenuItem(
-                    value: type,
-                    child: Text(circleTypeLabel(type)),
-                  ),
-              ],
-              onChanged: (type) {
-                if (type != null) setState(() => _type = type);
-              },
-            ),
-            if (parent != null)
-              ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                title: const Text('More options'),
-                children: [
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _listed,
-                    title: Text('List in ${parent.name}'),
-                    subtitle: Text(
-                      _listed
-                          ? 'Members of ${parent.name} can see its name and ask to join.'
-                          : 'Hidden: only people you invite will know it exists.',
+              TextField(
+                controller: _name,
+                decoration: InputDecoration(
+                  labelText: 'Group name',
+                  hintText: 'Something your people will recognise',
+                  errorText: _error,
+                  errorMaxLines: 4,
+                ),
+                maxLength: 60,
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: Space.section),
+              DropdownButtonFormField<CircleType>(
+                initialValue: _type,
+                decoration: const InputDecoration(labelText: 'Kind of group'),
+                items: [
+                  for (final type in CircleType.values)
+                    DropdownMenuItem(
+                      value: type,
+                      child: Text(circleTypeLabel(type)),
                     ),
-                    onChanged: (value) => setState(() => _listed = value),
-                  ),
                 ],
+                onChanged: (type) {
+                  if (type != null) setState(() => _type = type);
+                },
               ),
-            const SizedBox(height: Space.section),
-            const Text(
-              'Only you are added. Others join with your invite link or by accepting an invitation.',
-            ),
-            const SizedBox(height: Space.section),
-            FilledButton(
-              onPressed: _busy ? null : _create,
-              child: Text(
-                _busy
-                    ? 'Creating…'
-                    : parent == null
-                    ? 'Create private group'
-                    : 'Create subgroup',
+              if (parent != null)
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: const Text('More options'),
+                  children: [
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _listed,
+                      title: Text('List in ${parent.name}'),
+                      subtitle: Text(
+                        _listed
+                            ? 'Members of ${parent.name} can see its name and ask to join.'
+                            : 'Hidden: only people you invite will know it exists.',
+                      ),
+                      onChanged: (value) => setState(() => _listed = value),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: Space.section),
+              const Text(
+                'Only you are added. Others join with your invite link or by accepting an invitation.',
               ),
-            ),
-          ],
+              const SizedBox(height: Space.section),
+              FilledButton(
+                onPressed: _busy ? null : _create,
+                child: Text(
+                  _busy
+                      ? 'Creating…'
+                      : parent == null
+                      ? 'Create private group'
+                      : 'Create subgroup',
+                ),
+              ),
+            ],
+          ),
         ),
       );
     },

@@ -1,3 +1,4 @@
+import '../core/form_exit_guard.dart';
 import '../features/polls/presentation/live_polls.dart';
 import '../features/profile/presentation/account_security_screens.dart';
 import 'package:flutter/material.dart';
@@ -93,6 +94,31 @@ String? circleReturnDestination(String? input) {
 /// Whether [path] is a detail page inside a shell branch (needs Back).
 bool circleIsDetailPath(String path) => !_branchRoots.contains(path);
 
+String circleDetailTitle(String path, String fallback) {
+  if (path.endsWith('/photos')) return 'Photos';
+  if (path == '/you/edit') return 'Edit profile';
+  if (path.endsWith('/notifications')) return 'Notifications';
+  if (path.endsWith('/sessions')) return 'Your devices';
+  if (path.endsWith('/password')) return 'Change password';
+  if (path.endsWith('/account')) return 'Account';
+  if (path.contains('/invitations')) return 'Invitations';
+  if (path == '/chats/privacy') return 'Messaging privacy';
+  if (path == '/chats/new') return 'New chat';
+  if (path == '/groups/new') return 'New group';
+  if (path.endsWith('/settings')) return 'Group settings';
+  if (path.endsWith('/invite/link')) return 'Invite link';
+  if (path.endsWith('/invite')) return 'Invite people';
+  if (path.endsWith('/reports')) return 'Group reports';
+  if (path == '/events/new') return 'New event';
+  if (path.startsWith('/events/') && path.endsWith('/edit')) {
+    return 'Edit event';
+  }
+  if (path.endsWith('/attendees')) return 'Attendees';
+  if (path.startsWith('/events/e/')) return 'Event';
+  if (path.startsWith('/groups/g/')) return 'Group';
+  return fallback;
+}
+
 /// A full-screen page outside the tabs (search, activity, a profile), with
 /// Back to wherever the person came from.
 Widget _page(BuildContext context, String title, Widget child) => Scaffold(
@@ -102,7 +128,9 @@ Widget _page(BuildContext context, String title, Widget child) => Scaffold(
       onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
     ),
   ),
-  body: SafeArea(child: child),
+  body: SafeArea(
+    child: CirclePageTitle(title: title, child: child),
+  ),
 );
 
 /// Shows [child] only where the server offers [feature] (see
@@ -262,6 +290,9 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'new',
+            onExit: (context, state) => ref.read(serverAccountProvider) == null
+                ? true
+                : confirmCircleFormExit(context, state.uri.path),
             builder: (context, state) => _page(
               context,
               'New poll',
@@ -387,6 +418,10 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'new',
+                    onExit: (context, state) =>
+                        ref.read(serverAccountProvider) == null
+                        ? true
+                        : confirmCircleFormExit(context, state.uri.path),
                     builder: (_, _) => _gate(
                       CircleFeature.liveChat,
                       const LiveChatsScreen(contacts: true),
@@ -408,6 +443,10 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'new',
+                    onExit: (context, state) =>
+                        ref.read(serverAccountProvider) == null
+                        ? true
+                        : confirmCircleFormExit(context, state.uri.path),
                     builder: (_, state) => CircleCreateGroup(
                       parentId: state.uri.queryParameters['parent'],
                     ),
@@ -468,6 +507,10 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                       ),
                       GoRoute(
                         path: 'settings',
+                        onExit: (context, state) =>
+                            ref.read(serverAccountProvider) == null
+                            ? true
+                            : confirmCircleFormExit(context, state.uri.path),
                         builder: (_, state) => _idRoute(
                           state,
                           (id) => GroupSettingsScreen(groupId: id),
@@ -504,6 +547,10 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'new',
+                    onExit: (context, state) =>
+                        ref.read(serverAccountProvider) == null
+                        ? true
+                        : confirmCircleFormExit(context, state.uri.path),
                     builder: (_, state) => LiveEventForm(
                       group: state.uri.queryParameters['group'],
                     ),
@@ -521,6 +568,10 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                       ),
                       GoRoute(
                         path: 'edit',
+                        onExit: (context, state) =>
+                            ref.read(serverAccountProvider) == null
+                            ? true
+                            : confirmCircleFormExit(context, state.uri.path),
                         builder: (_, state) =>
                             _idRoute(state, (id) => LiveEventForm(id: id)),
                       ),
@@ -550,6 +601,10 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'edit',
+                    onExit: (context, state) =>
+                        ref.read(serverAccountProvider) == null
+                        ? true
+                        : confirmCircleFormExit(context, state.uri.path),
                     builder: (_, _) => const ProfileEditScreen(),
                   ),
                   GoRoute(
@@ -841,7 +896,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
           title: Semantics(
             header: true,
             child: Text(
-              titles[index],
+              circleDetailTitle(path, titles[index]),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
               style: theme.textTheme.titleLarge,
@@ -853,8 +908,20 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                 : shell.goBranch(index, initialLocation: true),
           ),
         ),
-        body: SafeArea(child: shell),
-        bottomNavigationBar: bottomNav,
+        body: SafeArea(
+          child: CirclePageTitle(
+            title: circleDetailTitle(path, titles[index]),
+            child: shell,
+          ),
+        ),
+        bottomNavigationBar:
+            (path.endsWith('/edit') ||
+                path.endsWith('/new') ||
+                path.endsWith('/settings') ||
+                path.endsWith('/photos') ||
+                path.contains('/account/'))
+            ? null
+            : bottomNav,
       );
     }
 

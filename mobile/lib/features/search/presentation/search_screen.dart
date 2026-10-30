@@ -40,6 +40,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final corpus = ref.watch(searchCorpusProvider);
+    final workspaceFailed = ref.watch(circleWorkspaceProvider).hasError;
     final recent = ref.watch(recentSearchesProvider);
     final ready = SearchRules.ready(_query);
     final server = ref.watch(serverAccountProvider) != null;
@@ -102,7 +103,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   ),
                 ),
             ],
-          ] else if (results == null)
+          ] else if (corpus.hasError || workspaceFailed)
+            CircleEmpty(
+              title: 'Groups and people couldn’t load',
+              message:
+                  'Your search is kept. Retry this section when connected.',
+              action: TextButton(
+                onPressed: () {
+                  ref.invalidate(circleWorkspaceProvider);
+                  ref.invalidate(searchCorpusProvider);
+                },
+                child: const Text('Retry groups and people'),
+              ),
+            )
+          else if (results == null)
             const CircleSkeleton(count: 3, label: 'Searching')
           else if (results.isEmpty && !server)
             CircleEmpty(

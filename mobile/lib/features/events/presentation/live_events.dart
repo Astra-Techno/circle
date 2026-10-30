@@ -1,3 +1,4 @@
+import '../../../core/form_exit_guard.dart';
 import '../../profile/application/profile_providers.dart'
     show profilePhotoPickerProvider;
 import '../../../core/private_photo.dart';
@@ -87,17 +88,21 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 ),
               )
-            : const CircleSkeletonPage(
-                shape: CircleSkeletonShape.cards,
-                count: 3,
-                label: 'Loading events',
+            : const CircleStatePanel(
+                child: CircleSkeleton(
+                  shape: CircleSkeletonShape.cards,
+                  count: 3,
+                  label: 'Loading events',
+                ),
               ),
-        error: (_, _) => CircleEmpty(
-          title: 'Events couldn’t load',
-          message: 'Check your connection and group access.',
-          action: TextButton(
-            onPressed: () => refreshLiveEvents(ref),
-            child: const Text('Try again'),
+        error: (_, _) => CircleStatePanel(
+          child: CircleEmpty(
+            title: 'Events couldn’t load',
+            message: 'Check your connection and group access.',
+            action: TextButton(
+              onPressed: () => refreshLiveEvents(ref),
+              child: const Text('Try again'),
+            ),
           ),
         ),
         data: (e) {
@@ -574,6 +579,10 @@ class _EventEditor extends ConsumerStatefulWidget {
 }
 
 class _EventEditorState extends ConsumerState<_EventEditor> {
+  bool _submitted = false;
+  final _requiredFields = GlobalKey();
+  final _titleFocus = FocusNode();
+  final _edits = FormExitController();
   final _title = TextEditingController(),
       _venue = TextEditingController(),
       _description = TextEditingController(),
@@ -619,6 +628,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
 
   @override
   void dispose() {
+    _titleFocus.dispose();
     for (final c in [_title, _venue, _description, _link, _capacity]) {
       c.dispose();
     }
@@ -687,192 +697,232 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
               if (d != null && mounted) setState(() => save(d));
             },
     );
-    return ReadingPane(
-      child: ListView(
-        padding: CircleInsets.form,
-        children: [
-          CircleHeading(
-            title: widget.id == null ? 'Plan an event' : 'Edit event',
-            subtitle: 'A place and time for your circle.',
-          ),
-          if (widget.id == null)
-            DropdownButtonFormField<String>(
-              initialValue: selected,
-              isExpanded: true,
-              itemHeight: null,
-              decoration: const InputDecoration(labelText: 'Group'),
-              items: [
-                for (final g in groups)
-                  DropdownMenuItem(value: g.id, child: Text(g.name)),
+    return UnsavedForm(
+      controller: _edits,
+      fields: [_title, _venue, _description, _link, _capacity],
+      fingerprint: () => jsonEncode([
+        _title.text,
+        _venue.text,
+        _description.text,
+        _link.text,
+        _capacity.text,
+        _group,
+        _type,
+        _zoneTouched ? _zone : null,
+        _start?.toIso8601String(),
+        _end?.toIso8601String(),
+        _deadline?.toIso8601String(),
+      ]),
+      child: ReadingPane(
+        child: CircleEditorLayout(
+          children: [
+            CircleHeading(
+              title: widget.id == null ? 'Plan an event' : 'Edit event',
+              subtitle: 'A place and time for your circle.',
+            ),
+            if (widget.id == null)
+              DropdownButtonFormField<String>(
+                initialValue: selected,
+                isExpanded: true,
+                itemHeight: null,
+                key: _requiredFields,
+                decoration: InputDecoration(
+                  labelText: 'Group',
+                  errorText: _submitted && selected == null
+                      ? 'Choose a group.'
+                      : null,
+                ),
+                items: [
+                  for (final g in groups)
+                    DropdownMenuItem(value: g.id, child: Text(g.name)),
+                ],
+                onChanged: _busy ? null : (v) => setState(() => _group = v),
+              ),
+            TextField(
+              controller: _title,
+              focusNode: _titleFocus,
+              onChanged: (_) {
+                if (_submitted) setState(() {});
+              },
+              enabled: !_busy,
+              maxLength: 200,
+              decoration: InputDecoration(
+                labelText: 'Event title',
+                errorText: _submitted && _title.text.trim().isEmpty
+                    ? 'Enter an event title.'
+                    : null,
+              ),
+            ),
+            TextField(
+              controller: _venue,
+              enabled: !_busy,
+              maxLength: 500,
+              decoration: const InputDecoration(labelText: 'Place'),
+            ),
+            date('Start', _start, (v) => _start = v),
+            if (_submitted && _start == null)
+              const Text('Choose a start date and time.'),
+            ExpansionTile(
+              title: const Text('More options'),
+              children: [
+                TextField(
+                  controller: _description,
+                  enabled: !_busy,
+                  maxLength: 10000,
+                  minLines: 2,
+                  maxLines: 5,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+                TextField(
+                  controller: _link,
+                  enabled: !_busy,
+                  maxLength: 1000,
+                  decoration: const InputDecoration(
+                    labelText: 'Meeting link',
+                    helperText:
+                        'Optional HTTPS URL. Use instead of a place for online events.',
+                  ),
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: _type,
+                  isExpanded: true,
+                  itemHeight: null,
+                  decoration: const InputDecoration(labelText: 'Event type'),
+                  items: [
+                    for (final type in [
+                      'function',
+                      'wedding',
+                      'reunion',
+                      'meetup',
+                      'birthday',
+                      'trip',
+                      'online',
+                      'other',
+                    ])
+                      DropdownMenuItem(value: type, child: Text(type)),
+                  ],
+                  onChanged: _busy ? null : (v) => setState(() => _type = v!),
+                ),
+                DropdownButtonFormField<String>(
+                  key: ValueKey(_zone),
+                  initialValue: _zone,
+                  isExpanded: true,
+                  itemHeight: null,
+                  decoration: const InputDecoration(
+                    labelText: 'Event time zone',
+                  ),
+                  items: [
+                    for (final zone in liveEventZones())
+                      DropdownMenuItem(value: zone, child: Text(zone)),
+                  ],
+                  onChanged: _busy
+                      ? null
+                      : (v) => setState(() {
+                          _zoneTouched = true;
+                          _zone = v!;
+                        }),
+                ),
+                date('End', _end, (v) => _end = v, optional: true),
+                date(
+                  'RSVP deadline',
+                  _deadline,
+                  (v) => _deadline = v,
+                  optional: true,
+                ),
+                TextField(
+                  controller: _capacity,
+                  enabled: !_busy,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Capacity',
+                    helperText: 'Optional. Includes guests.',
+                  ),
+                ),
               ],
-              onChanged: _busy ? null : (v) => setState(() => _group = v),
             ),
-          TextField(
-            controller: _title,
-            enabled: !_busy,
-            maxLength: 200,
-            decoration: const InputDecoration(labelText: 'Event title'),
-          ),
-          TextField(
-            controller: _venue,
-            enabled: !_busy,
-            maxLength: 500,
-            decoration: const InputDecoration(labelText: 'Place'),
-          ),
-          date('Start', _start, (v) => _start = v),
-          ExpansionTile(
-            title: const Text('More options'),
-            children: [
-              TextField(
-                controller: _description,
-                enabled: !_busy,
-                maxLength: 10000,
-                minLines: 2,
-                maxLines: 5,
-                decoration: const InputDecoration(labelText: 'Description'),
-              ),
-              TextField(
-                controller: _link,
-                enabled: !_busy,
-                maxLength: 1000,
-                decoration: const InputDecoration(
-                  labelText: 'Meeting link',
-                  helperText:
-                      'Optional HTTPS URL. Use instead of a place for online events.',
-                ),
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: _type,
-                isExpanded: true,
-                itemHeight: null,
-                decoration: const InputDecoration(labelText: 'Event type'),
-                items: [
-                  for (final type in [
-                    'function',
-                    'wedding',
-                    'reunion',
-                    'meetup',
-                    'birthday',
-                    'trip',
-                    'online',
-                    'other',
-                  ])
-                    DropdownMenuItem(value: type, child: Text(type)),
-                ],
-                onChanged: _busy ? null : (v) => setState(() => _type = v!),
-              ),
-              DropdownButtonFormField<String>(
-                key: ValueKey(_zone),
-                initialValue: _zone,
-                isExpanded: true,
-                itemHeight: null,
-                decoration: const InputDecoration(labelText: 'Event time zone'),
-                items: [
-                  for (final zone in liveEventZones())
-                    DropdownMenuItem(value: zone, child: Text(zone)),
-                ],
-                onChanged: _busy
-                    ? null
-                    : (v) => setState(() {
-                        _zoneTouched = true;
-                        _zone = v!;
-                      }),
-              ),
-              date('End', _end, (v) => _end = v, optional: true),
-              date(
-                'RSVP deadline',
-                _deadline,
-                (v) => _deadline = v,
-                optional: true,
-              ),
-              TextField(
-                controller: _capacity,
-                enabled: !_busy,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Capacity',
-                  helperText: 'Optional. Includes guests.',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: Space.lg),
-          FilledButton(
-            onPressed: _busy
-                ? null
-                : () async {
-                    if (selected == null ||
-                        _start == null ||
-                        _title.text.trim().isEmpty) {
-                      showCircleMessage(
-                        context,
-                        'Choose a group, title and start time.',
-                      );
-                      return;
-                    }
-                    setState(() => _busy = true);
-                    final result = await runCalmly(context, () async {
-                      final capacity = _capacity.text.trim().isEmpty
-                          ? null
-                          : int.tryParse(_capacity.text.trim());
-                      if (_capacity.text.trim().isNotEmpty &&
-                          capacity == null) {
-                        throw const CircleFailure(
-                          'Capacity must be a whole number.',
+            const SizedBox(height: Space.lg),
+            FilledButton(
+              onPressed: _busy
+                  ? null
+                  : () async {
+                      if (selected == null ||
+                          _start == null ||
+                          _title.text.trim().isEmpty) {
+                        setState(() => _submitted = true);
+                        if (_title.text.trim().isEmpty) {
+                          _titleFocus.requestFocus();
+                        }
+                        final target = _requiredFields.currentContext;
+                        if (target != null) {
+                          await Scrollable.ensureVisible(target);
+                        }
+                        return;
+                      }
+                      setState(() => _busy = true);
+                      final result = await runCalmly(context, () async {
+                        final capacity = _capacity.text.trim().isEmpty
+                            ? null
+                            : int.tryParse(_capacity.text.trim());
+                        if (_capacity.text.trim().isNotEmpty &&
+                            capacity == null) {
+                          throw const CircleFailure(
+                            'Capacity must be a whole number.',
+                          );
+                        }
+                        final body = <String, Object?>{
+                          'title': _title.text.trim(),
+                          'description': _description.text.trim(),
+                          'event_type': _type,
+                          'venue': _venue.text.trim(),
+                          'online_link': _link.text.trim(),
+                          'timezone': _zone,
+                          'start_at': liveEventInstant(_start!, _zone),
+                          'end_at': _end == null
+                              ? null
+                              : liveEventInstant(_end!, _zone),
+                          'rsvp_deadline': _deadline == null
+                              ? null
+                              : liveEventInstant(_deadline!, _zone),
+                          'max_capacity': capacity,
+                        };
+                        if (widget.id != null) {
+                          await widget.api.update(widget.id!, {
+                            ...body,
+                            'version': widget.saved!['version'],
+                          });
+                          return widget.id!;
+                        }
+                        final signature = jsonEncode([selected, body]);
+                        if (signature != _signature) {
+                          _signature = signature;
+                          _key =
+                              'event-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
+                        }
+                        return ApiJson.id(
+                          (await widget.api.create(selected, {
+                            ...body,
+                            'client_id': _key,
+                          }))['id'],
                         );
+                      });
+                      if (!context.mounted) return;
+                      setState(() => _busy = false);
+                      if (result != null) {
+                        _edits.commit();
+                        refreshLiveEvents(ref);
+                        context.go('/events/e/$result');
                       }
-                      final body = <String, Object?>{
-                        'title': _title.text.trim(),
-                        'description': _description.text.trim(),
-                        'event_type': _type,
-                        'venue': _venue.text.trim(),
-                        'online_link': _link.text.trim(),
-                        'timezone': _zone,
-                        'start_at': liveEventInstant(_start!, _zone),
-                        'end_at': _end == null
-                            ? null
-                            : liveEventInstant(_end!, _zone),
-                        'rsvp_deadline': _deadline == null
-                            ? null
-                            : liveEventInstant(_deadline!, _zone),
-                        'max_capacity': capacity,
-                      };
-                      if (widget.id != null) {
-                        await widget.api.update(widget.id!, {
-                          ...body,
-                          'version': widget.saved!['version'],
-                        });
-                        return widget.id!;
-                      }
-                      final signature = jsonEncode([selected, body]);
-                      if (signature != _signature) {
-                        _signature = signature;
-                        _key =
-                            'event-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
-                      }
-                      return ApiJson.id(
-                        (await widget.api.create(selected, {
-                          ...body,
-                          'client_id': _key,
-                        }))['id'],
-                      );
-                    });
-                    if (!context.mounted) return;
-                    setState(() => _busy = false);
-                    if (result != null) {
-                      refreshLiveEvents(ref);
-                      context.go('/events/e/$result');
-                    }
-                  },
-            child: Text(
-              _busy
-                  ? 'Saving…'
-                  : widget.id == null
-                  ? 'Create event'
-                  : 'Save event',
+                    },
+              child: Text(
+                _busy
+                    ? 'Saving…'
+                    : widget.id == null
+                    ? 'Create event'
+                    : 'Save event',
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

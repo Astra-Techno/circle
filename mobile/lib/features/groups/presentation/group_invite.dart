@@ -112,9 +112,15 @@ class GroupInviteScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SelectableText(
-                        linkText,
-                        style: Theme.of(context).textTheme.titleMedium,
+                      ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        title: const Text('Link details'),
+                        children: [
+                          SelectableText(
+                            linkText,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: Space.sm),
                       Text(linkStatus(link, DateTime.now().toUtc())),

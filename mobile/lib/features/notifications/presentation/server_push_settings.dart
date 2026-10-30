@@ -123,10 +123,9 @@ class _Choices extends ConsumerWidget {
         child: ListView(
           padding: CircleInsets.form,
           children: [
-            const CircleIntroPanel(
-              title: 'Your updates',
-              subtitle: 'A little less noise. More of what matters.',
-              icon: Icons.notifications_outlined,
+            const CircleHeading(
+              title: 'Notifications',
+              subtitle: 'Choose the updates you want on this phone.',
             ),
             const SizedBox(height: Space.section),
             Text(
@@ -149,10 +148,14 @@ class _Choices extends ConsumerWidget {
                 semanticsLabel: 'Saving notification choices',
               ),
             FilledButton.icon(
-              onPressed: busy ? null : () => _enable(context, ref),
+              onPressed: busy || coordinator.active
+                  ? null
+                  : () => _enable(context, ref),
               icon: const Icon(Icons.notifications_active_outlined),
               label: Text(
-                preferences.enabled
+                coordinator.active
+                    ? 'Connected on this phone'
+                    : preferences.enabled
                     ? 'Connect this phone'
                     : 'Enable notifications',
               ),

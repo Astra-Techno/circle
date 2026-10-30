@@ -64,7 +64,7 @@ void main() {
     // Activity isn't on the server yet, so it is hidden, not a placeholder.
     expect(find.text('Activity'), findsNothing);
     await tapText(tester, 'Account');
-    expect(find.text('Comes before launch'), findsOneWidget);
+    expect(find.text('Comes before launch'), findsNothing);
     await reveal(tester, find.text('Log out'));
     expect(find.text('Log out'), findsOneWidget);
     expect(find.textContaining('preview'), findsNothing);
