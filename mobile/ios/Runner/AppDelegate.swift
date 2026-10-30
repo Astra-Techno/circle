@@ -19,7 +19,12 @@ import UserNotifications
     super.userNotificationCenter(center, didReceive: response, withCompletionHandler: completionHandler)
   }
   override func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-    completionHandler(notification.request.content.userInfo["circle_payload"] != nil ? [.alert, .sound] : [])
+    if notification.request.content.userInfo["circle_payload"] != nil {
+      completionHandler([.alert, .sound]); return
+    }
+    // Forward to FlutterFire so onMessage is emitted, but let Dart authorize
+    // before showing a local notification instead of automatic remote display.
+    super.userNotificationCenter(center, willPresent: notification) { _ in completionHandler([]) }
   }
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
