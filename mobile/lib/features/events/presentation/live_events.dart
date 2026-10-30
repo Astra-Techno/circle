@@ -44,21 +44,29 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
           });
           refreshLiveEvents(ref);
         },
-        child: ListView(
+        child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: CircleInsets.page,
-          children: [
-            if (items.isEmpty)
-              const CircleEmpty(
-                title: 'Something to look forward to',
-                message: 'Plan the first event for one of your circles.',
+          slivers: [
+            // Collapsing pinned header: large title shrinks to compact bar.
+            const CircleCollapsingHeader(),
+            SliverPadding(
+              padding: CircleInsets.page,
+              sliver: SliverList.list(
+                children: [
+                  if (items.isEmpty)
+                    const CircleEmpty(
+                      title: 'Something to look forward to',
+                      message: 'Plan the first event for one of your circles.',
+                    ),
+                  for (final item in items)
+                    _LiveEventCard(
+                      item: item,
+                      onTap: () => context.go('/events/e/${item['id']}'),
+                    ),
+                  ?end,
+                ],
               ),
-            for (final item in items)
-              _LiveEventCard(
-                item: item,
-                onTap: () => context.go('/events/e/${item['id']}'),
-              ),
-            ?end,
+            ),
           ],
         ),
       );

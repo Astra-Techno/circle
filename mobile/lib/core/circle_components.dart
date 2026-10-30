@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'circle_failure.dart';
 import 'design.dart';
 
@@ -875,6 +876,168 @@ class CircleSkeleton extends StatelessWidget {
         ],
       );
     },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Scroll-aware headers
+// ---------------------------------------------------------------------------
+
+/// Data describing the current tab's header, passed down from the shell.
+class CircleTabHeaderData extends InheritedWidget {
+  const CircleTabHeaderData({
+    super.key,
+    required this.title,
+    required this.titleStyle,
+    required this.logo,
+    required this.actions,
+    required this.fab,
+    required super.child,
+  });
+  final String title;
+  final TextStyle? titleStyle;
+  final Widget? logo;
+  final List<Widget> actions;
+  final ({String label, String location})? fab;
+
+  static CircleTabHeaderData? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<CircleTabHeaderData>();
+
+  @override
+  bool updateShouldNotify(CircleTabHeaderData oldWidget) =>
+      title != oldWidget.title ||
+      titleStyle != oldWidget.titleStyle ||
+      logo != oldWidget.logo ||
+      fab != oldWidget.fab;
+}
+
+/// A SliverAppBar for feed screens (Home/Memories): hides on scroll down,
+/// snaps back instantly on any upward scroll. Uses `floating + snap`.
+class CircleFloatingHeader extends StatelessWidget {
+  const CircleFloatingHeader({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final data = CircleTabHeaderData.of(context);
+    if (data == null) return const SliverToBoxAdapter();
+    return SliverAppBar(
+      floating: true,
+      snap: true,
+      pinned: false,
+      automaticallyImplyLeading: false,
+      toolbarHeight: Space.hero * 2 + Space.sm,
+      titleSpacing: Space.section,
+      title: _headerTitle(context, data),
+      actions: [
+        ...data.actions,
+        const SizedBox(width: Space.xs),
+      ],
+    );
+  }
+}
+
+/// A SliverAppBar for list screens (Chats, Groups, Events): collapses from
+/// a large title to a compact toolbar, always pinned at top.
+class CircleCollapsingHeader extends StatelessWidget {
+  const CircleCollapsingHeader({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final data = CircleTabHeaderData.of(context);
+    if (data == null) return const SliverToBoxAdapter();
+    final compactHeight = kToolbarHeight;
+    final expandedHeight = Space.hero * 2 + Space.sm + Space.lg;
+    return SliverAppBar(
+      pinned: true,
+      floating: false,
+      automaticallyImplyLeading: false,
+      expandedHeight: expandedHeight,
+      toolbarHeight: compactHeight,
+      titleSpacing: Space.section,
+      title: _headerTitleCompact(context, data),
+      actions: [
+        ...data.actions,
+        const SizedBox(width: Space.xs),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.pin,
+        background: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(
+              left: Space.section,
+              right: Space.section,
+              bottom: Space.sm,
+            ),
+            child: Align(
+              alignment: AlignmentDirectional.bottomStart,
+              child: _headerTitle(context, data, large: true),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Widget _headerTitle(
+  BuildContext context,
+  CircleTabHeaderData data, {
+  bool large = false,
+}) {
+  final theme = Theme.of(context);
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (data.logo != null) ...[data.logo!, const SizedBox(width: Space.sm)],
+      Flexible(
+        child: Semantics(
+          header: true,
+          child: Text(
+            data.title,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: large
+                ? theme.textTheme.headlineMedium
+                : data.titleStyle ?? theme.textTheme.headlineMedium,
+          ),
+        ),
+      ),
+      if (data.fab != null)
+        IconButton(
+          tooltip: data.fab!.label,
+          onPressed: () => GoRouter.of(context).push(data.fab!.location),
+          icon: const Icon(Icons.add_box_outlined),
+        ),
+    ],
+  );
+}
+
+Widget _headerTitleCompact(BuildContext context, CircleTabHeaderData data) {
+  final theme = Theme.of(context);
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (data.logo != null) ...[
+        SizedBox(
+          width: Space.lg,
+          height: Space.lg,
+          child: FittedBox(child: data.logo!),
+        ),
+        const SizedBox(width: Space.sm),
+      ],
+      Flexible(
+        child: Text(
+          data.title,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+          style: theme.textTheme.titleLarge,
+        ),
+      ),
+      if (data.fab != null)
+        IconButton(
+          tooltip: data.fab!.label,
+          onPressed: () => GoRouter.of(context).push(data.fab!.location),
+          icon: const Icon(Icons.add_box_outlined),
+        ),
+    ],
   );
 }
 

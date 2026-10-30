@@ -38,80 +38,90 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
             ).where((e) => e.group.name.toLowerCase().contains(_query)).toList()
           : buildGroupTree(workspace.groups, collapsed: _collapsed);
       return ReadingPane(
-        child: ListView(
-          padding: CircleInsets.page,
-          children: [
-            const ContactInvitationEntry(),
-            if (workspace.groups.isNotEmpty)
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Search groups',
-                  prefixIcon: Icon(Icons.search),
-                ),
-                onChanged: (value) =>
-                    setState(() => _query = value.trim().toLowerCase()),
-              ),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
-                onPressed: () => openInviteLinkDialog(context, ref),
-                icon: const Icon(Icons.link),
-                label: const Text('Open an invite link'),
+        child: CustomScrollView(
+          slivers: [
+            // Collapsing pinned header: large title shrinks to compact bar.
+            const CircleCollapsingHeader(),
+            SliverPadding(
+              padding: CircleInsets.page,
+              sliver: SliverList.list(
+                children: [
+                  const ContactInvitationEntry(),
+                  if (workspace.groups.isNotEmpty)
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Search groups',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) =>
+                          setState(() => _query = value.trim().toLowerCase()),
+                    ),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: () => openInviteLinkDialog(context, ref),
+                      icon: const Icon(Icons.link),
+                      label: const Text('Open an invite link'),
+                    ),
+                  ),
+                  const SizedBox(height: Space.sm),
+                  if (entries.isEmpty)
+                    CircleEmpty(
+                      title: workspace.groups.isEmpty
+                          ? 'Start with someone you know'
+                          : 'No groups found',
+                      message: workspace.groups.isEmpty
+                          ? 'Create your first private group, or open an invite link someone shared with you.'
+                          : 'Try a different group name.',
+                      action: workspace.groups.isEmpty
+                          ? FilledButton(
+                              onPressed: () => context.push('/groups/new'),
+                              child: const Text('Create a group'),
+                            )
+                          : null,
+                    ),
+                  if (entries.isNotEmpty)
+                    const CircleSectionTitle('Your groups'),
+                  for (final entry in entries)
+                    CircleGroupTile(
+                      group: entry.group,
+                      level: searching ? 0 : entry.level,
+                      where: searching && entry.path.isNotEmpty
+                          ? entry.path.join(' › ')
+                          : entry.path.lastOrNull,
+                      requests: workspace.joinRequests
+                          .where((request) => request.groupId == entry.group.id)
+                          .length,
+                      expanded: searching || !entry.hasChildren
+                          ? null
+                          : entry.expanded,
+                      onToggle: () => setState(() {
+                        if (!_collapsed.remove(entry.group.id)) {
+                          _collapsed.add(entry.group.id);
+                        }
+                      }),
+                    ),
+                  if (workspace.pending.isNotEmpty) ...[
+                    const SizedBox(height: Space.lg),
+                    const CircleSectionTitle('Waiting for approval'),
+                    for (final pending in workspace.pending)
+                      CircleRow(
+                        child: ListTile(
+                          leading: const CircleInitialAvatar(
+                            icon: Icons.hourglass_empty,
+                            tone: CircleTone.neutral,
+                          ),
+                          title: Text(pending.name),
+                          subtitle: const Text('Waiting for approval'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () =>
+                              context.push('/groups/g/${pending.groupId}'),
+                        ),
+                      ),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: Space.sm),
-            if (entries.isEmpty)
-              CircleEmpty(
-                title: workspace.groups.isEmpty
-                    ? 'Start with someone you know'
-                    : 'No groups found',
-                message: workspace.groups.isEmpty
-                    ? 'Create your first private group, or open an invite link someone shared with you.'
-                    : 'Try a different group name.',
-                action: workspace.groups.isEmpty
-                    ? FilledButton(
-                        onPressed: () => context.push('/groups/new'),
-                        child: const Text('Create a group'),
-                      )
-                    : null,
-              ),
-            if (entries.isNotEmpty) const CircleSectionTitle('Your groups'),
-            for (final entry in entries)
-              CircleGroupTile(
-                group: entry.group,
-                level: searching ? 0 : entry.level,
-                where: searching && entry.path.isNotEmpty
-                    ? entry.path.join(' › ')
-                    : entry.path.lastOrNull,
-                requests: workspace.joinRequests
-                    .where((request) => request.groupId == entry.group.id)
-                    .length,
-                expanded: searching || !entry.hasChildren
-                    ? null
-                    : entry.expanded,
-                onToggle: () => setState(() {
-                  if (!_collapsed.remove(entry.group.id)) {
-                    _collapsed.add(entry.group.id);
-                  }
-                }),
-              ),
-            if (workspace.pending.isNotEmpty) ...[
-              const SizedBox(height: Space.lg),
-              const CircleSectionTitle('Waiting for approval'),
-              for (final pending in workspace.pending)
-                CircleRow(
-                  child: ListTile(
-                    leading: const CircleInitialAvatar(
-                      icon: Icons.hourglass_empty,
-                      tone: CircleTone.neutral,
-                    ),
-                    title: Text(pending.name),
-                    subtitle: const Text('Waiting for approval'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push('/groups/g/${pending.groupId}'),
-                  ),
-                ),
-            ],
           ],
         ),
       );

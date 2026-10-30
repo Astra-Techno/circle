@@ -357,47 +357,61 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
         });
         _refresh();
       },
-      child: ListView(
+      child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: CircleInsets.page.copyWith(left: 0, right: 0, top: Space.xs),
-        children: [
-          if (items.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: Space.section),
-              child: CircleEmpty(
-                title: 'Your conversations start here',
-                message: 'Group conversations follow your memberships.',
-              ),
+        slivers: [
+          // Collapsing pinned header: large title shrinks to compact bar.
+          const CircleCollapsingHeader(),
+          SliverPadding(
+            padding: CircleInsets.page.copyWith(
+              left: 0,
+              right: 0,
+              top: Space.xs,
             ),
-          for (final item in items)
-            Builder(
-              builder: (context) {
-                final preview = _preview(item, me);
-                final last = item['last_message'] is Map
-                    ? ApiJson.map(item['last_message'])
-                    : null;
-                final at = DateTime.tryParse('${last?['created_at']}');
-                return ChatInboxRow(
-                  name: item['name'] as String? ?? 'Conversation',
-                  group: item['kind'] == 'group',
-                  groupId: item['group_id']?.toString(),
-                  person: item['other_id']?.toString(),
-                  unread: (item['unread'] as num?)?.toInt() ?? 0,
-                  muted: item['muted'] == true,
-                  pinned: item['pinned'] == true,
-                  time: at == null ? null : chatInboxTime(context, at, now),
-                  preview: preview.text,
-                  previewIcon: preview.icon,
-                  highlight: preview.highlight,
-                  onTap: () => context.go('/chats/c/${item['id']}'),
-                );
-              },
-            ),
-          _pages(data, items, inbox: true),
-          Center(
-            child: TextButton(
-              onPressed: () => context.push('/chats/privacy'),
-              child: const Text('Messaging privacy'),
+            sliver: SliverList.list(
+              children: [
+                if (items.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: Space.section),
+                    child: CircleEmpty(
+                      title: 'Your conversations start here',
+                      message: 'Group conversations follow your memberships.',
+                    ),
+                  ),
+                for (final item in items)
+                  Builder(
+                    builder: (context) {
+                      final preview = _preview(item, me);
+                      final last = item['last_message'] is Map
+                          ? ApiJson.map(item['last_message'])
+                          : null;
+                      final at = DateTime.tryParse('${last?['created_at']}');
+                      return ChatInboxRow(
+                        name: item['name'] as String? ?? 'Conversation',
+                        group: item['kind'] == 'group',
+                        groupId: item['group_id']?.toString(),
+                        person: item['other_id']?.toString(),
+                        unread: (item['unread'] as num?)?.toInt() ?? 0,
+                        muted: item['muted'] == true,
+                        pinned: item['pinned'] == true,
+                        time: at == null
+                            ? null
+                            : chatInboxTime(context, at, now),
+                        preview: preview.text,
+                        previewIcon: preview.icon,
+                        highlight: preview.highlight,
+                        onTap: () => context.go('/chats/c/${item['id']}'),
+                      );
+                    },
+                  ),
+                _pages(data, items, inbox: true),
+                Center(
+                  child: TextButton(
+                    onPressed: () => context.push('/chats/privacy'),
+                    child: const Text('Messaging privacy'),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

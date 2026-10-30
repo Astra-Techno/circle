@@ -718,121 +718,118 @@ class CircleAppShell extends ConsumerWidget {
     if (RegExp(r'^/chats/c/[^/]+$').hasMatch(path)) {
       return Scaffold(body: SafeArea(child: shell));
     }
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: Space.hero * 2 + Space.sm,
-        titleSpacing: detail ? 0 : Space.section,
-        // The prototype label lives here once, instead of on every control.
-        // Like Instagram: the logo and wordmark on Home, the page name on
-        // other tabs.
-        title: Row(
+    final bottomNav = SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Space.lg, 0, Space.lg, Space.sm),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (index == 0 && !detail) ...[
-              Image.asset(
-                CircleIdentity.artwork,
-                width: Space.hero + Space.xs,
-                height: Space.hero + Space.xs,
-                semanticLabel: CircleIdentity.name,
-              ),
-              const SizedBox(width: Space.sm),
-            ],
-            Flexible(
-              child: Semantics(
-                header: true,
-                child: Text(
-                  index == 0 && !detail ? 'Circle' : titles[index],
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: largeText || detail
-                      ? theme.textTheme.titleLarge
-                      : theme.textTheme.headlineMedium,
-                ),
-              ),
-            ),
-            // The tab's create action sits beside the title (no floating
-            // button covering content).
-            if (fab != null)
-              IconButton(
-                tooltip: fab.label,
-                onPressed: () => context.push(fab.location),
-                icon: const Icon(Icons.add_box_outlined),
-              ),
-          ],
-        ),
-        // Search and the activity bell on every tab's main page (§4.1).
-        actions: detail
-            ? null
-            : const [SearchButton(), ActivityBell(), SizedBox(width: Space.xs)],
-        leading: detail
-            ? BackButton(
-                onPressed: () => context.canPop()
-                    ? context.pop()
-                    : shell.goBranch(index, initialLocation: true),
-              )
-            : null,
-      ),
-      body: SafeArea(child: shell),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(Space.lg, 0, Space.lg, Space.sm),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DecoratedBox(
-                decoration: CircleDepth.dock(context),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(CircleRadius.sheet),
-                  child: MediaQuery.withClampedTextScaling(
-                    maxScaleFactor: navigationMaxTextScale,
-                    child: NavigationBar(
-                      height: Space.hero * 2 + Space.sm * textScale,
-                      selectedIndex: branches.contains(index)
-                          ? branches.indexOf(index)
-                          : 0,
-                      labelBehavior:
-                          NavigationDestinationLabelBehavior.alwaysShow,
-                      onDestinationSelected: (target) => shell.goBranch(
-                        branches[target],
-                        initialLocation: branches[target] == index,
-                      ),
-                      destinations: [
-                        NavigationDestination(
-                          icon: Icon(Icons.home_outlined),
-                          selectedIcon: Icon(Icons.home_rounded),
-                          label: 'Home',
-                        ),
-                        if (features.has(CircleFeature.liveChat))
-                          NavigationDestination(
-                            icon: Icon(Icons.forum_outlined),
-                            selectedIcon: Icon(Icons.forum_rounded),
-                            label: 'Chats',
-                          ),
-                        NavigationDestination(
-                          icon: Icon(Icons.groups_outlined),
-                          selectedIcon: Icon(Icons.groups_rounded),
-                          label: 'Groups',
-                        ),
-                        if (features.has(CircleFeature.liveEvents))
-                          NavigationDestination(
-                            icon: Icon(Icons.event_outlined),
-                            selectedIcon: Icon(Icons.event_rounded),
-                            label: 'Events',
-                          ),
-                        NavigationDestination(
-                          icon: Icon(Icons.person_outline),
-                          selectedIcon: Icon(Icons.person_rounded),
-                          label: 'You',
-                        ),
-                      ],
+            DecoratedBox(
+              decoration: CircleDepth.dock(context),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(CircleRadius.sheet),
+                child: MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: navigationMaxTextScale,
+                  child: NavigationBar(
+                    height: Space.hero * 2 + Space.sm * textScale,
+                    selectedIndex: branches.contains(index)
+                        ? branches.indexOf(index)
+                        : 0,
+                    labelBehavior:
+                        NavigationDestinationLabelBehavior.alwaysShow,
+                    onDestinationSelected: (target) => shell.goBranch(
+                      branches[target],
+                      initialLocation: branches[target] == index,
                     ),
+                    destinations: [
+                      NavigationDestination(
+                        icon: Icon(Icons.home_outlined),
+                        selectedIcon: Icon(Icons.home_rounded),
+                        label: 'Home',
+                      ),
+                      if (features.has(CircleFeature.liveChat))
+                        NavigationDestination(
+                          icon: Icon(Icons.forum_outlined),
+                          selectedIcon: Icon(Icons.forum_rounded),
+                          label: 'Chats',
+                        ),
+                      NavigationDestination(
+                        icon: Icon(Icons.groups_outlined),
+                        selectedIcon: Icon(Icons.groups_rounded),
+                        label: 'Groups',
+                      ),
+                      if (features.has(CircleFeature.liveEvents))
+                        NavigationDestination(
+                          icon: Icon(Icons.event_outlined),
+                          selectedIcon: Icon(Icons.event_rounded),
+                          label: 'Events',
+                        ),
+                      NavigationDestination(
+                        icon: Icon(Icons.person_outline),
+                        selectedIcon: Icon(Icons.person_rounded),
+                        label: 'You',
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+
+    // Detail pages keep a traditional AppBar with Back.
+    if (detail) {
+      return Scaffold(
+        appBar: AppBar(
+          toolbarHeight: Space.hero * 2 + Space.sm,
+          titleSpacing: 0,
+          title: Semantics(
+            header: true,
+            child: Text(
+              titles[index],
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: theme.textTheme.titleLarge,
+            ),
+          ),
+          leading: BackButton(
+            onPressed: () => context.canPop()
+                ? context.pop()
+                : shell.goBranch(index, initialLocation: true),
+          ),
+        ),
+        body: SafeArea(child: shell),
+        bottomNavigationBar: bottomNav,
+      );
+    }
+
+    // Root tab pages: no AppBar — each screen draws its own scroll-aware
+    // SliverAppBar. The shell passes header data via CircleTabHeaderData.
+    final logo = index == 0
+        ? Image.asset(
+            CircleIdentity.artwork,
+            width: Space.hero + Space.xs,
+            height: Space.hero + Space.xs,
+            semanticLabel: CircleIdentity.name,
+          )
+        : null;
+    return Scaffold(
+      body: SafeArea(
+        child: CircleTabHeaderData(
+          title: index == 0 ? 'Circle' : titles[index],
+          titleStyle: largeText
+              ? theme.textTheme.titleLarge
+              : theme.textTheme.headlineMedium,
+          logo: logo,
+          actions: const [SearchButton(), ActivityBell()],
+          fab: fab,
+          child: shell,
+        ),
+      ),
+      bottomNavigationBar: bottomNav,
     );
   }
 }

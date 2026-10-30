@@ -45,78 +45,86 @@ class CircleHome extends ConsumerWidget {
             context,
             () => ref.read(circleWorkspaceProvider.notifier).refresh(),
           ),
-          child: ListView.builder(
+          child: CustomScrollView(
             key: const PageStorageKey('circle-home'),
-            // Memories run edge to edge: photos are full width and each
-            // card pads its own text to the 24px editorial margin.
-            padding: CircleInsets.page.copyWith(left: 0, right: 0),
             physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: memories.length + 1 + (more ? 1 : 0),
-            itemBuilder: (context, index) {
-              // Built only when scrolled near the end: loads older Memories.
-              if (index == memories.length + 1) {
-                return const _LoadOlderMemories();
-              }
-              if (index == 0) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (workspace.groups.isNotEmpty) ...[
-                      _CircleStories(
-                        children: [
-                          _CircleStory(
-                            label: 'All',
-                            selected: groupId == null,
-                            onTap: () => select(null),
-                            avatar: const CircleInitialAvatar(
-                              icon: Icons.blur_circular_outlined,
-                              tone: CircleTone.neutral,
-                              size: CircleAvatarSize.large,
+            slivers: [
+              // Floating snap header: hides on scroll down, snaps back
+              // instantly on any upward scroll (like Instagram).
+              const CircleFloatingHeader(),
+              SliverList.builder(
+                // Memories run edge to edge: photos are full width and each
+                // card pads its own text to the 24px editorial margin.
+                itemCount: memories.length + 1 + (more ? 1 : 0),
+                itemBuilder: (context, index) {
+                  // Built only when scrolled near the end: loads older Memories.
+                  if (index == memories.length + 1) {
+                    return const _LoadOlderMemories();
+                  }
+                  if (index == 0) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (workspace.groups.isNotEmpty) ...[
+                          _CircleStories(
+                            children: [
+                              _CircleStory(
+                                label: 'All',
+                                selected: groupId == null,
+                                onTap: () => select(null),
+                                avatar: const CircleInitialAvatar(
+                                  icon: Icons.blur_circular_outlined,
+                                  tone: CircleTone.neutral,
+                                  size: CircleAvatarSize.large,
+                                ),
+                              ),
+                              for (final circle in circles.ordered)
+                                _CircleStory(
+                                  key: ValueKey(
+                                    'home-circle-${circle.group.id}',
+                                  ),
+                                  label: circle.group.name,
+                                  selected: groupId == circle.group.id,
+                                  fresh: circle.fresh,
+                                  onTap: () => select(
+                                    groupId == circle.group.id
+                                        ? null
+                                        : circle.group.id,
+                                  ),
+                                  avatar: GroupAvatar(
+                                    groupId: circle.group.id,
+                                    type: circle.group.type,
+                                    size: CircleAvatarSize.large,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: Space.sm),
+                        ],
+                        if (memories.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Space.section,
+                            ),
+                            child: _FirstSteps(
+                              workspace: workspace,
+                              groupId: groupId,
                             ),
                           ),
-                          for (final circle in circles.ordered)
-                            _CircleStory(
-                              key: ValueKey('home-circle-${circle.group.id}'),
-                              label: circle.group.name,
-                              selected: groupId == circle.group.id,
-                              fresh: circle.fresh,
-                              onTap: () => select(
-                                groupId == circle.group.id
-                                    ? null
-                                    : circle.group.id,
-                              ),
-                              avatar: GroupAvatar(
-                                groupId: circle.group.id,
-                                type: circle.group.type,
-                                size: CircleAvatarSize.large,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: Space.sm),
-                    ],
-                    if (memories.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Space.section,
-                        ),
-                        child: _FirstSteps(
-                          workspace: workspace,
-                          groupId: groupId,
-                        ),
-                      ),
-                  ],
-                );
-              }
-              final memory = memories[index - 1];
-              final group = workspace.group(memory.groupId)!;
-              return CircleMemoryCard(
-                key: ValueKey(memory.id),
-                memory: memory,
-                group: group,
-                audience: audiencePath(group, workspace.groupsById),
-              );
-            },
+                      ],
+                    );
+                  }
+                  final memory = memories[index - 1];
+                  final group = workspace.group(memory.groupId)!;
+                  return CircleMemoryCard(
+                    key: ValueKey(memory.id),
+                    memory: memory,
+                    group: group,
+                    audience: audiencePath(group, workspace.groupsById),
+                  );
+                },
+              ),
+            ],
           ),
         ),
       );
