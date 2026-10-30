@@ -112,3 +112,5 @@ For the remaining App Store API key, the workflow now accepts **ASC_PRIVATE_KEY*
 ## Website entry point
 
 The homepage places iPhone testing below the Android download. Invited testers install TestFlight and accept their existing invitation. The owner section opens the authenticated GitHub iOS workflow: select main and target testflight, then Run workflow. The website holds no GitHub token and anonymous visitors cannot dispatch builds through it. This is a link to GitHub’s build controls, not an automatic public build endpoint. Apple processing, compliance and testing-group assignment still apply. A public TestFlight join link can replace invitation-only instructions once the owner enables and supplies it; the App Store Connect management URL is not a tester invitation.
+
+Public Circle Beta signup: https://testflight.apple.com/join/WW2f8nMk (100-tester limit shown by owner). On30Oct the group has one build but no approved external build; homepage explicitly marks approval pending. After Apple approval, update the status copy. Internal installation is already owner-confirmed.
