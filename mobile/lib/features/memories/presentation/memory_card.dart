@@ -121,245 +121,266 @@ class CircleMemoryCard extends ConsumerWidget {
     );
 
     return Padding(
-      padding: EdgeInsets.only(bottom: detail ? 0 : Space.hero),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (hidden)
+      padding: EdgeInsets.all(detail ? 0 : Space.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: Space.md),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(CircleRadius.card),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (hidden)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Space.section,
+                  0,
+                  Space.section,
+                  Space.sm,
+                ),
+                child: HiddenByAdminsNotice(
+                  groupId: memory.groupId,
+                  target: ReportTarget.memory(
+                    memory.id,
+                    groupId: memory.groupId,
+                  ),
+                  what: 'Memory',
+                ),
+              ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: const EdgeInsetsDirectional.fromSTEB(
                 Space.section,
                 0,
-                Space.section,
                 Space.sm,
-              ),
-              child: HiddenByAdminsNotice(
-                groupId: memory.groupId,
-                target: ReportTarget.memory(memory.id, groupId: memory.groupId),
-                what: 'Memory',
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(
-              Space.section,
-              0,
-              Space.sm,
-              Space.sm,
-            ),
-            child: Row(
-              children: [
-                PersonAvatar(
-                  person: memory.authorId,
-                  name: memory.author,
-                  tone: circleTypeTone(group.type),
-                ),
-                const SizedBox(width: Space.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(memory.author, style: theme.textTheme.titleMedium),
-                      // Who can see it, always visible (privacy first).
-                      Semantics(
-                        container: true,
-                        label: 'Shared with ${audience ?? group.name} only',
-                        excludeSemantics: true,
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              WidgetSpan(
-                                alignment: PlaceholderAlignment.middle,
-                                child: Icon(
-                                  Icons.lock_outline,
-                                  size: Space.lg,
-                                  color: accents.caption,
-                                ),
-                              ),
-                              TextSpan(
-                                text:
-                                    ' ${[audience ?? group.name, memoryTimeLabel(memory.createdAt, DateTime.now()), if (memory.edited) 'Edited'].join(' · ')}',
-                              ),
-                            ],
-                          ),
-                          style: caption,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuButton<_MemoryAction>(
-                  tooltip: 'More options for $about',
-                  icon: Icon(Icons.more_horiz, color: accents.caption),
-                  onSelected: onMenu,
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: _MemoryAction.save,
-                      child: Text(memory.saved ? 'Unsave' : 'Save'),
-                    ),
-                    if (!mine && features.has(CircleFeature.liveChat))
-                      const PopupMenuItem(
-                        value: _MemoryAction.replyPrivately,
-                        child: Text('Message privately'),
-                      ),
-                    if (!mine &&
-                        !reported &&
-                        !hidden &&
-                        features.has(CircleFeature.moderation))
-                      const PopupMenuItem(
-                        value: _MemoryAction.report,
-                        child: Text('Report'),
-                      ),
-                    if (mine) ...[
-                      const PopupMenuItem(
-                        value: _MemoryAction.edit,
-                        child: Text('Edit text'),
-                      ),
-                      const PopupMenuItem(
-                        value: _MemoryAction.delete,
-                        child: Text('Delete'),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (hasPhotos) MemoryPhotoGrid(memory: memory),
-          if (quote)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.lg),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: accents.recessed,
-                  borderRadius: BorderRadius.circular(CircleRadius.card),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(Space.section),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ExcludeSemantics(
-                        child: Icon(
-                          Icons.format_quote_rounded,
-                          color: accents.caption,
-                        ),
-                      ),
-                      const SizedBox(height: Space.sm),
-                      Text(memory.text, style: theme.textTheme.titleLarge),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else if (hasText && !hasPhotos)
-            text,
-          if (taken != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Space.section,
                 Space.sm,
-                Space.section,
-                0,
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.history_outlined,
-                    size: Space.lg,
-                    color: accents.caption,
+                  PersonAvatar(
+                    person: memory.authorId,
+                    name: memory.author,
+                    tone: circleTypeTone(group.type),
                   ),
-                  const SizedBox(width: Space.xs),
-                  Expanded(child: Text(taken, style: caption)),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(memory.author, style: theme.textTheme.titleMedium),
+                        // Who can see it, always visible (privacy first).
+                        Semantics(
+                          container: true,
+                          label: 'Shared with ${audience ?? group.name} only',
+                          excludeSemantics: true,
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: Icon(
+                                    Icons.lock_outline,
+                                    size: Space.lg,
+                                    color: accents.caption,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text:
+                                      ' ${[audience ?? group.name, memoryTimeLabel(memory.createdAt, DateTime.now()), if (memory.edited) 'Edited'].join(' · ')}',
+                                ),
+                              ],
+                            ),
+                            style: caption,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<_MemoryAction>(
+                    tooltip: 'More options for $about',
+                    icon: Icon(Icons.more_horiz, color: accents.caption),
+                    onSelected: onMenu,
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: _MemoryAction.save,
+                        child: Text(memory.saved ? 'Unsave' : 'Save'),
+                      ),
+                      if (!mine && features.has(CircleFeature.liveChat))
+                        const PopupMenuItem(
+                          value: _MemoryAction.replyPrivately,
+                          child: Text('Message privately'),
+                        ),
+                      if (!mine &&
+                          !reported &&
+                          !hidden &&
+                          features.has(CircleFeature.moderation))
+                        const PopupMenuItem(
+                          value: _MemoryAction.report,
+                          child: Text('Report'),
+                        ),
+                      if (mine) ...[
+                        const PopupMenuItem(
+                          value: _MemoryAction.edit,
+                          child: Text('Edit text'),
+                        ),
+                        const PopupMenuItem(
+                          value: _MemoryAction.delete,
+                          child: Text('Delete'),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
-          // Actions: vector heart + count, comments, reaction picker, save.
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Space.sm),
-            child: Row(
-              children: [
-                // Wraps onto two lines at very large text sizes.
-                Expanded(
-                  child: Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      _LoveButton(
-                        reactions: reactions,
-                        about: about,
-                        onTap: () => react(reactions.mine ?? loveReaction),
-                        onLongPress: pickReaction,
-                      ),
-                      if (reactions.total > 0)
-                        Tooltip(
-                          message: 'Show reactions for $about',
-                          excludeFromSemantics: true,
-                          child: TextButton(
-                            style: TextButton.styleFrom(
-                              minimumSize: const Size(Space.large, Space.large),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: Space.xs,
+            if (hasText && hasPhotos) ...[
+              text,
+              const SizedBox(height: Space.md),
+            ],
+            if (hasPhotos)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                child: MemoryPhotoGrid(memory: memory),
+              ),
+            if (quote)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Space.lg),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: accents.recessed,
+                    borderRadius: BorderRadius.circular(CircleRadius.card),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(Space.section),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ExcludeSemantics(
+                          child: Icon(
+                            Icons.format_quote_rounded,
+                            color: accents.caption,
+                          ),
+                        ),
+                        const SizedBox(height: Space.sm),
+                        Text(memory.text, style: theme.textTheme.titleLarge),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else if (hasText && !hasPhotos)
+              text,
+            if (taken != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Space.section,
+                  Space.sm,
+                  Space.section,
+                  0,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.history_outlined,
+                      size: Space.lg,
+                      color: accents.caption,
+                    ),
+                    const SizedBox(width: Space.xs),
+                    Expanded(child: Text(taken, style: caption)),
+                  ],
+                ),
+              ),
+            // Actions: vector heart + count, comments, reaction picker, save.
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Space.sm),
+              child: Row(
+                children: [
+                  // Wraps onto two lines at very large text sizes.
+                  Expanded(
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _LoveButton(
+                          reactions: reactions,
+                          about: about,
+                          onTap: () => react(reactions.mine ?? loveReaction),
+                          onLongPress: pickReaction,
+                        ),
+                        if (reactions.total > 0)
+                          Tooltip(
+                            message: 'Show reactions for $about',
+                            excludeFromSemantics: true,
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(
+                                  Space.large,
+                                  Space.large,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: Space.xs,
+                                ),
+                                foregroundColor: colors.onSurface,
                               ),
+                              onPressed: () =>
+                                  showReactionSummary(context, reactions),
+                              child: Text(
+                                '${reactions.total}',
+                                semanticsLabel:
+                                    '${reactions.describe()}. Show reactions',
+                                style: theme.textTheme.labelLarge,
+                              ),
+                            ),
+                          ),
+                        if (!detail)
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
                               foregroundColor: colors.onSurface,
                             ),
-                            onPressed: () =>
-                                showReactionSummary(context, reactions),
-                            child: Text(
-                              '${reactions.total}',
-                              semanticsLabel:
-                                  '${reactions.describe()}. Show reactions',
-                              style: theme.textTheme.labelLarge,
+                            onPressed: openDetail,
+                            icon: const Icon(Icons.chat_bubble_outline_rounded),
+                            label: Text(
+                              comments > 0 ? '$comments' : 'Comment',
+                              semanticsLabel: comments > 0
+                                  ? '$commentLabel on $about'
+                                  : 'Comment on $about',
+                              style: theme.textTheme.bodyLarge,
                             ),
                           ),
+                        IconButton(
+                          tooltip: 'Choose a reaction for $about',
+                          onPressed: pickReaction,
+                          icon: const Icon(Icons.add_reaction_outlined),
                         ),
-                      if (!detail)
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                            foregroundColor: colors.onSurface,
-                          ),
-                          onPressed: openDetail,
-                          icon: const Icon(Icons.chat_bubble_outline_rounded),
-                          label: Text(
-                            comments > 0 ? '$comments' : 'Comment',
-                            semanticsLabel: comments > 0
-                                ? '$commentLabel on $about'
-                                : 'Comment on $about',
-                            style: theme.textTheme.bodyLarge,
-                          ),
-                        ),
-                      IconButton(
-                        tooltip: 'Choose a reaction for $about',
-                        onPressed: pickReaction,
-                        icon: const Icon(Icons.add_reaction_outlined),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  tooltip: memory.saved ? 'Unsave $about' : 'Save $about',
-                  icon: Icon(
-                    memory.saved
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
-                    color: memory.saved ? colors.primary : null,
+                  IconButton(
+                    tooltip: memory.saved ? 'Unsave $about' : 'Save $about',
+                    icon: Icon(
+                      memory.saved
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_border_rounded,
+                      color: memory.saved ? colors.primary : null,
+                    ),
+                    onPressed: () =>
+                        runCalmly(context, () => controller.save(memory.id)),
                   ),
-                  onPressed: () =>
-                      runCalmly(context, () => controller.save(memory.id)),
-                ),
-              ],
-            ),
-          ),
-          if (hasText && hasPhotos) text,
-          if (!detail && latest != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Space.section,
-                Space.sm,
-                Space.section,
-                0,
+                ],
               ),
-              child: CommentBubble(latest, onTap: openDetail, maxLines: 2),
             ),
-        ],
+
+            if (!detail && latest != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Space.section,
+                  Space.sm,
+                  Space.section,
+                  0,
+                ),
+                child: CommentBubble(latest, onTap: openDetail, maxLines: 2),
+              ),
+          ],
+        ),
       ),
     );
   }

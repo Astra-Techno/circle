@@ -1016,17 +1016,30 @@ Widget _headerTitle(
       Flexible(
         child: Semantics(
           header: true,
-          child: Text(
-            data.title,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-            style: large
-                ? theme.textTheme.headlineMedium
-                : data.titleStyle ?? theme.textTheme.headlineMedium,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                data.title,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: large
+                    ? theme.textTheme.headlineMedium
+                    : data.titleStyle ?? theme.textTheme.headlineMedium,
+              ),
+              if (data.logo != null)
+                Text(
+                  'My Circle. Billion Memories.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall,
+                ),
+            ],
           ),
         ),
       ),
-      if (data.fab != null)
+      if (data.fab != null && data.logo == null)
         IconButton(
           tooltip: data.fab!.label,
           onPressed: () => GoRouter.of(context).push(data.fab!.location),

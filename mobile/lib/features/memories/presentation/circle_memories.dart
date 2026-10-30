@@ -101,6 +101,23 @@ class CircleHome extends ConsumerWidget {
                           ),
                           const SizedBox(height: Space.sm),
                         ],
+                        if (workspace.groups.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.all(Space.md),
+                            child: OutlinedButton.icon(
+                              onPressed: () => context.push(
+                                groupId == null
+                                    ? '/compose'
+                                    : '/compose?group=$groupId',
+                              ),
+                              icon: const Icon(
+                                Icons.add_photo_alternate_outlined,
+                              ),
+                              label: const Text(
+                                'Share a memory with your Circle…',
+                              ),
+                            ),
+                          ),
                         if (memories.isEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(
@@ -254,54 +271,16 @@ class _CircleStory extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: [
-        selected ? '$label, showing' : 'Show $label',
-        if (fresh) 'new Memories',
-      ].join(', '),
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(CircleRadius.small),
-        child: SizedBox(
-          width: Space.hero * 2 + Space.sm,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: Space.sm),
-            child: Column(
-              children: [
-                // An indigo ring: new Memories, or the circle in view.
-                Container(
-                  padding: const EdgeInsets.all(Space.xs),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: selected || fresh
-                          ? colors.primary
-                          : CircleAccents.of(context).hairline,
-                      width: fresh ? 3 : 2,
-                    ),
-                  ),
-                  child: avatar,
-                ),
-                const SizedBox(height: Space.sm),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style:
-                      (selected
-                              ? theme.textTheme.labelMedium
-                              : theme.textTheme.bodySmall)
-                          ?.copyWith(
-                            color: selected
-                                ? colors.primary
-                                : CircleAccents.of(context).caption,
-                          ),
-                ),
-              ],
-            ),
-          ),
+      label: '$label${fresh ? ", new Memories" : ""}',
+      child: ChoiceChip(
+        label: Text(label == 'All' ? 'All Circles' : label),
+        selected: selected,
+        showCheckmark: false,
+        selectedColor: colors.primary,
+        labelStyle: theme.textTheme.labelMedium?.copyWith(
+          color: selected ? colors.onPrimary : colors.onSurfaceVariant,
         ),
+        onSelected: (_) => onTap(),
       ),
     );
   }

@@ -123,11 +123,11 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
   final Color chatWallpaper, chatIncoming, chatOutgoing;
 
   static const light = CircleAccents(
-    heart: Color(0xFF3B2E8C),
-    heartText: Color(0xFF3B2E8C),
+    heart: Color(0xFF4930A7),
+    heartText: Color(0xFF4930A7),
     heartContainer: Color(0xFFEFECF7),
-    calm: Color(0xFF3B2E8C),
-    calmText: Color(0xFF3B2E8C),
+    calm: Color(0xFF4930A7),
+    calmText: Color(0xFF4930A7),
     calmContainer: Color(0xFFEFECF7),
     sage: Color(0xFF3F7A68),
     sageText: Color(0xFF2F6153),
@@ -219,16 +219,16 @@ ThemeData circleTheme(Brightness brightness) {
   final light = brightness == Brightness.light;
   final accents = light ? CircleAccents.light : CircleAccents.dark;
   final generated = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF3B2E8C),
+    seedColor: const Color(0xFF4930A7),
     brightness: brightness,
   );
   final body = light ? const Color(0xFF34323C) : const Color(0xFFD6D2DA);
   final colors = generated.copyWith(
-    primary: light ? const Color(0xFF3B2E8C) : const Color(0xFFC9C0FF),
+    primary: light ? const Color(0xFF4930A7) : const Color(0xFFC9C0FF),
     onPrimary: light ? Colors.white : const Color(0xFF1E1660),
     primaryContainer: accents.calmContainer,
     onPrimaryContainer: accents.calmText,
-    secondary: light ? const Color(0xFF3B2E8C) : const Color(0xFFC9C0FF),
+    secondary: light ? const Color(0xFF4930A7) : const Color(0xFFC9C0FF),
     onSecondary: light ? Colors.white : const Color(0xFF1E1660),
     secondaryContainer: accents.calmContainer,
     onSecondaryContainer: accents.calmText,
