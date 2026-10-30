@@ -72,7 +72,7 @@ class PhotoGrid extends StatelessWidget {
       );
     }
 
-    const gap = SizedBox.square(dimension: Space.sm);
+    const gap = SizedBox.square(dimension: Space.xs);
     return switch (count) {
       0 => const SizedBox.shrink(),
       1 => AspectRatio(aspectRatio: 16 / 10, child: tile(0)),
@@ -269,8 +269,8 @@ class _PhotoPagerState extends State<PhotoPager> {
 }
 
 /// One photo: a fictional scene tile, or an uploaded photo loaded through
-/// a short-lived signed link (thumb in cards, medium in the viewer, where
-/// it can be zoomed).
+/// a short-lived signed link selected for the physical display area.
+/// Zoom viewers request the full rendition.
 class MemoryPhotoTile extends ConsumerWidget {
   const MemoryPhotoTile({
     super.key,
@@ -300,51 +300,57 @@ class MemoryPhotoTile extends ConsumerWidget {
         large: large,
       );
     }
-    final request = (
-      mediaId: mediaId,
-      size: large ? MediaSize.medium : MediaSize.thumb,
-    );
-    void retry() {
-      ref.read(mediaRepositoryProvider)?.forget(mediaId, request.size);
-      ref.invalidate(signedMediaUrlProvider(request));
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final pixels =
+            constraints.biggest.longestSide *
+            MediaQuery.devicePixelRatioOf(context);
+        final size = large || pixels > 1080
+            ? MediaSize.full
+            : pixels > 320
+            ? MediaSize.medium
+            : MediaSize.thumb;
+        final request = (mediaId: mediaId, size: size);
+        void retry() {
+          ref.read(mediaRepositoryProvider)?.forget(mediaId, request.size);
+          ref.invalidate(signedMediaUrlProvider(request));
+        }
 
-    final link = ref.watch(
-      signedMediaUrlProvider((
-        mediaId: mediaId,
-        size: large ? MediaSize.medium : MediaSize.thumb,
-      )),
-    );
-    Widget frame(Widget child) => CirclePhotoFrame(
-      semanticsLabel: semanticsLabel,
-      onTap: onTap,
-      more: more,
-      large: large,
-      child: child,
-    );
-    return link.when(
-      data: (url) {
-        final image = CircleSignedImage(
-          url: url,
-          onRetry: retry,
+        final link = ref.watch(
+          signedMediaUrlProvider((mediaId: mediaId, size: size)),
+        );
+        Widget frame(Widget child) => CirclePhotoFrame(
           semanticsLabel: semanticsLabel,
           onTap: onTap,
           more: more,
           large: large,
-          fit: large ? BoxFit.contain : BoxFit.cover,
+          child: child,
         );
-        return large ? InteractiveViewer(maxScale: 4, child: image) : image;
+        return link.when(
+          data: (url) {
+            final image = CircleSignedImage(
+              url: url,
+              onRetry: retry,
+              semanticsLabel: semanticsLabel,
+              onTap: onTap,
+              more: more,
+              large: large,
+              fit: large ? BoxFit.contain : BoxFit.cover,
+            );
+            return large ? InteractiveViewer(maxScale: 4, child: image) : image;
+          },
+          loading: () => frame(const CirclePhotoPlaceholder(loading: true)),
+          error: (_, _) => CirclePhotoFrame(
+            semanticsLabel: '$semanticsLabel. Photo unavailable. Tap to retry.',
+            onTap: retry,
+            more: null,
+            large: large,
+            child: const CirclePhotoPlaceholder(
+              message: 'Photo unavailable. Tap to retry',
+            ),
+          ),
+        );
       },
-      loading: () => frame(const CirclePhotoPlaceholder(loading: true)),
-      error: (_, _) => CirclePhotoFrame(
-        semanticsLabel: '$semanticsLabel. Photo unavailable. Tap to retry.',
-        onTap: retry,
-        more: null,
-        large: large,
-        child: const CirclePhotoPlaceholder(
-          message: 'Photo unavailable. Tap to retry',
-        ),
-      ),
     );
   }
 }

@@ -30,6 +30,7 @@ Updated:30 October2026. Source, production deployment, APK publication and devic
 - Other backlog: video/documents, forwarding/sharing, activity/search, albums, broader profile-field privacy/deletion/export/recovery. See live-polls.md/live-chat-events.md/pending-work.md.
 
 ## Verified checks
+- Photo-quality follow-up: Memory tiles select320/1080/2048 renditions from physical display dimensions; zoom requests2048. Collage gutters tightened. Figma community reference blocked by proxy; screenshot used for spacing direction. Source-only until a new release build.
 - UI release1.0.26+27: analyzer clean; final focused50 pass. Full667pass/1skip/18fail before final corrections;13 Windows golden differences and5 non-golden failures, all5 covered and passed in final focused run. No backend changes. Production photo diagnosis/native acceptance pending.
 - Review30Oct: focused live Chats/Events/media/Memories/server-mode/design tests69 passed. No backend changes or production API checks performed in this review.
 - Push24: full Flutter746 pass/1skip/13 existing Windows golden differences on Linux; no functional failures. Analyzer/format clean. The initial full run exposed6 UTC-alias settings failures; final run resolves them and adds daytime background/alias/Events regression coverage. No backend changes.
