@@ -19,3 +19,7 @@ Set-Clipboard ([Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFI
 ```
 
 Open GitHub repository Settings → Environments → ios-testflight → IOS_PROFILE_BASE64 → edit. Paste, save, then clear the clipboard. Keep the other signing and ASC secrets. Never paste the value in chat or a public workflow input. If the filename/path differs, use its actual local path.
+
+## Delivery acceptance notes
+
+There is no notification sound/banner before the user grants OS permission. Android and iOS device preference screens remain independent from server global/category switches. To revoke, use CIRCLE notification settings or iOS Settings → Notifications → CIRCLE. First-launch prompting does not override a previous OS denial. With iOS notifications enabled, Firebase's APNs token can arrive asynchronously; registration waits briefly, then exposes a safe retry if unavailable.

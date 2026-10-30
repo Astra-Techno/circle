@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,6 +57,32 @@ PushBinding binding(String account, FakeHandler handler) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'iOS registration identifies platform without changing session scope',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      final gateway = Gateway();
+      final seen = <FakeRequest>[];
+      final current = binding('1', (request) async {
+        seen.add(request);
+        return FakeResponse.ok({'registered': true});
+      });
+      final coordinator = PushSessionCoordinator(
+        gateway: gateway,
+        current: () async => current,
+        ledger: PushLedger(MemoryLocalSettingsStore()),
+        enabled: true,
+        clock: () => clock,
+      );
+      expect(await coordinator.start(), isTrue);
+      expect(seen.single.path, '/devices/register');
+      expect(seen.single.json['platform'], 'ios');
+      await coordinator.stop();
+      coordinator.dispose();
+      await gateway.close();
+    },
+  );
   test('native tap acknowledgement follows durable open staging', () async {
     final gateway = Gateway(), store = MemoryLocalSettingsStore();
     final current = binding('1', (r) async => FakeResponse.ok({}));

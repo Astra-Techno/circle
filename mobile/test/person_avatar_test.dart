@@ -142,12 +142,18 @@ void main() {
       );
       server.users[author]!['avatar_version'] =
           '00000000-0000-4000-8000-000000000002';
-      await tester.drag(find.byType(ListView).first, const Offset(0, 600));
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, 600),
+      );
       await settle(tester);
       expect(server.adapter.count('GET', '/profiles/$author/photos/avatar'), 2);
       server.users[author]!['avatar_version'] = null;
       server.profilePhotos.remove('$author:avatar');
-      await tester.drag(find.byType(ListView).first, const Offset(0, 600));
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, 600),
+      );
       await settle(tester);
       final avatars = find.descendant(
         of: find.byWidgetPredicate(

@@ -97,7 +97,16 @@ final class CirclePushBridge: NSObject, FlutterPlugin, FlutterStreamHandler {
       content.title = "CIRCLE"; content.body = "You have a new update. Open CIRCLE to view it."
       content.sound = .default; content.userInfo = ["circle_payload": payload]
       UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: nil)) { error in
-        DispatchQueue.main.async { result(error == nil) }
+        DispatchQueue.main.async {
+          if error != nil {
+            Self.mutex.lock()
+            var saved = self.defaults.dictionary(forKey: "circle.push.displayed") as? [String: Double] ?? [:]
+            saved.removeValue(forKey: id)
+            self.defaults.set(saved, forKey: "circle.push.displayed")
+            Self.mutex.unlock()
+          }
+          result(error == nil)
+        }
       }
     default: result(FlutterMethodNotImplemented)
     }
