@@ -4,9 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   TestWidgetsFlutterBinding.ensureInitialized();
-  await (FontLoader(
-    'Roboto',
-  )..addFont(rootBundle.load('assets/fonts/Roboto.ttf'))).load();
+  await (FontLoader('Roboto')
+        ..addFont(rootBundle.load('assets/fonts/Roboto-Regular.ttf'))
+        ..addFont(rootBundle.load('assets/fonts/Roboto-SemiBold.ttf')))
+      .load();
   final text = FontLoader('PlusJakartaSans')
     ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-Regular.ttf'))
     ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-Medium.ttf'))

@@ -88,7 +88,7 @@ class PhotoGrid extends StatelessWidget {
         ),
       ),
       _ => AspectRatio(
-        aspectRatio: 3 / 2,
+        aspectRatio: 2,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -101,10 +101,7 @@ class PhotoGrid extends StatelessWidget {
                   Expanded(child: tile(1)),
                   gap,
                   Expanded(
-                    child: tile(
-                      2,
-                      more: count > 3 ? '+${count - 3} more' : null,
-                    ),
+                    child: tile(2, more: count > 3 ? '+${count - 3}' : null),
                   ),
                 ],
               ),

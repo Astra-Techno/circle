@@ -984,7 +984,7 @@ class CircleFloatingHeader extends StatelessWidget {
       snap: true,
       pinned: false,
       automaticallyImplyLeading: false,
-      toolbarHeight: Space.hero * 2 + Space.sm,
+      toolbarHeight: Space.hero * 2,
       titleSpacing: Space.section,
       title: _headerTitle(context, data),
       actions: [
@@ -1026,14 +1026,19 @@ Widget _headerTitle(
                 maxLines: 1,
                 style: large
                     ? theme.textTheme.headlineMedium
-                    : data.titleStyle ?? theme.textTheme.headlineMedium,
+                    : theme.textTheme.titleLarge,
               ),
               if (data.logo != null)
-                Text(
-                  'My Circle. Billion Memories.',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'My Circle. Billion Memories.',
+                    maxLines: 1,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
                 ),
             ],
           ),

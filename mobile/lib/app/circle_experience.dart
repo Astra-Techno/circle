@@ -859,7 +859,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                         ),
                         Transform.translate(
                           offset: const Offset(0, -Space.md),
-                          child: FloatingActionButton(
+                          child: FloatingActionButton.small(
                             heroTag: 'reference-create',
                             tooltip: 'Create Memory',
                             onPressed: () =>
@@ -868,9 +868,14 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Photos',
-                          icon: const Icon(Icons.photo_library_outlined),
-                          onPressed: () => context.push('/photos'),
+                          tooltip: 'Events',
+                          isSelected: index == 3,
+                          selectedIcon: Icon(
+                            Icons.event,
+                            color: theme.colorScheme.primary,
+                          ),
+                          icon: const Icon(Icons.event_outlined),
+                          onPressed: () => shell.goBranch(3),
                         ),
                         IconButton(
                           tooltip: 'You',
@@ -932,11 +937,18 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     // Root tab pages: no AppBar — each screen draws its own scroll-aware
     // SliverAppBar. The shell passes header data via CircleTabHeaderData.
     final logo = index == 0
-        ? Image.asset(
-            CircleIdentity.artwork,
-            width: Space.hero + Space.xs,
-            height: Space.hero + Space.xs,
-            semanticLabel: CircleIdentity.name,
+        ? Container(
+            width: Space.large,
+            height: Space.large,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(CircleRadius.small),
+            ),
+            child: Icon(
+              Icons.all_inclusive,
+              color: theme.colorScheme.primary,
+              semanticLabel: CircleIdentity.name,
+            ),
           )
         : null;
     return Scaffold(

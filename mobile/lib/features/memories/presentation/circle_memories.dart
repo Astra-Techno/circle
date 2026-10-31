@@ -118,7 +118,19 @@ class CircleHome extends ConsumerWidget {
                                       ),
                                       const SizedBox(width: Space.sm),
                                       Expanded(
-                                        child: FilledButton.tonal(
+                                        child: TextButton(
+                                          style: TextButton.styleFrom(
+                                            backgroundColor: CircleAccents.of(
+                                              context,
+                                            ).recessed,
+                                            foregroundColor: CircleAccents.of(
+                                              context,
+                                            ).caption,
+                                            alignment: Alignment.centerLeft,
+                                            textStyle: Theme.of(
+                                              context,
+                                            ).textTheme.bodyLarge,
+                                          ),
                                           onPressed: () => context.push(
                                             groupId == null
                                                 ? '/compose'
@@ -325,7 +337,15 @@ class _CircleStory extends StatelessWidget {
       selected: selected,
       label: '$label${fresh ? ", new Memories" : ""}',
       child: ChoiceChip(
-        label: Text(label == 'All' ? 'All Circles' : label),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label == 'All' ? 'All Circles' : label),
+            if (label == 'All') const Icon(Icons.keyboard_arrow_down),
+          ],
+        ),
+        side: BorderSide.none,
+        backgroundColor: CircleAccents.of(context).recessed,
         selected: selected,
         showCheckmark: false,
         selectedColor: colors.primary,

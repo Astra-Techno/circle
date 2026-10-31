@@ -309,6 +309,9 @@ class CircleMemoryCard extends ConsumerWidget {
                   Expanded(
                     child: TextButton(
                       onPressed: () => showReactionSummary(context, reactions),
+                      style: TextButton.styleFrom(
+                        alignment: Alignment.centerLeft,
+                      ),
                       child: Text(
                         '${reactions.total} reactions',
                         style: caption,

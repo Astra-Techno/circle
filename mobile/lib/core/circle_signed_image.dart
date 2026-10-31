@@ -131,7 +131,23 @@ class CirclePhotoFrame extends StatelessWidget {
                 PositionedDirectional(
                   end: Space.sm,
                   bottom: Space.sm,
-                  child: CirclePill(more!, tone: CircleTone.strong),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.scrim.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(CircleRadius.small),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(Space.sm),
+                      child: Text(
+                        more!,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),

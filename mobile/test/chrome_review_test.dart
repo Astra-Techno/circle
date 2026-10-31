@@ -44,13 +44,12 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
-  testWidgets('reference dock opens photos and composer', (tester) async {
+  testWidgets('reference dock offers Events and opens composer', (
+    tester,
+  ) async {
     await openCircle(tester);
-    await tester.tap(find.byTooltip('Photos'));
-    await tester.pumpAndSettle();
-    expect(find.text('Photos'), findsOneWidget);
-    await tester.tap(find.byType(BackButton).first);
-    await tester.pumpAndSettle();
+    expect(find.byTooltip('Events'), findsWidgets);
+    expect(find.byTooltip('Photos'), findsNothing);
     await tester.tap(find.byTooltip('Create Memory').last);
     await tester.pumpAndSettle();
     expect(find.text('New Memory'), findsOneWidget);
