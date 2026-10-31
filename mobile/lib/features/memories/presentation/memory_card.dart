@@ -46,7 +46,6 @@ class CircleMemoryCard extends ConsumerWidget {
     final comments = memory.commentTotal;
     final commentLabel = '$comments ${comments == 1 ? 'comment' : 'comments'}';
     void openDetail() => context.push('/home/memory/${memory.id}');
-    final latest = CommentRules.latest(memory.comments);
     final reactions = memory.reactions;
     final accents = CircleAccents.of(context);
     final caption = theme.textTheme.bodySmall?.copyWith(color: accents.caption);
@@ -167,7 +166,20 @@ class CircleMemoryCard extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(memory.author, style: theme.textTheme.titleMedium),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: memory.author,
+                                style: theme.textTheme.titleMedium,
+                              ),
+                              TextSpan(
+                                text: ' shared a memory',
+                                style: theme.textTheme.bodyLarge,
+                              ),
+                            ],
+                          ),
+                        ),
                         // Who can see it, always visible (privacy first).
                         Semantics(
                           container: true,
@@ -290,95 +302,61 @@ class CircleMemoryCard extends ConsumerWidget {
                   ],
                 ),
               ),
-            // Actions: vector heart + count, comments, reaction picker, save.
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.sm),
+              padding: const EdgeInsets.symmetric(horizontal: Space.md),
               child: Row(
                 children: [
-                  // Wraps onto two lines at very large text sizes.
                   Expanded(
-                    child: Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        _LoveButton(
-                          reactions: reactions,
-                          about: about,
-                          onTap: () => react(reactions.mine ?? loveReaction),
-                          onLongPress: pickReaction,
-                        ),
-                        if (reactions.total > 0)
-                          Tooltip(
-                            message: 'Show reactions for $about',
-                            excludeFromSemantics: true,
-                            child: TextButton(
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(
-                                  Space.large,
-                                  Space.large,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: Space.xs,
-                                ),
-                                foregroundColor: colors.onSurface,
-                              ),
-                              onPressed: () =>
-                                  showReactionSummary(context, reactions),
-                              child: Text(
-                                '${reactions.total}',
-                                semanticsLabel:
-                                    '${reactions.describe()}. Show reactions',
-                                style: theme.textTheme.labelLarge,
-                              ),
-                            ),
-                          ),
-                        if (!detail)
-                          TextButton.icon(
-                            style: TextButton.styleFrom(
-                              foregroundColor: colors.onSurface,
-                            ),
-                            onPressed: openDetail,
-                            icon: const Icon(Icons.chat_bubble_outline_rounded),
-                            label: Text(
-                              comments > 0 ? '$comments' : 'Comment',
-                              semanticsLabel: comments > 0
-                                  ? '$commentLabel on $about'
-                                  : 'Comment on $about',
-                              style: theme.textTheme.bodyLarge,
-                            ),
-                          ),
-                        IconButton(
-                          tooltip: 'Choose a reaction for $about',
-                          onPressed: pickReaction,
-                          icon: const Icon(Icons.add_reaction_outlined),
-                        ),
-                      ],
+                    child: TextButton(
+                      onPressed: () => showReactionSummary(context, reactions),
+                      child: Text(
+                        '${reactions.total} reactions',
+                        style: caption,
+                      ),
                     ),
                   ),
-                  IconButton(
-                    tooltip: memory.saved ? 'Unsave $about' : 'Save $about',
-                    icon: Icon(
-                      memory.saved
-                          ? Icons.bookmark_rounded
-                          : Icons.bookmark_border_rounded,
-                      color: memory.saved ? colors.primary : null,
+                  Flexible(
+                    child: TextButton(
+                      onPressed: openDetail,
+                      child: Text(commentLabel, style: caption),
                     ),
-                    onPressed: () =>
-                        runCalmly(context, () => controller.save(memory.id)),
                   ),
                 ],
               ),
             ),
-
-            if (!detail && latest != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  Space.section,
-                  Space.sm,
-                  Space.section,
-                  0,
+            const Divider(indent: Space.md, endIndent: Space.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _LoveButton(
+                  reactions: reactions,
+                  about: about,
+                  onTap: () => react(reactions.mine ?? loveReaction),
+                  onLongPress: pickReaction,
                 ),
-                child: CommentBubble(latest, onTap: openDetail, maxLines: 2),
-              ),
+                IconButton(
+                  tooltip: 'Comment on $about',
+                  onPressed: openDetail,
+                  icon: const Icon(Icons.chat_bubble_outline_rounded),
+                ),
+                IconButton(
+                  tooltip: 'Choose a reaction for $about',
+                  onPressed: pickReaction,
+                  icon: const Icon(Icons.add_reaction_outlined),
+                ),
+                IconButton(
+                  tooltip: memory.saved ? 'Unsave $about' : 'Save $about',
+                  onPressed: () =>
+                      runCalmly(context, () => controller.save(memory.id)),
+                  icon: Icon(
+                    memory.saved
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    color: memory.saved ? colors.primary : null,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

@@ -44,6 +44,21 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
+  testWidgets('reference dock opens photos and composer', (tester) async {
+    await openCircle(tester);
+    await tester.tap(find.byTooltip('Photos'));
+    await tester.pumpAndSettle();
+    expect(find.text('Photos'), findsOneWidget);
+    await tester.tap(find.byType(BackButton).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Create Memory').last);
+    await tester.pumpAndSettle();
+    expect(find.text('New Memory'), findsOneWidget);
+    await tester.tap(find.byType(BackButton).first);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Chats'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
   testWidgets('accessible navigation stays visible while scrolling', (
     tester,
   ) async {
@@ -56,6 +71,6 @@ void main() {
       const Offset(0, -600),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byTooltip('Create Memory'), findsWidgets);
   });
 }

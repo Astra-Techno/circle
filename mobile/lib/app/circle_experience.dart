@@ -335,6 +335,11 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
+        path: '/photos',
+        builder: (context, state) =>
+            _page(context, 'Photos', const CirclePhotos()),
+      ),
+      GoRoute(
         path: '/search',
         builder: (context, _) => _page(context, 'Search', const SearchScreen()),
       ),
@@ -775,13 +780,6 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     final eventsFilter = ref.watch(eventsGroupFilterProvider);
     final workspace = ref.watch(circleWorkspaceProvider).value;
     final features = ref.watch(circleFeaturesProvider);
-    final branches = [
-      0,
-      if (features.has(CircleFeature.liveChat)) 1,
-      2,
-      if (features.has(CircleFeature.liveEvents)) 3,
-      4,
-    ];
     // "New event" only when the viewer may create an event somewhere.
     final canCreateEvent =
         features.has(CircleFeature.liveEvents) &&
@@ -834,52 +832,58 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                 top: false,
                 child: MediaQuery.withClampedTextScaling(
                   maxScaleFactor: navigationMaxTextScale,
-                  child: NavigationBar(
+                  child: SizedBox(
                     height: Space.hero * 2,
-                    selectedIndex: branches.contains(index)
-                        ? branches.indexOf(index)
-                        : 0,
-                    labelBehavior:
-                        NavigationDestinationLabelBehavior.alwaysShow,
-                    onDestinationSelected: (target) {
-                      setState(() {
-                        _navigationVisible = true;
-                        _travel = 0;
-                      });
-                      shell.goBranch(
-                        branches[target],
-                        initialLocation: branches[target] == index,
-                      );
-                    },
-                    destinations: [
-                      const NavigationDestination(
-                        icon: Icon(Icons.home_outlined),
-                        selectedIcon: Icon(Icons.home_rounded),
-                        label: 'Home',
-                      ),
-                      if (features.has(CircleFeature.liveChat))
-                        const NavigationDestination(
-                          icon: Icon(Icons.forum_outlined),
-                          selectedIcon: Icon(Icons.forum_rounded),
-                          label: 'Chats',
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        IconButton(
+                          tooltip: 'Home',
+                          isSelected: index == 0,
+                          selectedIcon: Icon(
+                            Icons.home_rounded,
+                            color: theme.colorScheme.primary,
+                          ),
+                          icon: const Icon(Icons.home_outlined),
+                          onPressed: () => shell.goBranch(0),
                         ),
-                      const NavigationDestination(
-                        icon: Icon(Icons.groups_outlined),
-                        selectedIcon: Icon(Icons.groups_rounded),
-                        label: 'Groups',
-                      ),
-                      if (features.has(CircleFeature.liveEvents))
-                        const NavigationDestination(
-                          icon: Icon(Icons.event_outlined),
-                          selectedIcon: Icon(Icons.event_rounded),
-                          label: 'Events',
+                        IconButton(
+                          tooltip: 'Groups',
+                          isSelected: index == 2,
+                          selectedIcon: Icon(
+                            Icons.groups_rounded,
+                            color: theme.colorScheme.primary,
+                          ),
+                          icon: const Icon(Icons.groups_outlined),
+                          onPressed: () => shell.goBranch(2),
                         ),
-                      const NavigationDestination(
-                        icon: Icon(Icons.person_outline),
-                        selectedIcon: Icon(Icons.person_rounded),
-                        label: 'You',
-                      ),
-                    ],
+                        Transform.translate(
+                          offset: const Offset(0, -Space.md),
+                          child: FloatingActionButton(
+                            heroTag: 'reference-create',
+                            tooltip: 'Create Memory',
+                            onPressed: () =>
+                                context.push(composeLocation(filter)),
+                            child: const Icon(Icons.add),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Photos',
+                          icon: const Icon(Icons.photo_library_outlined),
+                          onPressed: () => context.push('/photos'),
+                        ),
+                        IconButton(
+                          tooltip: 'You',
+                          isSelected: index == 4,
+                          selectedIcon: Icon(
+                            Icons.person_rounded,
+                            color: theme.colorScheme.primary,
+                          ),
+                          icon: const Icon(Icons.person_outline),
+                          onPressed: () => shell.goBranch(4),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -963,7 +967,16 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   ? theme.textTheme.titleLarge
                   : theme.textTheme.headlineMedium,
               logo: logo,
-              actions: const [SearchButton(), ActivityBell()],
+              actions: [
+                const SearchButton(),
+                const ActivityBell(),
+                if (features.has(CircleFeature.liveChat))
+                  IconButton(
+                    tooltip: 'Chats',
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    onPressed: () => shell.goBranch(1),
+                  ),
+              ],
               fab: fab,
               child: shell,
             ),

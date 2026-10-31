@@ -76,6 +76,9 @@ flutter:
     - assets/welcome/
     - assets/brand/circle-brand.png
   fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto.ttf
     - family: PlusJakartaSans
       fonts:
         - asset: assets/fonts/PlusJakartaSans-Regular.ttf

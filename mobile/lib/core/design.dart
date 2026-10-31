@@ -123,8 +123,8 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
   final Color chatWallpaper, chatIncoming, chatOutgoing;
 
   static const light = CircleAccents(
-    heart: Color(0xFF4930A7),
-    heartText: Color(0xFF4930A7),
+    heart: Color(0xFFFF4054),
+    heartText: Color(0xFFFF4054),
     heartContainer: Color(0xFFEFECF7),
     calm: Color(0xFF4930A7),
     calmText: Color(0xFF4930A7),
@@ -132,8 +132,8 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     sage: Color(0xFF3F7A68),
     sageText: Color(0xFF2F6153),
     sageContainer: Color(0xFFE6EFE9),
-    recessed: Color(0xFFF3F0EA),
-    hairline: Color(0xFFECE8E1),
+    recessed: Color(0xFFF5F5F8),
+    hairline: Color(0xFFECECF2),
     title: Color(0xFF1C1B22),
     caption: Color(0xFF6B6878),
     activeDot: Color(0xFF3F7A68),
@@ -173,10 +173,10 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
       other is CircleAccents && t >= 0.5 ? other : this;
 }
 
-const _font = 'PlusJakartaSans';
+const _font = 'Roboto';
 
 /// Editorial type: exactly four sizes (28 / 20 / 16 / 13) and two weights
-/// (400 / 600), all in the app's Plus Jakarta Sans. Headlines get slightly
+/// (400 / 600), all in the app's bundled Roboto. Headlines get slightly
 /// tighter tracking. Body text stays 16px for readability (§4.0).
 TextTheme _textTheme({required Color title, required Color body}) {
   TextStyle sans(double size, FontWeight weight, double height, Color ink) =>

@@ -1,3 +1,4 @@
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import '../../workspace/presentation/workspace_view.dart';
 import '../application/circle_seen.dart';
 import '../application/home_filter.dart';
 import 'memory_card.dart';
+import 'memory_photos.dart';
 
 export 'memory_card.dart';
 export 'memory_compose.dart';
@@ -39,109 +41,159 @@ class CircleHome extends ConsumerWidget {
       }
 
       final more = workspace.hasMoreMemories;
-      return ReadingPane(
-        child: RefreshIndicator(
-          onRefresh: () => runCalmly(
-            context,
-            () => ref.read(circleWorkspaceProvider.notifier).refresh(),
-          ),
-          child: CustomScrollView(
-            key: const PageStorageKey('circle-home'),
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              // Floating snap header: hides on scroll down, snaps back
-              // instantly on any upward scroll (like Instagram).
-              const CircleFloatingHeader(),
-              SliverList.builder(
-                // Memories run edge to edge: photos are full width and each
-                // card pads its own text to the 24px editorial margin.
-                itemCount: memories.length + 1 + (more ? 1 : 0),
-                itemBuilder: (context, index) {
-                  // Built only when scrolled near the end: loads older Memories.
-                  if (index == memories.length + 1) {
-                    return const _LoadOlderMemories();
-                  }
-                  if (index == 0) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (workspace.groups.isNotEmpty) ...[
-                          _CircleStories(
-                            children: [
-                              _CircleStory(
-                                label: 'All',
-                                selected: groupId == null,
-                                onTap: () => select(null),
-                                avatar: const CircleInitialAvatar(
-                                  icon: Icons.blur_circular_outlined,
-                                  tone: CircleTone.neutral,
-                                  size: CircleAvatarSize.large,
-                                ),
-                              ),
-                              for (final circle in circles.ordered)
+      return ColoredBox(
+        color: CircleAccents.of(context).recessed,
+        child: ReadingPane(
+          child: RefreshIndicator(
+            onRefresh: () => runCalmly(
+              context,
+              () => ref.read(circleWorkspaceProvider.notifier).refresh(),
+            ),
+            child: CustomScrollView(
+              key: const PageStorageKey('circle-home'),
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // Floating snap header: hides on scroll down, snaps back
+                // instantly on any upward scroll (like Instagram).
+                const CircleFloatingHeader(),
+                SliverList.builder(
+                  // Memories run edge to edge: photos are full width and each
+                  // card pads its own text to the 24px editorial margin.
+                  itemCount: memories.length + 1 + (more ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    // Built only when scrolled near the end: loads older Memories.
+                    if (index == memories.length + 1) {
+                      return const _LoadOlderMemories();
+                    }
+                    if (index == 0) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (workspace.groups.isNotEmpty) ...[
+                            _CircleStories(
+                              children: [
                                 _CircleStory(
-                                  key: ValueKey(
-                                    'home-circle-${circle.group.id}',
-                                  ),
-                                  label: circle.group.name,
-                                  selected: groupId == circle.group.id,
-                                  fresh: circle.fresh,
-                                  onTap: () => select(
-                                    groupId == circle.group.id
-                                        ? null
-                                        : circle.group.id,
-                                  ),
-                                  avatar: GroupAvatar(
-                                    groupId: circle.group.id,
-                                    type: circle.group.type,
+                                  label: 'All',
+                                  selected: groupId == null,
+                                  onTap: () => select(null),
+                                  avatar: const CircleInitialAvatar(
+                                    icon: Icons.blur_circular_outlined,
+                                    tone: CircleTone.neutral,
                                     size: CircleAvatarSize.large,
                                   ),
                                 ),
-                            ],
-                          ),
-                          const SizedBox(height: Space.sm),
+                                for (final circle in circles.ordered)
+                                  _CircleStory(
+                                    key: ValueKey(
+                                      'home-circle-${circle.group.id}',
+                                    ),
+                                    label: circle.group.name,
+                                    selected: groupId == circle.group.id,
+                                    fresh: circle.fresh,
+                                    onTap: () => select(
+                                      groupId == circle.group.id
+                                          ? null
+                                          : circle.group.id,
+                                    ),
+                                    avatar: GroupAvatar(
+                                      groupId: circle.group.id,
+                                      type: circle.group.type,
+                                      size: CircleAvatarSize.large,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: Space.sm),
+                          ],
+                          if (workspace.groups.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(Space.md),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      PersonAvatar(
+                                        person: workspace.viewer,
+                                        name: 'You',
+                                      ),
+                                      const SizedBox(width: Space.sm),
+                                      Expanded(
+                                        child: FilledButton.tonal(
+                                          onPressed: () => context.push(
+                                            groupId == null
+                                                ? '/compose'
+                                                : '/compose?group=$groupId',
+                                          ),
+                                          child: const Text(
+                                            'Share a memory with your Circle…',
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: Space.sm),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      IconButton(
+                                        tooltip: 'Add photos',
+                                        icon: const Icon(Icons.photo_outlined),
+                                        onPressed: () =>
+                                            context.push('/compose'),
+                                      ),
+                                      if (ref
+                                          .watch(circleFeaturesProvider)
+                                          .has(CircleFeature.liveEvents))
+                                        IconButton(
+                                          tooltip: 'Events',
+                                          icon: const Icon(
+                                            Icons.calendar_today_outlined,
+                                          ),
+                                          onPressed: () =>
+                                              context.go('/events'),
+                                        ),
+                                      if (ref
+                                          .watch(circleFeaturesProvider)
+                                          .has(CircleFeature.livePolls))
+                                        IconButton(
+                                          tooltip: 'Create poll',
+                                          icon: const Icon(
+                                            Icons.format_list_bulleted,
+                                          ),
+                                          onPressed: () =>
+                                              context.push('/polls/new'),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (memories.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: Space.section,
+                              ),
+                              child: _FirstSteps(
+                                workspace: workspace,
+                                groupId: groupId,
+                              ),
+                            ),
                         ],
-                        if (workspace.groups.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.all(Space.md),
-                            child: OutlinedButton.icon(
-                              onPressed: () => context.push(
-                                groupId == null
-                                    ? '/compose'
-                                    : '/compose?group=$groupId',
-                              ),
-                              icon: const Icon(
-                                Icons.add_photo_alternate_outlined,
-                              ),
-                              label: const Text(
-                                'Share a memory with your Circle…',
-                              ),
-                            ),
-                          ),
-                        if (memories.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: Space.section,
-                            ),
-                            child: _FirstSteps(
-                              workspace: workspace,
-                              groupId: groupId,
-                            ),
-                          ),
-                      ],
+                      );
+                    }
+                    final memory = memories[index - 1];
+                    final group = workspace.group(memory.groupId)!;
+                    return CircleMemoryCard(
+                      key: ValueKey(memory.id),
+                      memory: memory,
+                      group: group,
+                      audience: audiencePath(group, workspace.groupsById),
                     );
-                  }
-                  final memory = memories[index - 1];
-                  final group = workspace.group(memory.groupId)!;
-                  return CircleMemoryCard(
-                    key: ValueKey(memory.id),
-                    memory: memory,
-                    group: group,
-                    audience: audiencePath(group, workspace.groupsById),
-                  );
-                },
-              ),
-            ],
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -412,4 +464,60 @@ class _FirstSteps extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Private photos from the loaded, authorized Memory timeline.
+class CirclePhotos extends ConsumerWidget {
+  const CirclePhotos({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => WorkspaceView(
+    builder: (workspace) {
+      final entries = [
+        for (final memory in workspace.memories)
+          for (var i = 0; i < memory.photos.length; i++)
+            (memory: memory, index: i),
+      ];
+      return CustomScrollView(
+        slivers: [
+          if (entries.isEmpty)
+            const SliverToBoxAdapter(
+              child: CircleEmpty(
+                title: 'No photos loaded yet',
+                message: 'Photos shared with you appear here.',
+              ),
+            ),
+          SliverPadding(
+            padding: const EdgeInsets.all(Space.sm),
+            sliver: SliverGrid.count(
+              crossAxisCount: MediaQuery.sizeOf(context).width > 600 ? 4 : 3,
+              mainAxisSpacing: Space.xs,
+              crossAxisSpacing: Space.xs,
+              children: [
+                for (final entry in entries)
+                  MemoryPhotoTile(
+                    photo: entry.memory.photos[entry.index],
+                    semanticsLabel: 'Photo from ${entry.memory.author}',
+                    onTap: () => context.push(
+                      photoViewerLocation(entry.memory.id, entry.index),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (workspace.hasMoreMemories)
+            SliverToBoxAdapter(
+              child: TextButton(
+                onPressed: () => runCalmly(
+                  context,
+                  () => ref
+                      .read(circleWorkspaceProvider.notifier)
+                      .loadMoreMemories(),
+                ),
+                child: const Text('Load older photos'),
+              ),
+            ),
+        ],
+      );
+    },
+  );
 }

@@ -1031,7 +1031,7 @@ Widget _headerTitle(
               if (data.logo != null)
                 Text(
                   'My Circle. Billion Memories.',
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall,
                 ),
