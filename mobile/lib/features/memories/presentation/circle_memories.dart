@@ -188,58 +188,44 @@ class _HomeHeader extends ConsumerWidget {
               ],
             ),
           ),
-          // Four quick-action tiles.
+          // Four quick-action icons.
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              Space.md,
-              Space.xs,
-              Space.md,
+              Space.section,
+              0,
+              Space.section,
               Space.md,
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Expanded(
-                  child: _QuickActionTile(
-                    icon: Icons.photo_library_outlined,
-                    label: 'Photo',
-                    color: theme.colorScheme.primary,
-                    bgColor: theme.colorScheme.primaryContainer,
-                    onTap: () => context.push(composeLocation(groupId)),
-                  ),
+                _QuickActionIcon(
+                  icon: Icons.photo_library_outlined,
+                  label: 'Photo',
+                  color: theme.colorScheme.primary,
+                  onTap: () => context.push(composeLocation(groupId)),
                 ),
-                const SizedBox(width: Space.sm),
-                Expanded(
-                  child: _QuickActionTile(
-                    icon: Icons.videocam_outlined,
-                    label: 'Video',
-                    color: accents.video,
-                    bgColor: accents.videoContainer,
-                    onTap: () => context.push(composeLocation(groupId)),
-                  ),
+                _QuickActionIcon(
+                  icon: Icons.videocam_outlined,
+                  label: 'Video',
+                  color: accents.video,
+                  onTap: () => context.push(composeLocation(groupId)),
                 ),
-                const SizedBox(width: Space.sm),
-                Expanded(
-                  child: _QuickActionTile(
-                    icon: Icons.event_outlined,
-                    label: 'Event',
-                    color: accents.sage,
-                    bgColor: accents.sageContainer,
-                    onTap: features.has(CircleFeature.liveEvents)
-                        ? () => context.push('/events/new')
-                        : null,
-                  ),
+                _QuickActionIcon(
+                  icon: Icons.event_outlined,
+                  label: 'Event',
+                  color: accents.sage,
+                  onTap: features.has(CircleFeature.liveEvents)
+                      ? () => context.push('/events/new')
+                      : null,
                 ),
-                const SizedBox(width: Space.sm),
-                Expanded(
-                  child: _QuickActionTile(
-                    icon: Icons.format_list_bulleted_rounded,
-                    label: 'Poll',
-                    color: accents.amber,
-                    bgColor: accents.amberContainer,
-                    onTap: features.has(CircleFeature.livePolls)
-                        ? () => context.push('/polls/new')
-                        : null,
-                  ),
+                _QuickActionIcon(
+                  icon: Icons.format_list_bulleted_rounded,
+                  label: 'Poll',
+                  color: accents.amber,
+                  onTap: features.has(CircleFeature.livePolls)
+                      ? () => context.push('/polls/new')
+                      : null,
                 ),
               ],
             ),
@@ -255,50 +241,25 @@ class _HomeHeader extends ConsumerWidget {
   }
 }
 
-/// Rounded pastel tile: icon + label.
-class _QuickActionTile extends StatelessWidget {
-  const _QuickActionTile({
+/// Icon-only quick action button.
+class _QuickActionIcon extends StatelessWidget {
+  const _QuickActionIcon({
     required this.icon,
     required this.label,
     required this.color,
-    required this.bgColor,
     this.onTap,
   });
   final IconData icon;
   final String label;
-  final Color color, bgColor;
+  final Color color;
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Semantics(
-      button: true,
-      label: label,
-      child: Material(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(CircleRadius.tile),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(CircleRadius.tile),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: Space.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: 24),
-                const SizedBox(height: Space.xs),
-                Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return IconButton(
+      icon: Icon(icon, color: onTap != null ? color : color.withValues(alpha: 0.4)),
+      iconSize: 26,
+      tooltip: label,
+      onPressed: onTap,
     );
   }
 }

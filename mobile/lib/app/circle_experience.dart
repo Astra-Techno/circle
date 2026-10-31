@@ -835,7 +835,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   child: MediaQuery.withClampedTextScaling(
                     maxScaleFactor: navigationMaxTextScale,
                     child: SizedBox(
-                      height: 64,
+                      height: 56,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -854,8 +854,8 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                             onTap: () => shell.goBranch(2),
                           ),
                           SizedBox(
-                            width: 56,
-                            height: 56,
+                            width: 48,
+                            height: 48,
                             child: Material(
                               color: theme.colorScheme.primary,
                               shape: const CircleBorder(),
@@ -937,16 +937,13 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     // Root tab pages: no AppBar — each screen draws its own scroll-aware
     // SliverAppBar. The shell passes header data via CircleTabHeaderData.
     final logo = index == 0
-        ? Container(
-            width: Space.large,
-            height: Space.large,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(CircleRadius.small),
-            ),
-            child: Icon(
-              Icons.all_inclusive,
-              color: theme.colorScheme.primary,
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(CircleRadius.small),
+            child: Image.asset(
+              CircleIdentity.artwork,
+              width: Space.large,
+              height: Space.large,
+              fit: BoxFit.cover,
               semanticLabel: CircleIdentity.name,
             ),
           )
@@ -1024,25 +1021,20 @@ class _DockTab extends StatelessWidget {
       selected: selected,
       label: label,
       child: InkWell(
-        customBorder: const CircleBorder(),
+        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
-        child: SizedBox(
-          width: 56,
-          height: 56,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(selected ? activeIcon : icon, color: color, size: 24),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: color,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-            ],
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: selected ? 56 : 48,
+          height: 40,
+          decoration: BoxDecoration(
+            color: selected
+                ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
           ),
+          alignment: Alignment.center,
+          child: Icon(selected ? activeIcon : icon, color: color, size: 26),
         ),
       ),
     );
