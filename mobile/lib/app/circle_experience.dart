@@ -1021,7 +1021,7 @@ class _DockTab extends StatelessWidget {
       selected: selected,
       label: label,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(CircleRadius.button),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -1031,7 +1031,7 @@ class _DockTab extends StatelessWidget {
             color: selected
                 ? theme.colorScheme.primary.withValues(alpha: 0.12)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(CircleRadius.button),
           ),
           alignment: Alignment.center,
           child: Icon(selected ? activeIcon : icon, color: color, size: 26),
