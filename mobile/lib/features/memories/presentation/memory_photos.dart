@@ -77,7 +77,7 @@ class PhotoGrid extends StatelessWidget {
       0 => const SizedBox.shrink(),
       1 => AspectRatio(aspectRatio: 16 / 10, child: tile(0)),
       2 => AspectRatio(
-        aspectRatio: 2,
+        aspectRatio: 16 / 10,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -88,7 +88,7 @@ class PhotoGrid extends StatelessWidget {
         ),
       ),
       _ => AspectRatio(
-        aspectRatio: 2,
+        aspectRatio: 4 / 3,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

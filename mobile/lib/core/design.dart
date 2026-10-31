@@ -88,6 +88,10 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     required this.sage,
     required this.sageText,
     required this.sageContainer,
+    required this.video,
+    required this.videoContainer,
+    required this.amber,
+    required this.amberContainer,
     required this.recessed,
     required this.hairline,
     required this.title,
@@ -106,6 +110,9 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
 
   /// Supporting sage family (events, confirmations, secondary groups).
   final Color sage, sageText, sageContainer;
+
+  /// Video tile accent and poll/amber tile accent.
+  final Color video, videoContainer, amber, amberContainer;
 
   /// Recessed fills (comment previews, tiles) and the 1px hairline border.
   final Color recessed, hairline;
@@ -132,6 +139,10 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     sage: Color(0xFF3F7A68),
     sageText: Color(0xFF2F6153),
     sageContainer: Color(0xFFE6EFE9),
+    video: Color(0xFFE05252),
+    videoContainer: Color(0xFFFDE8E8),
+    amber: Color(0xFFD68F00),
+    amberContainer: Color(0xFFFFF3DB),
     recessed: Color(0xFFF5F5F8),
     hairline: Color(0xFFECECF2),
     title: Color(0xFF1C1B22),
@@ -152,6 +163,10 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     sage: Color(0xFF9CCFB9),
     sageText: Color(0xFFC3E6D6),
     sageContainer: Color(0xFF1B3A30),
+    video: Color(0xFFFF8A80),
+    videoContainer: Color(0xFF442727),
+    amber: Color(0xFFFFCC80),
+    amberContainer: Color(0xFF3E2F10),
     recessed: Color(0xFF1E1C22),
     hairline: Color(0xFF2C2A31),
     title: Color(0xFFF2EFEA),

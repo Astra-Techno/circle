@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/profile/application/profile_providers.dart';
 import 'package:mobile/features/workspace/application/server_session.dart';
@@ -29,7 +28,7 @@ void main() {
       tokens: await storedSession(server, user),
       profilePicker: picker,
     );
-    await tester.tap(find.widgetWithText(NavigationDestination, 'You'));
+    await tester.tap(find.text('Profile'));
     await settle(tester);
     await tester.tap(find.byTooltip('Add profile photo'));
     await settle(tester);

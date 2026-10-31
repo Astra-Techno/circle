@@ -1026,6 +1026,8 @@ Widget _headerTitle(
                 maxLines: 1,
                 style: large
                     ? theme.textTheme.headlineMedium
+                    : data.logo != null
+                    ? theme.textTheme.headlineSmall
                     : theme.textTheme.titleLarge,
               ),
               if (data.logo != null)
@@ -1037,6 +1039,7 @@ Widget _headerTitle(
                     maxLines: 1,
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w400,
+                      color: CircleAccents.of(context).caption,
                     ),
                   ),
                 ),

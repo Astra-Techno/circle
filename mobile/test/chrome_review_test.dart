@@ -48,14 +48,13 @@ void main() {
     tester,
   ) async {
     await openCircle(tester);
-    expect(find.byTooltip('Events'), findsWidgets);
-    expect(find.byTooltip('Photos'), findsNothing);
-    await tester.tap(find.byTooltip('Create Memory').last);
+    expect(find.text('Events'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Create'));
     await tester.pumpAndSettle();
     expect(find.text('New Memory'), findsOneWidget);
     await tester.tap(find.byType(BackButton).first);
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Chats'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
   testWidgets('accessible navigation stays visible while scrolling', (
@@ -70,6 +69,6 @@ void main() {
       const Offset(0, -600),
     );
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Create Memory'), findsWidgets);
+    expect(find.text('Home'), findsOneWidget);
   });
 }

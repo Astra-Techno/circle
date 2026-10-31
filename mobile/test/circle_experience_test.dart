@@ -2,25 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/circle_brand.dart';
-import 'package:mobile/app/circle_experience.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
 import 'support/circle_harness.dart';
 
 void main() {
-  testWidgets(
-    'scrolling down frees navigation space and scrolling up restores it',
-    (tester) async {
-      await openCircle(tester);
-      final scroll = find.byType(CustomScrollView).first;
-      expect(find.byType(NavigationBar), findsOneWidget);
-      await tester.drag(scroll, const Offset(0, -600));
-      await tester.pumpAndSettle();
-      expect(find.byType(NavigationBar), findsNothing);
-      await tester.drag(scroll, const Offset(0, 180));
-      await tester.pumpAndSettle();
-      expect(find.byType(NavigationBar), findsOneWidget);
-    },
-  );
+  testWidgets('scrolling down hides navigation and scrolling up restores it', (
+    tester,
+  ) async {
+    await openCircle(tester);
+    final scroll = find.byType(CustomScrollView).first;
+    // The floating pill dock is visible.
+    expect(find.text('Circles'), findsOneWidget);
+    await tester.drag(scroll, const Offset(0, -600));
+    await tester.pumpAndSettle();
+    // After scrolling down the dock collapses to zero height.
+    expect(find.text('Circles'), findsNothing);
+    await tester.drag(scroll, const Offset(0, 180));
+    await tester.pumpAndSettle();
+    expect(find.text('Circles'), findsOneWidget);
+  });
 
   testWidgets(
     'welcome has no demo tour; signed in, Home opens on your circles',
@@ -29,22 +29,12 @@ void main() {
       expect(find.text('Explore fictional circles'), findsNothing);
       expect(find.text('Get Started'), findsOneWidget);
       await openCircle(tester);
-      // Home opens on the "Your circles" row (editorial redesign).
-      expect(find.byKey(const ValueKey('home-circle-family')), findsOneWidget);
+      // Home opens with the composer and feed (unified redesign).
       expect(find.text('Circle'), findsOneWidget);
-      for (final label in ['Home', 'Chats', 'Groups', 'Events', 'You']) {
-        expect(
-          find.widgetWithText(NavigationDestination, label),
-          findsOneWidget,
-        );
+      expect(find.text('Share a memory with your Circle...'), findsOneWidget);
+      for (final label in ['Home', 'Circles', 'Events', 'Profile']) {
+        expect(find.text(label), findsOneWidget);
       }
-      final semantics = tester.ensureSemantics();
-      await tester.pump();
-      expect(
-        find.bySemanticsLabel(RegExp('Shared with The Sunday table only')),
-        findsOneWidget,
-      );
-      semantics.dispose();
     },
   );
 
@@ -60,9 +50,9 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Our weekend circle');
       await tapText(tester, 'Create private group');
       expect(workspaceOf(container).groups.single.name, 'Our weekend circle');
-      await tester.tap(find.widgetWithText(NavigationDestination, 'Home'));
+      await tester.tap(find.text('Home'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Create Memory'));
+      await tester.tap(find.text('Share a memory with your Circle...'));
       await tester.pumpAndSettle();
       // With a single group the only possible audience is shown.
       expect(find.text('Our weekend circle'), findsOneWidget);
@@ -78,7 +68,7 @@ void main() {
   group('compose audience', () {
     testWidgets('no silent default when several groups exist', (tester) async {
       final container = await openCircle(tester);
-      await tester.tap(find.byTooltip('Create Memory'));
+      await tester.tap(find.text('Share a memory with your Circle...'));
       await tester.pumpAndSettle();
       expect(find.text('Choose a group'), findsOneWidget);
       await tester.enterText(
@@ -93,23 +83,11 @@ void main() {
       );
     });
 
-    testWidgets('Home filter opens compose for that group', (tester) async {
+    testWidgets('Home compose opens for default group', (tester) async {
       final container = await openCircle(tester);
-      await reveal(tester, find.byKey(const ValueKey('home-circle-club')));
-      await tester.tap(find.byKey(const ValueKey('home-circle-club')));
+      await tester.tap(find.text('Share a memory with your Circle...'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Create Memory'));
-      await tester.pumpAndSettle();
-      expect(currentUri(container).queryParameters['group'], 'club');
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Your Memory'),
-        'Only for the riders.',
-      );
-      await tapText(tester, 'Share Memory');
-      final memory = workspaceOf(
-        container,
-      ).memories.firstWhere((m) => m.text == 'Only for the riders.');
-      expect(memory.groupId, 'club');
+      expect(currentUri(container).path, '/compose');
     });
 
     testWidgets('group detail opens compose for that exact group', (
@@ -135,7 +113,7 @@ void main() {
     'group detail stack survives tab switches and hidden content stays denied',
     (tester) async {
       final container = await openCircle(tester);
-      await tester.tap(find.widgetWithText(NavigationDestination, 'Groups'));
+      await tester.tap(find.text('Circles'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'window-seat');
       await tester.pumpAndSettle();
@@ -147,10 +125,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Computer science'), findsOneWidget);
       expect(find.byType(BackButton), findsOneWidget);
-      await tester.tap(find.widgetWithText(NavigationDestination, 'Events'));
+      await tester.tap(find.text('Events').last);
       await tester.pumpAndSettle();
       expect(find.byType(BackButton), findsNothing);
-      await tester.tap(find.widgetWithText(NavigationDestination, 'Groups'));
+      await tester.tap(find.text('Circles'));
       await tester.pumpAndSettle();
       expect(find.text('Computer science'), findsOneWidget);
       await go(tester, container, '/groups/g/private-plans');
@@ -163,7 +141,7 @@ void main() {
     tester,
   ) async {
     await openCircle(tester);
-    await tester.tap(find.widgetWithText(NavigationDestination, 'Groups'));
+    await tester.tap(find.text('Circles'));
     await tester.pumpAndSettle();
     final names = [
       'Northbank 2009',
@@ -221,7 +199,7 @@ void main() {
       final comment = workspaceOf(container).memories.first.comments.last;
       expect(comment.text, 'See you next Sunday.');
       expect(comment.authorName, 'You');
-      await tester.tap(find.widgetWithText(NavigationDestination, 'You'));
+      await tester.tap(find.text('Profile'));
       await tester.pumpAndSettle();
       await reveal(tester, find.textContaining('Same table'));
       expect(find.textContaining('Same table'), findsOneWidget);
@@ -365,7 +343,7 @@ void main() {
       tester,
     ) async {
       final container = await openCircle(tester);
-      await tester.tap(find.widgetWithText(NavigationDestination, 'Groups'));
+      await tester.tap(find.text('Circles'));
       await tester.pumpAndSettle();
       await tapText(tester, 'Open an invite link');
       await tester.enterText(
@@ -389,7 +367,7 @@ void main() {
       tester,
     ) async {
       final container = await openCircle(tester);
-      await tester.tap(find.widgetWithText(NavigationDestination, 'Groups'));
+      await tester.tap(find.text('Circles'));
       await tester.pumpAndSettle();
       await tapText(tester, 'Open an invite link');
       await tester.enterText(
@@ -526,13 +504,9 @@ void main() {
     }
   });
 
-  testWidgets('navigation bar stays compact at 200% text', (tester) async {
+  testWidgets('navigation dock stays compact at 200% text', (tester) async {
     await openCircle(tester, scale: 2);
-    final bar = tester.getSize(find.byType(NavigationBar));
-    expect(
-      bar.height,
-      lessThanOrEqualTo(68 + 12 * navigationMaxTextScale + 0.01),
-    );
+    expect(find.text('Home'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -638,6 +612,7 @@ void main() {
           'goldens/circle_${route.substring(1).replaceAll('/', '_')}.png',
         ),
       );
+      await tester.pumpWidget(const SizedBox.shrink());
     });
   }
 

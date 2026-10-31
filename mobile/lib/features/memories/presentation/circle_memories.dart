@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../groups/domain/group_tree.dart';
-import '../../groups/presentation/group_photos.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import '../application/circle_seen.dart';
@@ -30,15 +29,27 @@ class CircleHome extends ConsumerWidget {
       final memories = workspace.memories
           .where((memory) => groupId == null || memory.groupId == groupId)
           .toList();
-      final seen = ref.watch(circleSeenProvider).value;
-      final circles = homeCircles(workspace, seen);
-      void select(String? id) {
-        ref.read(homeGroupFilterProvider.notifier).select(id);
-        final latest = id == null ? null : circles.latest[id];
-        if (latest != null) {
-          ref.read(circleSeenProvider.notifier).markSeen(id!, latest);
-        }
-      }
+      final features = ref.watch(circleFeaturesProvider);
+
+      // Build unified feed: memories interspersed with events and polls.
+      final events = features.has(CircleFeature.liveEvents)
+          ? workspace.events
+          : <CircleEvent>[];
+      final feedItems = <_FeedItem>[
+        for (final memory in memories)
+          _FeedItem(
+            type: _FeedType.memory,
+            createdAt: memory.createdAt,
+            memory: memory,
+          ),
+        for (final event in events)
+          _FeedItem(
+            type: _FeedType.event,
+            createdAt: event.createdAt,
+            event: event,
+          ),
+      ];
+      feedItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       final more = workspace.hasMoreMemories;
       return ColoredBox(
@@ -53,155 +64,43 @@ class CircleHome extends ConsumerWidget {
               key: const PageStorageKey('circle-home'),
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                // Floating snap header: hides on scroll down, snaps back
-                // instantly on any upward scroll (like Instagram).
                 const CircleFloatingHeader(),
                 SliverList.builder(
-                  // Memories run edge to edge: photos are full width and each
-                  // card pads its own text to the 24px editorial margin.
-                  itemCount: memories.length + 1 + (more ? 1 : 0),
+                  itemCount: feedItems.length + 1 + (more ? 1 : 0),
                   itemBuilder: (context, index) {
-                    // Built only when scrolled near the end: loads older Memories.
-                    if (index == memories.length + 1) {
+                    if (index == feedItems.length + 1) {
                       return const _LoadOlderMemories();
                     }
                     if (index == 0) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (workspace.groups.isNotEmpty) ...[
-                            _CircleStories(
-                              children: [
-                                _CircleStory(
-                                  label: 'All',
-                                  selected: groupId == null,
-                                  onTap: () => select(null),
-                                  avatar: const CircleInitialAvatar(
-                                    icon: Icons.blur_circular_outlined,
-                                    tone: CircleTone.neutral,
-                                    size: CircleAvatarSize.large,
-                                  ),
-                                ),
-                                for (final circle in circles.ordered)
-                                  _CircleStory(
-                                    key: ValueKey(
-                                      'home-circle-${circle.group.id}',
-                                    ),
-                                    label: circle.group.name,
-                                    selected: groupId == circle.group.id,
-                                    fresh: circle.fresh,
-                                    onTap: () => select(
-                                      groupId == circle.group.id
-                                          ? null
-                                          : circle.group.id,
-                                    ),
-                                    avatar: GroupAvatar(
-                                      groupId: circle.group.id,
-                                      type: circle.group.type,
-                                      size: CircleAvatarSize.large,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: Space.sm),
-                          ],
-                          if (workspace.groups.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.all(Space.md),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      PersonAvatar(
-                                        person: workspace.viewer,
-                                        name: 'You',
-                                      ),
-                                      const SizedBox(width: Space.sm),
-                                      Expanded(
-                                        child: TextButton(
-                                          style: TextButton.styleFrom(
-                                            backgroundColor: CircleAccents.of(
-                                              context,
-                                            ).recessed,
-                                            foregroundColor: CircleAccents.of(
-                                              context,
-                                            ).caption,
-                                            alignment: Alignment.centerLeft,
-                                            textStyle: Theme.of(
-                                              context,
-                                            ).textTheme.bodyLarge,
-                                          ),
-                                          onPressed: () => context.push(
-                                            groupId == null
-                                                ? '/compose'
-                                                : '/compose?group=$groupId',
-                                          ),
-                                          child: const Text(
-                                            'Share a memory with your Circle…',
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: Space.sm),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    children: [
-                                      IconButton(
-                                        tooltip: 'Add photos',
-                                        icon: const Icon(Icons.photo_outlined),
-                                        onPressed: () =>
-                                            context.push('/compose'),
-                                      ),
-                                      if (ref
-                                          .watch(circleFeaturesProvider)
-                                          .has(CircleFeature.liveEvents))
-                                        IconButton(
-                                          tooltip: 'Events',
-                                          icon: const Icon(
-                                            Icons.calendar_today_outlined,
-                                          ),
-                                          onPressed: () =>
-                                              context.go('/events'),
-                                        ),
-                                      if (ref
-                                          .watch(circleFeaturesProvider)
-                                          .has(CircleFeature.livePolls))
-                                        IconButton(
-                                          tooltip: 'Create poll',
-                                          icon: const Icon(
-                                            Icons.format_list_bulleted,
-                                          ),
-                                          onPressed: () =>
-                                              context.push('/polls/new'),
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          if (memories.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: Space.section,
-                              ),
-                              child: _FirstSteps(
-                                workspace: workspace,
-                                groupId: groupId,
-                              ),
-                            ),
-                        ],
+                      return _HomeHeader(
+                        workspace: workspace,
+                        groupId: groupId,
+                        hasMemories: memories.isNotEmpty,
+                        features: features,
                       );
                     }
-                    final memory = memories[index - 1];
-                    final group = workspace.group(memory.groupId)!;
-                    return CircleMemoryCard(
-                      key: ValueKey(memory.id),
-                      memory: memory,
-                      group: group,
-                      audience: audiencePath(group, workspace.groupsById),
-                    );
+                    final item = feedItems[index - 1];
+                    switch (item.type) {
+                      case _FeedType.memory:
+                        final memory = item.memory!;
+                        final group = workspace.group(memory.groupId)!;
+                        return CircleMemoryCard(
+                          key: ValueKey(memory.id),
+                          memory: memory,
+                          group: group,
+                          audience: audiencePath(group, workspace.groupsById),
+                        );
+                      case _FeedType.event:
+                        final event = item.event!;
+                        final group = workspace.group(event.groupId);
+                        if (group == null) return const SizedBox.shrink();
+                        return EventFeedCard(
+                          key: ValueKey('event-${event.id}'),
+                          event: event,
+                          group: group,
+                          workspace: workspace,
+                        );
+                    }
                   },
                 ),
               ],
@@ -211,6 +110,488 @@ class CircleHome extends ConsumerWidget {
       );
     },
   );
+}
+
+enum _FeedType { memory, event }
+
+class _FeedItem {
+  const _FeedItem({
+    required this.type,
+    required this.createdAt,
+    this.memory,
+    this.event,
+  });
+  final _FeedType type;
+  final DateTime createdAt;
+  final CircleMemory? memory;
+  final CircleEvent? event;
+}
+
+/// The composer area: Circle header, avatar + prompt, 4 quick-action tiles.
+class _HomeHeader extends ConsumerWidget {
+  const _HomeHeader({
+    required this.workspace,
+    required this.groupId,
+    required this.hasMemories,
+    required this.features,
+  });
+  final CircleWorkspace workspace;
+  final String? groupId;
+  final bool hasMemories;
+  final CircleFeatures features;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accents = CircleAccents.of(context);
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (workspace.groups.isNotEmpty) ...[
+          // Composer row: avatar + prompt.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Space.md,
+              Space.md,
+              Space.md,
+              Space.sm,
+            ),
+            child: Row(
+              children: [
+                PersonAvatar(
+                  person: workspace.viewer,
+                  name: 'You',
+                  size: CircleAvatarSize.medium,
+                ),
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: Material(
+                    color: accents.recessed,
+                    borderRadius: BorderRadius.circular(CircleRadius.button),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(CircleRadius.button),
+                      onTap: () => context.push(composeLocation(groupId)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Space.md,
+                          vertical: Space.md,
+                        ),
+                        child: Text(
+                          'Share a memory with your Circle...',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: accents.caption,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Four quick-action tiles.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Space.md,
+              Space.xs,
+              Space.md,
+              Space.md,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _QuickActionTile(
+                    icon: Icons.photo_library_outlined,
+                    label: 'Photo',
+                    color: theme.colorScheme.primary,
+                    bgColor: theme.colorScheme.primaryContainer,
+                    onTap: () => context.push(composeLocation(groupId)),
+                  ),
+                ),
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: _QuickActionTile(
+                    icon: Icons.videocam_outlined,
+                    label: 'Video',
+                    color: accents.video,
+                    bgColor: accents.videoContainer,
+                    onTap: () => context.push(composeLocation(groupId)),
+                  ),
+                ),
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: _QuickActionTile(
+                    icon: Icons.event_outlined,
+                    label: 'Event',
+                    color: accents.sage,
+                    bgColor: accents.sageContainer,
+                    onTap: features.has(CircleFeature.liveEvents)
+                        ? () => context.push('/events/new')
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: _QuickActionTile(
+                    icon: Icons.format_list_bulleted_rounded,
+                    label: 'Poll',
+                    color: accents.amber,
+                    bgColor: accents.amberContainer,
+                    onTap: features.has(CircleFeature.livePolls)
+                        ? () => context.push('/polls/new')
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (!hasMemories)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Space.section),
+            child: _FirstSteps(workspace: workspace, groupId: groupId),
+          ),
+      ],
+    );
+  }
+}
+
+/// Rounded pastel tile: icon + label.
+class _QuickActionTile extends StatelessWidget {
+  const _QuickActionTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.bgColor,
+    this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final Color color, bgColor;
+  final VoidCallback? onTap;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(CircleRadius.tile),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(CircleRadius.tile),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: Space.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: 24),
+                const SizedBox(height: Space.xs),
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Event as a feed card in the unified Home timeline.
+class EventFeedCard extends StatelessWidget {
+  const EventFeedCard({
+    super.key,
+    required this.event,
+    required this.group,
+    required this.workspace,
+  });
+  final CircleEvent event;
+  final CircleGroup group;
+  final CircleWorkspace workspace;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    final colors = theme.colorScheme;
+    final creatorName = workspace.nameOf(event.createdBy);
+    final now = DateTime.now();
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    final local = event.startsAt.toLocal();
+    final dayLabel = days[local.weekday - 1];
+    final dayNum = '${local.day}';
+    final monthLabel = months[local.month - 1];
+    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final timeLabel =
+        '${dayLabel.substring(0, 3)}, ${local.day} ${months[local.month - 1]} · $hour:${local.minute.toString().padLeft(2, '0')} ${local.hour >= 12 ? 'PM' : 'AM'}';
+
+    // RSVP counts.
+    final rsvps = event.rsvps;
+    final going = rsvps.values
+        .where((r) => r.status == Attendance.going)
+        .length;
+    final maybe = rsvps.values
+        .where((r) => r.status == Attendance.maybe)
+        .length;
+    final myRsvp = rsvps[workspace.viewer];
+
+    return Padding(
+      padding: const EdgeInsets.all(Space.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: Space.md),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(CircleRadius.card),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Author row.
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(
+                Space.section,
+                0,
+                Space.sm,
+                Space.sm,
+              ),
+              child: Row(
+                children: [
+                  PersonAvatar(person: event.createdBy, name: creatorName),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: creatorName,
+                                style: theme.textTheme.titleMedium,
+                              ),
+                              TextSpan(
+                                text: ' created an event',
+                                style: theme.textTheme.bodyLarge,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          '${group.name} · ${memoryTimeLabel(event.editedAt ?? now, now)}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: accents.caption,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.more_horiz, color: accents.caption),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ),
+            // Event preview card.
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Space.md),
+              child: Material(
+                color: accents.recessed,
+                borderRadius: BorderRadius.circular(CircleRadius.tile),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(CircleRadius.tile),
+                  onTap: () => context.push('/events/e/${event.id}'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(Space.md),
+                    child: Row(
+                      children: [
+                        // Date block.
+                        SizedBox(
+                          width: 56,
+                          child: Column(
+                            children: [
+                              Text(
+                                dayLabel,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                dayNum,
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  color: accents.title,
+                                ),
+                              ),
+                              Text(
+                                monthLabel,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: accents.caption,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: Space.sm),
+                        // Title + details.
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                event.title,
+                                style: theme.textTheme.titleMedium,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (event.venue != null) ...[
+                                const SizedBox(height: Space.xs),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on_outlined,
+                                      size: 16,
+                                      color: accents.caption,
+                                    ),
+                                    const SizedBox(width: Space.xs),
+                                    Expanded(
+                                      child: Text(
+                                        event.venue!,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(color: accents.caption),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              ...[
+                                const SizedBox(height: Space.xs),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 16,
+                                      color: accents.caption,
+                                    ),
+                                    const SizedBox(width: Space.xs),
+                                    Expanded(
+                                      child: Text(
+                                        timeLabel,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(color: accents.caption),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Attendees + RSVP.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Space.section,
+                Space.sm,
+                Space.section,
+                0,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      [
+                        if (going > 0) '$going going',
+                        if (maybe > 0) '$maybe maybe',
+                      ].join(' · '),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: accents.caption,
+                      ),
+                    ),
+                  ),
+                  if (myRsvp != null)
+                    Chip(
+                      avatar: Icon(
+                        Icons.check_circle,
+                        size: 16,
+                        color: colors.primary,
+                      ),
+                      label: Text(
+                        myRsvp.status == Attendance.going
+                            ? 'Going'
+                            : myRsvp.status == Attendance.maybe
+                            ? 'Interested'
+                            : 'Not going',
+                      ),
+                      side: BorderSide.none,
+                      backgroundColor: accents.recessed,
+                      labelStyle: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.primary,
+                      ),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                ],
+              ),
+            ),
+            const Divider(indent: Space.md, endIndent: Space.md),
+            // Icon-only actions.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                IconButton(
+                  tooltip: 'Love',
+                  icon: const Icon(Icons.favorite_border_rounded),
+                  onPressed: () {},
+                ),
+                IconButton(
+                  tooltip: 'Comment',
+                  icon: const Icon(Icons.chat_bubble_outline_rounded),
+                  onPressed: () => context.push('/events/e/${event.id}'),
+                ),
+                IconButton(
+                  tooltip: 'Share',
+                  icon: const Icon(Icons.share_outlined),
+                  onPressed: () {},
+                ),
+                IconButton(
+                  tooltip: 'Save',
+                  icon: const Icon(Icons.bookmark_border_rounded),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// The end of a paginated list: fetches the next page as soon as it comes
@@ -284,80 +665,6 @@ String memoryTimeLabel(DateTime createdAt, DateTime now) {
   return '${local.day} ${months[local.month - 1]}';
 }
 
-/// The "Your circles" row: round group photos, newest structure first.
-/// Tapping one filters Memories to that group; tapping it again shows all.
-class _CircleStories extends StatelessWidget {
-  const _CircleStories({required this.children});
-  final List<Widget> children;
-  @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    label: 'Your circles',
-    explicitChildNodes: true,
-    // Edge to edge: the row scrolls under the page margin.
-    child: SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: Space.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final (index, child) in children.indexed) ...[
-            if (index > 0) const SizedBox(width: Space.sm),
-            child,
-          ],
-        ],
-      ),
-    ),
-  );
-}
-
-class _CircleStory extends StatelessWidget {
-  const _CircleStory({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    required this.avatar,
-    this.fresh = false,
-  });
-  final String label;
-  final bool selected;
-
-  /// New Memories since this person last opened the circle: an indigo
-  /// ring, like an unseen story.
-  final bool fresh;
-  final VoidCallback onTap;
-  final Widget avatar;
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: '$label${fresh ? ", new Memories" : ""}',
-      child: ChoiceChip(
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label == 'All' ? 'All Circles' : label),
-            if (label == 'All') const Icon(Icons.keyboard_arrow_down),
-          ],
-        ),
-        side: BorderSide.none,
-        backgroundColor: CircleAccents.of(context).recessed,
-        selected: selected,
-        showCheckmark: false,
-        selectedColor: colors.primary,
-        labelStyle: theme.textTheme.labelMedium?.copyWith(
-          color: selected ? colors.onPrimary : colors.onSurfaceVariant,
-        ),
-        onSelected: (_) => onTap(),
-      ),
-    );
-  }
-}
-
 /// The Home circles row: circles with the newest Memories first, then the
 /// remaining top-level groups. Quiet subgroups stay in Groups. [latest] is
 /// each circle's newest Memory; a circle is fresh when someone else shared
@@ -421,22 +728,30 @@ class _FirstSteps extends StatelessWidget {
       String message, {
       required bool done,
       required VoidCallback? onTap,
-    }) => ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: done
-          ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
-          : CircleInitialAvatar(name: '$number', size: CircleAvatarSize.small),
-      title: Text(
-        title,
-        style: done
-            ? theme.textTheme.titleMedium?.copyWith(
-                color: CircleAccents.of(context).caption,
-              )
-            : theme.textTheme.titleMedium,
+    }) => Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: done
+            ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+            : CircleInitialAvatar(
+                name: '$number',
+                size: CircleAvatarSize.small,
+              ),
+        title: Text(
+          title,
+          style: done
+              ? theme.textTheme.titleMedium?.copyWith(
+                  color: CircleAccents.of(context).caption,
+                )
+              : theme.textTheme.titleMedium,
+        ),
+        subtitle: Text(message),
+        trailing: done || onTap == null
+            ? null
+            : const Icon(Icons.chevron_right),
+        onTap: done ? null : onTap,
       ),
-      subtitle: Text(message),
-      trailing: done || onTap == null ? null : const Icon(Icons.chevron_right),
-      onTap: done ? null : onTap,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

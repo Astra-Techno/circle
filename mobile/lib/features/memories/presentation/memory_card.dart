@@ -44,7 +44,6 @@ class CircleMemoryCard extends ConsumerWidget {
     final about = 'Memory from ${memory.author} in ${group.name}';
     final features = ref.watch(circleFeaturesProvider);
     final comments = memory.commentTotal;
-    final commentLabel = '$comments ${comments == 1 ? 'comment' : 'comments'}';
     void openDetail() => context.push('/home/memory/${memory.id}');
     final reactions = memory.reactions;
     final accents = CircleAccents.of(context);
@@ -180,30 +179,13 @@ class CircleMemoryCard extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        // Who can see it, always visible (privacy first).
-                        Semantics(
-                          container: true,
-                          label: 'Shared with ${audience ?? group.name} only',
-                          excludeSemantics: true,
-                          child: Text.rich(
-                            TextSpan(
-                              children: [
-                                WidgetSpan(
-                                  alignment: PlaceholderAlignment.middle,
-                                  child: Icon(
-                                    Icons.lock_outline,
-                                    size: Space.lg,
-                                    color: accents.caption,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text:
-                                      ' ${[audience ?? group.name, memoryTimeLabel(memory.createdAt, DateTime.now()), if (memory.edited) 'Edited'].join(' · ')}',
-                                ),
-                              ],
-                            ),
-                            style: caption,
-                          ),
+                        Text(
+                          [
+                            audience ?? group.name,
+                            memoryTimeLabel(memory.createdAt, DateTime.now()),
+                            if (memory.edited) 'Edited',
+                          ].join(' · '),
+                          style: caption,
                         ),
                       ],
                     ),
@@ -302,31 +284,62 @@ class CircleMemoryCard extends ConsumerWidget {
                   ],
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.md),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => showReactionSummary(context, reactions),
-                      style: TextButton.styleFrom(
-                        alignment: Alignment.centerLeft,
+            if (reactions.total > 0 || comments > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                child: Row(
+                  children: [
+                    if (reactions.total > 0)
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () =>
+                              showReactionSummary(context, reactions),
+                          style: TextButton.styleFrom(
+                            alignment: Alignment.centerLeft,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.favorite,
+                                size: 18,
+                                color: accents.heart,
+                              ),
+                              if (reactions.total > 1) ...[
+                                const SizedBox(width: 2),
+                                Icon(
+                                  Icons.thumb_up,
+                                  size: 16,
+                                  color: colors.primary,
+                                ),
+                              ],
+                              const SizedBox(width: Space.xs),
+                              Text('${reactions.total}', style: caption),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      const Spacer(),
+                    if (comments > 0)
+                      TextButton(
+                        onPressed: openDetail,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              size: 16,
+                              color: accents.caption,
+                            ),
+                            const SizedBox(width: Space.xs),
+                            Text('$comments', style: caption),
+                          ],
+                        ),
                       ),
-                      child: Text(
-                        '${reactions.total} reactions',
-                        style: caption,
-                      ),
-                    ),
-                  ),
-                  Flexible(
-                    child: TextButton(
-                      onPressed: openDetail,
-                      child: Text(commentLabel, style: caption),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             const Divider(indent: Space.md, endIndent: Space.md),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -343,9 +356,9 @@ class CircleMemoryCard extends ConsumerWidget {
                   icon: const Icon(Icons.chat_bubble_outline_rounded),
                 ),
                 IconButton(
-                  tooltip: 'Choose a reaction for $about',
+                  tooltip: 'Share $about',
                   onPressed: pickReaction,
-                  icon: const Icon(Icons.add_reaction_outlined),
+                  icon: const Icon(Icons.share_outlined),
                 ),
                 IconButton(
                   tooltip: memory.saved ? 'Unsave $about' : 'Save $about',

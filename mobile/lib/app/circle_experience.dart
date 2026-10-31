@@ -806,7 +806,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
             _ => null,
           };
     final theme = Theme.of(context);
-    const titles = ['Memories', 'Chats', 'Groups', 'Events', 'You'];
+    const titles = ['Memories', 'Chats', 'Circles', 'Events', 'Profile'];
     // Like WhatsApp, an open live conversation is full screen: it draws its
     // own bar (back, photo, name, options) and hides the tab dock.
     if (RegExp(r'^/chats/c/[^/]+$').hasMatch(path)) {
@@ -821,73 +821,73 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
           detail ||
               _navigationVisible ||
               MediaQuery.accessibleNavigationOf(context)
-          ? DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(
-                  top: BorderSide(color: CircleAccents.of(context).hairline),
+          ? SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Space.lg,
+                  0,
+                  Space.lg,
+                  Space.sm,
                 ),
-              ),
-              child: SafeArea(
-                top: false,
-                child: MediaQuery.withClampedTextScaling(
-                  maxScaleFactor: navigationMaxTextScale,
-                  child: SizedBox(
-                    height: Space.hero * 2,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        IconButton(
-                          tooltip: 'Home',
-                          isSelected: index == 0,
-                          selectedIcon: Icon(
-                            Icons.home_rounded,
-                            color: theme.colorScheme.primary,
+                child: DecoratedBox(
+                  decoration: CircleDepth.dock(context),
+                  child: MediaQuery.withClampedTextScaling(
+                    maxScaleFactor: navigationMaxTextScale,
+                    child: SizedBox(
+                      height: 64,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _DockTab(
+                            icon: Icons.home_outlined,
+                            activeIcon: Icons.home_rounded,
+                            label: 'Home',
+                            selected: index == 0,
+                            onTap: () => shell.goBranch(0),
                           ),
-                          icon: const Icon(Icons.home_outlined),
-                          onPressed: () => shell.goBranch(0),
-                        ),
-                        IconButton(
-                          tooltip: 'Groups',
-                          isSelected: index == 2,
-                          selectedIcon: Icon(
-                            Icons.groups_rounded,
-                            color: theme.colorScheme.primary,
+                          _DockTab(
+                            icon: Icons.groups_outlined,
+                            activeIcon: Icons.groups_rounded,
+                            label: 'Circles',
+                            selected: index == 2,
+                            onTap: () => shell.goBranch(2),
                           ),
-                          icon: const Icon(Icons.groups_outlined),
-                          onPressed: () => shell.goBranch(2),
-                        ),
-                        Transform.translate(
-                          offset: const Offset(0, -Space.md),
-                          child: FloatingActionButton.small(
-                            heroTag: 'reference-create',
-                            tooltip: 'Create Memory',
-                            onPressed: () =>
-                                context.push(composeLocation(filter)),
-                            child: const Icon(Icons.add),
+                          SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: Material(
+                              color: theme.colorScheme.primary,
+                              shape: const CircleBorder(),
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: () =>
+                                    context.push(composeLocation(filter)),
+                                child: Icon(
+                                  Icons.add,
+                                  color: theme.colorScheme.onPrimary,
+                                  size: 28,
+                                  semanticLabel: 'Create',
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          tooltip: 'Events',
-                          isSelected: index == 3,
-                          selectedIcon: Icon(
-                            Icons.event,
-                            color: theme.colorScheme.primary,
+                          _DockTab(
+                            icon: Icons.event_outlined,
+                            activeIcon: Icons.event,
+                            label: 'Events',
+                            selected: index == 3,
+                            onTap: () => shell.goBranch(3),
                           ),
-                          icon: const Icon(Icons.event_outlined),
-                          onPressed: () => shell.goBranch(3),
-                        ),
-                        IconButton(
-                          tooltip: 'You',
-                          isSelected: index == 4,
-                          selectedIcon: Icon(
-                            Icons.person_rounded,
-                            color: theme.colorScheme.primary,
+                          _DockTab(
+                            icon: Icons.person_outline,
+                            activeIcon: Icons.person_rounded,
+                            label: 'Profile',
+                            selected: index == 4,
+                            onTap: () => shell.goBranch(4),
                           ),
-                          icon: const Icon(Icons.person_outline),
-                          onPressed: () => shell.goBranch(4),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -996,6 +996,55 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
         ),
       ),
       bottomNavigationBar: bottomNav,
+    );
+  }
+}
+
+class _DockTab extends StatelessWidget {
+  const _DockTab({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final IconData icon, activeIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = selected
+        ? theme.colorScheme.primary
+        : CircleAccents.of(context).caption;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 56,
+          height: 56,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(selected ? activeIcon : icon, color: color, size: 24),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
