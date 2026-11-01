@@ -191,42 +191,47 @@ class _HomeHeader extends ConsumerWidget {
           ),
           // Four quick-action icons.
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Space.section,
-              0,
-              Space.section,
-              Space.md,
-            ),
+            padding: const EdgeInsets.fromLTRB(Space.md, 0, Space.md, Space.md),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _QuickActionIcon(
-                  icon: Icons.photo_library_outlined,
-                  label: 'Photo',
-                  color: theme.colorScheme.primary,
-                  onTap: () => context.push(composeLocation(groupId)),
+                Expanded(
+                  child: _QuickActionIcon(
+                    icon: Icons.photo_library_outlined,
+                    label: 'Photo',
+                    color: theme.colorScheme.primary,
+                    onTap: () => context.push(composeLocation(groupId)),
+                  ),
                 ),
-                _QuickActionIcon(
-                  icon: Icons.videocam_outlined,
-                  label: 'Video',
-                  color: accents.video,
-                  onTap: () => context.push(composeLocation(groupId)),
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: _QuickActionIcon(
+                    icon: Icons.videocam_outlined,
+                    label: 'Video',
+                    color: accents.video,
+                    onTap: () => context.push(composeLocation(groupId)),
+                  ),
                 ),
-                _QuickActionIcon(
-                  icon: Icons.event_outlined,
-                  label: 'Event',
-                  color: accents.sage,
-                  onTap: features.has(CircleFeature.liveEvents)
-                      ? () => context.push('/events/new')
-                      : null,
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: _QuickActionIcon(
+                    icon: Icons.event_outlined,
+                    label: 'Event',
+                    color: accents.sage,
+                    onTap: features.has(CircleFeature.liveEvents)
+                        ? () => context.push('/events/new')
+                        : null,
+                  ),
                 ),
-                _QuickActionIcon(
-                  icon: Icons.format_list_bulleted_rounded,
-                  label: 'Poll',
-                  color: accents.amber,
-                  onTap: features.has(CircleFeature.livePolls)
-                      ? () => context.push('/polls/new')
-                      : null,
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: _QuickActionIcon(
+                    icon: Icons.format_list_bulleted_rounded,
+                    label: 'Poll',
+                    color: accents.amber,
+                    onTap: features.has(CircleFeature.livePolls)
+                        ? () => context.push('/polls/new')
+                        : null,
+                  ),
                 ),
               ],
             ),
@@ -263,14 +268,15 @@ class _QuickActionIcon extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(CircleRadius.card),
         onTap: onTap,
-        child: Container(
-          width: Space.large * 2,
-          height: Space.large * 2,
-          decoration: BoxDecoration(
-            color: effectiveColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(CircleRadius.card),
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: effectiveColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(CircleRadius.card),
+            ),
+            child: Icon(icon, color: effectiveColor, size: Space.hero),
           ),
-          child: Icon(icon, color: effectiveColor, size: Space.hero),
         ),
       ),
     );

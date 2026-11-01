@@ -822,88 +822,82 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
           detail ||
               _navigationVisible ||
               MediaQuery.accessibleNavigationOf(context)
-          ? SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  Space.lg,
-                  0,
-                  Space.lg,
-                  Space.sm,
-                ),
-                child: DecoratedBox(
-                  decoration: CircleDepth.dock(context),
-                  child: MediaQuery.withClampedTextScaling(
-                    maxScaleFactor: navigationMaxTextScale,
-                    child: SizedBox(
-                      height: 72,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _DockTab(
-                            icon: Icons.home_outlined,
-                            activeIcon: Icons.home_outlined,
-                            label: 'Home',
-                            selected: index == 0,
-                            onTap: () => shell.goBranch(0),
-                          ),
-                          _DockTab(
-                            icon: Icons.groups_outlined,
-                            activeIcon: Icons.groups_outlined,
-                            label: 'Circles',
-                            selected: index == 2,
-                            onTap: () => shell.goBranch(2),
-                          ),
-                          SizedBox(
-                            width: 60,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: Space.large,
-                                  height: Space.large,
-                                  child: Material(
-                                    color: theme.colorScheme.primary,
-                                    shape: const CircleBorder(),
-                                    child: InkWell(
-                                      customBorder: const CircleBorder(),
-                                      onTap: () =>
-                                          context.push(composeLocation(filter)),
-                                      child: Icon(
-                                        Icons.add,
-                                        color: theme.colorScheme.onPrimary,
-                                        size: Space.section,
-                                        semanticLabel: 'Create',
-                                      ),
+          ? DecoratedBox(
+              decoration: CircleDepth.dock(context),
+              child: MediaQuery.withClampedTextScaling(
+                maxScaleFactor: navigationMaxTextScale,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).padding.bottom,
+                  ),
+                  child: SizedBox(
+                    height: 72,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _DockTab(
+                          icon: Icons.home_outlined,
+                          activeIcon: Icons.home_outlined,
+                          label: 'Home',
+                          selected: index == 0,
+                          onTap: () => shell.goBranch(0),
+                        ),
+                        _DockTab(
+                          icon: Icons.groups_outlined,
+                          activeIcon: Icons.groups_outlined,
+                          label: 'Circles',
+                          selected: index == 2,
+                          onTap: () => shell.goBranch(2),
+                        ),
+                        SizedBox(
+                          width: 60,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: Space.large,
+                                height: Space.large,
+                                child: Material(
+                                  color: theme.colorScheme.primary,
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    customBorder: const CircleBorder(),
+                                    onTap: () =>
+                                        context.push(composeLocation(filter)),
+                                    child: Icon(
+                                      Icons.add,
+                                      color: theme.colorScheme.onPrimary,
+                                      size: Space.section,
+                                      semanticLabel: 'Create',
                                     ),
                                   ),
                                 ),
-                                Text(
-                                  'Create',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: CircleAccents.of(context).caption,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                              ),
+                              Text(
+                                'Create',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: CircleAccents.of(context).caption,
+                                  fontWeight: FontWeight.w400,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          _DockTab(
-                            icon: Icons.event_outlined,
-                            activeIcon: Icons.event_outlined,
-                            label: 'Events',
-                            selected: index == 3,
-                            onTap: () => shell.goBranch(3),
-                          ),
-                          _DockTab(
-                            icon: Icons.person_outline,
-                            activeIcon: Icons.person_outline,
-                            label: 'Profile',
-                            selected: index == 4,
-                            onTap: () => shell.goBranch(4),
-                          ),
-                        ],
-                      ),
+                        ),
+                        _DockTab(
+                          icon: Icons.event_outlined,
+                          activeIcon: Icons.event_outlined,
+                          label: 'Events',
+                          selected: index == 3,
+                          onTap: () => shell.goBranch(3),
+                        ),
+                        _DockTab(
+                          icon: Icons.person_outline,
+                          activeIcon: Icons.person_outline,
+                          label: 'Profile',
+                          selected: index == 4,
+                          onTap: () => shell.goBranch(4),
+                        ),
+                      ],
                     ),
                   ),
                 ),
