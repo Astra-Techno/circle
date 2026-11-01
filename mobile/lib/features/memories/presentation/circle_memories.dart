@@ -167,13 +167,13 @@ class _HomeHeader extends ConsumerWidget {
                 Expanded(
                   child: Material(
                     color: accents.recessed,
-                    borderRadius: BorderRadius.circular(CircleRadius.button),
+                    borderRadius: BorderRadius.circular(Space.hero),
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(CircleRadius.button),
+                      borderRadius: BorderRadius.circular(Space.hero),
                       onTap: () => context.push(composeLocation(groupId)),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: Space.md,
+                          horizontal: Space.section,
                           vertical: Space.md,
                         ),
                         child: Text(
@@ -242,7 +242,7 @@ class _HomeHeader extends ConsumerWidget {
   }
 }
 
-/// Icon-only quick action button.
+/// Quick action button with a pastel tinted background.
 class _QuickActionIcon extends StatelessWidget {
   const _QuickActionIcon({
     required this.icon,
@@ -256,14 +256,23 @@ class _QuickActionIcon extends StatelessWidget {
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(
-        icon,
-        color: onTap != null ? color : color.withValues(alpha: 0.4),
+    final effectiveColor = onTap != null ? color : color.withValues(alpha: 0.4);
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        onTap: onTap,
+        child: Container(
+          width: Space.large * 2,
+          height: Space.large * 2,
+          decoration: BoxDecoration(
+            color: effectiveColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(CircleRadius.card),
+          ),
+          child: Icon(icon, color: effectiveColor, size: Space.hero),
+        ),
       ),
-      iconSize: 26,
-      tooltip: label,
-      onPressed: onTap,
     );
   }
 }
