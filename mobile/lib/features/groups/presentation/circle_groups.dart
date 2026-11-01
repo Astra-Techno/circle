@@ -423,10 +423,10 @@ class _CircleCard extends ConsumerWidget {
                             children: [
                               Icon(
                                 activity!.icon,
-                                size: 14,
+                                size: Space.md,
                                 color: accents.caption,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: Space.xs),
                               Expanded(
                                 child: Text(
                                   activity!.text,
@@ -472,10 +472,10 @@ class _CircleCard extends ConsumerWidget {
                               children: [
                                 Icon(
                                   Icons.event_outlined,
-                                  size: 14,
+                                  size: Space.md,
                                   color: accents.sage,
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: Space.xs),
                                 Text(
                                   '$eventCount ${eventCount == 1 ? 'event' : 'events'}',
                                   style: theme.textTheme.labelSmall?.copyWith(
@@ -530,8 +530,8 @@ class _GroupCoverPhoto extends ConsumerWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(CircleRadius.small),
       child: SizedBox(
-        width: Space.large * 3,
-        height: Space.large * 2 + Space.md,
+        width: Space.large * 2 + Space.md,
+        height: Space.large * 2,
         child: image != null
             ? Image(image: image, fit: BoxFit.cover)
             : Container(

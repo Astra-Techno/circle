@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../groups/domain/group_tree.dart';
+import '../../groups/presentation/group_photos.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import '../application/media_providers.dart';
@@ -269,8 +270,6 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
           workspace.groupsById.containsKey(widget.initialGroupId)
           ? widget.initialGroupId
           : null;
-      // A single group is the only possible audience, so it is not a
-      // silent guess. Otherwise nothing is preselected without context.
       final candidate =
           _groupId ??
           fromContext ??
@@ -281,11 +280,16 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
       _effectiveGroup = chosen;
       final tree = buildGroupTree(workspace.groups);
       final theme = Theme.of(context);
+      final accents = CircleAccents.of(context);
       final uploads = _uploads;
       if (uploads != null) _target(chosen);
-      final photoCount = uploads?.count ?? 0;
+      final chosenGroup = chosen != null ? workspace.group(chosen) : null;
+
       final form = ListView(
-        padding: CircleInsets.form,
+        padding: const EdgeInsets.symmetric(
+          horizontal: Space.md,
+          vertical: Space.sm,
+        ),
         children: [
           if (_resumeDraft != null) ...[
             Text(
@@ -305,69 +309,18 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
                 ),
               ],
             ),
+            const SizedBox(height: Space.md),
           ],
-          if (_draftNotice != null)
+          if (_draftNotice != null) ...[
             Text(_draftNotice!, style: theme.textTheme.bodyMedium),
-          // Photos first: one big tap opens the phone's photos.
-          if (uploads != null)
-            if (uploads.isEmpty)
-              _AddPhotosTile(onTap: () => _pickDevicePhotos(uploads))
-            else ...[
-              UploadGrid(uploads: uploads, waitingForGroup: chosen == null),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  onPressed: uploads.count >= MemoryRules.maxPhotos
-                      ? null
-                      : () => _pickDevicePhotos(uploads),
-                  icon: const Icon(Icons.add_photo_alternate_outlined),
-                  label: Text(
-                    '$photoCount of ${MemoryRules.maxPhotos} · Add more photos',
-                  ),
-                ),
-              ),
-            ],
-          const SizedBox(height: Space.lg),
-          TextField(
-            controller: _text,
-            readOnly: _resumeDraft != null,
-            minLines: 2,
-            maxLines: 8,
-            maxLength: MemoryRules.maxText,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              labelText: 'Your Memory',
-              hintText: 'Write a caption…',
-              helperText: photoCount > 0 ? 'Words are optional here.' : null,
-              errorText: _textError,
-              errorMaxLines: 3,
-            ),
-          ),
-          const SizedBox(height: Space.sm),
-          DropdownButtonFormField<String>(
-            initialValue: chosen,
-            isExpanded: true,
-            hint: const Text('Choose a group'),
-            decoration: InputDecoration(
-              labelText: 'Share with',
-              prefixIcon: const Icon(Icons.lock_outline),
-              helperText: 'Only members of this exact group will see it.',
-              helperMaxLines: 3,
-              errorText: _audienceError,
-              errorMaxLines: 3,
-            ),
-            items: [
-              for (final entry in tree)
-                DropdownMenuItem(
-                  value: entry.group.id,
-                  child: Text(
-                    entry.path.isEmpty
-                        ? entry.group.name
-                        : '${entry.group.name} · in ${entry.path.last}',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-            ],
+            const SizedBox(height: Space.md),
+          ],
+
+          // Group selector row.
+          _GroupSelector(
+            chosenGroup: chosenGroup,
+            tree: tree,
+            errorText: _audienceError,
             onChanged: (id) {
               setState(() {
                 _groupId = id;
@@ -377,88 +330,147 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
               _draftChanged();
             },
           ),
-          const SizedBox(height: Space.sm),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(bottom: Space.md),
-            title: const Text('More options'),
-            subtitle: Text(
-              'When and where it was taken',
-              style: theme.textTheme.bodySmall,
+          const SizedBox(height: Space.md),
+
+          // Caption text area in a rounded card.
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(CircleRadius.card),
+              border: Border.all(color: accents.hairline),
             ),
-            children: [
-              TextField(
-                controller: _year,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(4),
-                ],
-                decoration: InputDecoration(
-                  labelText: 'Year taken (optional)',
-                  helperText:
-                      'For older moments, ${MemoryRules.firstYear}–'
-                      '${DateTime.now().year}',
-                  errorText: _yearError,
-                  errorMaxLines: 3,
+            child: TextField(
+              controller: _text,
+              readOnly: _resumeDraft != null,
+              minLines: 3,
+              maxLines: 8,
+              maxLength: MemoryRules.maxText,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'Share a memory with your Circle...',
+                hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                  color: accents.caption,
                 ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(Space.md),
+                counterText: '',
+                errorText: _textError,
+                errorMaxLines: 3,
               ),
-              const SizedBox(height: Space.md),
-              TextField(
-                controller: _place,
-                maxLength: MemoryRules.maxPlace,
-                decoration: InputDecoration(
-                  labelText: 'Place (optional)',
-                  errorText: _placeError,
-                  errorMaxLines: 3,
+            ),
+          ),
+          const SizedBox(height: Space.md),
+
+          // Photos: horizontal scroll of thumbnails + add button.
+          if (uploads != null)
+            if (uploads.isEmpty)
+              _CompactPhotoRow(
+                items: const [],
+                onAdd: () => _pickDevicePhotos(uploads),
+              )
+            else ...[
+              _CompactPhotoRow(
+                items: uploads.items,
+                waitingForGroup: chosen == null,
+                onAdd: uploads.count >= MemoryRules.maxPhotos
+                    ? null
+                    : () => _pickDevicePhotos(uploads),
+                onRetry: uploads.retry,
+                onRemove: uploads.remove,
+              ),
+              if (uploads.firstError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: Space.sm),
+                  child: Text(
+                    '${uploads.firstError} You can still share your words.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
                 ),
-              ),
             ],
+          const SizedBox(height: Space.md),
+
+          // Action rows.
+          _ActionRow(
+            icon: Icons.sell_outlined,
+            label: 'Tag people',
+            onTap: () {}, // Not yet implemented.
+          ),
+          _ActionRow(
+            icon: Icons.location_on_outlined,
+            label: 'Add location',
+            onTap: _place.text.isNotEmpty
+                ? null
+                : () => _showLocationSheet(context),
+          ),
+          _ActionRow(
+            icon: Icons.calendar_today_outlined,
+            label: 'Create an event',
+            onTap: () {}, // Not yet implemented.
+          ),
+          _ActionRow(
+            icon: Icons.poll_outlined,
+            label: 'Create a poll',
+            onTap: () {}, // Not yet implemented.
+          ),
+          _ActionRow(
+            icon: Icons.more_horiz,
+            label: 'More options',
+            onTap: () => _showMoreOptions(context),
           ),
         ],
       );
-      // The one primary action stays in the thumb zone.
+
       return ReadingPane(
         child: Column(
           children: [
             Expanded(child: form),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(
-                  top: BorderSide(color: CircleAccents.of(context).hairline),
-                ),
+            // Pinned bottom button.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Space.md,
+                Space.sm,
+                Space.md,
+                Space.md,
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  Space.section,
-                  Space.md,
-                  Space.section,
-                  Space.md,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_shareNotice != null) ...[
-                      Semantics(
-                        liveRegion: true,
-                        child: Text(
-                          _shareNotice!,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.error,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_shareNotice != null) ...[
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        _shareNotice!,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: Space.sm),
+                  ],
+                  SizedBox(
+                    height: Space.large + Space.md,
+                    child: FilledButton(
+                      onPressed: _busy ? null : () => _share(chosen),
+                      style: FilledButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            CircleRadius.button,
                           ),
                         ),
                       ),
-                      const SizedBox(height: Space.sm),
-                    ],
-                    FilledButton(
-                      onPressed: _busy ? null : () => _share(chosen),
-                      child: Text(_busy ? 'Sharing…' : 'Share Memory'),
+                      child: Text(
+                        _busy ? 'Sharing...' : 'Create Memory',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -466,48 +478,86 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
       );
     },
   );
-}
 
-/// The empty photo area at the top of the composer: one large target that
-/// opens the phone's photos.
-class _AddPhotosTile extends StatelessWidget {
-  const _AddPhotosTile({required this.onTap});
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accents = CircleAccents.of(context);
-    return Semantics(
-      button: true,
-      label: 'Add photos',
-      excludeSemantics: true,
-      child: Material(
-        color: accents.recessed,
-        borderRadius: BorderRadius.circular(CircleRadius.card),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: AspectRatio(
-            aspectRatio: 4 / 3,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.add_photo_alternate_outlined,
-                  size: Space.large,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: Space.sm),
-                Text('Add photos', style: theme.textTheme.titleMedium),
-                Text(
-                  'Up to ${MemoryRules.maxPhotos}, from your phone',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: accents.caption,
-                  ),
-                ),
-              ],
+  void _showLocationSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(Space.section),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Place (optional)',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
+            const SizedBox(height: Space.md),
+            TextField(
+              controller: _place,
+              maxLength: MemoryRules.maxPlace,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Where was this taken?',
+                errorText: _placeError,
+              ),
+              onSubmitted: (_) => Navigator.pop(context),
+            ),
+            const SizedBox(height: Space.md),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMoreOptions(BuildContext context) {
+    final theme = Theme.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(Space.section),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('More options', style: theme.textTheme.titleMedium),
+            const SizedBox(height: Space.md),
+            TextField(
+              controller: _year,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
+              decoration: InputDecoration(
+                labelText: 'Year taken (optional)',
+                helperText:
+                    'For older moments, ${MemoryRules.firstYear}–'
+                    '${DateTime.now().year}',
+                errorText: _yearError,
+                errorMaxLines: 3,
+              ),
+            ),
+            const SizedBox(height: Space.md),
+            TextField(
+              controller: _place,
+              maxLength: MemoryRules.maxPlace,
+              decoration: InputDecoration(
+                labelText: 'Place (optional)',
+                errorText: _placeError,
+                errorMaxLines: 3,
+              ),
+            ),
+            const SizedBox(height: Space.md),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Done'),
+            ),
+          ],
         ),
       ),
     );
@@ -572,6 +622,268 @@ class UploadGrid extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Group selector: avatar + name + dropdown arrow.
+class _GroupSelector extends ConsumerWidget {
+  const _GroupSelector({
+    required this.chosenGroup,
+    required this.tree,
+    required this.onChanged,
+    this.errorText,
+  });
+  final CircleGroup? chosenGroup;
+  final List<GroupTreeEntry> tree;
+  final ValueChanged<String?> onChanged;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(CircleRadius.tile),
+          onTap: () async {
+            final id = await showModalBottomSheet<String>(
+              context: context,
+              builder: (_) => ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final entry in tree)
+                    ListTile(
+                      leading: GroupAvatar(
+                        groupId: entry.group.id,
+                        type: entry.group.type,
+                        size: CircleAvatarSize.small,
+                      ),
+                      title: Text(
+                        entry.path.isEmpty
+                            ? entry.group.name
+                            : '${entry.group.name} · in ${entry.path.last}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () => Navigator.pop(context, entry.group.id),
+                    ),
+                ],
+              ),
+            );
+            if (id != null) onChanged(id);
+          },
+          child: Row(
+            children: [
+              if (chosenGroup != null)
+                GroupAvatar(
+                  groupId: chosenGroup!.id,
+                  type: chosenGroup!.type,
+                  size: CircleAvatarSize.medium,
+                )
+              else
+                CircleInitialAvatar(
+                  icon: Icons.group,
+                  tone: CircleTone.calm,
+                  size: CircleAvatarSize.medium,
+                ),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Text(
+                  chosenGroup?.name ?? 'Choose a group',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(Icons.keyboard_arrow_down, color: accents.caption),
+            ],
+          ),
+        ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: Space.xs),
+            child: Text(
+              errorText!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Horizontal scrolling row of photo thumbnails + add button.
+class _CompactPhotoRow extends StatelessWidget {
+  const _CompactPhotoRow({
+    required this.items,
+    this.onAdd,
+    this.waitingForGroup = false,
+    this.onRetry,
+    this.onRemove,
+  });
+  final List<UploadItem> items;
+  final VoidCallback? onAdd;
+  final bool waitingForGroup;
+  final void Function(UploadItem)? onRetry;
+  final void Function(UploadItem)? onRemove;
+
+  static const _thumbSize = 112.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    return SizedBox(
+      height: _thumbSize,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length + (onAdd != null ? 1 : 0),
+        separatorBuilder: (_, _) => const SizedBox(width: Space.sm),
+        itemBuilder: (context, index) {
+          if (index < items.length) {
+            final item = items[index];
+            return SizedBox.square(
+              dimension: _thumbSize,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(CircleRadius.card),
+                    child: Image.memory(
+                      item.preview,
+                      fit: BoxFit.cover,
+                      cacheWidth: 336,
+                      gaplessPlayback: true,
+                      errorBuilder: (_, _, _) => const CirclePhotoPlaceholder(),
+                    ),
+                  ),
+                  if (item.status != UploadStatus.ready)
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(CircleRadius.card),
+                      ),
+                      child: Center(
+                        child: switch (item.status) {
+                          UploadStatus.uploading => CircularProgressIndicator(
+                            value: item.progress > 0 ? item.progress : null,
+                          ),
+                          UploadStatus.failed when item.retryable =>
+                            IconButton.filled(
+                              tooltip: 'Retry photo ${index + 1}',
+                              onPressed: () => onRetry?.call(item),
+                              icon: const Icon(Icons.refresh),
+                            ),
+                          UploadStatus.failed => Icon(
+                            Icons.error_outline,
+                            color: theme.colorScheme.error,
+                          ),
+                          _ => Icon(
+                            Icons.schedule,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        },
+                      ),
+                    ),
+                  Align(
+                    alignment: AlignmentDirectional.topEnd,
+                    child: Padding(
+                      padding: const EdgeInsets.all(Space.xs),
+                      child: SizedBox.square(
+                        dimension: Space.section,
+                        child: IconButton(
+                          tooltip: 'Remove photo ${index + 1}',
+                          onPressed: () => onRemove?.call(item),
+                          padding: EdgeInsets.zero,
+                          iconSize: Space.md + Space.xs,
+                          style: IconButton.styleFrom(
+                            backgroundColor: theme.colorScheme.surface
+                                .withValues(alpha: 0.8),
+                          ),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          // Add button at the end.
+          return GestureDetector(
+            onTap: onAdd,
+            child: Container(
+              width: _thumbSize,
+              height: _thumbSize,
+              decoration: BoxDecoration(
+                color: accents.recessed,
+                borderRadius: BorderRadius.circular(CircleRadius.card),
+                border: Border.all(color: accents.hairline),
+              ),
+              child: Icon(
+                Icons.add,
+                size: Space.hero,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// A single action row: icon + label + chevron in a bordered container.
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({required this.icon, required this.label, this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.sm),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(CircleRadius.card),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Space.md,
+              vertical: Space.md,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(CircleRadius.card),
+              border: Border.all(color: accents.hairline),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: Space.section, color: accents.caption),
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: accents.caption),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

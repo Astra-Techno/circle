@@ -262,7 +262,7 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
         path: '/compose',
         builder: (context, state) => Scaffold(
           appBar: AppBar(
-            title: const Text('New Memory'),
+            title: const Text('Create Memory'),
             leading: BackButton(
               onPressed: () =>
                   context.canPop() ? context.pop() : context.go('/home'),
@@ -836,7 +836,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   child: MediaQuery.withClampedTextScaling(
                     maxScaleFactor: navigationMaxTextScale,
                     child: SizedBox(
-                      height: 64,
+                      height: 72,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -1068,7 +1068,7 @@ class _DockTab extends StatelessWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: selected ? 52 : Space.large,
-                height: Space.hero,
+                height: Space.section,
                 decoration: BoxDecoration(
                   color: selected
                       ? theme.colorScheme.primary.withValues(alpha: 0.12)
