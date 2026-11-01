@@ -15,8 +15,7 @@ import '../../workspace/presentation/workspace_view.dart';
 import '../../profile/presentation/person_avatar.dart';
 import '../domain/group_tree.dart';
 import '../domain/membership_rules.dart';
-import 'invite_link_screen.dart';
-import 'contact_invitation_entry.dart';
+
 
 /// Indentation steps stop growing after this many levels; deeper levels
 /// stay distinguishable through the "Level n · in Parent" hint.
@@ -93,11 +92,10 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
               padding: const EdgeInsets.symmetric(horizontal: Space.md),
               sliver: SliverList.list(
                 children: [
-                  const ContactInvitationEntry(),
-                  // Filter chips.
+                  // Filter chips — full width, evenly spaced.
                   Padding(
                     padding: const EdgeInsets.only(
-                      top: Space.sm,
+                      top: Space.md,
                       bottom: Space.md,
                     ),
                     child: Row(
@@ -105,26 +103,19 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                         for (final filter in _CircleFilter.values) ...[
                           if (filter != _CircleFilter.all)
                             const SizedBox(width: Space.sm),
-                          _FilterChip(
-                            label: switch (filter) {
-                              _CircleFilter.all => 'All',
-                              _CircleFilter.joined => 'Joined',
-                              _CircleFilter.invited => 'Invited',
-                            },
-                            selected: _filter == filter,
-                            onTap: () => setState(() => _filter = filter),
+                          Expanded(
+                            child: _FilterChip(
+                              label: switch (filter) {
+                                _CircleFilter.all => 'All',
+                                _CircleFilter.joined => 'Joined',
+                                _CircleFilter.invited => 'Invited',
+                              },
+                              selected: _filter == filter,
+                              onTap: () => setState(() => _filter = filter),
+                            ),
                           ),
                         ],
                       ],
-                    ),
-                  ),
-                  // Invite link row.
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton.icon(
-                      onPressed: () => openInviteLinkDialog(context, ref),
-                      icon: const Icon(LucideIcons.link),
-                      label: const Text('Open an invite link'),
                     ),
                   ),
                   if (_filter == _CircleFilter.invited) ...[
@@ -250,6 +241,7 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
     return Material(
       color: selected ? theme.colorScheme.primary : Colors.transparent,
       borderRadius: BorderRadius.circular(CircleRadius.button),
@@ -257,23 +249,21 @@ class _FilterChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(CircleRadius.button),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Space.lg,
-            vertical: Space.sm,
-          ),
+          height: Space.large,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(CircleRadius.button),
             border: selected
                 ? null
-                : Border.all(color: CircleAccents.of(context).hairline),
+                : Border.all(color: accents.hairline),
           ),
           child: Text(
             label,
-            style: theme.textTheme.labelLarge?.copyWith(
+            style: theme.textTheme.titleSmall?.copyWith(
               color: selected
                   ? theme.colorScheme.onPrimary
-                  : CircleAccents.of(context).caption,
-              fontWeight: FontWeight.w500,
+                  : accents.caption,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -372,20 +362,20 @@ class _CircleCard extends ConsumerWidget {
                         Row(
                           children: [
                             SizedBox(
-                              width: visibleAvatars.length * 20.0 + 12,
-                              height: 24,
+                              width: visibleAvatars.length * Space.section + Space.sm,
+                              height: CircleAvatarSize.small.diameter,
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 children: [
                                   for (var i = 0; i < visibleAvatars.length; i++)
                                     Positioned(
-                                      left: i * 16.0,
+                                      left: i * Space.section,
                                       child: Container(
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           border: Border.all(
                                             color: theme.colorScheme.surface,
-                                            width: 2,
+                                            width: Space.xs / 2,
                                           ),
                                         ),
                                         child: PersonAvatar(
@@ -401,17 +391,18 @@ class _CircleCard extends ConsumerWidget {
                             if (remaining > 0)
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: Space.xs,
+                                  horizontal: Space.sm,
                                   vertical: Space.xs,
                                 ),
                                 decoration: BoxDecoration(
                                   color: accents.recessed,
-                                  borderRadius: BorderRadius.circular(CircleRadius.small),
+                                  borderRadius: BorderRadius.circular(CircleRadius.button),
                                 ),
                                 child: Text(
                                   '+$remaining',
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     color: accents.caption,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
@@ -533,19 +524,19 @@ class _GroupCoverPhoto extends ConsumerWidget {
 
     final accents = CircleAccents.of(context);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(CircleRadius.tile),
+      borderRadius: BorderRadius.circular(CircleRadius.small),
       child: SizedBox(
-        width: 100,
-        height: 80,
+        width: Space.large * 3,
+        height: Space.large * 2 + Space.md,
         child: image != null
             ? Image(image: image, fit: BoxFit.cover)
             : Container(
                 color: accents.recessed,
                 alignment: Alignment.center,
-                child: Icon(
-                  circleTypeIcon(type),
-                  color: accents.caption,
-                  size: 32,
+                child: GroupAvatar(
+                  groupId: groupId,
+                  type: type,
+                  size: CircleAvatarSize.large,
                 ),
               ),
       ),

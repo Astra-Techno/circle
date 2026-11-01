@@ -836,7 +836,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   child: MediaQuery.withClampedTextScaling(
                     maxScaleFactor: navigationMaxTextScale,
                     child: SizedBox(
-                      height: 56,
+                      height: 64,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -855,22 +855,37 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                             onTap: () => shell.goBranch(2),
                           ),
                           SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: Material(
-                              color: theme.colorScheme.primary,
-                              shape: const CircleBorder(),
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: () =>
-                                    context.push(composeLocation(filter)),
-                                child: Icon(
-                                  LucideIcons.plus,
-                                  color: theme.colorScheme.onPrimary,
-                                  size: 28,
-                                  semanticLabel: 'Create',
+                            width: 60,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: Space.large,
+                                  height: Space.large,
+                                  child: Material(
+                                    color: theme.colorScheme.primary,
+                                    shape: const CircleBorder(),
+                                    child: InkWell(
+                                      customBorder: const CircleBorder(),
+                                      onTap: () =>
+                                          context.push(composeLocation(filter)),
+                                      child: Icon(
+                                        LucideIcons.plus,
+                                        color: theme.colorScheme.onPrimary,
+                                        size: Space.section,
+                                        semanticLabel: 'Create',
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                Text(
+                                  'Create',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: CircleAccents.of(context).caption,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           _DockTab(
@@ -937,7 +952,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
 
     // Root tab pages: no AppBar — each screen draws its own scroll-aware
     // SliverAppBar. The shell passes header data via CircleTabHeaderData.
-    final logo = index == 0
+    final logo = (index == 0 || index == 2)
         ? ClipRRect(
             borderRadius: BorderRadius.circular(CircleRadius.small),
             child: Image.asset(
@@ -979,12 +994,33 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
               logo: logo,
               actions: [
                 const SearchButton(),
-                const ActivityBell(),
-                if (features.has(CircleFeature.liveChat))
-                  IconButton(
-                    tooltip: 'Chats',
-                    icon: const Icon(LucideIcons.messageSquare),
-                    onPressed: () => shell.goBranch(1),
+                if (index != 2) ...[
+                  const ActivityBell(),
+                  if (features.has(CircleFeature.liveChat))
+                    IconButton(
+                      tooltip: 'Chats',
+                      icon: const Icon(LucideIcons.messageSquare),
+                      onPressed: () => shell.goBranch(1),
+                    ),
+                ],
+                if (index == 2)
+                  SizedBox(
+                    width: Space.large,
+                    height: Space.large,
+                    child: Material(
+                      color: theme.colorScheme.primary,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => context.push('/groups/new'),
+                        child: Icon(
+                          LucideIcons.plus,
+                          color: theme.colorScheme.onPrimary,
+                          size: Space.section,
+                          semanticLabel: 'Create group',
+                        ),
+                      ),
+                    ),
                   ),
               ],
               fab: fab,
@@ -1022,20 +1058,39 @@ class _DockTab extends StatelessWidget {
       selected: selected,
       label: label,
       child: InkWell(
-        borderRadius: BorderRadius.circular(CircleRadius.button),
+        customBorder: const CircleBorder(),
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: selected ? 56 : 48,
-          height: 40,
-          decoration: BoxDecoration(
-            color: selected
-                ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(CircleRadius.button),
+        child: SizedBox(
+          width: 60,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: selected ? 52 : Space.large,
+                height: Space.hero,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(CircleRadius.tile),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  selected ? activeIcon : icon,
+                  color: color,
+                  size: Space.section,
+                ),
+              ),
+              Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ],
           ),
-          alignment: Alignment.center,
-          child: Icon(selected ? activeIcon : icon, color: color, size: 26),
         ),
       ),
     );
