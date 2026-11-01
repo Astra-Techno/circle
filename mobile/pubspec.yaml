@@ -46,6 +46,7 @@ dependencies:
   geolocator: 14.1.2
   go_router: ^18.1.1
   image_picker: ^1.2.4
+  lucide_icons: ^0.257.0
   timezone: ^0.11.2
   uuid: ^4.6.0
 

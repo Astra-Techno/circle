@@ -2,6 +2,7 @@ import '../core/form_exit_guard.dart';
 import '../features/polls/presentation/live_polls.dart';
 import '../features/profile/presentation/account_security_screens.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/api/api_providers.dart';
@@ -840,15 +841,15 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _DockTab(
-                            icon: Icons.home_outlined,
-                            activeIcon: Icons.home_rounded,
+                            icon: LucideIcons.home,
+                            activeIcon: LucideIcons.home,
                             label: 'Home',
                             selected: index == 0,
                             onTap: () => shell.goBranch(0),
                           ),
                           _DockTab(
-                            icon: Icons.groups_outlined,
-                            activeIcon: Icons.groups_rounded,
+                            icon: LucideIcons.users,
+                            activeIcon: LucideIcons.users,
                             label: 'Circles',
                             selected: index == 2,
                             onTap: () => shell.goBranch(2),
@@ -864,7 +865,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                                 onTap: () =>
                                     context.push(composeLocation(filter)),
                                 child: Icon(
-                                  Icons.add,
+                                  LucideIcons.plus,
                                   color: theme.colorScheme.onPrimary,
                                   size: 28,
                                   semanticLabel: 'Create',
@@ -873,15 +874,15 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                             ),
                           ),
                           _DockTab(
-                            icon: Icons.event_outlined,
-                            activeIcon: Icons.event,
+                            icon: LucideIcons.calendar,
+                            activeIcon: LucideIcons.calendar,
                             label: 'Events',
                             selected: index == 3,
                             onTap: () => shell.goBranch(3),
                           ),
                           _DockTab(
-                            icon: Icons.person_outline,
-                            activeIcon: Icons.person_rounded,
+                            icon: LucideIcons.user,
+                            activeIcon: LucideIcons.user,
                             label: 'Profile',
                             selected: index == 4,
                             onTap: () => shell.goBranch(4),
@@ -982,7 +983,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                 if (features.has(CircleFeature.liveChat))
                   IconButton(
                     tooltip: 'Chats',
-                    icon: const Icon(Icons.chat_bubble_outline),
+                    icon: const Icon(LucideIcons.messageSquare),
                     onPressed: () => shell.goBranch(1),
                   ),
               ],
