@@ -3,7 +3,7 @@ import 'group_photos.dart';
 import '../application/group_photos.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
@@ -57,7 +57,9 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
         if (existing == null || memory.createdAt.isAfter(existing.time)) {
           final hasPhotos = memory.photos.isNotEmpty;
           activityMap[memory.groupId] = _GroupActivity(
-            icon: hasPhotos ? LucideIcons.image : LucideIcons.messageCircle,
+            icon: hasPhotos
+                ? Icons.photo_library_outlined
+                : Icons.chat_bubble_outline,
             text:
                 '${workspace.nameOf(memory.authorId)} ${hasPhotos ? 'shared ${memory.photos.length == 1 ? 'a photo' : '${memory.photos.length} photos'}' : 'posted a memory'}',
             time: memory.createdAt,
@@ -68,7 +70,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
         final existing = activityMap[event.groupId];
         if (existing == null || event.createdAt.isAfter(existing.time)) {
           activityMap[event.groupId] = _GroupActivity(
-            icon: LucideIcons.calendar,
+            icon: Icons.event_outlined,
             text: event.title,
             time: event.createdAt,
           );
@@ -134,7 +136,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                           ),
                           title: Text(inv.groupName),
                           subtitle: Text('${inv.inviterName} invited you'),
-                          trailing: const Icon(LucideIcons.chevronRight),
+                          trailing: const Icon(Icons.chevron_right),
                           onTap: () => context.push(
                             '/groups/g/${inv.invitation.groupId}',
                           ),
@@ -180,7 +182,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                               ),
                             ),
                             Icon(
-                              LucideIcons.chevronDown,
+                              Icons.expand_more,
                               size: 18,
                               color: accents.caption,
                             ),
@@ -208,12 +210,12 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                         CircleRow(
                           child: ListTile(
                             leading: const CircleInitialAvatar(
-                              icon: LucideIcons.clock,
+                              icon: Icons.hourglass_empty,
                               tone: CircleTone.neutral,
                             ),
                             title: Text(pending.name),
                             subtitle: const Text('Waiting for approval'),
-                            trailing: const Icon(LucideIcons.chevronRight),
+                            trailing: const Icon(Icons.chevron_right),
                             onTap: () =>
                                 context.push('/groups/g/${pending.groupId}'),
                           ),
@@ -469,7 +471,7 @@ class _CircleCard extends ConsumerWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  LucideIcons.calendar,
+                                  Icons.event_outlined,
                                   size: 14,
                                   color: accents.sage,
                                 ),
@@ -485,7 +487,7 @@ class _CircleCard extends ConsumerWidget {
                             ),
                           ),
                         ),
-                      Icon(LucideIcons.chevronRight, color: accents.caption),
+                      Icon(Icons.chevron_right, color: accents.caption),
                     ],
                   ),
                 ],
@@ -661,7 +663,7 @@ class CircleGroupTile extends ConsumerWidget {
                       Padding(
                         padding: const EdgeInsets.all(Space.md),
                         child: Icon(
-                          LucideIcons.chevronRight,
+                          Icons.chevron_right,
                           color: accents.caption,
                         ),
                       )
@@ -671,9 +673,7 @@ class CircleGroupTile extends ConsumerWidget {
                             ? 'Collapse ${group.name}'
                             : 'Expand ${group.name}',
                         icon: Icon(
-                          expanded!
-                              ? LucideIcons.chevronUp
-                              : LucideIcons.chevronDown,
+                          expanded! ? Icons.expand_less : Icons.expand_more,
                           color: accents.caption,
                         ),
                         onPressed: onToggle,

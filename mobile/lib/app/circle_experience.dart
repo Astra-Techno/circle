@@ -2,7 +2,7 @@ import '../core/form_exit_guard.dart';
 import '../features/polls/presentation/live_polls.dart';
 import '../features/profile/presentation/account_security_screens.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/api/api_providers.dart';
@@ -841,15 +841,15 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _DockTab(
-                            icon: LucideIcons.home,
-                            activeIcon: LucideIcons.home,
+                            icon: Icons.home_outlined,
+                            activeIcon: Icons.home_outlined,
                             label: 'Home',
                             selected: index == 0,
                             onTap: () => shell.goBranch(0),
                           ),
                           _DockTab(
-                            icon: LucideIcons.users,
-                            activeIcon: LucideIcons.users,
+                            icon: Icons.groups_outlined,
+                            activeIcon: Icons.groups_outlined,
                             label: 'Circles',
                             selected: index == 2,
                             onTap: () => shell.goBranch(2),
@@ -870,7 +870,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                                       onTap: () =>
                                           context.push(composeLocation(filter)),
                                       child: Icon(
-                                        LucideIcons.plus,
+                                        Icons.add,
                                         color: theme.colorScheme.onPrimary,
                                         size: Space.section,
                                         semanticLabel: 'Create',
@@ -889,15 +889,15 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                             ),
                           ),
                           _DockTab(
-                            icon: LucideIcons.calendar,
-                            activeIcon: LucideIcons.calendar,
+                            icon: Icons.event_outlined,
+                            activeIcon: Icons.event_outlined,
                             label: 'Events',
                             selected: index == 3,
                             onTap: () => shell.goBranch(3),
                           ),
                           _DockTab(
-                            icon: LucideIcons.user,
-                            activeIcon: LucideIcons.user,
+                            icon: Icons.person_outline,
+                            activeIcon: Icons.person_outline,
                             label: 'Profile',
                             selected: index == 4,
                             onTap: () => shell.goBranch(4),
@@ -999,7 +999,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   if (features.has(CircleFeature.liveChat))
                     IconButton(
                       tooltip: 'Chats',
-                      icon: const Icon(LucideIcons.messageSquare),
+                      icon: const Icon(Icons.chat_bubble_outline),
                       onPressed: () => shell.goBranch(1),
                     ),
                 ],
@@ -1014,7 +1014,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                         customBorder: const CircleBorder(),
                         onTap: () => context.push('/groups/new'),
                         child: Icon(
-                          LucideIcons.plus,
+                          Icons.add,
                           color: theme.colorScheme.onPrimary,
                           size: Space.section,
                           semanticLabel: 'Create group',
