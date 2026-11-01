@@ -16,7 +16,6 @@ import '../../profile/presentation/person_avatar.dart';
 import '../domain/group_tree.dart';
 import '../domain/membership_rules.dart';
 
-
 /// Indentation steps stop growing after this many levels; deeper levels
 /// stay distinguishable through the "Level n · in Parent" hint.
 const _indentStep = Space.section, _indentLevels = 4;
@@ -59,7 +58,8 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
           final hasPhotos = memory.photos.isNotEmpty;
           activityMap[memory.groupId] = _GroupActivity(
             icon: hasPhotos ? LucideIcons.image : LucideIcons.messageCircle,
-            text: '${workspace.nameOf(memory.authorId)} ${hasPhotos ? 'shared ${memory.photos.length == 1 ? 'a photo' : '${memory.photos.length} photos'}' : 'posted a memory'}',
+            text:
+                '${workspace.nameOf(memory.authorId)} ${hasPhotos ? 'shared ${memory.photos.length == 1 ? 'a photo' : '${memory.photos.length} photos'}' : 'posted a memory'}',
             time: memory.createdAt,
           );
         }
@@ -122,7 +122,8 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                     if (workspace.invitations.isEmpty)
                       CircleEmpty(
                         title: 'No invitations',
-                        message: 'Invitations from your circles will appear here.',
+                        message:
+                            'Invitations from your circles will appear here.',
                       ),
                     for (final inv in workspace.invitations)
                       CircleRow(
@@ -134,7 +135,9 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                           title: Text(inv.groupName),
                           subtitle: Text('${inv.inviterName} invited you'),
                           trailing: const Icon(LucideIcons.chevronRight),
-                          onTap: () => context.push('/groups/g/${inv.invitation.groupId}'),
+                          onTap: () => context.push(
+                            '/groups/g/${inv.invitation.groupId}',
+                          ),
                         ),
                       ),
                   ],
@@ -253,16 +256,12 @@ class _FilterChip extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(CircleRadius.button),
-            border: selected
-                ? null
-                : Border.all(color: accents.hairline),
+            border: selected ? null : Border.all(color: accents.hairline),
           ),
           child: Text(
             label,
             style: theme.textTheme.titleSmall?.copyWith(
-              color: selected
-                  ? theme.colorScheme.onPrimary
-                  : accents.caption,
+              color: selected ? theme.colorScheme.onPrimary : accents.caption,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -330,10 +329,7 @@ class _CircleCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Cover photo.
-                  _GroupCoverPhoto(
-                    groupId: group.id,
-                    type: group.type,
-                  ),
+                  _GroupCoverPhoto(groupId: group.id, type: group.type),
                   const SizedBox(width: Space.md),
                   // Info column.
                   Expanded(
@@ -362,12 +358,18 @@ class _CircleCard extends ConsumerWidget {
                         Row(
                           children: [
                             SizedBox(
-                              width: visibleAvatars.length * Space.section + Space.sm,
+                              width:
+                                  visibleAvatars.length * Space.section +
+                                  Space.sm,
                               height: CircleAvatarSize.small.diameter,
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 children: [
-                                  for (var i = 0; i < visibleAvatars.length; i++)
+                                  for (
+                                    var i = 0;
+                                    i < visibleAvatars.length;
+                                    i++
+                                  )
                                     Positioned(
                                       left: i * Space.section,
                                       child: Container(
@@ -380,7 +382,9 @@ class _CircleCard extends ConsumerWidget {
                                         ),
                                         child: PersonAvatar(
                                           person: visibleAvatars[i],
-                                          name: workspace.nameOf(visibleAvatars[i]),
+                                          name: workspace.nameOf(
+                                            visibleAvatars[i],
+                                          ),
                                           size: CircleAvatarSize.small,
                                         ),
                                       ),
@@ -396,7 +400,9 @@ class _CircleCard extends ConsumerWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: accents.recessed,
-                                  borderRadius: BorderRadius.circular(CircleRadius.button),
+                                  borderRadius: BorderRadius.circular(
+                                    CircleRadius.button,
+                                  ),
                                 ),
                                 child: Text(
                                   '+$remaining',
@@ -455,7 +461,9 @@ class _CircleCard extends ConsumerWidget {
                             ),
                             decoration: BoxDecoration(
                               color: accents.sageContainer,
-                              borderRadius: BorderRadius.circular(CircleRadius.tile),
+                              borderRadius: BorderRadius.circular(
+                                CircleRadius.tile,
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -477,10 +485,7 @@ class _CircleCard extends ConsumerWidget {
                             ),
                           ),
                         ),
-                      Icon(
-                        LucideIcons.chevronRight,
-                        color: accents.caption,
-                      ),
+                      Icon(LucideIcons.chevronRight, color: accents.caption),
                     ],
                   ),
                 ],
@@ -496,10 +501,7 @@ class _CircleCard extends ConsumerWidget {
 
 /// Rounded rectangle cover photo for a group.
 class _GroupCoverPhoto extends ConsumerWidget {
-  const _GroupCoverPhoto({
-    required this.groupId,
-    required this.type,
-  });
+  const _GroupCoverPhoto({required this.groupId, required this.type});
   final String groupId;
   final CircleType type;
 
@@ -669,7 +671,9 @@ class CircleGroupTile extends ConsumerWidget {
                             ? 'Collapse ${group.name}'
                             : 'Expand ${group.name}',
                         icon: Icon(
-                          expanded! ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                          expanded!
+                              ? LucideIcons.chevronUp
+                              : LucideIcons.chevronDown,
                           color: accents.caption,
                         ),
                         onPressed: onToggle,

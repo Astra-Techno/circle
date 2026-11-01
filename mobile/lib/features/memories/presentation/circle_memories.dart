@@ -257,7 +257,10 @@ class _QuickActionIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(icon, color: onTap != null ? color : color.withValues(alpha: 0.4)),
+      icon: Icon(
+        icon,
+        color: onTap != null ? color : color.withValues(alpha: 0.4),
+      ),
       iconSize: 26,
       tooltip: label,
       onPressed: onTap,
@@ -368,7 +371,10 @@ class EventFeedCard extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(LucideIcons.moreHorizontal, color: accents.caption),
+                    icon: Icon(
+                      LucideIcons.moreHorizontal,
+                      color: accents.caption,
+                    ),
                     onPressed: () {},
                   ),
                 ],
