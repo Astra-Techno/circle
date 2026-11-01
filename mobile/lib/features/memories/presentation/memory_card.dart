@@ -286,58 +286,47 @@ class CircleMemoryCard extends ConsumerWidget {
               ),
             if (reactions.total > 0 || comments > 0)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Space.md),
-                child: Row(
-                  children: [
-                    if (reactions.total > 0)
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () =>
-                              showReactionSummary(context, reactions),
-                          style: TextButton.styleFrom(
-                            alignment: Alignment.centerLeft,
-                          ),
+                padding: const EdgeInsets.fromLTRB(
+                  Space.section,
+                  Space.sm,
+                  Space.section,
+                  0,
+                ),
+                child: GestureDetector(
+                  onTap: reactions.total > 0
+                      ? () => showReactionSummary(context, reactions)
+                      : null,
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    children: [
+                      if (reactions.total > 0) ...[
+                        Icon(Icons.favorite, size: 18, color: accents.heart),
+                        if (reactions.total > 1) ...[
+                          const SizedBox(width: 2),
+                          Icon(Icons.thumb_up, size: 16, color: colors.primary),
+                        ],
+                        const SizedBox(width: Space.xs),
+                        Text('${reactions.total}', style: caption),
+                      ],
+                      const Spacer(),
+                      if (comments > 0)
+                        GestureDetector(
+                          onTap: openDetail,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.favorite,
-                                size: 18,
-                                color: accents.heart,
+                                Icons.chat_bubble_outline,
+                                size: 16,
+                                color: accents.caption,
                               ),
-                              if (reactions.total > 1) ...[
-                                const SizedBox(width: 2),
-                                Icon(
-                                  Icons.thumb_up,
-                                  size: 16,
-                                  color: colors.primary,
-                                ),
-                              ],
                               const SizedBox(width: Space.xs),
-                              Text('${reactions.total}', style: caption),
+                              Text('$comments', style: caption),
                             ],
                           ),
                         ),
-                      )
-                    else
-                      const Spacer(),
-                    if (comments > 0)
-                      TextButton(
-                        onPressed: openDetail,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              size: 16,
-                              color: accents.caption,
-                            ),
-                            const SizedBox(width: Space.xs),
-                            Text('$comments', style: caption),
-                          ],
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             const Divider(indent: Space.md, endIndent: Space.md),

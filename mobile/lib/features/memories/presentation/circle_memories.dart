@@ -247,7 +247,7 @@ class _HomeHeader extends ConsumerWidget {
   }
 }
 
-/// Quick action button with a pastel tinted background.
+/// Quick action tile with a pastel tinted background and a visible label.
 class _QuickActionIcon extends StatelessWidget {
   const _QuickActionIcon({
     required this.icon,
@@ -261,6 +261,7 @@ class _QuickActionIcon extends StatelessWidget {
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final effectiveColor = onTap != null ? color : color.withValues(alpha: 0.4);
     return Semantics(
       button: true,
@@ -268,14 +269,27 @@ class _QuickActionIcon extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(CircleRadius.card),
         onTap: onTap,
-        child: AspectRatio(
-          aspectRatio: 1,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: effectiveColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(CircleRadius.card),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: effectiveColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(CircleRadius.card),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: Space.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: effectiveColor, size: Space.section),
+                const SizedBox(height: Space.xs),
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: effectiveColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            child: Icon(icon, color: effectiveColor, size: Space.hero),
           ),
         ),
       ),
