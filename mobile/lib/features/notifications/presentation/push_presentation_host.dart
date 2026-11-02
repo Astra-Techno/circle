@@ -130,7 +130,13 @@ class _PushPresentationHostState extends ConsumerState<PushPresentationHost>
           if (!next.isLoading && choices?.enabled == true) {
             _connect();
           } else if (!next.isLoading) {
-            unawaited(ref.read(pushSessionCoordinatorProvider).stop());
+            // Restoring disabled preferences after a failed connection must not
+            // erase its diagnostic. Explicit opt-out/session changes clear it.
+            unawaited(
+              ref
+                  .read(pushSessionCoordinatorProvider)
+                  .stop(clearProblem: false),
+            );
             _dismiss();
           }
         });
