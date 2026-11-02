@@ -841,19 +841,23 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _DockTab(
-                            icon: LucideIcons.house,
-                            activeIcon: LucideIcons.house,
-                            label: 'Home',
-                            selected: index == 0,
-                            onTap: () => shell.goBranch(0),
+                          Expanded(
+                            child: _DockTab(
+                              icon: LucideIcons.house,
+                              activeIcon: LucideIcons.house,
+                              label: 'Home',
+                              selected: index == 0,
+                              onTap: () => shell.goBranch(0),
+                            ),
                           ),
-                          _DockTab(
-                            icon: LucideIcons.users,
-                            activeIcon: LucideIcons.users,
-                            label: 'Circles',
-                            selected: index == 2,
-                            onTap: () => shell.goBranch(2),
+                          Expanded(
+                            child: _DockTab(
+                              icon: LucideIcons.users,
+                              activeIcon: LucideIcons.users,
+                              label: 'Circles',
+                              selected: index == 2,
+                              onTap: () => shell.goBranch(2),
+                            ),
                           ),
                           SizedBox(
                             width: 60,
@@ -874,7 +878,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                                         LucideIcons.plus,
                                         color: theme.colorScheme.onPrimary,
                                         size: Space.section,
-                                        semanticLabel: 'Create',
+                                        semanticLabel: 'Create Memory',
                                       ),
                                     ),
                                   ),
@@ -889,19 +893,23 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                               ],
                             ),
                           ),
-                          _DockTab(
-                            icon: LucideIcons.calendar,
-                            activeIcon: LucideIcons.calendar,
-                            label: 'Events',
-                            selected: index == 3,
-                            onTap: () => shell.goBranch(3),
+                          Expanded(
+                            child: _DockTab(
+                              icon: LucideIcons.calendar,
+                              activeIcon: LucideIcons.calendar,
+                              label: 'Events',
+                              selected: index == 3,
+                              onTap: () => shell.goBranch(3),
+                            ),
                           ),
-                          _DockTab(
-                            icon: LucideIcons.user,
-                            activeIcon: LucideIcons.user,
-                            label: 'Profile',
-                            selected: index == 4,
-                            onTap: () => shell.goBranch(4),
+                          Expanded(
+                            child: _DockTab(
+                              icon: LucideIcons.user,
+                              activeIcon: LucideIcons.user,
+                              label: 'Profile',
+                              selected: index == 4,
+                              onTap: () => shell.goBranch(4),
+                            ),
                           ),
                         ],
                       ),

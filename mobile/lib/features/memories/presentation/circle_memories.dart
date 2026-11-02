@@ -33,26 +33,6 @@ class CircleHome extends ConsumerWidget {
           .toList();
       final features = ref.watch(circleFeaturesProvider);
 
-      // Build unified feed: memories interspersed with events and polls.
-      final events = features.has(CircleFeature.liveEvents)
-          ? workspace.events
-          : <CircleEvent>[];
-      final feedItems = <_FeedItem>[
-        for (final memory in memories)
-          _FeedItem(
-            type: _FeedType.memory,
-            createdAt: memory.createdAt,
-            memory: memory,
-          ),
-        for (final event in events)
-          _FeedItem(
-            type: _FeedType.event,
-            createdAt: event.createdAt,
-            event: event,
-          ),
-      ];
-      feedItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
       final more = workspace.hasMoreMemories;
       return ColoredBox(
         color: CircleAccents.of(context).recessed,
@@ -68,9 +48,9 @@ class CircleHome extends ConsumerWidget {
               slivers: [
                 const CircleFloatingHeader(),
                 SliverList.builder(
-                  itemCount: feedItems.length + 1 + (more ? 1 : 0),
+                  itemCount: memories.length + 1 + (more ? 1 : 0),
                   itemBuilder: (context, index) {
-                    if (index == feedItems.length + 1) {
+                    if (index == memories.length + 1) {
                       return const _LoadOlderMemories();
                     }
                     if (index == 0) {
@@ -81,28 +61,14 @@ class CircleHome extends ConsumerWidget {
                         features: features,
                       );
                     }
-                    final item = feedItems[index - 1];
-                    switch (item.type) {
-                      case _FeedType.memory:
-                        final memory = item.memory!;
-                        final group = workspace.group(memory.groupId)!;
-                        return CircleMemoryCard(
-                          key: ValueKey(memory.id),
-                          memory: memory,
-                          group: group,
-                          audience: audiencePath(group, workspace.groupsById),
-                        );
-                      case _FeedType.event:
-                        final event = item.event!;
-                        final group = workspace.group(event.groupId);
-                        if (group == null) return const SizedBox.shrink();
-                        return EventFeedCard(
-                          key: ValueKey('event-${event.id}'),
-                          event: event,
-                          group: group,
-                          workspace: workspace,
-                        );
-                    }
+                    final memory = memories[index - 1];
+                    final group = workspace.group(memory.groupId)!;
+                    return CircleMemoryCard(
+                      key: ValueKey(memory.id),
+                      memory: memory,
+                      group: group,
+                      audience: audiencePath(group, workspace.groupsById),
+                    );
                   },
                 ),
               ],
@@ -112,21 +78,6 @@ class CircleHome extends ConsumerWidget {
       );
     },
   );
-}
-
-enum _FeedType { memory, event }
-
-class _FeedItem {
-  const _FeedItem({
-    required this.type,
-    required this.createdAt,
-    this.memory,
-    this.event,
-  });
-  final _FeedType type;
-  final DateTime createdAt;
-  final CircleMemory? memory;
-  final CircleEvent? event;
 }
 
 /// The composer area: Circle header, avatar + prompt, 4 quick-action tiles.
@@ -207,15 +158,6 @@ class _HomeHeader extends ConsumerWidget {
                       icon: LucideIcons.image,
                       label: 'Photo',
                       color: theme.colorScheme.primary,
-                      onTap: () => context.push(composeLocation(groupId)),
-                    ),
-                  ),
-                  const SizedBox(width: Space.sm),
-                  Expanded(
-                    child: _QuickActionIcon(
-                      icon: LucideIcons.video,
-                      label: 'Video',
-                      color: accents.video,
                       onTap: () => context.push(composeLocation(groupId)),
                     ),
                   ),
@@ -306,299 +248,6 @@ class _QuickActionIcon extends StatelessWidget {
   }
 }
 
-/// Event as a feed card in the unified Home timeline.
-class EventFeedCard extends StatelessWidget {
-  const EventFeedCard({
-    super.key,
-    required this.event,
-    required this.group,
-    required this.workspace,
-  });
-  final CircleEvent event;
-  final CircleGroup group;
-  final CircleWorkspace workspace;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accents = CircleAccents.of(context);
-    final colors = theme.colorScheme;
-    final creatorName = workspace.nameOf(event.createdBy);
-    final now = DateTime.now();
-    const months = [
-      'JAN',
-      'FEB',
-      'MAR',
-      'APR',
-      'MAY',
-      'JUN',
-      'JUL',
-      'AUG',
-      'SEP',
-      'OCT',
-      'NOV',
-      'DEC',
-    ];
-    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-    final local = event.startsAt.toLocal();
-    final dayLabel = days[local.weekday - 1];
-    final dayNum = '${local.day}';
-    final monthLabel = months[local.month - 1];
-    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
-    final timeLabel =
-        '${dayLabel.substring(0, 3)}, ${local.day} ${months[local.month - 1]} · $hour:${local.minute.toString().padLeft(2, '0')} ${local.hour >= 12 ? 'PM' : 'AM'}';
-
-    // RSVP counts.
-    final rsvps = event.rsvps;
-    final going = rsvps.values
-        .where((r) => r.status == Attendance.going)
-        .length;
-    final maybe = rsvps.values
-        .where((r) => r.status == Attendance.maybe)
-        .length;
-    final myRsvp = rsvps[workspace.viewer];
-
-    return Padding(
-      padding: const EdgeInsets.all(Space.sm),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: Space.md),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(CircleRadius.card),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Author row.
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(
-                Space.section,
-                0,
-                Space.sm,
-                Space.sm,
-              ),
-              child: Row(
-                children: [
-                  PersonAvatar(person: event.createdBy, name: creatorName),
-                  const SizedBox(width: Space.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: creatorName,
-                                style: theme.textTheme.titleMedium,
-                              ),
-                              TextSpan(
-                                text: ' created an event',
-                                style: theme.textTheme.bodyLarge,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          '${group.name} · ${memoryTimeLabel(event.editedAt ?? now, now)}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: accents.caption,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(LucideIcons.ellipsis, color: accents.caption),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
-            ),
-            // Event preview card.
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.md),
-              child: Material(
-                color: accents.recessed,
-                borderRadius: BorderRadius.circular(CircleRadius.tile),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(CircleRadius.tile),
-                  onTap: () => context.push('/events/e/${event.id}'),
-                  child: Padding(
-                    padding: const EdgeInsets.all(Space.md),
-                    child: Row(
-                      children: [
-                        // Date block.
-                        SizedBox(
-                          width: 56,
-                          child: Column(
-                            children: [
-                              Text(
-                                dayLabel,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: colors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                dayNum,
-                                style: theme.textTheme.headlineMedium?.copyWith(
-                                  color: accents.title,
-                                ),
-                              ),
-                              Text(
-                                monthLabel,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: accents.caption,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: Space.sm),
-                        // Title + details.
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                event.title,
-                                style: theme.textTheme.titleMedium,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (event.venue != null) ...[
-                                const SizedBox(height: Space.xs),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      LucideIcons.map_pin,
-                                      size: 16,
-                                      color: accents.caption,
-                                    ),
-                                    const SizedBox(width: Space.xs),
-                                    Expanded(
-                                      child: Text(
-                                        event.venue!,
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(color: accents.caption),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                              ...[
-                                const SizedBox(height: Space.xs),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      LucideIcons.clock,
-                                      size: 16,
-                                      color: accents.caption,
-                                    ),
-                                    const SizedBox(width: Space.xs),
-                                    Expanded(
-                                      child: Text(
-                                        timeLabel,
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(color: accents.caption),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Attendees + RSVP.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Space.section,
-                Space.sm,
-                Space.section,
-                0,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      [
-                        if (going > 0) '$going going',
-                        if (maybe > 0) '$maybe maybe',
-                      ].join(' · '),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: accents.caption,
-                      ),
-                    ),
-                  ),
-                  if (myRsvp != null)
-                    Chip(
-                      avatar: Icon(
-                        LucideIcons.circle_check_big,
-                        size: 16,
-                        color: colors.primary,
-                      ),
-                      label: Text(
-                        myRsvp.status == Attendance.going
-                            ? 'Going'
-                            : myRsvp.status == Attendance.maybe
-                            ? 'Interested'
-                            : 'Not going',
-                      ),
-                      side: BorderSide.none,
-                      backgroundColor: accents.recessed,
-                      labelStyle: theme.textTheme.labelSmall?.copyWith(
-                        color: colors.primary,
-                      ),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                ],
-              ),
-            ),
-            const Divider(indent: Space.md, endIndent: Space.md),
-            // Icon-only actions.
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                IconButton(
-                  tooltip: 'Love',
-                  icon: const Icon(LucideIcons.heart),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  tooltip: 'Comment',
-                  icon: const Icon(LucideIcons.message_circle),
-                  onPressed: () => context.push('/events/e/${event.id}'),
-                ),
-                IconButton(
-                  tooltip: 'Share',
-                  icon: const Icon(LucideIcons.share_2),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  tooltip: 'Save',
-                  icon: const Icon(LucideIcons.bookmark),
-                  onPressed: () {},
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The end of a paginated list: fetches the next page as soon as it comes
-/// into view, with a calm Try again if that fails.
 class _LoadOlderMemories extends ConsumerStatefulWidget {
   const _LoadOlderMemories();
   @override

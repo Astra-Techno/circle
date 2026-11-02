@@ -32,6 +32,32 @@ Uint8List jpeg() =>
     Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, ...List.filled(64, 7)]);
 
 void main() {
+  for (final action in [
+    ('Create an event', '/events/new'),
+    ('Create a poll', '/polls/new'),
+  ]) {
+    testWidgets('${action.$1} keeps the selected audience', (tester) async {
+      final server = FakeCircleServer();
+      final user = server.addUser(
+        '+9995550000192',
+        'fictional password',
+        'Fictional Tester',
+      );
+      final group = server.addGroup('Fictional circle', user);
+      final container = await openServerCircle(
+        tester,
+        server,
+        tokens: await storedSession(server, user),
+      );
+      container.read(circleRouterProvider).go('/compose?group=$group');
+      await settle(tester);
+      expect(find.text('Tag people'), findsNothing);
+      await tap(tester, find.text(action.$1));
+      expect(currentUri(container).path, action.$2);
+      expect(currentUri(container).queryParameters['group'], '$group');
+    });
+  }
+
   testWidgets('register → empty workspace → create group → share a Memory', (
     tester,
   ) async {
@@ -91,16 +117,16 @@ void main() {
     await tap(tester, find.text('Share a Memory here'));
     await enter(
       tester,
-      find.widgetWithText(TextField, 'Your Memory'),
+      find.widgetWithText(TextField, 'Share a memory with your Circle...'),
       'Sunday lunch at home',
     );
     // Polls aren't on the server yet: no dead button.
     expect(find.text('Add a poll'), findsNothing);
-    await tap(tester, find.text('Share Memory'));
+    await tap(tester, find.widgetWithText(FilledButton, 'Create Memory'));
     expect(server.memories.single['body'], 'Sunday lunch at home');
     expect(currentUri(container).path, '/home');
     expect(find.text('Sunday lunch at home'), findsOneWidget);
-    expect(find.text('Sharma Family'), findsWidgets);
+    expect(find.textContaining('Sharma Family'), findsWidgets);
   });
 
   testWidgets('a failed log-in is generic; the right password gets in', (
@@ -222,25 +248,25 @@ void main() {
     );
     container.read(circleRouterProvider).go('/compose?group=$group');
     await settle(tester);
-    await tap(tester, find.text('Add photos'));
+    await tap(tester, find.byTooltip('Add photos'));
     expect(picker.calls, 1);
     expect(
       find.textContaining('Photos can’t be processed on this server yet.'),
       findsOneWidget,
     );
     expect(
-      find.textContaining('share your words without photos'),
+      find.textContaining('You can still share your words'),
       findsOneWidget,
     );
     await enter(
       tester,
-      find.widgetWithText(TextField, 'Your Memory'),
+      find.widgetWithText(TextField, 'Share a memory with your Circle...'),
       'Words only',
     );
-    await tap(tester, find.text('Share Memory'));
+    await tap(tester, find.widgetWithText(FilledButton, 'Create Memory'));
     expect(server.memories, isEmpty, reason: 'failed photos block sharing');
     await tap(tester, find.byTooltip('Remove photo 1'));
-    await tap(tester, find.text('Share Memory'));
+    await tap(tester, find.widgetWithText(FilledButton, 'Create Memory'));
     expect(server.memories.single['body'], 'Words only');
   });
 
@@ -258,11 +284,11 @@ void main() {
     );
     container.read(circleRouterProvider).go('/compose?group=$group');
     await settle(tester);
-    await tap(tester, find.text('Add photos'));
+    await tap(tester, find.byTooltip('Add photos'));
     expect(find.bySemanticsLabel(RegExp('Photo 1, uploaded')), findsOneWidget);
     // The API has no caption field yet: no caption inputs on a server.
     expect(find.text('Captions (optional)'), findsNothing);
-    await tap(tester, find.text('Share Memory'));
+    await tap(tester, find.widgetWithText(FilledButton, 'Create Memory'));
     final media = server.memories.single['media'] as List;
     expect(media, hasLength(1));
     final mediaId = (media.single as Map)['id'] as String;
@@ -277,7 +303,8 @@ void main() {
       server.adapter.requests
           .lastWhere((r) => r.path == '/media/$mediaId')
           .query['size'],
-      'thumb',
+      'medium',
+      reason: 'A full-width photo must not stretch the small thumbnail',
     );
   });
 

@@ -27,6 +27,14 @@ Future<void> tapTooltip(WidgetTester tester, String tooltip) async {
 
 void main() {
   group('compose', () {
+    testWidgets('Home does not advertise unsupported video upload', (
+      tester,
+    ) async {
+      await openCircle(tester);
+      expect(find.text('Photo'), findsOneWidget);
+      expect(find.text('Video'), findsNothing);
+    });
+
     testWidgets('caption, year and place render on the new card', (
       tester,
     ) async {
@@ -35,11 +43,17 @@ void main() {
       // Photos first: no demo illustrations, only the phone's own photos.
       expect(find.text('Beach walk'), findsNothing);
       expect(find.text('Add a poll'), findsNothing);
-      await enterField(tester, 'Your Memory', 'A day by the water.');
+      await enterField(
+        tester,
+        'Share a memory with your Circle...',
+        'A day by the water.',
+      );
       await tapText(tester, 'More options');
       await enterField(tester, 'Year taken (optional)', '2019');
       await enterField(tester, 'Place (optional)', 'Fictional lake');
-      await tapText(tester, 'Share Memory');
+      await tapText(tester, 'Done');
+      await tester.tap(find.widgetWithText(FilledButton, 'Create Memory'));
+      await tester.pumpAndSettle();
       expect(currentUri(container).path, '/home');
       final memory = workspaceOf(container).memories.first;
       expect(memory.text, 'A day by the water.');
@@ -52,22 +66,32 @@ void main() {
       final container = await openCircle(tester);
       await go(tester, container, '/compose?group=club');
       final before = workspaceOf(container).memories.length;
-      await tapText(tester, 'Share Memory');
+      await tester.tap(find.widgetWithText(FilledButton, 'Create Memory'));
+      await tester.pumpAndSettle();
       expect(
         find.text('Write 1–2000 characters, or add a photo, before sharing.'),
         findsOneWidget,
       );
-      await enterField(tester, 'Your Memory', 'Lakeside kiosk at noon.');
+      await enterField(
+        tester,
+        'Share a memory with your Circle...',
+        'Lakeside kiosk at noon.',
+      );
       await tapText(tester, 'More options');
       await enterField(tester, 'Year taken (optional)', '1900');
-      await tapText(tester, 'Share Memory');
+      await tapText(tester, 'Done');
+      await tester.tap(find.widgetWithText(FilledButton, 'Create Memory'));
+      await tester.pumpAndSettle();
+      await tapText(tester, 'More options');
       expect(
         find.text('Use a year from 1950 to ${DateTime.now().year}.'),
         findsOneWidget,
       );
       expect(workspaceOf(container).memories, hasLength(before));
       await enterField(tester, 'Year taken (optional)', '');
-      await tapText(tester, 'Share Memory');
+      await tapText(tester, 'Done');
+      await tester.tap(find.widgetWithText(FilledButton, 'Create Memory'));
+      await tester.pumpAndSettle();
       expect(workspaceOf(container).memories, hasLength(before + 1));
     });
   });
@@ -140,16 +164,12 @@ void main() {
       expect(find.text('Delete'), findsNothing);
     });
 
-    testWidgets('card preview shows the latest comment with its author', (
-      tester,
-    ) async {
-      await openCircle(tester);
-      final preview = find.byType(CommentBubble).first;
-      // The last text is the comment; the first is the author's initial.
-      final text = tester.widget<Text>(
-        find.descendant(of: preview, matching: find.byType(Text)).last,
-      );
-      expect(text.textSpan!.toPlainText(), 'Mira: Holding you to that.');
+    testWidgets('comment count opens the Memory comments', (tester) async {
+      final container = await openCircle(tester);
+      await tapText(tester, '2 comments');
+      expect(currentUri(container).path, '/home/memory/table');
+      expect(find.text('Comments (2)'), findsOneWidget);
+      expect(find.byType(CommentBubble), findsWidgets);
     });
   });
 
@@ -179,8 +199,8 @@ void main() {
     testWidgets('"+N more" opens the viewer at that photo', (tester) async {
       final container = await openCircle(tester);
       await go(tester, container, '/home/memory/table');
-      expect(find.text('+1 more'), findsOneWidget);
-      await tester.tap(find.text('+1 more'));
+      expect(find.text('+1'), findsOneWidget);
+      await tester.tap(find.text('+1'));
       await tester.pumpAndSettle();
       expect(find.text('3 of 4'), findsOneWidget);
       await go(tester, container, '/home/memory/table/photos?index=99');

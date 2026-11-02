@@ -51,7 +51,7 @@ void main() {
       final field = find.byWidgetPredicate(
         (widget) =>
             widget is TextField &&
-            widget.decoration?.labelText == 'Your Memory',
+            widget.decoration?.hintText == 'Share a memory with your Circle...',
       );
       await tester.enterText(field, 'An edited fictional moment');
       await tester.pump(const Duration(milliseconds: 500));
@@ -63,8 +63,8 @@ void main() {
       await tester.tap(find.text('Resume draft'));
       await settle(tester);
       expect(find.text('An edited fictional moment'), findsOneWidget);
-      await reveal(tester, find.text('Share Memory'));
-      await tester.tap(find.text('Share Memory'));
+      await reveal(tester, find.widgetWithText(FilledButton, 'Create Memory'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Create Memory'));
       await settle(tester);
       expect(currentUri(container).path, '/home');
       final afterShare = MemoryDraftStore(storage);

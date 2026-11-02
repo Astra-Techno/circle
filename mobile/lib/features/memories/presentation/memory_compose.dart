@@ -216,6 +216,9 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
       _textError = content.reason;
       _yearError = year.result.reason;
       _placeError = place.reason;
+      _shareNotice = !year.result.allowed || !place.allowed
+          ? 'Check the year and place in More options.'
+          : null;
     });
     if (groupId == null ||
         !content.allowed ||
@@ -387,27 +390,32 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
 
           // Action rows.
           _ActionRow(
-            icon: LucideIcons.tag,
-            label: 'Tag people',
-            onTap: () {}, // Not yet implemented.
-          ),
-          _ActionRow(
             icon: LucideIcons.map_pin,
             label: 'Add location',
-            onTap: _place.text.isNotEmpty
-                ? null
-                : () => _showLocationSheet(context),
+            onTap: () => _showLocationSheet(context),
           ),
-          _ActionRow(
-            icon: LucideIcons.calendar,
-            label: 'Create an event',
-            onTap: () {}, // Not yet implemented.
-          ),
-          _ActionRow(
-            icon: LucideIcons.chart_bar,
-            label: 'Create a poll',
-            onTap: () {}, // Not yet implemented.
-          ),
+          if (ref.watch(circleFeaturesProvider).has(CircleFeature.liveEvents))
+            _ActionRow(
+              icon: LucideIcons.calendar,
+              label: 'Create an event',
+              onTap: () => context.push(
+                Uri(
+                  path: '/events/new',
+                  queryParameters: {'group': ?chosen},
+                ).toString(),
+              ),
+            ),
+          if (ref.watch(circleFeaturesProvider).has(CircleFeature.livePolls))
+            _ActionRow(
+              icon: LucideIcons.chart_bar,
+              label: 'Create a poll',
+              onTap: () => context.push(
+                Uri(
+                  path: '/polls/new',
+                  queryParameters: {'group': ?chosen},
+                ).toString(),
+              ),
+            ),
           _ActionRow(
             icon: LucideIcons.ellipsis,
             label: 'More options',
@@ -477,8 +485,14 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
   void _showLocationSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(Space.section),
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => SingleChildScrollView(
+        padding:
+            EdgeInsets.all(Space.section) +
+            EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+            ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -513,8 +527,14 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
     final theme = Theme.of(context);
     showModalBottomSheet<void>(
       context: context,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(Space.section),
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => SingleChildScrollView(
+        padding:
+            EdgeInsets.all(Space.section) +
+            EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+            ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -747,14 +767,25 @@ class _CompactPhotoRow extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(CircleRadius.card),
-                    child: Image.memory(
-                      item.preview,
-                      fit: BoxFit.cover,
-                      cacheWidth: 336,
-                      gaplessPlayback: true,
-                      errorBuilder: (_, _, _) => const CirclePhotoPlaceholder(),
+                  Semantics(
+                    image: true,
+                    label:
+                        'Photo ${index + 1}, ${switch (item.status) {
+                          UploadStatus.ready => 'uploaded',
+                          UploadStatus.failed => 'didn’t upload',
+                          UploadStatus.uploading => 'uploading',
+                          UploadStatus.waiting => waitingForGroup ? 'waiting for a group' : 'waiting to upload',
+                        }}',
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(CircleRadius.card),
+                      child: Image.memory(
+                        item.preview,
+                        fit: BoxFit.cover,
+                        cacheWidth: 336,
+                        gaplessPlayback: true,
+                        errorBuilder: (_, _, _) =>
+                            const CirclePhotoPlaceholder(),
+                      ),
                     ),
                   ),
                   if (item.status != UploadStatus.ready)
@@ -790,7 +821,7 @@ class _CompactPhotoRow extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.all(Space.xs),
                       child: SizedBox.square(
-                        dimension: Space.section,
+                        dimension: Space.large,
                         child: IconButton(
                           tooltip: 'Remove photo ${index + 1}',
                           onPressed: () => onRemove?.call(item),
@@ -810,20 +841,27 @@ class _CompactPhotoRow extends StatelessWidget {
             );
           }
           // Add button at the end.
-          return GestureDetector(
-            onTap: onAdd,
-            child: Container(
-              width: _thumbSize,
-              height: _thumbSize,
-              decoration: BoxDecoration(
-                color: accents.recessed,
-                borderRadius: BorderRadius.circular(CircleRadius.card),
-                border: Border.all(color: accents.hairline),
-              ),
-              child: Icon(
-                LucideIcons.plus,
-                size: Space.hero,
-                color: theme.colorScheme.primary,
+          return Tooltip(
+            message: 'Add photos',
+            child: Semantics(
+              button: true,
+              label: 'Add photos',
+              child: GestureDetector(
+                onTap: onAdd,
+                child: Container(
+                  width: _thumbSize,
+                  height: _thumbSize,
+                  decoration: BoxDecoration(
+                    color: accents.recessed,
+                    borderRadius: BorderRadius.circular(CircleRadius.card),
+                    border: Border.all(color: accents.hairline),
+                  ),
+                  child: Icon(
+                    LucideIcons.plus,
+                    size: Space.hero,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
               ),
             ),
           );
@@ -854,13 +892,12 @@ class _ActionRow extends StatelessWidget {
               children: [
                 Icon(icon, size: 22, color: theme.colorScheme.onSurface),
                 const SizedBox(width: Space.md),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: theme.textTheme.bodyLarge,
-                  ),
+                Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
+                Icon(
+                  LucideIcons.chevron_right,
+                  size: 20,
+                  color: accents.caption,
                 ),
-                Icon(LucideIcons.chevron_right, size: 20, color: accents.caption),
               ],
             ),
           ),

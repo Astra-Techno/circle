@@ -49,9 +49,9 @@ void main() {
   ) async {
     await openCircle(tester);
     expect(find.text('Events'), findsOneWidget);
-    await tester.tap(find.bySemanticsLabel('Create'));
+    await tester.tap(find.bySemanticsLabel('Create Memory'));
     await tester.pumpAndSettle();
-    expect(find.text('New Memory'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Create Memory'), findsOneWidget);
     await tester.tap(find.byType(BackButton).first);
     await tester.pumpAndSettle();
     expect(find.text('Home'), findsOneWidget);

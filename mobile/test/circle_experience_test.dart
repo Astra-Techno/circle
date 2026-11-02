@@ -60,7 +60,8 @@ void main() {
         find.byType(TextField),
         'Our first shared moment.',
       );
-      await tapText(tester, 'Share Memory');
+      await tester.tap(find.widgetWithText(FilledButton, 'Create Memory'));
+      await tester.pumpAndSettle();
       expect(find.text('Our first shared moment.'), findsOneWidget);
     },
   );
@@ -72,10 +73,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Choose a group'), findsOneWidget);
       await tester.enterText(
-        find.widgetWithText(TextField, 'Your Memory'),
+        find.widgetWithText(TextField, 'Share a memory with your Circle...'),
         'Who sees this?',
       );
-      await tapText(tester, 'Share Memory');
+      await tester.tap(find.widgetWithText(FilledButton, 'Create Memory'));
+      await tester.pumpAndSettle();
       expect(find.text('Choose who will see this Memory.'), findsOneWidget);
       expect(
         workspaceOf(container).memories.any((m) => m.text == 'Who sees this?'),
@@ -97,7 +99,7 @@ void main() {
       await go(tester, container, '/groups/g/cse');
       await tapText(tester, 'Share a Memory here');
       expect(currentUri(container).toString(), '/compose?group=cse');
-      expect(find.text('Computer science · in Northbank 2009'), findsWidgets);
+      expect(find.text('Computer science'), findsWidgets);
     });
 
     testWidgets('a group the viewer is not in is never preselected', (
@@ -154,8 +156,10 @@ void main() {
     double? previousX;
     for (final (index, name) in names.indexed) {
       await reveal(tester, find.text(name));
-      final y = tester.getTopLeft(find.text(name)).dy;
-      final x = tester.getTopLeft(find.text(name)).dx;
+      await Scrollable.ensureVisible(tester.element(find.text(name).last));
+      await tester.pumpAndSettle();
+      final y = tester.getTopLeft(find.text(name).last).dy;
+      final x = tester.getTopLeft(find.text(name).last).dx;
       if (previousY != null && index < 4) {
         // Scrolling can move items; compare against the previous on screen.
         expect(x, greaterThan(previousX!), reason: '$name is nested deeper');

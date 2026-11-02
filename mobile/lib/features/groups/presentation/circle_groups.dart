@@ -1,5 +1,7 @@
 import '../../../core/form_exit_guard.dart';
 import 'group_photos.dart';
+import 'invite_link_screen.dart';
+import 'contact_invitation_entry.dart';
 import '../application/group_photos.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -32,6 +34,7 @@ class CircleGroups extends ConsumerStatefulWidget {
 
 class _CircleGroupsState extends ConsumerState<CircleGroups> {
   _CircleFilter _filter = _CircleFilter.all;
+  String _query = '';
   final Set<String> _collapsed = {};
 
   @override
@@ -51,6 +54,11 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
           entries = const [];
       }
 
+      if (_query.isNotEmpty && _filter != _CircleFilter.invited) {
+        entries = buildGroupTree(
+          workspace.groups,
+        ).where((e) => e.group.name.toLowerCase().contains(_query)).toList();
+      }
       // Derive latest activity per group from memories and events.
       final activityMap = <String, _GroupActivity>{};
       for (final memory in workspace.memories) {
@@ -93,6 +101,21 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
               padding: const EdgeInsets.symmetric(horizontal: Space.md),
               sliver: SliverList.list(
                 children: [
+                  const ContactInvitationEntry(),
+                  TextButton.icon(
+                    onPressed: () => openInviteLinkDialog(context, ref),
+                    icon: const Icon(LucideIcons.link),
+                    label: const Text('Open an invite link'),
+                  ),
+                  if (workspace.groups.isNotEmpty)
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Search groups',
+                        prefixIcon: Icon(LucideIcons.search),
+                      ),
+                      onChanged: (value) =>
+                          setState(() => _query = value.trim().toLowerCase()),
+                    ),
                   // Filter chips — full width, evenly spaced.
                   Padding(
                     padding: const EdgeInsets.only(
@@ -160,62 +183,68 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                       ),
                     // Pinned Circles: top groups by most recent activity.
                     if (entries.isNotEmpty) ...[
-                      () {
-                        // Pick top-level groups with activity, sorted by
-                        // recency, capped at 3.
-                        final pinned = entries
-                            .where((e) =>
-                                e.level == 0 &&
-                                activityMap.containsKey(e.group.id))
-                            .toList()
-                          ..sort((a, b) {
-                            final ta = activityMap[a.group.id]!.time;
-                            final tb = activityMap[b.group.id]!.time;
-                            return tb.compareTo(ta);
-                          });
-                        final pinnedEntries = pinned.take(3).toList();
-                        if (pinnedEntries.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        return Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                top: Space.sm,
-                                bottom: Space.sm,
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    'Pinned Circles',
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    'Edit',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.primary,
-                                      fontWeight: FontWeight.w600,
+                      if (_query.isEmpty)
+                        () {
+                          // Pick top-level groups with activity, sorted by
+                          // recency, capped at 3.
+                          final pinned =
+                              entries
+                                  .where(
+                                    (e) =>
+                                        e.level == 0 &&
+                                        activityMap.containsKey(e.group.id),
+                                  )
+                                  .toList()
+                                ..sort((a, b) {
+                                  final ta = activityMap[a.group.id]!.time;
+                                  final tb = activityMap[b.group.id]!.time;
+                                  return tb.compareTo(ta);
+                                });
+                          final pinnedEntries = pinned.take(3).toList();
+                          if (pinnedEntries.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: Space.sm,
+                                  bottom: Space.sm,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'Recently active',
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
-                                  ),
-                                ],
+                                    const Spacer(),
+                                    Text(
+                                      'Edit',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            for (final entry in pinnedEntries)
-                              _CircleCard(
-                                group: entry.group,
-                                workspace: workspace,
-                                level: 0,
-                                activity: activityMap[entry.group.id],
-                                eventCount:
-                                    eventCounts[entry.group.id] ?? 0,
-                                expanded: null,
-                                onToggle: null,
-                              ),
-                          ],
-                        );
-                      }(),
+                              for (final entry in pinnedEntries)
+                                _CircleCard(
+                                  group: entry.group,
+                                  workspace: workspace,
+                                  level: 0,
+                                  activity: activityMap[entry.group.id],
+                                  eventCount: eventCounts[entry.group.id] ?? 0,
+                                  expanded: null,
+                                  onToggle: null,
+                                ),
+                            ],
+                          );
+                        }(),
                     ],
                     // All Circles section header.
                     if (entries.isNotEmpty)
@@ -247,7 +276,12 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                           ],
                         ),
                       ),
-                    for (final entry in entries)
+                    for (final entry in entries) ...[
+                      if (_query.isNotEmpty && entry.path.isNotEmpty)
+                        Text(
+                          entry.path.join(' › '),
+                          style: theme.textTheme.bodySmall,
+                        ),
                       _CircleCard(
                         group: entry.group,
                         workspace: workspace,
@@ -261,6 +295,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                           }
                         }),
                       ),
+                    ],
                     if (workspace.pending.isNotEmpty) ...[
                       const SizedBox(height: Space.lg),
                       const CircleSectionTitle('Waiting for approval'),
@@ -415,7 +450,8 @@ class _CircleCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: Space.xs),
                         // Avatar stack + remaining count.
-                        Row(
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             SizedBox(
                               width:
@@ -542,6 +578,19 @@ class _CircleCard extends ConsumerWidget {
                 ],
               ),
             ),
+            if (expanded != null)
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: IconButton(
+                  tooltip: '${expanded! ? 'Collapse' : 'Expand'} ${group.name}',
+                  onPressed: onToggle,
+                  icon: Icon(
+                    expanded!
+                        ? LucideIcons.chevron_up
+                        : LucideIcons.chevron_down,
+                  ),
+                ),
+              ),
             Divider(height: 1, color: accents.hairline),
           ],
         ),

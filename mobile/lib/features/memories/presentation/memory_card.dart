@@ -287,51 +287,25 @@ class CircleMemoryCard extends ConsumerWidget {
               ),
             if (reactions.total > 0 || comments > 0)
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  Space.section,
-                  Space.sm,
-                  Space.section,
-                  0,
-                ),
-                child: GestureDetector(
-                  onTap: reactions.total > 0
-                      ? () => showReactionSummary(context, reactions)
-                      : null,
-                  behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    children: [
-                      if (reactions.total > 0) ...[
-                        Icon(Icons.favorite, size: 18, color: accents.heart),
-                        if (reactions.total > 1) ...[
-                          const SizedBox(width: 2),
-                          Icon(
-                            LucideIcons.thumbs_up,
-                            size: 16,
-                            color: colors.primary,
-                          ),
-                        ],
-                        const SizedBox(width: Space.xs),
-                        Text('${reactions.total}', style: caption),
-                      ],
-                      const Spacer(),
-                      if (comments > 0)
-                        GestureDetector(
-                          onTap: openDetail,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                LucideIcons.message_circle,
-                                size: 16,
-                                color: accents.caption,
-                              ),
-                              const SizedBox(width: Space.xs),
-                              Text('$comments', style: caption),
-                            ],
-                          ),
+                padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  children: [
+                    if (reactions.total > 0)
+                      TextButton(
+                        onPressed: () =>
+                            showReactionSummary(context, reactions),
+                        child: Tooltip(
+                          message: 'Show reactions for $about',
+                          child: Text('${reactions.total} reactions'),
                         ),
-                    ],
-                  ),
+                      ),
+                    if (comments > 0)
+                      TextButton(
+                        onPressed: openDetail,
+                        child: Text('$comments comments'),
+                      ),
+                  ],
                 ),
               ),
             const Divider(indent: Space.md, endIndent: Space.md),
@@ -350,9 +324,9 @@ class CircleMemoryCard extends ConsumerWidget {
                   icon: const Icon(LucideIcons.message_circle),
                 ),
                 IconButton(
-                  tooltip: 'Share $about',
+                  tooltip: 'Choose a reaction for $about',
                   onPressed: pickReaction,
-                  icon: const Icon(LucideIcons.share_2),
+                  icon: const Icon(LucideIcons.face_slightly_smiling),
                 ),
                 IconButton(
                   tooltip: memory.saved ? 'Unsave $about' : 'Save $about',
