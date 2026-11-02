@@ -158,11 +158,70 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                               )
                             : null,
                       ),
+                    // Pinned Circles: top groups by most recent activity.
+                    if (entries.isNotEmpty) ...[
+                      () {
+                        // Pick top-level groups with activity, sorted by
+                        // recency, capped at 3.
+                        final pinned = entries
+                            .where((e) =>
+                                e.level == 0 &&
+                                activityMap.containsKey(e.group.id))
+                            .toList()
+                          ..sort((a, b) {
+                            final ta = activityMap[a.group.id]!.time;
+                            final tb = activityMap[b.group.id]!.time;
+                            return tb.compareTo(ta);
+                          });
+                        final pinnedEntries = pinned.take(3).toList();
+                        if (pinnedEntries.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: Space.sm,
+                                bottom: Space.sm,
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'Pinned Circles',
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    'Edit',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            for (final entry in pinnedEntries)
+                              _CircleCard(
+                                group: entry.group,
+                                workspace: workspace,
+                                level: 0,
+                                activity: activityMap[entry.group.id],
+                                eventCount:
+                                    eventCounts[entry.group.id] ?? 0,
+                                expanded: null,
+                                onToggle: null,
+                              ),
+                          ],
+                        );
+                      }(),
+                    ],
                     // All Circles section header.
                     if (entries.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(
-                          top: Space.sm,
+                          top: Space.md,
                           bottom: Space.sm,
                         ),
                         child: Row(
@@ -448,47 +507,38 @@ class _CircleCard extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  // Right side: event badge + chevron.
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      if (eventCount > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: Space.xs),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: Space.sm,
-                              vertical: Space.xs,
-                            ),
-                            decoration: BoxDecoration(
-                              color: accents.sageContainer,
-                              borderRadius: BorderRadius.circular(
-                                CircleRadius.tile,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  LucideIcons.calendar,
-                                  size: Space.md,
-                                  color: accents.sage,
-                                ),
-                                const SizedBox(width: Space.xs),
-                                Text(
-                                  '$eventCount ${eventCount == 1 ? 'event' : 'events'}',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: accents.sage,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                  // Right side: event badge.
+                  if (eventCount > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Space.sm,
+                        vertical: Space.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accents.heartContainer,
+                        borderRadius: BorderRadius.circular(
+                          CircleRadius.button,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.calendar,
+                            size: 14,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: Space.xs),
+                          Text(
+                            '$eventCount',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
-                      Icon(LucideIcons.chevron_right, color: accents.caption),
-                    ],
-                  ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
