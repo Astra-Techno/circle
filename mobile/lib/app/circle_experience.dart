@@ -937,18 +937,12 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     // Root tab pages: no AppBar — each screen draws its own scroll-aware
     // SliverAppBar. The shell passes header data via CircleTabHeaderData.
     final logo = index == 0
-        ? Container(
+        ? Image.asset(
+            CircleIdentity.artwork,
             width: Space.large,
             height: Space.large,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(CircleRadius.small),
-            ),
-            child: Icon(
-              Icons.all_inclusive,
-              color: theme.colorScheme.primary,
-              semanticLabel: CircleIdentity.name,
-            ),
+            fit: BoxFit.contain,
+            semanticLabel: CircleIdentity.name,
           )
         : null;
     return Scaffold(

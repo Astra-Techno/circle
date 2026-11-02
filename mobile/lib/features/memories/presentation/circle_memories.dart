@@ -143,114 +143,119 @@ class _HomeHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final accents = CircleAccents.of(context);
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (workspace.groups.isNotEmpty) ...[
-          // Composer row: avatar + prompt.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Space.md,
-              Space.md,
-              Space.md,
-              Space.sm,
-            ),
-            child: Row(
-              children: [
-                PersonAvatar(
-                  person: workspace.viewer,
-                  name: 'You',
-                  size: CircleAvatarSize.medium,
-                ),
-                const SizedBox(width: Space.sm),
-                Expanded(
-                  child: Material(
-                    color: accents.recessed,
-                    borderRadius: BorderRadius.circular(CircleRadius.button),
-                    child: InkWell(
+    return Material(
+      color: theme.colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (workspace.groups.isNotEmpty) ...[
+            // Composer row: avatar + prompt.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Space.md,
+                Space.md,
+                Space.md,
+                Space.sm,
+              ),
+              child: Row(
+                children: [
+                  PersonAvatar(
+                    person: workspace.viewer,
+                    name: 'You',
+                    size: CircleAvatarSize.medium,
+                  ),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: Material(
+                      color: accents.recessed,
                       borderRadius: BorderRadius.circular(CircleRadius.button),
-                      onTap: () => context.push(composeLocation(groupId)),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Space.md,
-                          vertical: Space.md,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          CircleRadius.button,
                         ),
-                        child: Text(
-                          'Share a memory with your Circle...',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: accents.caption,
+                        onTap: () => context.push(composeLocation(groupId)),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Space.md,
+                            vertical: Space.md,
+                          ),
+                          child: Text(
+                            'Share a memory with your Circle...',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: accents.caption,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Four quick-action tiles.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Space.md,
-              Space.xs,
-              Space.md,
-              Space.md,
+            // Four quick-action tiles.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Space.md,
+                Space.xs,
+                Space.md,
+                Space.md,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _QuickActionTile(
+                      icon: Icons.image_outlined,
+                      label: 'Photo',
+                      color: theme.colorScheme.primary,
+                      bgColor: theme.colorScheme.primaryContainer,
+                      onTap: () => context.push(composeLocation(groupId)),
+                    ),
+                  ),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: _QuickActionTile(
+                      icon: Icons.videocam_outlined,
+                      label: 'Video',
+                      color: accents.video,
+                      bgColor: accents.videoContainer,
+                      onTap: () => context.push(composeLocation(groupId)),
+                    ),
+                  ),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: _QuickActionTile(
+                      icon: Icons.event_outlined,
+                      label: 'Event',
+                      color: accents.sage,
+                      bgColor: accents.sageContainer,
+                      onTap: features.has(CircleFeature.liveEvents)
+                          ? () => context.push('/events/new')
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: _QuickActionTile(
+                      icon: Icons.format_list_bulleted_rounded,
+                      label: 'Poll',
+                      color: accents.amber,
+                      bgColor: accents.amberContainer,
+                      onTap: features.has(CircleFeature.livePolls)
+                          ? () => context.push('/polls/new')
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _QuickActionTile(
-                    icon: Icons.photo_library_outlined,
-                    label: 'Photo',
-                    color: theme.colorScheme.primary,
-                    bgColor: theme.colorScheme.primaryContainer,
-                    onTap: () => context.push(composeLocation(groupId)),
-                  ),
-                ),
-                const SizedBox(width: Space.sm),
-                Expanded(
-                  child: _QuickActionTile(
-                    icon: Icons.videocam_outlined,
-                    label: 'Video',
-                    color: accents.video,
-                    bgColor: accents.videoContainer,
-                    onTap: () => context.push(composeLocation(groupId)),
-                  ),
-                ),
-                const SizedBox(width: Space.sm),
-                Expanded(
-                  child: _QuickActionTile(
-                    icon: Icons.event_outlined,
-                    label: 'Event',
-                    color: accents.sage,
-                    bgColor: accents.sageContainer,
-                    onTap: features.has(CircleFeature.liveEvents)
-                        ? () => context.push('/events/new')
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: Space.sm),
-                Expanded(
-                  child: _QuickActionTile(
-                    icon: Icons.format_list_bulleted_rounded,
-                    label: 'Poll',
-                    color: accents.amber,
-                    bgColor: accents.amberContainer,
-                    onTap: features.has(CircleFeature.livePolls)
-                        ? () => context.push('/polls/new')
-                        : null,
-                  ),
-                ),
-              ],
+          ],
+          if (!hasMemories)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Space.section),
+              child: _FirstSteps(workspace: workspace, groupId: groupId),
             ),
-          ),
         ],
-        if (!hasMemories)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Space.section),
-            child: _FirstSteps(workspace: workspace, groupId: groupId),
-          ),
-      ],
+      ),
     );
   }
 }
@@ -275,23 +280,26 @@ class _QuickActionTile extends StatelessWidget {
       button: true,
       label: label,
       child: Material(
-        color: bgColor,
+        color: Color.alphaBlend(
+          bgColor.withValues(alpha: 0.45),
+          theme.colorScheme.surface,
+        ),
         borderRadius: BorderRadius.circular(CircleRadius.tile),
         child: InkWell(
           borderRadius: BorderRadius.circular(CircleRadius.tile),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: Space.md),
+            padding: const EdgeInsets.symmetric(vertical: Space.xs),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: color, size: 24),
+                Icon(icon, color: color, size: Space.xl),
                 const SizedBox(height: Space.xs),
                 Text(
                   label,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
