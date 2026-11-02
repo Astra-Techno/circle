@@ -8,6 +8,7 @@ import '../../../core/design.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../memories/presentation/scoped_memory_list.dart';
 import '../application/search_providers.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// I2: one field; results grouped by kind, only from your own circles.
 class SearchScreen extends ConsumerStatefulWidget {
@@ -61,12 +62,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ref.read(recentSearchesProvider.notifier).remember(value),
             decoration: InputDecoration(
               hintText: 'Search your circles',
-              prefixIcon: const Icon(Icons.search),
+              prefixIcon: const Icon(LucideIcons.search),
               suffixIcon: _query.isEmpty
                   ? null
                   : IconButton(
                       tooltip: 'Clear search',
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(LucideIcons.x),
                       onPressed: () => _set(''),
                     ),
             ),
@@ -97,7 +98,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 CircleRow(
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.history),
+                    leading: const Icon(LucideIcons.clock),
                     title: Text(item),
                     onTap: () => _set(item),
                   ),
@@ -222,7 +223,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         for (final event in results.events)
           row(
             leading: const CircleInitialAvatar(
-              icon: Icons.event_outlined,
+              icon: LucideIcons.calendar,
               tone: CircleTone.neutral,
             ),
             title: event.title,
@@ -235,7 +236,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         for (final message in results.messages)
           row(
             leading: const CircleInitialAvatar(
-              icon: Icons.chat_bubble_outline,
+              icon: LucideIcons.message_circle,
               tone: CircleTone.neutral,
             ),
             title: message.text,
@@ -254,6 +255,6 @@ class SearchButton extends StatelessWidget {
   Widget build(BuildContext context) => IconButton(
     tooltip: 'Search',
     onPressed: () => context.push('/search'),
-    icon: const Icon(Icons.search),
+    icon: const Icon(LucideIcons.search),
   );
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../workspace/application/workspace_providers.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// I3: the shared report flow. A bottom sheet with a reason picker and an
 /// optional note; [submit] sends it. On success the sheet closes and
@@ -213,7 +214,7 @@ class HiddenByAdminsNotice extends ConsumerWidget {
       child: Row(
         children: [
           Icon(
-            Icons.visibility_off_outlined,
+            LucideIcons.eye_off,
             size: 18,
             color: theme.colorScheme.onSurfaceVariant,
           ),

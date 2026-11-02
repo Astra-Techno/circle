@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../application/contact_invitations.dart';
 import '../../../core/design.dart';
 import '../../../core/circle_components.dart';
@@ -72,16 +73,14 @@ class _ContactInvitationEntryState extends ConsumerState<ContactInvitationEntry>
     final refresh = IconButton(
       tooltip: 'Refresh invitations',
       onPressed: _busy ? null : _load,
-      icon: const Icon(Icons.refresh),
+      icon: const Icon(LucideIcons.refresh_cw),
     );
     return CircleRow(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ListTile(
-            leading: largeText
-                ? null
-                : const Icon(Icons.mark_email_unread_outlined),
+            leading: largeText ? null : const Icon(LucideIcons.mail),
             title: const Text('Invitations for you'),
             subtitle: Text(
               _error

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import '../domain/membership_rules.dart';
@@ -324,12 +325,12 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
               const SizedBox(height: Space.md),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.flag_outlined),
+                leading: const Icon(LucideIcons.flag),
                 title: const Text('Reports and admin actions'),
                 subtitle: const Text(
                   'Review reports privately with this group’s admins.',
                 ),
-                trailing: const Icon(Icons.chevron_right),
+                trailing: const Icon(LucideIcons.chevron_right),
                 onTap: () => context.push('/groups/g/${group.id}/reports'),
               ),
             ],
@@ -337,10 +338,10 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
               const SizedBox(height: Space.md),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.workspace_premium_outlined),
+                leading: const Icon(LucideIcons.crown),
                 title: const Text('Transfer ownership'),
                 subtitle: const Text('Choose a member to own this group.'),
-                trailing: const Icon(Icons.chevron_right),
+                trailing: const Icon(LucideIcons.chevron_right),
                 enabled: group.roles.length > 1,
                 onTap: _transfer,
               ),
@@ -369,7 +370,7 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline),
+                  const Icon(LucideIcons.info),
                   const SizedBox(width: Space.sm),
                   Expanded(child: Text(leave.reason!)),
                 ],

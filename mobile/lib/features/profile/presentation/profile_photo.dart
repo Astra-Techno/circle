@@ -6,6 +6,7 @@ import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/profile_providers.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Authenticated bytes are provided by the application layer, never a public URL.
 class ProfilePhotoSurface extends ConsumerWidget {
@@ -32,7 +33,7 @@ class ProfilePhotoSurface extends ConsumerWidget {
             decoration: CircleDepth.profilePanel(context),
             child: Center(
               child: Icon(
-                Icons.landscape_outlined,
+                LucideIcons.mountain,
                 size: Space.large,
                 color: CircleAccents.of(context).calmText,
               ),
@@ -76,7 +77,7 @@ class ProfilePhotoSurface extends ConsumerWidget {
                         'Retry loading ${avatar ? 'profile' : 'cover'} photo',
                     onPressed: () =>
                         ref.invalidate(profilePhotoBytesProvider(query)),
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(LucideIcons.refresh_cw),
                   ),
                 ),
               ],
@@ -117,7 +118,7 @@ class SharedProfilePhotoSurface extends ConsumerWidget {
         : DecoratedBox(
             decoration: CircleDepth.profilePanel(context),
             child: const Center(
-              child: Icon(Icons.landscape_outlined, size: Space.large),
+              child: Icon(LucideIcons.mountain, size: Space.large),
             ),
           );
     final query = (person: person, kind: kind);
@@ -146,7 +147,7 @@ class SharedProfilePhotoSurface extends ConsumerWidget {
                       'Retry loading ${avatar ? 'profile' : 'cover'} photo',
                   onPressed: () =>
                       ref.invalidate(sharedProfilePhotoBytesProvider(query)),
-                  icon: const Icon(Icons.refresh),
+                  icon: const Icon(LucideIcons.refresh_cw),
                 ),
               ),
             ],
@@ -202,13 +203,13 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
             ),
             const SizedBox(height: Space.sm),
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
+              leading: const Icon(LucideIcons.images),
               title: Text(existing ? 'Replace photo' : 'Choose a photo'),
               onTap: () => Navigator.pop(sheet, 'choose'),
             ),
             if (existing)
               ListTile(
-                leading: const Icon(Icons.delete_outline),
+                leading: const Icon(LucideIcons.trash),
                 title: const Text('Remove photo'),
                 onTap: () => Navigator.pop(sheet, 'remove'),
               ),
@@ -315,7 +316,7 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                       onPressed: _busy
                           ? null
                           : () => _photo(ProfilePhotoKind.cover),
-                      icon: const Icon(Icons.photo_camera_outlined),
+                      icon: const Icon(LucideIcons.camera),
                     ),
                   ),
                   PositionedDirectional(
@@ -348,7 +349,7 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                               onPressed: _busy
                                   ? null
                                   : () => _photo(ProfilePhotoKind.avatar),
-                              icon: const Icon(Icons.photo_camera_outlined),
+                              icon: const Icon(LucideIcons.camera),
                             ),
                           ),
                         ],
@@ -383,12 +384,12 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                 children: [
                   FilledButton.icon(
                     onPressed: _busy ? null : () => context.push('/you/edit'),
-                    icon: const Icon(Icons.edit_outlined),
+                    icon: const Icon(LucideIcons.pencil),
                     label: const Text('Edit profile'),
                   ),
                   OutlinedButton.icon(
                     onPressed: () => context.go('/groups'),
-                    icon: const Icon(Icons.groups_outlined),
+                    icon: const Icon(LucideIcons.users),
                     label: const Text('Your groups'),
                   ),
                 ],

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../application/server_blocks.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 class ServerBlockButton extends ConsumerStatefulWidget {
   const ServerBlockButton({
@@ -27,7 +28,7 @@ class _BlockButtonState extends ConsumerState<ServerBlockButton> {
         child: const Text('Refresh blocking options'),
       ),
       data: (blocked) => ListTile(
-        leading: const Icon(Icons.block),
+        leading: const Icon(LucideIcons.ban),
         title: Text(
           blocked ? 'Unblock ${widget.name}' : 'Block ${widget.name}',
         ),
@@ -130,7 +131,7 @@ class _BlockingState extends ConsumerState<ServerBlockingScreen> {
                 onPressed: _busy
                     ? null
                     : () => ref.invalidate(blockPageProvider(_offset)),
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(LucideIcons.refresh_cw),
                 label: const Text('Refresh list'),
               ),
             ),

@@ -13,6 +13,7 @@ import '../../groups/presentation/group_members.dart' show personLocation;
 import '../../moderation/presentation/report_sheet.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 export '../../groups/presentation/group_members.dart' show personLocation;
 
@@ -117,7 +118,7 @@ class PersonProfileScreen extends ConsumerWidget {
                   final id = await runCalmly(context, () => api.direct(person));
                   if (context.mounted && id != null) context.go('/chats/c/$id');
                 },
-                icon: const Icon(Icons.chat_bubble_outline),
+                icon: const Icon(LucideIcons.message_circle),
                 label: Text('Message $name'),
               ),
             ExpansionTile(
@@ -140,7 +141,7 @@ class PersonProfileScreen extends ConsumerWidget {
                         )),
                       );
                     },
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(LucideIcons.refresh_cw),
                     label: const Text('Refresh photos'),
                   ),
                 ),
@@ -164,7 +165,7 @@ class PersonProfileScreen extends ConsumerWidget {
                       .read(circleWorkspaceProvider.notifier)
                       .loadMoreMemories(),
                 ),
-                icon: const Icon(Icons.expand_more),
+                icon: const Icon(LucideIcons.chevron_down),
                 label: const Text('Load older Memories'),
               ),
             CircleSectionTitle('Groups in common (${shared.length})'),
@@ -183,7 +184,7 @@ class PersonProfileScreen extends ConsumerWidget {
                     CircleRole.admin => const Text('Admin'),
                     _ => null,
                   },
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: const Icon(LucideIcons.chevron_right),
                   onTap: () => context.push('/groups/g/${group.id}'),
                 ),
               ),
@@ -195,7 +196,7 @@ class PersonProfileScreen extends ConsumerWidget {
               CircleRow(
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.flag_outlined),
+                  leading: const Icon(LucideIcons.flag),
                   title: Text('Report $name'),
                   subtitle: Text('To the admins of ${reportGroup.name}'),
                   onTap: () => reportToAdmins(

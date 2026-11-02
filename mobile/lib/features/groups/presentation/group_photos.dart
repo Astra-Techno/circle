@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/group_visuals.dart';
 import '../application/group_photos.dart';
@@ -75,13 +76,13 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
+              leading: const Icon(LucideIcons.images),
               title: Text(present ? 'Replace photo' : 'Choose a photo'),
               onTap: () => Navigator.pop(context, 'choose'),
             ),
             if (present)
               ListTile(
-                leading: const Icon(Icons.delete_outline),
+                leading: const Icon(LucideIcons.trash),
                 title: const Text('Remove photo'),
                 onTap: () => Navigator.pop(context, 'remove'),
               ),
@@ -185,7 +186,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
                     tooltip: 'Retry group banner',
                     onPressed: () =>
                         ref.invalidate(groupPhotoBytesProvider(query)),
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(LucideIcons.refresh_cw),
                   ),
                 ),
               ],
@@ -217,7 +218,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
                         IconButton.filledTonal(
                           tooltip: 'Refresh group photos',
                           onPressed: _busy ? null : _refresh,
-                          icon: const Icon(Icons.refresh),
+                          icon: const Icon(LucideIcons.refresh_cw),
                         ),
                         // Admins change the banner from a camera on it.
                         if (admin) ...[
@@ -229,7 +230,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
                             onPressed: _busy
                                 ? null
                                 : () => _change(ProfilePhotoKind.cover),
-                            icon: const Icon(Icons.photo_camera_outlined),
+                            icon: const Icon(LucideIcons.camera),
                           ),
                         ],
                       ],
@@ -263,7 +264,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
                       onPressed: _busy
                           ? null
                           : () => _change(ProfilePhotoKind.avatar),
-                      icon: const Icon(Icons.photo_camera_outlined),
+                      icon: const Icon(LucideIcons.camera),
                     ),
                   ),
               ],
@@ -288,7 +289,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
               IconButton.filledTonal(
                 tooltip: 'Refresh group photos',
                 onPressed: _busy ? null : _refresh,
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(LucideIcons.refresh_cw),
               ),
               if (admin)
                 IconButton.filledTonal(
@@ -298,7 +299,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
                   onPressed: _busy
                       ? null
                       : () => _change(ProfilePhotoKind.cover),
-                  icon: const Icon(Icons.panorama_outlined),
+                  icon: const Icon(LucideIcons.image),
                 ),
             ],
           ),

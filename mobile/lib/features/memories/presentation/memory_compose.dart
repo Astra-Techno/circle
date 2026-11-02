@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_signed_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../groups/domain/group_tree.dart';
@@ -392,29 +393,29 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
 
           // Action rows.
           _ActionRow(
-            icon: Icons.sell_outlined,
+            icon: LucideIcons.tag,
             label: 'Tag people',
             onTap: () {}, // Not yet implemented.
           ),
           _ActionRow(
-            icon: Icons.location_on_outlined,
+            icon: LucideIcons.map_pin,
             label: 'Add location',
             onTap: _place.text.isNotEmpty
                 ? null
                 : () => _showLocationSheet(context),
           ),
           _ActionRow(
-            icon: Icons.calendar_today_outlined,
+            icon: LucideIcons.calendar,
             label: 'Create an event',
             onTap: () {}, // Not yet implemented.
           ),
           _ActionRow(
-            icon: Icons.poll_outlined,
+            icon: LucideIcons.chart_bar,
             label: 'Create a poll',
             onTap: () {}, // Not yet implemented.
           ),
           _ActionRow(
-            icon: Icons.more_horiz,
+            icon: LucideIcons.ellipsis,
             label: 'More options',
             onTap: () => _showMoreOptions(context),
           ),
@@ -684,7 +685,7 @@ class _GroupSelector extends ConsumerWidget {
                 )
               else
                 CircleInitialAvatar(
-                  icon: Icons.group,
+                  icon: LucideIcons.users,
                   tone: CircleTone.calm,
                   size: CircleAvatarSize.medium,
                 ),
@@ -698,7 +699,7 @@ class _GroupSelector extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(Icons.keyboard_arrow_down, color: accents.caption),
+              Icon(LucideIcons.chevron_down, color: accents.caption),
             ],
           ),
         ),
@@ -777,14 +778,14 @@ class _CompactPhotoRow extends StatelessWidget {
                             IconButton.filled(
                               tooltip: 'Retry photo ${index + 1}',
                               onPressed: () => onRetry?.call(item),
-                              icon: const Icon(Icons.refresh),
+                              icon: const Icon(LucideIcons.refresh_cw),
                             ),
                           UploadStatus.failed => Icon(
-                            Icons.error_outline,
+                            LucideIcons.circle_alert,
                             color: theme.colorScheme.error,
                           ),
                           _ => Icon(
-                            Icons.schedule,
+                            LucideIcons.clock,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         },
@@ -805,7 +806,7 @@ class _CompactPhotoRow extends StatelessWidget {
                             backgroundColor: theme.colorScheme.surface
                                 .withValues(alpha: 0.8),
                           ),
-                          icon: const Icon(Icons.close),
+                          icon: const Icon(LucideIcons.x),
                         ),
                       ),
                     ),
@@ -826,7 +827,7 @@ class _CompactPhotoRow extends StatelessWidget {
                 border: Border.all(color: accents.hairline),
               ),
               child: Icon(
-                Icons.add,
+                LucideIcons.plus,
                 size: Space.hero,
                 color: theme.colorScheme.primary,
               ),
@@ -878,7 +879,7 @@ class _ActionRow extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(Icons.chevron_right, color: accents.caption),
+                Icon(LucideIcons.chevron_right, color: accents.caption),
               ],
             ),
           ),
@@ -946,13 +947,13 @@ class _UploadTile extends StatelessWidget {
                   UploadStatus.failed when item.retryable => IconButton.filled(
                     tooltip: 'Retry photo $number',
                     onPressed: onRetry,
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(LucideIcons.refresh_cw),
                   ),
                   UploadStatus.failed => Icon(
-                    Icons.error_outline,
+                    LucideIcons.circle_alert,
                     color: colors.error,
                   ),
-                  _ => Icon(Icons.schedule, color: colors.onSurfaceVariant),
+                  _ => Icon(LucideIcons.clock, color: colors.onSurfaceVariant),
                 },
               ),
             ),
@@ -964,7 +965,7 @@ class _UploadTile extends StatelessWidget {
               style: IconButton.styleFrom(
                 backgroundColor: colors.surface.withValues(alpha: 0.8),
               ),
-              icon: const Icon(Icons.close),
+              icon: const Icon(LucideIcons.x),
             ),
           ),
         ],

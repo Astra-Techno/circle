@@ -12,6 +12,7 @@ import '../application/circle_seen.dart';
 import '../application/home_filter.dart';
 import 'memory_card.dart';
 import 'memory_photos.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 export 'memory_card.dart';
 export 'memory_compose.dart';
@@ -196,7 +197,7 @@ class _HomeHeader extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _QuickActionIcon(
-                    icon: Icons.photo_library_outlined,
+                    icon: LucideIcons.image,
                     label: 'Photo',
                     color: theme.colorScheme.primary,
                     onTap: () => context.push(composeLocation(groupId)),
@@ -205,7 +206,7 @@ class _HomeHeader extends ConsumerWidget {
                 const SizedBox(width: Space.sm),
                 Expanded(
                   child: _QuickActionIcon(
-                    icon: Icons.videocam_outlined,
+                    icon: LucideIcons.video,
                     label: 'Video',
                     color: accents.video,
                     onTap: () => context.push(composeLocation(groupId)),
@@ -214,7 +215,7 @@ class _HomeHeader extends ConsumerWidget {
                 const SizedBox(width: Space.sm),
                 Expanded(
                   child: _QuickActionIcon(
-                    icon: Icons.event_outlined,
+                    icon: LucideIcons.calendar,
                     label: 'Event',
                     color: accents.sage,
                     onTap: features.has(CircleFeature.liveEvents)
@@ -225,7 +226,7 @@ class _HomeHeader extends ConsumerWidget {
                 const SizedBox(width: Space.sm),
                 Expanded(
                   child: _QuickActionIcon(
-                    icon: Icons.format_list_bulleted_rounded,
+                    icon: LucideIcons.list,
                     label: 'Poll',
                     color: accents.amber,
                     onTap: features.has(CircleFeature.livePolls)
@@ -400,7 +401,7 @@ class EventFeedCard extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.more_horiz, color: accents.caption),
+                    icon: Icon(LucideIcons.ellipsis, color: accents.caption),
                     onPressed: () {},
                   ),
                 ],
@@ -463,7 +464,7 @@ class EventFeedCard extends StatelessWidget {
                                 Row(
                                   children: [
                                     Icon(
-                                      Icons.location_on_outlined,
+                                      LucideIcons.map_pin,
                                       size: 16,
                                       color: accents.caption,
                                     ),
@@ -485,7 +486,7 @@ class EventFeedCard extends StatelessWidget {
                                 Row(
                                   children: [
                                     Icon(
-                                      Icons.access_time,
+                                      LucideIcons.clock,
                                       size: 16,
                                       color: accents.caption,
                                     ),
@@ -533,7 +534,7 @@ class EventFeedCard extends StatelessWidget {
                   if (myRsvp != null)
                     Chip(
                       avatar: Icon(
-                        Icons.check_circle,
+                        LucideIcons.circle_check_big,
                         size: 16,
                         color: colors.primary,
                       ),
@@ -561,22 +562,22 @@ class EventFeedCard extends StatelessWidget {
               children: [
                 IconButton(
                   tooltip: 'Love',
-                  icon: const Icon(Icons.favorite_border),
+                  icon: const Icon(LucideIcons.heart),
                   onPressed: () {},
                 ),
                 IconButton(
                   tooltip: 'Comment',
-                  icon: const Icon(Icons.chat_bubble_outline),
+                  icon: const Icon(LucideIcons.message_circle),
                   onPressed: () => context.push('/events/e/${event.id}'),
                 ),
                 IconButton(
                   tooltip: 'Share',
-                  icon: const Icon(Icons.share_outlined),
+                  icon: const Icon(LucideIcons.share_2),
                   onPressed: () {},
                 ),
                 IconButton(
                   tooltip: 'Save',
-                  icon: const Icon(Icons.bookmark_border),
+                  icon: const Icon(LucideIcons.bookmark),
                   onPressed: () {},
                 ),
               ],
@@ -727,7 +728,10 @@ class _FirstSteps extends StatelessWidget {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: done
-            ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+            ? Icon(
+                LucideIcons.circle_check_big,
+                color: theme.colorScheme.primary,
+              )
             : CircleInitialAvatar(
                 name: '$number',
                 size: CircleAvatarSize.small,
@@ -743,7 +747,7 @@ class _FirstSteps extends StatelessWidget {
         subtitle: Text(message),
         trailing: done || onTap == null
             ? null
-            : const Icon(Icons.chevron_right),
+            : const Icon(LucideIcons.chevron_right),
         onTap: done ? null : onTap,
       ),
     );
@@ -762,7 +766,7 @@ class _FirstSteps extends StatelessWidget {
             onPressed: () => hasGroup
                 ? context.push(composeLocation(groupId))
                 : context.go('/groups/new'),
-            icon: const Icon(Icons.add),
+            icon: const Icon(LucideIcons.plus),
             label: Text(hasGroup ? 'Share a Memory' : 'Create a group'),
           ),
         ),

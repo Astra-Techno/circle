@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'circle_failure.dart';
 import 'design.dart';
 
@@ -13,7 +14,7 @@ class CircleIntroPanel extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.artwork,
-    this.icon = Icons.auto_awesome_outlined,
+    this.icon = LucideIcons.sparkles,
   });
   final String title, subtitle;
   final Widget? artwork;
@@ -575,7 +576,7 @@ class CircleEmpty extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            Icons.blur_circular,
+            LucideIcons.circle,
             size: 40,
             color: Theme.of(context).colorScheme.primary,
           ),
@@ -606,7 +607,7 @@ class CircleNote extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
-          Icons.info_outline,
+          LucideIcons.info,
           size: Space.lg,
           color: CircleAccents.of(context).caption,
         ),
@@ -1051,7 +1052,7 @@ Widget _headerTitle(
         IconButton(
           tooltip: data.fab!.label,
           onPressed: () => GoRouter.of(context).push(data.fab!.location),
-          icon: const Icon(Icons.add_box_outlined),
+          icon: const Icon(LucideIcons.square_plus),
         ),
     ],
   );

@@ -7,6 +7,7 @@ import '../../chat/application/chat_providers.dart';
 import '../../memories/presentation/circle_memories.dart' show memoryTimeLabel;
 import '../../workspace/application/workspace_providers.dart';
 import '../application/notification_providers.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// The shell's bell: opens Activity. The indigo badge counts only unread
 /// items that need the person (README §4.0: badges mean something).
@@ -22,29 +23,29 @@ class ActivityBell extends ConsumerWidget {
         key: const ValueKey('activity-badge'),
         isLabelVisible: count > 0,
         label: Text('$count', semanticsLabel: '$count need you'),
-        child: const Icon(Icons.notifications_outlined),
+        child: const Icon(LucideIcons.bell),
       ),
     );
   }
 }
 
 IconData _icon(ActivityKind kind) => switch (kind) {
-  ActivityKind.reply || ActivityKind.mention => Icons.alternate_email,
-  ActivityKind.reactions => Icons.favorite_border,
-  ActivityKind.newMemory => Icons.photo_outlined,
-  ActivityKind.invitation => Icons.mark_email_unread_outlined,
-  ActivityKind.approved => Icons.how_to_reg_outlined,
-  ActivityKind.declined => Icons.person_off_outlined,
-  ActivityKind.joinRequest => Icons.person_add_alt_outlined,
-  ActivityKind.eventChanged => Icons.edit_calendar_outlined,
-  ActivityKind.eventCancelled => Icons.event_busy_outlined,
-  ActivityKind.eventReminder => Icons.alarm_outlined,
-  ActivityKind.newEvent => Icons.event_outlined,
-  ActivityKind.pollClosing => Icons.how_to_vote_outlined,
-  ActivityKind.pollResults => Icons.bar_chart_outlined,
-  ActivityKind.roleChange => Icons.shield_outlined,
-  ActivityKind.messageRequest => Icons.forward_to_inbox_outlined,
-  ActivityKind.directMessage => Icons.chat_bubble_outline,
+  ActivityKind.reply || ActivityKind.mention => LucideIcons.at_sign,
+  ActivityKind.reactions => LucideIcons.heart,
+  ActivityKind.newMemory => LucideIcons.image,
+  ActivityKind.invitation => LucideIcons.mail,
+  ActivityKind.approved => LucideIcons.user_check,
+  ActivityKind.declined => LucideIcons.user_x,
+  ActivityKind.joinRequest => LucideIcons.user_plus,
+  ActivityKind.eventChanged => LucideIcons.calendar_cog,
+  ActivityKind.eventCancelled => LucideIcons.calendar_x,
+  ActivityKind.eventReminder => LucideIcons.alarm_clock,
+  ActivityKind.newEvent => LucideIcons.calendar,
+  ActivityKind.pollClosing => LucideIcons.vote,
+  ActivityKind.pollResults => LucideIcons.chart_bar,
+  ActivityKind.roleChange => LucideIcons.shield,
+  ActivityKind.messageRequest => LucideIcons.inbox,
+  ActivityKind.directMessage => LucideIcons.message_circle,
 };
 
 /// I1: what happened in your circles, Today and Earlier. Personal items
@@ -98,7 +99,7 @@ class ActivityScreen extends ConsumerWidget {
                           .markAllRead(),
                       success: 'All caught up.',
                     ),
-                    icon: const Icon(Icons.done_all),
+                    icon: const Icon(LucideIcons.check_check),
                     label: const Text('Mark all read'),
                   ),
                 ),

@@ -5,6 +5,7 @@ import '../../../core/design.dart';
 import '../../../core/notifications/push_config.dart';
 import '../application/push_settings.dart';
 import '../application/push_session_coordinator.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 class ServerPushSettingsScreen extends ConsumerWidget {
   const ServerPushSettingsScreen({super.key});
@@ -151,7 +152,7 @@ class _Choices extends ConsumerWidget {
               onPressed: busy || coordinator.active
                   ? null
                   : () => _enable(context, ref),
-              icon: const Icon(Icons.notifications_active_outlined),
+              icon: const Icon(LucideIcons.bell),
               label: Text(
                 coordinator.active
                     ? 'Connected on this phone'
@@ -261,7 +262,7 @@ class _Choices extends ConsumerWidget {
               child: ListTile(
                 title: const Text('Time zone'),
                 subtitle: Text(preferences.timezone.replaceAll('_', ' ')),
-                trailing: const Icon(Icons.chevron_right),
+                trailing: const Icon(LucideIcons.chevron_right),
                 onTap: busy
                     ? null
                     : () async {
@@ -315,7 +316,7 @@ class _Choices extends ConsumerWidget {
                   );
                 }
               },
-              icon: const Icon(Icons.settings_outlined),
+              icon: const Icon(LucideIcons.settings),
               label: const Text('Phone notification settings'),
             ),
           ],
@@ -355,7 +356,7 @@ class _TimezonePickerState extends ConsumerState<_TimezonePicker> {
               autofocus: true,
               decoration: const InputDecoration(
                 labelText: 'Search city or region',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: Icon(LucideIcons.search),
               ),
               onChanged: (value) => setState(() => _query = value),
             ),

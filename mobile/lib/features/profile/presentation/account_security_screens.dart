@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../application/account_security.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 class SessionsScreen extends ConsumerStatefulWidget {
   const SessionsScreen({super.key});
@@ -108,7 +109,7 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
           if (_error != null) Text(_error!),
           TextButton.icon(
             onPressed: _busy ? null : _load,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(LucideIcons.refresh_cw),
             label: const Text('Refresh devices'),
           ),
           if (!_busy && _error == null && _items.isEmpty)
@@ -161,7 +162,7 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
                                       await _action((s) => s.shareLocation());
                                     }
                                   },
-                            icon: const Icon(Icons.location_on_outlined),
+                            icon: const Icon(LucideIcons.map_pin),
                             label: Text(
                               session.location == null
                                   ? 'Add location'
@@ -195,7 +196,7 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
                                 await _action((s) => s.revoke(session));
                               }
                             },
-                      icon: const Icon(Icons.logout),
+                      icon: const Icon(LucideIcons.log_out),
                       label: Text(
                         session.current
                             ? 'Log out this device'

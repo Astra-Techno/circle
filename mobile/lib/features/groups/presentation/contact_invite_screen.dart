@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../auth/domain/access_validation.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import '../application/contact_invitations.dart';
@@ -171,7 +172,7 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
             if (ref.watch(inviteShareBridgeProvider).supported)
               FilledButton.icon(
                 onPressed: _busy ? null : _choose,
-                icon: const Icon(Icons.person_add_alt_1),
+                icon: const Icon(LucideIcons.user_plus),
                 label: const Text('Choose contact'),
               )
             else ...[
@@ -183,7 +184,7 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
             const SizedBox(height: Space.sm),
             OutlinedButton.icon(
               onPressed: _busy ? null : _copy,
-              icon: const Icon(Icons.copy_outlined),
+              icon: const Icon(LucideIcons.copy),
               label: const Text('Copy invite link'),
             ),
             if (_share) ...[

@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../core/circle_components.dart';
 import '../../groups/domain/circle_group.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 IconData circleTypeIcon(CircleType type) => switch (type) {
-  CircleType.family => Icons.favorite_outline,
-  CircleType.friends => Icons.people_outline,
-  CircleType.school => Icons.menu_book_outlined,
-  CircleType.college => Icons.school_outlined,
-  CircleType.office => Icons.work_outline,
-  CircleType.club => Icons.directions_bike_outlined,
-  CircleType.other => Icons.blur_circular,
+  CircleType.family => LucideIcons.heart,
+  CircleType.friends => LucideIcons.users,
+  CircleType.school => LucideIcons.book_open,
+  CircleType.college => LucideIcons.graduation_cap,
+  CircleType.office => LucideIcons.briefcase,
+  CircleType.club => LucideIcons.bike,
+  CircleType.other => LucideIcons.circle,
 };
 
 String circleTypeLabel(CircleType type) =>

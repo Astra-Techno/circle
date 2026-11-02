@@ -12,6 +12,7 @@ import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/feature_gate.dart';
 import '../../workspace/presentation/group_visuals.dart';
 import '../../workspace/presentation/workspace_view.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../domain/group_tree.dart';
 import '../domain/membership_rules.dart';
 import 'circle_groups.dart';
@@ -180,7 +181,7 @@ class _GroupTabs extends ConsumerWidget {
             children: [
               OutlinedButton.icon(
                 onPressed: () => context.push(composeLocation(group.id)),
-                icon: const Icon(Icons.edit_outlined),
+                icon: const Icon(LucideIcons.pencil),
                 label: const Text('Share a Memory here'),
               ),
               if (ref
@@ -188,7 +189,7 @@ class _GroupTabs extends ConsumerWidget {
                   .has(CircleFeature.livePolls))
                 OutlinedButton.icon(
                   onPressed: () => context.push('/polls?group=${group.id}'),
-                  icon: const Icon(Icons.poll_outlined),
+                  icon: const Icon(LucideIcons.chart_bar),
                   label: const Text('Polls'),
                 ),
             ],
@@ -218,7 +219,7 @@ class _GroupTabs extends ConsumerWidget {
               message: 'Make plans with this exact circle.',
               action: FilledButton.icon(
                 onPressed: () => context.go('/events?group=${group.id}'),
-                icon: const Icon(Icons.event_outlined),
+                icon: const Icon(LucideIcons.calendar),
                 label: const Text('Open group events'),
               ),
             ),
@@ -234,7 +235,7 @@ class _GroupTabs extends ConsumerWidget {
               message: 'Private messages saved for this group.',
               action: FilledButton.icon(
                 onPressed: () => context.go('/chats/g/${group.id}'),
-                icon: const Icon(Icons.forum_outlined),
+                icon: const Icon(LucideIcons.messages_square),
                 label: const Text('Open group chat'),
               ),
             ),
@@ -278,7 +279,9 @@ class _GroupHeader extends ConsumerWidget {
               children: [
                 for (final (index, ancestor) in lineage.indexed) ...[
                   if (index > 0)
-                    const ExcludeSemantics(child: Icon(Icons.chevron_right)),
+                    const ExcludeSemantics(
+                      child: Icon(LucideIcons.chevron_right),
+                    ),
                   TextButton(
                     onPressed: ancestor.id == group.id
                         ? null
@@ -312,7 +315,7 @@ class _GroupHeader extends ConsumerWidget {
             if (canInvite)
               FilledButton.icon(
                 onPressed: () => context.push('/groups/g/${group.id}/invite'),
-                icon: const Icon(Icons.person_add_alt_1_outlined),
+                icon: const Icon(LucideIcons.user_plus),
                 label: const Text('Invite people'),
               ),
             if (requests > 0)
@@ -322,13 +325,13 @@ class _GroupHeader extends ConsumerWidget {
                     ref.read(circleFeaturesProvider),
                   ).indexOf('Members'),
                 ),
-                icon: const Icon(Icons.how_to_reg_outlined),
+                icon: const Icon(LucideIcons.user_check),
                 label: Text(requests == 1 ? '1 request' : '$requests requests'),
               ),
             if (reports > 0) GroupReportsButton(group: group, count: reports),
             TextButton.icon(
               onPressed: () => context.push('/groups/g/${group.id}/settings'),
-              icon: const Icon(Icons.settings_outlined),
+              icon: const Icon(LucideIcons.settings),
               label: const Text('Settings'),
             ),
           ],
@@ -387,7 +390,7 @@ class SubgroupsTab extends ConsumerWidget {
             alignment: AlignmentDirectional.centerStart,
             child: OutlinedButton.icon(
               onPressed: () => context.push('/groups/new?parent=${group.id}'),
-              icon: const Icon(Icons.add),
+              icon: const Icon(LucideIcons.plus),
               label: const Text('Create subgroup'),
             ),
           )

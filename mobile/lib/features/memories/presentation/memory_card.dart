@@ -13,6 +13,7 @@ import 'memory_photos.dart';
 import '../../chat/application/live_chat.dart';
 import 'memory_reactions_sheet.dart';
 import 'mention_text.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 enum _MemoryAction { save, replyPrivately, edit, delete, report }
 
@@ -192,7 +193,7 @@ class CircleMemoryCard extends ConsumerWidget {
                   ),
                   PopupMenuButton<_MemoryAction>(
                     tooltip: 'More options for $about',
-                    icon: Icon(Icons.more_horiz, color: accents.caption),
+                    icon: Icon(LucideIcons.ellipsis, color: accents.caption),
                     onSelected: onMenu,
                     itemBuilder: (_) => [
                       PopupMenuItem(
@@ -251,7 +252,7 @@ class CircleMemoryCard extends ConsumerWidget {
                       children: [
                         ExcludeSemantics(
                           child: Icon(
-                            Icons.format_quote_rounded,
+                            LucideIcons.quote,
                             color: accents.caption,
                           ),
                         ),
@@ -275,7 +276,7 @@ class CircleMemoryCard extends ConsumerWidget {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.history_outlined,
+                      LucideIcons.clock,
                       size: Space.lg,
                       color: accents.caption,
                     ),
@@ -303,7 +304,11 @@ class CircleMemoryCard extends ConsumerWidget {
                         Icon(Icons.favorite, size: 18, color: accents.heart),
                         if (reactions.total > 1) ...[
                           const SizedBox(width: 2),
-                          Icon(Icons.thumb_up, size: 16, color: colors.primary),
+                          Icon(
+                            LucideIcons.thumbs_up,
+                            size: 16,
+                            color: colors.primary,
+                          ),
                         ],
                         const SizedBox(width: Space.xs),
                         Text('${reactions.total}', style: caption),
@@ -316,7 +321,7 @@ class CircleMemoryCard extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.chat_bubble_outline,
+                                LucideIcons.message_circle,
                                 size: 16,
                                 color: accents.caption,
                               ),
@@ -342,21 +347,19 @@ class CircleMemoryCard extends ConsumerWidget {
                 IconButton(
                   tooltip: 'Comment on $about',
                   onPressed: openDetail,
-                  icon: const Icon(Icons.chat_bubble_outline_rounded),
+                  icon: const Icon(LucideIcons.message_circle),
                 ),
                 IconButton(
                   tooltip: 'Share $about',
                   onPressed: pickReaction,
-                  icon: const Icon(Icons.share_outlined),
+                  icon: const Icon(LucideIcons.share_2),
                 ),
                 IconButton(
                   tooltip: memory.saved ? 'Unsave $about' : 'Save $about',
                   onPressed: () =>
                       runCalmly(context, () => controller.save(memory.id)),
                   icon: Icon(
-                    memory.saved
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
+                    memory.saved ? LucideIcons.bookmark : LucideIcons.bookmark,
                     color: memory.saved ? colors.primary : null,
                   ),
                 ),
@@ -420,7 +423,7 @@ class _LoveButton extends StatelessWidget {
           child: IconButton(
             isSelected: loved,
             onPressed: onTap,
-            icon: const Icon(Icons.favorite_border_rounded),
+            icon: const Icon(LucideIcons.heart),
             selectedIcon: Icon(Icons.favorite_rounded, color: accents.heart),
           ),
         ),

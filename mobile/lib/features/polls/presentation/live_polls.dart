@@ -8,6 +8,7 @@ import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/live_polls.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 void refreshPolls(WidgetRef ref) {
   ref.invalidate(livePollProvider);
@@ -51,12 +52,12 @@ class _PollState extends ConsumerState<LivePollScreen> {
               for (final poll in items)
                 Card(
                   child: ListTile(
-                    leading: const Icon(Icons.poll_outlined),
+                    leading: const Icon(LucideIcons.chart_bar),
                     title: Text(poll['question'] as String),
                     subtitle: Text(
                       '${poll['group_name'] ?? 'Circle'} · ${poll['closed'] == true ? 'Closed' : 'Open'} · ${poll['anonymous'] == true ? 'Anonymous' : 'Named'} votes',
                     ),
-                    trailing: const Icon(Icons.chevron_right),
+                    trailing: const Icon(LucideIcons.chevron_right),
                     onTap: () => context.push('/polls/p/${poll['id']}'),
                   ),
                 ),
@@ -85,7 +86,7 @@ class _PollState extends ConsumerState<LivePollScreen> {
                 },
               ).toString(),
             ),
-            icon: const Icon(Icons.add),
+            icon: const Icon(LucideIcons.plus),
             label: const Text('Create a poll'),
           ),
         ),
@@ -188,7 +189,7 @@ class _PollState extends ConsumerState<LivePollScreen> {
                 Text('Closes ${DateTime.parse(end).toLocal()}'),
               TextButton.icon(
                 onPressed: () => refreshPolls(ref),
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(LucideIcons.refresh_cw),
                 label: const Text('Refresh poll'),
               ),
               for (final option in options)
@@ -248,7 +249,7 @@ class _PollState extends ConsumerState<LivePollScreen> {
                       : () => _run(
                           (api) => api.vote(id, chosen.toList()..sort()),
                         ),
-                  icon: const Icon(Icons.how_to_vote_outlined),
+                  icon: const Icon(LucideIcons.vote),
                   label: Text(
                     _busy
                         ? 'Saving…'
@@ -275,7 +276,7 @@ class _PollState extends ConsumerState<LivePollScreen> {
                             await _run((_) => api.option(id, label));
                           }
                         },
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(LucideIcons.plus),
                   label: const Text('Add an option'),
                 ),
               if (results && p['anonymous'] != true)
@@ -426,7 +427,7 @@ class _FormState extends ConsumerState<LivePollForm> {
                               : () => setState(() {
                                   _options.removeAt(i).dispose();
                                 }),
-                          icon: const Icon(Icons.close),
+                          icon: const Icon(LucideIcons.x),
                         ),
                 ),
               ),
@@ -436,7 +437,7 @@ class _FormState extends ConsumerState<LivePollForm> {
                     ? null
                     : () =>
                           setState(() => _options.add(TextEditingController())),
-                icon: const Icon(Icons.add),
+                icon: const Icon(LucideIcons.plus),
                 label: const Text('Add option'),
               ),
             ExpansionTile(
@@ -634,7 +635,7 @@ class _FormState extends ConsumerState<LivePollForm> {
                         }
                       }
                     },
-              icon: const Icon(Icons.poll_outlined),
+              icon: const Icon(LucideIcons.chart_bar),
               label: Text(_busy ? 'Creating…' : 'Post poll'),
             ),
           ],

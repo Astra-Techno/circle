@@ -7,6 +7,7 @@ import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../../core/theme_controller.dart';
 import 'profile_photo.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../notifications/application/notification_providers.dart';
 import '../../memories/presentation/scoped_memory_list.dart';
 import '../../workspace/application/workspace_providers.dart';
@@ -58,7 +59,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
           subtitle: Text(subtitle),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
-            children: [?badgeLabel, const Icon(Icons.chevron_right)],
+            children: [?badgeLabel, const Icon(LucideIcons.chevron_right)],
           ),
           onTap: () => context.push(location),
         ),
@@ -81,7 +82,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                     CircleRow(
                       child: ListTile(
                         leading: const CircleInitialAvatar(
-                          icon: Icons.mark_email_unread_outlined,
+                          icon: LucideIcons.mail,
                         ),
                         title: Text(
                           waiting == 1
@@ -89,13 +90,13 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                               : '$waiting invitations waiting',
                         ),
                         subtitle: const Text('Review them in Groups.'),
-                        trailing: const Icon(Icons.chevron_right),
+                        trailing: const Icon(LucideIcons.chevron_right),
                         onTap: () => context.go('/groups'),
                       ),
                     ),
                   if (features.has(CircleFeature.activity))
                     entry(
-                      icon: Icons.notifications_outlined,
+                      icon: LucideIcons.bell,
                       title: 'Activity',
                       subtitle:
                           'Mentions, replies, invitations and event updates',
@@ -116,26 +117,26 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                     ),
                   if (features.has(CircleFeature.notificationSettings))
                     entry(
-                      icon: Icons.tune,
+                      icon: LucideIcons.sliders_horizontal,
                       title: 'Notifications',
                       subtitle: 'Your updates and quiet hours',
                       location: '/you/notifications',
                     ),
                   if (features.has(CircleFeature.blocking))
                     entry(
-                      icon: Icons.lock_outline,
+                      icon: LucideIcons.lock,
                       title: 'Privacy and blocking',
                       subtitle: 'Manage blocked people',
                       location: '/you/privacy',
                     ),
                   entry(
-                    icon: Icons.mark_email_unread_outlined,
+                    icon: LucideIcons.mail,
                     title: 'Invitations',
                     subtitle: 'Choose which circles to join',
                     location: '/you/invitations',
                   ),
                   entry(
-                    icon: Icons.manage_accounts_outlined,
+                    icon: LucideIcons.user_cog,
                     title: 'Account',
                     subtitle: 'Appearance, connection and sign out',
                     location: '/you/account',
@@ -145,11 +146,11 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                     if (_loadError != null)
                       TextButton.icon(
                         onPressed: _refreshProfile,
-                        icon: const Icon(Icons.refresh),
+                        icon: const Icon(LucideIcons.refresh_cw),
                         label: const Text('Retry loading profile details'),
                       ),
                     const CircleSectionTitle('Personal details'),
-                    const CirclePill('Only you', icon: Icons.lock_outline),
+                    const CirclePill('Only you', icon: LucideIcons.lock),
                     const SizedBox(height: Space.sm),
                     if ([
                       account.currentCity,
@@ -161,14 +162,14 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                         'Add your city, hometown, work and education in Edit profile.',
                       ),
                     for (final detail in [
+                      (LucideIcons.building, 'Lives in', account.currentCity),
+                      (LucideIcons.house, 'From', account.hometown),
+                      (LucideIcons.briefcase, 'Work', account.work),
                       (
-                        Icons.location_city_outlined,
-                        'Lives in',
-                        account.currentCity,
+                        LucideIcons.graduation_cap,
+                        'Education',
+                        account.education,
                       ),
-                      (Icons.home_outlined, 'From', account.hometown),
-                      (Icons.work_outline, 'Work', account.work),
-                      (Icons.school_outlined, 'Education', account.education),
                     ])
                       if (detail.$3.isNotEmpty)
                         CircleRow(
@@ -198,7 +199,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                             .read(circleWorkspaceProvider.notifier)
                             .loadMoreMemories(),
                       ),
-                      icon: const Icon(Icons.expand_more),
+                      icon: const Icon(LucideIcons.chevron_down),
                       label: const Text('Load older Memories'),
                     ),
                   const CircleSectionTitle('Saved Memories'),
@@ -216,7 +217,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                           const Align(
                             alignment: AlignmentDirectional.centerStart,
                             child: CircleInitialAvatar(
-                              icon: Icons.bookmarks_outlined,
+                              icon: LucideIcons.bookmark,
                               size: CircleAvatarSize.large,
                             ),
                           ),
@@ -231,7 +232,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                           ),
                           const SizedBox(height: Space.lg),
                           OutlinedButton.icon(
-                            icon: const Icon(Icons.photo_library_outlined),
+                            icon: const Icon(LucideIcons.images),
                             label: const Text('Browse Memories'),
                             onPressed: () => context.go('/home'),
                           ),
@@ -245,7 +246,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        trailing: const Icon(Icons.chevron_right),
+                        trailing: const Icon(LucideIcons.chevron_right),
                         onTap: () => context.push('/home/memory/${memory.id}'),
                       ),
                     ),
@@ -293,16 +294,16 @@ class AccountScreen extends ConsumerWidget {
           ),
           ...[
             ListTile(
-              leading: const Icon(Icons.lock_outline),
+              leading: const Icon(LucideIcons.lock),
               title: const Text('Change password'),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevron_right),
               onTap: () => context.push('/you/account/password'),
             ),
             ListTile(
-              leading: const Icon(Icons.devices_outlined),
+              leading: const Icon(LucideIcons.monitor_smartphone),
               title: const Text('Your devices'),
               subtitle: const Text('Locations and session logout'),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevron_right),
               onTap: () => context.push('/you/account/sessions'),
             ),
             ExpansionTile(

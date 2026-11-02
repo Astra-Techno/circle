@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import '../domain/membership_rules.dart';
@@ -102,7 +103,7 @@ class GroupInviteScreen extends ConsumerWidget {
                   () => controller.createInviteLink(g.id),
                   success: 'Invite link ready.',
                 ),
-                icon: const Icon(Icons.add_link),
+                icon: const Icon(LucideIcons.link),
                 label: const Text('Create invite link'),
               )
             else
@@ -134,7 +135,7 @@ class GroupInviteScreen extends ConsumerWidget {
                             showCircleMessage(context, 'Copied.');
                           }
                         },
-                        icon: const Icon(Icons.copy),
+                        icon: const Icon(LucideIcons.copy),
                         label: const Text('Copy invite link'),
                       ),
                       if (!link.expiredAt(DateTime.now().toUtc()) &&
@@ -225,7 +226,7 @@ class GroupInviteScreen extends ConsumerWidget {
                             );
                           }
                         },
-                        icon: const Icon(Icons.refresh),
+                        icon: const Icon(LucideIcons.refresh_cw),
                         label: const Text('Reset link'),
                       ),
                       TextButton(
