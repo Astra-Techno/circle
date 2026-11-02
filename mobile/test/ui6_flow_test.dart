@@ -90,7 +90,7 @@ void main() {
         await go(tester, container, '/groups');
         await tester.dragUntilVisible(
           find.text('Studio North'),
-          find.byType(ListView).first,
+          find.byType(Scrollable).first,
           const Offset(0, -200),
         );
         await reveal(tester, find.text('Studio North'));

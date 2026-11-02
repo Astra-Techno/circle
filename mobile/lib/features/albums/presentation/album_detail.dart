@@ -7,6 +7,7 @@ import '../../memories/presentation/memory_photos.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/album_providers.dart';
 import 'albums_tab.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 enum _AlbumAction { rename, delete }
 
@@ -164,11 +165,11 @@ class AlbumDetailScreen extends ConsumerWidget {
             children: [
               CirclePill(
                 group.name,
-                icon: Icons.lock_outline,
+                icon: LucideIcons.lock,
                 semanticsLabel: 'Shared with ${group.name} only',
               ),
               if (album.isEventAlbum)
-                const CirclePill('Event album', icon: Icons.event_outlined),
+                const CirclePill('Event album', icon: LucideIcons.calendar),
             ],
           ),
           const SizedBox(height: Space.md),
@@ -176,7 +177,7 @@ class AlbumDetailScreen extends ConsumerWidget {
             alignment: AlignmentDirectional.centerStart,
             child: FilledButton.icon(
               onPressed: room == 0 ? null : add,
-              icon: const Icon(Icons.add_photo_alternate_outlined),
+              icon: const Icon(LucideIcons.image_plus),
               label: const Text('Add photos'),
             ),
           ),
@@ -324,7 +325,7 @@ class _PhotoTile extends ConsumerWidget {
             child: ExcludeSemantics(
               child: CirclePill(
                 'Cover',
-                icon: Icons.star_outline,
+                icon: LucideIcons.star,
                 tone: CircleTone.surface,
               ),
             ),
@@ -335,7 +336,7 @@ class _PhotoTile extends ConsumerWidget {
             end: 0,
             child: PopupMenuButton<_PhotoAction>(
               tooltip: 'Options for photo ${index + 1}',
-              icon: const Icon(Icons.more_vert),
+              icon: const Icon(LucideIcons.ellipsis_vertical),
               onSelected: run,
               itemBuilder: (_) => [
                 for (final (action, label) in _photoMenu(actions, photo))
@@ -374,19 +375,19 @@ Future<_PhotoAction?> _showPhotoSheet(
       children: [
         if (actions.cover)
           ListTile(
-            leading: const Icon(Icons.star_outline),
+            leading: const Icon(LucideIcons.star),
             title: const Text('Set as cover'),
             onTap: () => Navigator.of(context).pop(_PhotoAction.cover),
           ),
         if (actions.caption)
           ListTile(
-            leading: const Icon(Icons.short_text),
+            leading: const Icon(LucideIcons.type),
             title: const Text('Caption'),
             onTap: () => Navigator.of(context).pop(_PhotoAction.caption),
           ),
         if (actions.remove)
           ListTile(
-            leading: const Icon(Icons.delete_outline),
+            leading: const Icon(LucideIcons.trash),
             title: const Text('Remove from album'),
             onTap: () => Navigator.of(context).pop(_PhotoAction.remove),
           ),
@@ -607,13 +608,13 @@ class AlbumPhotoViewer extends ConsumerWidget {
             if (actions.cover)
               TextButton.icon(
                 onPressed: () => run(_PhotoAction.cover),
-                icon: const Icon(Icons.star_outline),
+                icon: const Icon(LucideIcons.star),
                 label: const Text('Set as cover'),
               ),
             if (actions.caption)
               TextButton.icon(
                 onPressed: () => run(_PhotoAction.caption),
-                icon: const Icon(Icons.short_text),
+                icon: const Icon(LucideIcons.type),
                 label: Text(
                   photo.photo.caption == null ? 'Add caption' : 'Edit caption',
                 ),
@@ -621,7 +622,7 @@ class AlbumPhotoViewer extends ConsumerWidget {
             if (actions.remove)
               TextButton.icon(
                 onPressed: () => run(_PhotoAction.remove),
-                icon: const Icon(Icons.delete_outline),
+                icon: const Icon(LucideIcons.trash),
                 label: const Text('Remove from album'),
               ),
           ],

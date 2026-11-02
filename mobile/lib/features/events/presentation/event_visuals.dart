@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../workspace/domain/circle_workspace.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 IconData eventTypeIcon(EventType type) => switch (type) {
-  EventType.familyFunction => Icons.family_restroom_outlined,
-  EventType.wedding => Icons.celebration_outlined,
-  EventType.reunion => Icons.handshake_outlined,
-  EventType.meetup => Icons.local_cafe_outlined,
-  EventType.birthday => Icons.cake_outlined,
-  EventType.trip => Icons.luggage_outlined,
-  EventType.online => Icons.videocam_outlined,
-  EventType.other => Icons.event_outlined,
+  EventType.familyFunction => LucideIcons.users,
+  EventType.wedding => LucideIcons.party_popper,
+  EventType.reunion => LucideIcons.handshake,
+  EventType.meetup => LucideIcons.coffee,
+  EventType.birthday => LucideIcons.cake,
+  EventType.trip => LucideIcons.luggage,
+  EventType.online => LucideIcons.video,
+  EventType.other => LucideIcons.calendar,
 };
 
 /// Today's date in the event's own zone, so years show only when needed.

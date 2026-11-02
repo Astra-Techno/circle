@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/circle_components.dart';
@@ -185,7 +186,7 @@ void main() {
       await go(tester, container, '/home/memory/table/photos?index=99');
       expect(find.text('4 of 4'), findsOneWidget);
       final next = tester.widget<IconButton>(
-        find.widgetWithIcon(IconButton, Icons.chevron_right),
+        find.widgetWithIcon(IconButton, LucideIcons.chevron_right),
       );
       expect(next.onPressed, isNull);
       await go(tester, container, '/home/memory/private-memory/photos');

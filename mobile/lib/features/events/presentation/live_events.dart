@@ -14,6 +14,7 @@ import '../../workspace/application/workspace_providers.dart';
 import '../../notifications/application/push_settings.dart'
     show deviceTimezoneProvider;
 import '../application/live_events.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 void refreshLiveEvents(WidgetRef ref) {
   ref.invalidate(liveEventsProvider);
@@ -232,7 +233,9 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
             leading: Icon(icon),
             title: Text(title),
             subtitle: subtitle == null ? null : Text(subtitle),
-            trailing: onTap == null ? null : const Icon(Icons.chevron_right),
+            trailing: onTap == null
+                ? null
+                : const Icon(LucideIcons.chevron_right),
             onTap: onTap,
           );
           final going = (e['going_count'] as num?)?.toInt() ?? 0;
@@ -305,44 +308,44 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                 const SizedBox(height: Space.lg),
                 if (!active)
                   const EventNotice(
-                    icon: Icons.event_busy_outlined,
+                    icon: LucideIcons.calendar_x,
                     text: 'This event is cancelled.',
                   ),
                 row(
-                  Icons.schedule_rounded,
+                  LucideIcons.clock,
                   liveEventLabel(e),
                   subtitle: e['end_at'] == null
                       ? null
                       : 'Ends ${formatDay(liveEventWall(e['end_at'] as String, zone), today: DateTime.now())} · ${formatTime(liveEventWall(e['end_at'] as String, zone))}',
                 ),
-                if (venue.isNotEmpty) row(Icons.place_outlined, venue),
+                if (venue.isNotEmpty) row(LucideIcons.map_pin, venue),
                 if (link.isNotEmpty)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.link),
+                    leading: const Icon(LucideIcons.link),
                     title: SelectableText(link),
                   ),
                 if (e['rsvp_deadline'] != null)
                   row(
-                    Icons.event_available_outlined,
+                    LucideIcons.calendar_check,
                     'RSVP by ${formatDay(liveEventWall(e['rsvp_deadline'] as String, zone), today: DateTime.now())} · ${formatTime(liveEventWall(e['rsvp_deadline'] as String, zone))}',
                   ),
                 row(
-                  Icons.groups_outlined,
+                  LucideIcons.users,
                   'Who’s coming?',
                   subtitle:
                       '$going going${e['max_capacity'] == null ? '' : ' · room for ${e['max_capacity']}'}',
                   onTap: () => context.go('/events/e/$id/attendees'),
                 ),
                 row(
-                  Icons.poll_outlined,
+                  LucideIcons.chart_bar,
                   'Event polls',
                   onTap: () =>
                       context.push('/polls?group=${e['group_id']}&event=$id'),
                 ),
                 if (canRsvp && mine is Map)
                   row(
-                    Icons.edit_note_outlined,
+                    LucideIcons.pencil,
                     'Guests and RSVP note',
                     onTap: _busy
                         ? null
@@ -506,7 +509,7 @@ class _LiveEventCard extends ConsumerWidget {
                       ),
                     ),
                     Icon(
-                      Icons.chevron_right,
+                      LucideIcons.chevron_right,
                       color: CircleAccents.of(context).caption,
                     ),
                   ],
@@ -686,10 +689,10 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
       trailing: optional
           ? IconButton(
               onPressed: _busy ? null : () => setState(() => save(null)),
-              icon: const Icon(Icons.close),
+              icon: const Icon(LucideIcons.x),
               tooltip: 'Clear $label',
             )
-          : const Icon(Icons.calendar_today_outlined),
+          : const Icon(LucideIcons.calendar),
       onTap: _busy
           ? null
           : () async {

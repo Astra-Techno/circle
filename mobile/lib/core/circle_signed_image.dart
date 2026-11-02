@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'api/signed_media_url.dart';
 import 'circle_components.dart';
 import 'design.dart';
@@ -184,7 +185,7 @@ class CirclePhotoPlaceholder extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.image_not_supported_outlined,
+                        LucideIcons.image_off,
                         size: Space.lg,
                         color: colors.onSurfaceVariant,
                       ),

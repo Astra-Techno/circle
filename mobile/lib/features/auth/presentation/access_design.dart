@@ -8,6 +8,7 @@ import '../../../core/circle_brand.dart';
 import '../../../core/circle_failure.dart';
 import '../domain/access_validation.dart';
 import '../application/country_provider.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Welcome with the owner's complete supplied CIRCLE identity.
 /// Create account and Log in are the two clear choices.
@@ -64,7 +65,7 @@ class AccessWelcome extends StatelessWidget {
                   child: Text('Get Started', textAlign: TextAlign.center),
                 ),
                 SizedBox(width: Space.sm),
-                Icon(Icons.arrow_forward),
+                Icon(LucideIcons.arrow_right),
               ],
             ),
           ),
@@ -80,7 +81,7 @@ class AccessWelcome extends StatelessWidget {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.login),
+                Icon(LucideIcons.log_in),
                 SizedBox(width: Space.sm),
                 Flexible(child: Text('Log in', textAlign: TextAlign.center)),
               ],
@@ -292,7 +293,7 @@ class _PhotoCollage extends StatelessWidget {
                       child: Row(
                         children: [
                           CircleInitialAvatar(
-                            icon: Icons.lock,
+                            icon: LucideIcons.lock,
                             size: CircleAvatarSize.small,
                           ),
                           const SizedBox(width: Space.sm),
@@ -350,7 +351,7 @@ class _PhotoCollage extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.verified_user,
+                        LucideIcons.shield_check,
                         size: 16,
                         color: colors.primary,
                       ),
@@ -478,15 +479,12 @@ class _Promises extends StatelessWidget {
       ),
       child: Column(
         children: [
-          row(Icons.shield_outlined, 'Shared only with your chosen group'),
+          row(LucideIcons.shield, 'Shared only with your chosen group'),
           row(
-            Icons.do_not_disturb_on_outlined,
+            LucideIcons.bell_off,
             'No follower counts, vanity metrics, or ads',
           ),
-          row(
-            Icons.family_restroom_outlined,
-            'Safe, legible, and simple for ages 15 to 75',
-          ),
+          row(LucideIcons.users, 'Safe, legible, and simple for ages 15 to 75'),
         ],
       ),
     );
@@ -650,7 +648,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                   controller: _name,
                   decoration: const InputDecoration(
                     labelText: 'Name (optional)',
-                    prefixIcon: Icon(Icons.person_outline),
+                    prefixIcon: Icon(LucideIcons.user),
                   ),
                   textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.next,
@@ -718,7 +716,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                         labelText: 'Mobile number',
                         hintText: 'Phone number',
                         errorMaxLines: 3,
-                        prefixIcon: Icon(Icons.phone_iphone_outlined),
+                        prefixIcon: Icon(LucideIcons.smartphone),
                       ),
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
@@ -733,7 +731,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
               const SizedBox(height: Space.lg),
               TextButton.icon(
                 onPressed: _locating || _busy ? null : _detectCountry,
-                icon: const Icon(Icons.my_location_outlined),
+                icon: const Icon(LucideIcons.locate),
                 label: Text(
                   _locating
                       ? 'Finding your country…'
@@ -757,14 +755,12 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                       : null,
                   helperMaxLines: 3,
                   errorMaxLines: 3,
-                  prefixIcon: const Icon(Icons.lock_outline),
+                  prefixIcon: const Icon(LucideIcons.lock),
                   suffixIcon: IconButton(
                     tooltip: _obscured ? 'Show password' : 'Hide password',
                     onPressed: () => setState(() => _obscured = !_obscured),
                     icon: Icon(
-                      _obscured
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
+                      _obscured ? LucideIcons.eye : LucideIcons.eye_off,
                     ),
                   ),
                 ),

@@ -1,5 +1,6 @@
 import '../../moderation/presentation/server_reports.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:go_router/go_router.dart';
 import '../../workspace/application/workspace_providers.dart';
 
@@ -24,7 +25,7 @@ class GroupReportsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => OutlinedButton.icon(
     onPressed: () => context.push('/groups/g/${group.id}/reports'),
-    icon: const Icon(Icons.flag_outlined),
+    icon: const Icon(LucideIcons.flag),
     label: Text(
       count == 0
           ? 'Reports'

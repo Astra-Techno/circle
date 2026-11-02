@@ -7,20 +7,21 @@ import '../../../core/design.dart';
 import '../application/media_providers.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// The icon drawn for each fictional scene.
 IconData memorySceneIcon(MemoryScene? scene) => switch (scene) {
-  null => Icons.photo_outlined,
-  MemoryScene.sundayLunch => Icons.restaurant_outlined,
-  MemoryScene.hillTrip => Icons.landscape_outlined,
-  MemoryScene.graduationDay => Icons.school_outlined,
-  MemoryScene.birthdayCake => Icons.cake_outlined,
-  MemoryScene.beachWalk => Icons.beach_access_outlined,
-  MemoryScene.officeParty => Icons.celebration_outlined,
-  MemoryScene.cricketMatch => Icons.sports_cricket_outlined,
-  MemoryScene.weddingStage => Icons.local_florist_outlined,
-  MemoryScene.templeFestival => Icons.temple_hindu_outlined,
-  MemoryScene.oldClassroom => Icons.history_edu_outlined,
+  null => LucideIcons.image,
+  MemoryScene.sundayLunch => LucideIcons.utensils,
+  MemoryScene.hillTrip => LucideIcons.mountain,
+  MemoryScene.graduationDay => LucideIcons.graduation_cap,
+  MemoryScene.birthdayCake => LucideIcons.cake,
+  MemoryScene.beachWalk => LucideIcons.umbrella,
+  MemoryScene.officeParty => LucideIcons.party_popper,
+  MemoryScene.cricketMatch => LucideIcons.trophy,
+  MemoryScene.weddingStage => LucideIcons.flower_2,
+  MemoryScene.templeFestival => LucideIcons.landmark,
+  MemoryScene.oldClassroom => LucideIcons.book_open,
 };
 
 /// Fictional preview scenes that have a bundled photo (the owner's
@@ -228,7 +229,7 @@ class _PhotoPagerState extends State<PhotoPager> {
                 IconButton(
                   tooltip: 'Previous photo',
                   onPressed: index == 0 ? null : () => _goTo(index - 1),
-                  icon: const Icon(Icons.chevron_left),
+                  icon: const Icon(LucideIcons.chevron_left),
                 ),
                 Expanded(
                   child: Semantics(
@@ -245,7 +246,7 @@ class _PhotoPagerState extends State<PhotoPager> {
                   onPressed: index == photos.length - 1
                       ? null
                       : () => _goTo(index + 1),
-                  icon: const Icon(Icons.chevron_right),
+                  icon: const Icon(LucideIcons.chevron_right),
                 ),
               ],
             ),

@@ -4,6 +4,7 @@ import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../application/server_moderation.dart';
 import '../../workspace/application/workspace_providers.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Server-only queue: no fictional cases and no reporter account/note fields.
 class ServerReportsScreen extends ConsumerStatefulWidget {
@@ -97,7 +98,7 @@ class _ServerReportsState extends ConsumerState<ServerReportsScreen> {
                 onPressed: _busy
                     ? null
                     : () => ref.invalidate(safetyPageProvider(query)),
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(LucideIcons.refresh_cw),
                 label: const Text('Refresh reports'),
               ),
             ),
@@ -123,10 +124,7 @@ class _ServerReportsState extends ConsumerState<ServerReportsScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       if (item.hidden)
-                        const CirclePill(
-                          'Hidden',
-                          icon: Icons.visibility_off_outlined,
-                        ),
+                        const CirclePill('Hidden', icon: LucideIcons.eye_off),
                       Text(item.summary ?? 'This item is no longer available.'),
                       if (item.reasons.isNotEmpty) Text(item.reasons),
                       const SizedBox(height: Space.sm),

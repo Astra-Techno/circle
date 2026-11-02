@@ -1,5 +1,6 @@
 import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
@@ -11,6 +12,7 @@ import '../application/circle_seen.dart';
 import '../application/home_filter.dart';
 import 'memory_card.dart';
 import 'memory_photos.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 export 'memory_card.dart';
 export 'memory_compose.dart';
@@ -168,15 +170,13 @@ class _HomeHeader extends ConsumerWidget {
                   Expanded(
                     child: Material(
                       color: accents.recessed,
-                      borderRadius: BorderRadius.circular(CircleRadius.button),
+                      borderRadius: BorderRadius.circular(Space.hero),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(
-                          CircleRadius.button,
-                        ),
+                        borderRadius: BorderRadius.circular(Space.hero),
                         onTap: () => context.push(composeLocation(groupId)),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: Space.md,
+                            horizontal: Space.section,
                             vertical: Space.md,
                           ),
                           child: Text(
@@ -192,42 +192,39 @@ class _HomeHeader extends ConsumerWidget {
                 ],
               ),
             ),
-            // Four quick-action tiles.
+            // Four quick-action icons.
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 Space.md,
-                Space.xs,
+                0,
                 Space.md,
                 Space.md,
               ),
               child: Row(
                 children: [
                   Expanded(
-                    child: _QuickActionTile(
-                      icon: Icons.image_outlined,
+                    child: _QuickActionIcon(
+                      icon: LucideIcons.image,
                       label: 'Photo',
                       color: theme.colorScheme.primary,
-                      bgColor: theme.colorScheme.primaryContainer,
                       onTap: () => context.push(composeLocation(groupId)),
                     ),
                   ),
                   const SizedBox(width: Space.sm),
                   Expanded(
-                    child: _QuickActionTile(
-                      icon: Icons.videocam_outlined,
+                    child: _QuickActionIcon(
+                      icon: LucideIcons.video,
                       label: 'Video',
                       color: accents.video,
-                      bgColor: accents.videoContainer,
                       onTap: () => context.push(composeLocation(groupId)),
                     ),
                   ),
                   const SizedBox(width: Space.sm),
                   Expanded(
-                    child: _QuickActionTile(
-                      icon: Icons.event_outlined,
+                    child: _QuickActionIcon(
+                      icon: LucideIcons.calendar,
                       label: 'Event',
                       color: accents.sage,
-                      bgColor: accents.sageContainer,
                       onTap: features.has(CircleFeature.liveEvents)
                           ? () => context.push('/events/new')
                           : null,
@@ -235,11 +232,10 @@ class _HomeHeader extends ConsumerWidget {
                   ),
                   const SizedBox(width: Space.sm),
                   Expanded(
-                    child: _QuickActionTile(
-                      icon: Icons.format_list_bulleted_rounded,
+                    child: _QuickActionIcon(
+                      icon: LucideIcons.list,
                       label: 'Poll',
                       color: accents.amber,
-                      bgColor: accents.amberContainer,
                       onTap: features.has(CircleFeature.livePolls)
                           ? () => context.push('/polls/new')
                           : null,
@@ -260,44 +256,43 @@ class _HomeHeader extends ConsumerWidget {
   }
 }
 
-/// Rounded pastel tile: icon + label.
-class _QuickActionTile extends StatelessWidget {
-  const _QuickActionTile({
+/// Quick action tile with a pastel tinted background and a visible label.
+class _QuickActionIcon extends StatelessWidget {
+  const _QuickActionIcon({
     required this.icon,
     required this.label,
     required this.color,
-    required this.bgColor,
     this.onTap,
   });
   final IconData icon;
   final String label;
-  final Color color, bgColor;
+  final Color color;
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final effectiveColor = onTap != null ? color : color.withValues(alpha: 0.4);
     return Semantics(
       button: true,
       label: label,
-      child: Material(
-        color: Color.alphaBlend(
-          bgColor.withValues(alpha: 0.45),
-          theme.colorScheme.surface,
-        ),
-        borderRadius: BorderRadius.circular(CircleRadius.tile),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(CircleRadius.tile),
-          onTap: onTap,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: effectiveColor.withValues(alpha: 0.045),
+            borderRadius: BorderRadius.circular(CircleRadius.card),
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: Space.xs),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: color, size: Space.xl),
+                Icon(icon, color: effectiveColor, size: Space.section),
                 const SizedBox(height: Space.xs),
                 Text(
                   label,
-                  style: theme.textTheme.labelSmall?.copyWith(
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface,
                     fontWeight: FontWeight.w400,
                   ),
@@ -414,7 +409,7 @@ class EventFeedCard extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.more_horiz, color: accents.caption),
+                    icon: Icon(LucideIcons.ellipsis, color: accents.caption),
                     onPressed: () {},
                   ),
                 ],
@@ -477,7 +472,7 @@ class EventFeedCard extends StatelessWidget {
                                 Row(
                                   children: [
                                     Icon(
-                                      Icons.location_on_outlined,
+                                      LucideIcons.map_pin,
                                       size: 16,
                                       color: accents.caption,
                                     ),
@@ -499,7 +494,7 @@ class EventFeedCard extends StatelessWidget {
                                 Row(
                                   children: [
                                     Icon(
-                                      Icons.access_time,
+                                      LucideIcons.clock,
                                       size: 16,
                                       color: accents.caption,
                                     ),
@@ -547,7 +542,7 @@ class EventFeedCard extends StatelessWidget {
                   if (myRsvp != null)
                     Chip(
                       avatar: Icon(
-                        Icons.check_circle,
+                        LucideIcons.circle_check_big,
                         size: 16,
                         color: colors.primary,
                       ),
@@ -575,22 +570,22 @@ class EventFeedCard extends StatelessWidget {
               children: [
                 IconButton(
                   tooltip: 'Love',
-                  icon: const Icon(Icons.favorite_border_rounded),
+                  icon: const Icon(LucideIcons.heart),
                   onPressed: () {},
                 ),
                 IconButton(
                   tooltip: 'Comment',
-                  icon: const Icon(Icons.chat_bubble_outline_rounded),
+                  icon: const Icon(LucideIcons.message_circle),
                   onPressed: () => context.push('/events/e/${event.id}'),
                 ),
                 IconButton(
                   tooltip: 'Share',
-                  icon: const Icon(Icons.share_outlined),
+                  icon: const Icon(LucideIcons.share_2),
                   onPressed: () {},
                 ),
                 IconButton(
                   tooltip: 'Save',
-                  icon: const Icon(Icons.bookmark_border_rounded),
+                  icon: const Icon(LucideIcons.bookmark),
                   onPressed: () {},
                 ),
               ],
@@ -741,7 +736,10 @@ class _FirstSteps extends StatelessWidget {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: done
-            ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+            ? Icon(
+                LucideIcons.circle_check_big,
+                color: theme.colorScheme.primary,
+              )
             : CircleInitialAvatar(
                 name: '$number',
                 size: CircleAvatarSize.small,
@@ -757,7 +755,7 @@ class _FirstSteps extends StatelessWidget {
         subtitle: Text(message),
         trailing: done || onTap == null
             ? null
-            : const Icon(Icons.chevron_right),
+            : const Icon(LucideIcons.chevron_right),
         onTap: done ? null : onTap,
       ),
     );
@@ -776,7 +774,7 @@ class _FirstSteps extends StatelessWidget {
             onPressed: () => hasGroup
                 ? context.push(composeLocation(groupId))
                 : context.go('/groups/new'),
-            icon: const Icon(Icons.add),
+            icon: const Icon(LucideIcons.plus),
             label: Text(hasGroup ? 'Share a Memory' : 'Create a group'),
           ),
         ),

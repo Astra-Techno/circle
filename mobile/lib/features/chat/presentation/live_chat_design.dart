@@ -6,6 +6,7 @@ import '../../workspace/application/workspace_providers.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../profile/presentation/person_avatar.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// WhatsApp-style chat pieces for live (server) conversations: inbox rows,
 /// a full-screen conversation bar, day chips, tailed bubbles with the time
@@ -40,7 +41,7 @@ class ChatIdentity extends ConsumerWidget {
         ? PersonAvatar(person: person!, name: name, size: size)
         : CircleInitialAvatar(
             name: name,
-            icon: group ? Icons.group_outlined : null,
+            icon: group ? LucideIcons.users : null,
             size: size,
           );
   }
@@ -183,7 +184,7 @@ class ChatInboxRow extends StatelessWidget {
                                 start: Space.xs,
                               ),
                               child: Icon(
-                                Icons.volume_off_outlined,
+                                LucideIcons.volume_off,
                                 size: Space.lg + Space.xs,
                                 color: accents.caption,
                                 semanticLabel: 'Muted',
@@ -195,7 +196,7 @@ class ChatInboxRow extends StatelessWidget {
                                 start: Space.xs,
                               ),
                               child: Icon(
-                                Icons.push_pin_outlined,
+                                LucideIcons.pin,
                                 size: Space.lg + Space.xs,
                                 color: accents.caption,
                                 semanticLabel: 'Pinned',
@@ -292,7 +293,7 @@ class ChatTopBar extends StatelessWidget {
               IconButton(
                 tooltip: 'Conversation options',
                 onPressed: onOptions,
-                icon: const Icon(Icons.more_vert),
+                icon: const Icon(LucideIcons.ellipsis_vertical),
               ),
             ],
           ),

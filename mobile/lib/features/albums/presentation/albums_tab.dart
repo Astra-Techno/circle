@@ -6,6 +6,7 @@ import '../../../core/design.dart';
 import '../../memories/presentation/memory_photos.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/album_providers.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Where an album lives: inside its group's space.
 String albumLocation(String groupId, String albumId) =>
@@ -32,7 +33,7 @@ class AlbumsTab extends ConsumerWidget {
           alignment: AlignmentDirectional.centerStart,
           child: OutlinedButton.icon(
             onPressed: () => showNewAlbumSheet(context, group),
-            icon: const Icon(Icons.add_photo_alternate_outlined),
+            icon: const Icon(LucideIcons.image_plus),
             label: const Text('New album'),
           ),
         ),
@@ -106,7 +107,7 @@ class AlbumTile extends StatelessWidget {
               child: CircleSceneTile(
                 label: cover?.photo.label ?? 'No photos yet',
                 icon: cover == null
-                    ? Icons.photo_library_outlined
+                    ? LucideIcons.images
                     : memorySceneIcon(cover.photo.scene),
                 semanticsLabel: album.title,
               ),
@@ -127,7 +128,7 @@ class AlbumTile extends StatelessWidget {
             if (album.isEventAlbum)
               const Padding(
                 padding: EdgeInsets.only(top: Space.xs),
-                child: CirclePill('Event', icon: Icons.event_outlined),
+                child: CirclePill('Event', icon: LucideIcons.calendar),
               ),
           ],
         ),
@@ -284,7 +285,7 @@ class _AlbumFormSheetState extends ConsumerState<AlbumFormSheet> {
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton.icon(
                   onPressed: _pick,
-                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  icon: const Icon(LucideIcons.image_plus),
                   label: Text(
                     _scenes.isEmpty
                         ? 'Choose photos (optional)'

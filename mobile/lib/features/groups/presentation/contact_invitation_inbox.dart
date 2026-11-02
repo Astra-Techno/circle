@@ -1,5 +1,6 @@
 import '../../profile/application/server_blocks.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
@@ -196,7 +197,7 @@ class _ContactInvitationInboxState
                             .has(CircleFeature.blocking))
                       TextButton.icon(
                         onPressed: _busy ? null : () => _blockInviter(item),
-                        icon: const Icon(Icons.block),
+                        icon: const Icon(LucideIcons.ban),
                         label: const Text('Block inviter'),
                       ),
                     if (item.status == 'pending') ...[

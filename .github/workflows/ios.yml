@@ -47,6 +47,10 @@ jobs:
           flutter test test/design_system_guard_test.dart test/push_session_test.dart
       - name: Compile release for iPhone (not installable)
         run: |
+          # Xcode release builds require a team even with --no-codesign.
+          # Inject a placeholder so the unsigned validation compiles.
+          sed -i '' '/CODE_SIGN_STYLE = Automatic;/a\
+                DEVELOPMENT_TEAM = XXXXXXXXXX;' ios/Runner.xcodeproj/project.pbxproj
           flutter build ios --release --no-codesign \
             --dart-define=CIRCLE_API_BASE_URL=https://circle.cloudkart24.com/api/v1 \
             --dart-define=CIRCLE_PUSH_ENABLED=false

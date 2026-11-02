@@ -2,6 +2,7 @@ import '../core/form_exit_guard.dart';
 import '../features/polls/presentation/live_polls.dart';
 import '../features/profile/presentation/account_security_screens.dart';
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/api/api_providers.dart';
@@ -38,6 +39,7 @@ import '../features/profile/presentation/person_profile.dart';
 import '../features/search/presentation/search_screen.dart';
 import '../features/workspace/application/workspace_providers.dart';
 import '../features/workspace/presentation/feature_gate.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 
 const _branchRoots = ['/home', '/chats', '/groups', '/events', '/you'];
 final _idSegment = RegExp(r'^[A-Za-z0-9_-]+$');
@@ -261,7 +263,7 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
         path: '/compose',
         builder: (context, state) => Scaffold(
           appBar: AppBar(
-            title: const Text('New Memory'),
+            title: const Text('Create Memory'),
             leading: BackButton(
               onPressed: () =>
                   context.canPop() ? context.pop() : context.go('/home'),
@@ -825,9 +827,9 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  Space.lg,
+                  Space.md,
                   0,
-                  Space.lg,
+                  Space.md,
                   Space.sm,
                 ),
                 child: DecoratedBox(
@@ -835,53 +837,68 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   child: MediaQuery.withClampedTextScaling(
                     maxScaleFactor: navigationMaxTextScale,
                     child: SizedBox(
-                      height: 64,
+                      height: 72,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _DockTab(
-                            icon: Icons.home_outlined,
-                            activeIcon: Icons.home_rounded,
+                            icon: LucideIcons.house,
+                            activeIcon: LucideIcons.house,
                             label: 'Home',
                             selected: index == 0,
                             onTap: () => shell.goBranch(0),
                           ),
                           _DockTab(
-                            icon: Icons.groups_outlined,
-                            activeIcon: Icons.groups_rounded,
+                            icon: LucideIcons.users,
+                            activeIcon: LucideIcons.users,
                             label: 'Circles',
                             selected: index == 2,
                             onTap: () => shell.goBranch(2),
                           ),
                           SizedBox(
-                            width: 56,
-                            height: 56,
-                            child: Material(
-                              color: theme.colorScheme.primary,
-                              shape: const CircleBorder(),
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: () =>
-                                    context.push(composeLocation(filter)),
-                                child: Icon(
-                                  Icons.add,
-                                  color: theme.colorScheme.onPrimary,
-                                  size: 28,
-                                  semanticLabel: 'Create',
+                            width: 60,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: Space.large,
+                                  height: Space.large,
+                                  child: Material(
+                                    color: theme.colorScheme.primary,
+                                    shape: const CircleBorder(),
+                                    child: InkWell(
+                                      customBorder: const CircleBorder(),
+                                      onTap: () =>
+                                          context.push(composeLocation(filter)),
+                                      child: Icon(
+                                        LucideIcons.plus,
+                                        color: theme.colorScheme.onPrimary,
+                                        size: Space.section,
+                                        semanticLabel: 'Create',
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                Text(
+                                  'Create',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: CircleAccents.of(context).caption,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           _DockTab(
-                            icon: Icons.event_outlined,
-                            activeIcon: Icons.event,
+                            icon: LucideIcons.calendar,
+                            activeIcon: LucideIcons.calendar,
                             label: 'Events',
                             selected: index == 3,
                             onTap: () => shell.goBranch(3),
                           ),
                           _DockTab(
-                            icon: Icons.person_outline,
-                            activeIcon: Icons.person_rounded,
+                            icon: LucideIcons.user,
+                            activeIcon: LucideIcons.user,
                             label: 'Profile',
                             selected: index == 4,
                             onTap: () => shell.goBranch(4),
@@ -936,13 +953,16 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
 
     // Root tab pages: no AppBar — each screen draws its own scroll-aware
     // SliverAppBar. The shell passes header data via CircleTabHeaderData.
-    final logo = index == 0
-        ? Image.asset(
-            CircleIdentity.artwork,
-            width: Space.large,
-            height: Space.large,
-            fit: BoxFit.contain,
-            semanticLabel: CircleIdentity.name,
+    final logo = (index == 0 || index == 2)
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(CircleRadius.small),
+            child: Image.asset(
+              CircleIdentity.artwork,
+              width: Space.large,
+              height: Space.large,
+              fit: BoxFit.cover,
+              semanticLabel: CircleIdentity.name,
+            ),
           )
         : null;
     return Scaffold(
@@ -975,12 +995,33 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
               logo: logo,
               actions: [
                 const SearchButton(),
-                const ActivityBell(),
-                if (features.has(CircleFeature.liveChat))
-                  IconButton(
-                    tooltip: 'Chats',
-                    icon: const Icon(Icons.chat_bubble_outline),
-                    onPressed: () => shell.goBranch(1),
+                if (index != 2) ...[
+                  const ActivityBell(),
+                  if (features.has(CircleFeature.liveChat))
+                    IconButton(
+                      tooltip: 'Chats',
+                      icon: const Icon(LucideIcons.message_circle),
+                      onPressed: () => shell.goBranch(1),
+                    ),
+                ],
+                if (index == 2)
+                  SizedBox(
+                    width: Space.large,
+                    height: Space.large,
+                    child: Material(
+                      color: theme.colorScheme.primary,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => context.push('/groups/new'),
+                        child: Icon(
+                          LucideIcons.plus,
+                          color: theme.colorScheme.onPrimary,
+                          size: Space.section,
+                          semanticLabel: 'Create group',
+                        ),
+                      ),
+                    ),
                   ),
               ],
               fab: fab,
@@ -1021,13 +1062,27 @@ class _DockTab extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: SizedBox(
-          width: 56,
-          height: 56,
+          width: 60,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(selected ? activeIcon : icon, color: color, size: 24),
-              const SizedBox(height: 2),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: selected ? 52 : Space.large,
+                height: Space.section,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(CircleRadius.tile),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  selected ? activeIcon : icon,
+                  color: color,
+                  size: Space.section,
+                ),
+              ),
               Text(
                 label,
                 style: theme.textTheme.labelSmall?.copyWith(
