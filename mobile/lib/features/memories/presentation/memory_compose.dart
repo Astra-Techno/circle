@@ -333,30 +333,24 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
           ),
           const SizedBox(height: Space.md),
 
-          // Caption text area in a rounded card.
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(CircleRadius.card),
-              border: Border.all(color: accents.hairline),
-            ),
-            child: TextField(
-              controller: _text,
-              readOnly: _resumeDraft != null,
-              minLines: 3,
-              maxLines: 8,
-              maxLength: MemoryRules.maxText,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                hintText: 'Share a memory with your Circle...',
-                hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                  color: accents.caption,
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(Space.md),
-                counterText: '',
-                errorText: _textError,
-                errorMaxLines: 3,
+          // Caption text area — borderless, matches reference.
+          TextField(
+            controller: _text,
+            readOnly: _resumeDraft != null,
+            minLines: 2,
+            maxLines: 6,
+            maxLength: MemoryRules.maxText,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              hintText: 'Share a memory with your Circle...',
+              hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                color: accents.caption,
               ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+              counterText: '',
+              errorText: _textError,
+              errorMaxLines: 3,
             ),
           ),
           const SizedBox(height: Space.md),
@@ -839,7 +833,7 @@ class _CompactPhotoRow extends StatelessWidget {
   }
 }
 
-/// A single action row: icon + label + chevron in a bordered container.
+/// A single action row: icon + label + chevron, separated by a thin divider.
 class _ActionRow extends StatelessWidget {
   const _ActionRow({required this.icon, required this.label, this.onTap});
   final IconData icon;
@@ -850,41 +844,29 @@ class _ActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Space.sm),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(CircleRadius.card),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(CircleRadius.card),
+    return Column(
+      children: [
+        InkWell(
           onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Space.md,
-              vertical: Space.md,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(CircleRadius.card),
-              border: Border.all(color: accents.hairline),
-            ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: Space.md),
             child: Row(
               children: [
-                Icon(icon, size: Space.section, color: accents.caption),
+                Icon(icon, size: 22, color: theme.colorScheme.onSurface),
                 const SizedBox(width: Space.md),
                 Expanded(
                   child: Text(
                     label,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: theme.textTheme.bodyLarge,
                   ),
                 ),
-                Icon(LucideIcons.chevron_right, color: accents.caption),
+                Icon(LucideIcons.chevron_right, size: 20, color: accents.caption),
               ],
             ),
           ),
         ),
-      ),
+        Divider(height: 1, color: accents.hairline),
+      ],
     );
   }
 }
