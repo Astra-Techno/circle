@@ -5,6 +5,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'native_push.dart';
 
+/// Only fixed, reviewed codes may reach the notification settings UI.
+class PushTokenFailure implements Exception {
+  const PushTokenFailure(this.code);
+  final String code;
+}
+
+String safePushTokenCode(String code) => switch (code) {
+  'apns-token-not-set' => 'APNS_TOKEN_MISSING',
+  'network-request-failed' => 'FCM_NETWORK',
+  'service-not-available' => 'FCM_SERVICE_UNAVAILABLE',
+  'invalid-argument' => 'FCM_CONFIGURATION',
+  'missing-app-config-values' => 'FCM_CONFIGURATION',
+  _ => 'FCM_TOKEN_ERROR',
+};
+
 abstract interface class FcmGateway {
   bool get supported;
   Future<void> initialize();
@@ -55,15 +70,22 @@ class FirebaseFcmGateway implements FcmGateway {
   Future<void> bindScope(String? scope) => const NativePushBridge().bind(scope);
   @override
   Future<String?> token() async {
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      // APNs registration can complete after the permission dialog closes.
-      for (var attempt = 0; attempt < 10; attempt++) {
-        if (await _sdk.getAPNSToken() != null) return _sdk.getToken();
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+    try {
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        for (var attempt = 0; attempt < 10; attempt++) {
+          if (await _sdk.getAPNSToken() != null) {
+            final value = await _sdk.getToken();
+            if (value == null) throw const PushTokenFailure('FCM_TOKEN_EMPTY');
+            return value;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+        }
+        throw const PushTokenFailure('APNS_TOKEN_MISSING');
       }
-      return null;
+      return await _sdk.getToken();
+    } on FirebaseException catch (error) {
+      throw PushTokenFailure(safePushTokenCode(error.code));
     }
-    return _sdk.getToken();
   }
 
   @override

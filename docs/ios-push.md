@@ -23,3 +23,7 @@ Open GitHub repository Settings → Environments → ios-testflight → IOS_PROF
 ## Delivery acceptance notes
 
 There is no notification sound/banner before the user grants OS permission. Android and iOS device preference screens remain independent from server global/category switches. To revoke, use CIRCLE notification settings or iOS Settings → Notifications → CIRCLE. First-launch prompting does not override a previous OS denial. With iOS notifications enabled, Firebase's APNs token can arrive asynchronously; registration waits briefly, then exposes a safe retry if unavailable.
+
+## Token diagnostics (2 November 2026)
+
+Connection help retains safe token-acquisition codes after a failed connection. APNS_TOKEN_MISSING means Apple registration has not returned a token within the current five-second wait. FCM_TOKEN_EMPTY means Firebase returned no token; FCM_NETWORK, FCM_SERVICE_UNAVAILABLE and FCM_CONFIGURATION classify reviewed SDK codes; FCM_TOKEN_ERROR hides other SDK details. These identify the failure stage, not a confirmed fix. Install the diagnostic TestFlight build, tap Enable notifications, then read Connection help. Never share tokens, credentials or raw SDK messages.

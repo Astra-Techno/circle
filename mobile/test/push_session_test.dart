@@ -56,6 +56,15 @@ PushBinding binding(String account, FakeHandler handler) {
 }
 
 void main() {
+  test('token diagnostics use fixed codes and never expose SDK details', () {
+    expect(safePushTokenCode('apns-token-not-set'), 'APNS_TOKEN_MISSING');
+    expect(safePushTokenCode('network-request-failed'), 'FCM_NETWORK');
+    expect(
+      safePushTokenCode('private token or SDK details'),
+      'FCM_TOKEN_ERROR',
+    );
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
   test(
     'iOS registration identifies platform without changing session scope',

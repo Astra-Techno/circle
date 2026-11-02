@@ -77,6 +77,7 @@ class PushSessionCoordinator {
   String? _registeredToken;
   PushConnectionProblem _problem = PushConnectionProblem.disconnected;
   int? _registrationStatus;
+  String? _tokenDiagnostic;
   final connectionRevision = ValueNotifier<int>(0);
   void _changed() {
     scheduleMicrotask(() {
@@ -87,6 +88,9 @@ class PushSessionCoordinator {
   String get connectionExplanation {
     final problem = connectionProblem;
     final status = _registrationStatus;
+    if (problem == PushConnectionProblem.token && _tokenDiagnostic != null) {
+      return '${problem.message} (Code: $_tokenDiagnostic)';
+    }
     return problem == PushConnectionProblem.registration && status != null
         ? '${problem.message} (HTTP $status)'
         : problem.message;
@@ -132,6 +136,7 @@ class PushSessionCoordinator {
     if (_disposed || !enabled || !gateway.supported) return Future.value(false);
     if (_starting != null) return _starting!;
     final epoch = _epoch;
+    _tokenDiagnostic = null;
     final future = _queue(() async {
       PushBinding? binding;
       var stage = PushConnectionProblem.session;
@@ -233,8 +238,13 @@ class PushSessionCoordinator {
         final initial = await gateway.initialMessage();
         if (initial != null) _receive(initial, binding, epoch, PushAction.open);
         return await _valid(binding, epoch);
-      } catch (_) {
+      } catch (error) {
         if (epoch == _epoch) {
+          if (stage == PushConnectionProblem.token) {
+            _tokenDiagnostic = error is PushTokenFailure
+                ? error.code
+                : 'FCM_TOKEN_ERROR';
+          }
           _problem = stage;
           unawaited(stop(clearProblem: false));
         }
@@ -399,6 +409,7 @@ class PushSessionCoordinator {
     if (clearProblem) {
       _problem = PushConnectionProblem.disconnected;
       _registrationStatus = null;
+      _tokenDiagnostic = null;
     }
     _epoch++;
     unawaited(gateway.bindScope(null).catchError((Object _) {}));
