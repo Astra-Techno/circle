@@ -863,32 +863,13 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                                   onTap: () => shell.goBranch(2),
                                 ),
                               ),
-                              SizedBox(
-                                width: 60,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: Space.large,
-                                      height: Space.large,
-                                      child: Material(
-                                        color: theme.colorScheme.primary,
-                                        shape: const CircleBorder(),
-                                        child: InkWell(
-                                          customBorder: const CircleBorder(),
-                                          onTap: () => context.push(
-                                            composeLocation(filter),
-                                          ),
-                                          child: Icon(
-                                            LucideIcons.plus,
-                                            color: theme.colorScheme.onPrimary,
-                                            size: Space.section,
-                                            semanticLabel: 'Create Memory',
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                              Expanded(
+                                child: _DockTab(
+                                  icon: LucideIcons.message_circle,
+                                  activeIcon: LucideIcons.message_circle,
+                                  label: 'Chats',
+                                  selected: index == 1,
+                                  onTap: () => shell.goBranch(1),
                                 ),
                               ),
                               Expanded(
