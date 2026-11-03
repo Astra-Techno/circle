@@ -26,6 +26,7 @@ final class FeatureNotifications
         if($c['kind']==='group'){$g=(int)$c['group_id'];$users=Database::query("SELECT user_id FROM group_members WHERE group_id=:g AND status='active'",['g'=>$g]);}
         else {$shared=ChatController::shared((int)$c['pair_low'],(int)$c['pair_high']);if($shared===null)return;$g=(int)$shared['group_id'];$users=[['user_id'=>(int)$c['pair_low']],['user_id'=>(int)$c['pair_high']]];}
         foreach($users as $user){$uid=(int)$user['user_id'];if($uid===$actor)continue;self::enqueue('chat.message:'.$message,'chat.message',$uid,$g,$message,null,null,gmdate('Y-m-d H:i:s'),gmdate('Y-m-d H:i:s',time()+86400));}
+        NotificationDispatcher::scheduleFlush();
     }
     public static function event(int $event,string $kind,int $actor):void
     {
@@ -34,6 +35,7 @@ final class FeatureNotifications
         $reminder=$kind==='event.reminder';if($reminder&&($e['status']!=='active'||$e['start_at']<=gmdate('Y-m-d H:i:s')))return;
         $at=$reminder?max(gmdate('Y-m-d H:i:s'),gmdate('Y-m-d H:i:s',(int)strtotime((string)$e['start_at'].' UTC')-3600)):gmdate('Y-m-d H:i:s');$expires=$reminder?(string)$e['start_at']:gmdate('Y-m-d H:i:s',time()+86400);$users=Database::query("SELECT user_id FROM group_members WHERE group_id=:g AND status='active'",['g'=>$e['group_id']]);$key=$kind.':'.$event.':'.$e['version'].($kind==='event.rsvp'?':'.bin2hex(random_bytes(8)):'');
         foreach($users as $u){$uid=(int)$u['user_id'];if((!$reminder&&$uid===$actor)||($kind==='event.rsvp'&&$uid!==(int)$e['created_by']))continue;self::enqueue($key,$kind,$uid,(int)$e['group_id'],null,$event,(int)$e['version'],$at,$expires);}
+        NotificationDispatcher::scheduleFlush();
     }
     private static function enqueue(string $key,string $kind,int $user,int $group,?int $message,?int $event,?int $version,string $at,string $expires):void
     {

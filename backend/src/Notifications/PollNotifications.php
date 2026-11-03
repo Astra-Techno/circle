@@ -20,6 +20,7 @@ final class PollNotifications
             if($kind==='poll.closed'&&$uid!==(int)$p['created_by']&&Database::queryOne('SELECT id FROM poll_votes WHERE poll_id=:p AND user_id=:u LIMIT 1 FOR UPDATE',['p'=>$id,'u'=>$uid])===null)continue;
             Database::execute("INSERT INTO notification_outbox(event_key,kind,user_id,device_id,session_id,group_id,poll_id,available_at,expires_at) SELECT :key,:kind,dt.user_id,dt.id,dt.session_id,:g,:p,UTC_TIMESTAMP(),DATE_ADD(UTC_TIMESTAMP(),INTERVAL 1 DAY) FROM device_tokens dt WHERE dt.user_id=:u AND dt.platform IN ('android','ios') AND dt.session_id IS NOT NULL AND EXISTS(SELECT 1 FROM refresh_tokens rt WHERE rt.user_id=dt.user_id AND rt.session_id=dt.session_id AND rt.revoked_at IS NULL AND rt.expires_at>UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE event_key=notification_outbox.event_key",['key'=>$kind.':'.$id,'kind'=>$kind,'g'=>$p['group_id'],'p'=>$id,'u'=>$uid]);
         }
+        NotificationDispatcher::scheduleFlush();
     }
     public static function closed(int $id,int $actor=0):void
     {

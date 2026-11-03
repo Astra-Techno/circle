@@ -14,11 +14,13 @@ final class NotificationOutbox
     public static function memoryCreated(int $memoryId): void
     {
         self::capture($memoryId, null);
+        NotificationDispatcher::scheduleFlush();
     }
 
     public static function commentCreated(int $memoryId, int $commentId): void
     {
         self::capture($memoryId, $commentId);
+        NotificationDispatcher::scheduleFlush();
     }
 
     /** Invitation consent precedes membership; never reuse member-only capture. */
@@ -43,6 +45,7 @@ final class NotificationOutbox
              ON DUPLICATE KEY UPDATE event_key = notification_outbox.event_key",
             ['key' => 'group.invitation:' . $invitationId, 'id' => $invitationId]
         );
+        NotificationDispatcher::scheduleFlush();
     }
 
     /** One generic admin alert per target/device; no reporter or reported content in payload. */
@@ -59,6 +62,7 @@ final class NotificationOutbox
             AND JSON_UNQUOTE(JSON_EXTRACT(np.categories,'$.groups'))='true'
             AND EXISTS(SELECT 1 FROM refresh_tokens rt WHERE rt.user_id=dt.user_id AND rt.session_id=dt.session_id AND rt.revoked_at IS NULL AND rt.expires_at>UTC_TIMESTAMP())
             ON DUPLICATE KEY UPDATE event_key=notification_outbox.event_key", ['key'=>'group.report:'.$targetId,'target'=>$targetId,'gid'=>$groupId,'actor'=>$actor]);
+        NotificationDispatcher::scheduleFlush();
     }
 
     private static function capture(int $memoryId, ?int $commentId): void

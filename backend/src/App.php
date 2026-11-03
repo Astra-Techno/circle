@@ -255,6 +255,11 @@ final class App
     {
         Response::reset();
 
+        // Flush pending push notifications after every response, removing
+        // the need for a cron job.  The shutdown function runs after exit,
+        // so the client already has the HTTP response.
+        Notifications\NotificationDispatcher::scheduleFlush();
+
         try {
             // Refuse to serve anything with an unsafe signing secret.
             JWT::secret();
