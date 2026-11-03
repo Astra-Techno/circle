@@ -166,20 +166,7 @@ class CircleMemoryCard extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: memory.author,
-                                style: theme.textTheme.titleMedium,
-                              ),
-                              TextSpan(
-                                text: ' shared a memory',
-                                style: theme.textTheme.bodyLarge,
-                              ),
-                            ],
-                          ),
-                        ),
+                        Text(memory.author, style: theme.textTheme.titleMedium),
                         Text(
                           [
                             audience ?? group.name,
@@ -287,23 +274,44 @@ class CircleMemoryCard extends ConsumerWidget {
               ),
             if (reactions.total > 0 || comments > 0)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Space.md),
-                child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
+                padding: const EdgeInsets.fromLTRB(
+                  Space.section,
+                  Space.sm,
+                  Space.section,
+                  0,
+                ),
+                child: Row(
                   children: [
                     if (reactions.total > 0)
-                      TextButton(
-                        onPressed: () =>
-                            showReactionSummary(context, reactions),
+                      Expanded(
                         child: Tooltip(
                           message: 'Show reactions for $about',
-                          child: Text('${reactions.total} reactions'),
+                          child: InkWell(
+                            onTap: () =>
+                                showReactionSummary(context, reactions),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 48),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: _ReactionSummaryRow(
+                                  reactions: reactions,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
+                    if (reactions.total == 0) const Spacer(),
                     if (comments > 0)
-                      TextButton(
-                        onPressed: openDetail,
-                        child: Text('$comments comments'),
+                      InkWell(
+                        onTap: openDetail,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text('$comments comments', style: caption),
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -402,6 +410,37 @@ class _LoveButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Compact inline reaction summary: top emoji icons + total count.
+class _ReactionSummaryRow extends StatelessWidget {
+  const _ReactionSummaryRow({required this.reactions});
+  final MemoryReactions reactions;
+  @override
+  Widget build(BuildContext context) {
+    final caption = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: CircleAccents.of(context).caption);
+    // Show up to 3 distinct emoji, sorted by count descending.
+    final sorted = reactions.others.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final topEmoji = sorted.take(3).map((e) => e.key).toList();
+    if (reactions.mine != null && !topEmoji.contains(reactions.mine)) {
+      if (topEmoji.length >= 3) topEmoji.removeLast();
+      topEmoji.insert(0, reactions.mine!);
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final emoji in topEmoji)
+          Padding(
+            padding: const EdgeInsets.only(right: Space.xs),
+            child: Text(emoji, style: Theme.of(context).textTheme.bodyLarge),
+          ),
+        Text('${reactions.total}', style: caption),
+      ],
     );
   }
 }

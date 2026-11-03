@@ -164,7 +164,16 @@ class _HomeHeader extends ConsumerWidget {
                   const SizedBox(width: Space.sm),
                   Expanded(
                     child: _QuickActionIcon(
-                      icon: LucideIcons.calendar,
+                      icon: LucideIcons.video,
+                      label: 'Video',
+                      color: accents.heart,
+                      onTap: null, // V1: video not yet supported
+                    ),
+                  ),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: _QuickActionIcon(
+                      icon: LucideIcons.calendar_days,
                       label: 'Event',
                       color: accents.sage,
                       onTap: features.has(CircleFeature.liveEvents)
@@ -175,7 +184,7 @@ class _HomeHeader extends ConsumerWidget {
                   const SizedBox(width: Space.sm),
                   Expanded(
                     child: _QuickActionIcon(
-                      icon: LucideIcons.list,
+                      icon: LucideIcons.list_todo,
                       label: 'Poll',
                       color: accents.amber,
                       onTap: features.has(CircleFeature.livePolls)
@@ -222,21 +231,20 @@ class _QuickActionIcon extends StatelessWidget {
         onTap: onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: effectiveColor.withValues(alpha: 0.045),
+            color: effectiveColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(CircleRadius.card),
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: Space.xs),
+          child: SizedBox(
+            height: 72,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(icon, color: effectiveColor, size: Space.section),
                 const SizedBox(height: Space.xs),
                 Text(
                   label,
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurface,
-                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],

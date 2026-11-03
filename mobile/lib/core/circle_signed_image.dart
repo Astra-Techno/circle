@@ -109,7 +109,7 @@ class CirclePhotoFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(
-      large ? CircleRadius.card : CircleRadius.tile,
+      large ? CircleRadius.card : CircleRadius.photo,
     );
     return Semantics(
       container: true,

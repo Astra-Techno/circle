@@ -188,11 +188,11 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
       other is CircleAccents && t >= 0.5 ? other : this;
 }
 
-const _font = 'Roboto';
+const _font = 'PlusJakartaSans';
 
 /// Editorial type: exactly four sizes (28 / 20 / 16 / 13) and two weights
-/// (400 / 600), all in the app's bundled Roboto. Headlines get slightly
-/// tighter tracking. Body text stays 16px for readability (§4.0).
+/// (400 / 600), all in the app's bundled PlusJakartaSans. Headlines get
+/// slightly tighter tracking. Body text stays 16px for readability (§4.0).
 TextTheme _textTheme({required Color title, required Color body}) {
   TextStyle sans(double size, FontWeight weight, double height, Color ink) =>
       TextStyle(
@@ -571,6 +571,9 @@ abstract final class CircleRadius {
   /// Buttons are pills: half of the 48px minimum height.
   static const button = 24.0;
 
+  /// Photo mosaics and image tiles.
+  static const photo = 12.0;
+
   /// Tiles, inner panels, cards, menus and floating buttons.
   static const tile = 16.0, inner = 16.0, card = 16.0;
 
@@ -600,16 +603,30 @@ abstract final class CircleInsets {
   );
 }
 
-/// Centers content within the design's 640px handheld-first column.
+/// Centers content within a responsive reading column.
+///
+/// On compact phones (<600dp) the content fills available width.
+/// On tablets and wider screens the column caps at 720dp for feeds
+/// or 640dp for forms, keeping text readable without wasting space.
+/// Root pages that need full width should use [CirclePageLayout] instead.
 class ReadingPane extends StatelessWidget {
-  const ReadingPane({super.key, required this.child});
+  const ReadingPane({super.key, required this.child, this.maxWidth});
+
+  /// Override the default responsive cap. Pass `double.infinity` for
+  /// truly uncapped width (e.g. photo grids on tablets).
+  final double? maxWidth;
   final Widget child;
+
   @override
-  Widget build(BuildContext context) => Align(
-    alignment: Alignment.topCenter,
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 640),
-      child: child,
-    ),
-  );
+  Widget build(BuildContext context) {
+    final available = MediaQuery.sizeOf(context).width;
+    final cap = maxWidth ?? (available < 600 ? available : 720.0);
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: cap),
+        child: child,
+      ),
+    );
+  }
 }

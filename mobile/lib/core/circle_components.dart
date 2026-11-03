@@ -147,9 +147,8 @@ class CircleSceneTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final radius = BorderRadius.circular(
-      large ? CircleRadius.card : CircleRadius.tile,
-    );
+    final r = large ? CircleRadius.card : CircleRadius.photo;
+    final radius = BorderRadius.circular(r);
     return Semantics(
       container: true,
       image: true,
@@ -159,10 +158,7 @@ class CircleSceneTile extends StatelessWidget {
       onLongPress: onLongPress,
       excludeSemantics: true,
       child: DecoratedBox(
-        decoration: CircleDepth.panel(
-          context,
-          radius: large ? CircleRadius.card : CircleRadius.tile,
-        ),
+        decoration: CircleDepth.panel(context, radius: r),
         child: Material(
           color: Colors.transparent,
           borderRadius: radius,

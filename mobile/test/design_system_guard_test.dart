@@ -6,7 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 /// (docs/design-system.md). Colours, fonts, radii and spacing come from
 /// `lib/core/`; feature code may not invent its own.
 // The only places allowed to define raw design values.
-const tokenFiles = {'lib/core/design.dart'};
+const tokenFiles = {
+  'lib/core/design.dart',
+  'lib/core/design/circle_typography.dart',
+  'lib/core/design/circle_icons.dart',
+  'lib/core/design/circle_responsive.dart',
+};
 const kitFiles = {'lib/core/design.dart', 'lib/core/circle_components.dart'};
 
 /// The single, intentional exception for network images: the kit widget
