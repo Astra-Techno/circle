@@ -9,6 +9,7 @@ import '../core/api/api_providers.dart';
 import '../core/circle_brand.dart';
 import '../core/circle_components.dart';
 import '../core/design.dart';
+import '../core/design/circle_typography.dart';
 import '../core/invite_entry.dart';
 import '../core/theme_controller.dart';
 import '../core/two_pane.dart';
@@ -707,10 +708,6 @@ class CircleExperience extends ConsumerWidget {
   );
 }
 
-/// Navigation labels stay readable but stop growing beyond this scale, so
-/// the bar never takes over the screen at very large text sizes.
-const navigationMaxTextScale = 1.3;
-
 class CircleAppShell extends ConsumerStatefulWidget {
   const CircleAppShell({
     super.key,
@@ -833,17 +830,18 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   top: false,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
-                      Space.md,
+                      Space.section + Space.xs,
                       0,
-                      Space.md,
-                      Space.sm,
+                      Space.section + Space.xs,
+                      0,
                     ),
                     child: DecoratedBox(
                       decoration: CircleDepth.dock(context),
-                      child: MediaQuery.withClampedTextScaling(
-                        maxScaleFactor: navigationMaxTextScale,
-                        child: SizedBox(
-                          height: CircleLayout.homeDockHeight,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minHeight: CircleLayout.homeDockHeight,
+                        ),
+                        child: IntrinsicHeight(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
@@ -1071,19 +1069,21 @@ class _DockTab extends StatelessWidget {
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
-        child: SizedBox(
-          width: 60,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: Space.large,
+            minWidth: Space.large,
+          ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                width: selected ? 52 : Space.large,
+                width: Space.large,
                 height: Space.section,
                 decoration: BoxDecoration(
-                  color: selected
-                      ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                      : Colors.transparent,
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(CircleRadius.tile),
                 ),
                 alignment: Alignment.center,
@@ -1095,9 +1095,16 @@ class _DockTab extends StatelessWidget {
               ),
               Text(
                 label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: color,
+                style: CircleTextStyles.navLabel(color).copyWith(
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+              Container(
+                width: Space.sm + Space.xs,
+                height: Space.xs,
+                decoration: BoxDecoration(
+                  color: selected ? color : Colors.transparent,
+                  borderRadius: BorderRadius.circular(Space.xs),
                 ),
               ),
             ],

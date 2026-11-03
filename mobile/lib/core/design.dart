@@ -10,7 +10,7 @@ abstract final class CircleLayout {
   static const homeHeaderHeight = 56.0;
   static const homeLogoSize = 40.0;
   static const homeActionMinHeight = 48.0;
-  static const homeDockHeight = 64.0;
+  static const homeDockHeight = 52.0;
   static const homeMosaicAspect = 2.8;
   static const homeGridBreakpoint = 840.0;
   static const homeComposerMaxWidth = 720.0;

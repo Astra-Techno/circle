@@ -48,6 +48,25 @@ abstract final class CircleTextStyles {
     color: ink,
   );
 
+  /// Compact Home card copy; scoped here rather than changing form typography.
+  static TextStyle homeBody(Color ink) => TextStyle(
+    fontFamily: _font,
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 18 / 12,
+    letterSpacing: 0,
+    color: ink,
+  );
+
+  static TextStyle homeAuthor(Color ink) => TextStyle(
+    fontFamily: _font,
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    height: 20 / 14,
+    letterSpacing: 0,
+    color: ink,
+  );
+
   /// Body text: 15sp / 400 / 0.
   static TextStyle body(Color ink) => TextStyle(
     fontFamily: _font,
