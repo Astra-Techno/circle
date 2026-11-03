@@ -1,14 +1,123 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:mobile/features/memories/presentation/memory_card.dart';
+import 'package:mobile/features/memories/presentation/memory_photos.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/circle_harness.dart';
+import 'support/reference_home_repository.dart';
 import 'package:mobile/core/circle_brand.dart';
 
 void main() {
+  testWidgets('normalized Home visual fixture', (tester) async {
+    tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+    if (Platform.environment['CIRCLE_REVIEW_BOLD'] == 'true') {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(boldText: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+    }
+
+    addTearDown(tester.view.resetPadding);
+    await openCircle(
+      tester,
+      size: const Size(393, 852),
+      now: ReferenceHomeRepository.clock,
+      repository: ReferenceHomeRepository(),
+      scale: double.parse(Platform.environment['CIRCLE_REVIEW_SCALE'] ?? '1'),
+    );
+    await tester.runAsync(() async {
+      final context = tester.element(find.byType(MaterialApp));
+      for (final image in tester.widgetList<Image>(find.byType(Image))) {
+        await precacheImage(image.image, context);
+      }
+    });
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final phase = Platform.environment['CIRCLE_COMPONENT_CAPTURE'];
+    if (phase != null) {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byType(RepaintBoundary).first,
+      );
+      final geometry = <String, Object>{};
+      void measure(String name, Finder finder) {
+        final r = tester.getRect(finder);
+        geometry[name] = {
+          'x': r.left,
+          'y': r.top,
+          'width': r.width,
+          'height': r.height,
+        };
+      }
+
+      measure(
+        'logo',
+        find.byWidgetPredicate(
+          (w) => w is Image && w.semanticLabel == CircleIdentity.name,
+        ),
+      );
+      measure(
+        'composer',
+        find
+            .ancestor(
+              of: find.text('Share a memory with your Circle...'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
+      measure(
+        'quickAction',
+        find
+            .ancestor(of: find.text('Photo'), matching: find.byType(InkWell))
+            .first,
+      );
+      measure('card', find.byType(CircleMemoryCard).first);
+      measure('author', find.text('Priya'));
+      measure('media', find.byType(PhotoGrid).first);
+      measure(
+        'actions',
+        find
+            .ancestor(
+              of: find.byTooltip(
+                'Comment on Memory from Priya in College Friends',
+              ),
+              matching: find.byType(Row),
+            )
+            .first,
+      );
+      measure(
+        'dock',
+        find
+            .ancestor(
+              of: find.text('Home'),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      measure(
+        'postText',
+        find.text(
+          'Remember our college trip? Can’t believe it’s been 10 years! ❤️',
+        ),
+      );
+      measure('commentCount', find.text('8 comments'));
+      measure('navigationLabel', find.text('Home'));
+      await tester.runAsync(() async {
+        final frame = await boundary.toImage();
+        final bytes = await frame.toByteData(format: ui.ImageByteFormat.png);
+        await File(
+          '../docs/design-previews/home-refinement/$phase.png',
+        ).writeAsBytes(bytes!.buffer.asUint8List());
+        await File(
+          '../docs/design-previews/home-refinement/$phase.json',
+        ).writeAsString(jsonEncode(geometry));
+        frame.dispose();
+      });
+    }
+  });
   testWidgets('Home keeps header and dock clear of system safe areas', (
     tester,
   ) async {

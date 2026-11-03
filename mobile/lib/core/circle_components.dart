@@ -976,6 +976,7 @@ class CircleFloatingHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = CircleTabHeaderData.of(context);
     if (data == null) return const SliverToBoxAdapter();
+    final home = data.title == 'Circle';
     return SliverAppBar(
       floating: true,
       snap: true,
@@ -983,9 +984,16 @@ class CircleFloatingHeader extends StatelessWidget {
       automaticallyImplyLeading: false,
       toolbarHeight: CircleLayout.homeHeaderHeight,
       titleSpacing: Space.md,
-      title: _headerTitle(context, data),
+      title: Padding(
+        padding: EdgeInsets.only(top: home ? Space.sm : 0),
+        child: _headerTitle(context, data),
+      ),
       actions: [
-        ...data.actions,
+        for (final action in data.actions)
+          Padding(
+            padding: EdgeInsets.only(top: home ? Space.sm : 0),
+            child: action,
+          ),
         const SizedBox(width: Space.xs),
       ],
     );
@@ -1024,7 +1032,9 @@ Widget _headerTitle(
                 style: large
                     ? theme.textTheme.headlineMedium
                     : data.logo != null
-                    ? theme.textTheme.headlineSmall
+                    ? theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      )
                     : theme.textTheme.titleLarge,
               ),
               if (data.logo != null)

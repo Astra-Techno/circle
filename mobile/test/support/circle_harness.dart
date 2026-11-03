@@ -29,6 +29,7 @@ Future<ProviderContainer> openCircle(
   double keyboard = 0,
   DateTime? now,
   DateTime Function()? clock,
+  MockCircleRepository? repository,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -43,7 +44,7 @@ Future<ProviderContainer> openCircle(
     tester.platformDispatcher.clearPlatformBrightnessTestValue();
   });
   final appClock = clock ?? (now == null ? null : () => now);
-  final repository = MockCircleRepository(showcase: showcase, now: appClock);
+  repository ??= MockCircleRepository(showcase: showcase, now: appClock);
   final container = ProviderContainer(
     overrides: [
       if (appClock != null) circleClockProvider.overrideWithValue(appClock),

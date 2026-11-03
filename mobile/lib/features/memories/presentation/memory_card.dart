@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../../core/design/circle_typography.dart';
+import '../../../core/design/circle_icons.dart';
 import '../../moderation/presentation/report_sheet.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/feature_gate.dart';
@@ -49,7 +50,9 @@ class CircleMemoryCard extends ConsumerWidget {
     void openDetail() => context.push('/home/memory/${memory.id}');
     final reactions = memory.reactions;
     final accents = CircleAccents.of(context);
-    final caption = theme.textTheme.bodySmall?.copyWith(color: accents.caption);
+    final caption = detail
+        ? theme.textTheme.bodySmall?.copyWith(color: accents.caption)
+        : CircleTextStyles.metadata(accents.caption);
     final taken = memory.takenLabel;
 
     Future<void> react(String emoji) =>
@@ -110,8 +113,15 @@ class CircleMemoryCard extends ConsumerWidget {
     final hasPhotos = memory.photos.isNotEmpty;
     final hasText = memory.text.isNotEmpty;
     final text = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Space.md),
-      child: Text(memory.text, style: CircleTextStyles.body(colors.onSurface)),
+      padding: EdgeInsets.symmetric(
+        horizontal: detail ? Space.md : Space.md - Space.xs,
+      ),
+      child: Text(
+        memory.text,
+        style: detail
+            ? CircleTextStyles.body(colors.onSurface)
+            : CircleTextStyles.homeBody(colors.onSurface),
+      ),
     );
 
     return Padding(
@@ -120,7 +130,7 @@ class CircleMemoryCard extends ConsumerWidget {
         vertical: detail ? 0 : Space.xs,
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: Space.sm),
+        padding: EdgeInsets.symmetric(vertical: detail ? Space.sm : Space.xs),
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: BorderRadius.circular(CircleRadius.card),
@@ -146,11 +156,11 @@ class CircleMemoryCard extends ConsumerWidget {
                 ),
               ),
             Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(
-                Space.md,
+              padding: EdgeInsetsDirectional.fromSTEB(
+                detail ? Space.md : Space.md - Space.xs,
                 0,
                 Space.sm,
-                Space.sm,
+                detail ? Space.sm : 0,
               ),
               child: Row(
                 children: [
@@ -158,13 +168,19 @@ class CircleMemoryCard extends ConsumerWidget {
                     person: memory.authorId,
                     name: memory.author,
                     tone: circleTypeTone(group.type),
+                    size: CircleAvatarSize.medium,
                   ),
                   const SizedBox(width: Space.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(memory.author, style: theme.textTheme.titleMedium),
+                        Text(
+                          memory.author,
+                          style: detail
+                              ? theme.textTheme.titleMedium
+                              : CircleTextStyles.homeAuthor(colors.onSurface),
+                        ),
                         Text(
                           [
                             audience ?? group.name,
@@ -218,11 +234,13 @@ class CircleMemoryCard extends ConsumerWidget {
             ),
             if (hasText && hasPhotos) ...[
               text,
-              const SizedBox(height: Space.sm),
+              SizedBox(height: detail ? Space.sm : Space.xs),
             ],
             if (hasPhotos)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                padding: EdgeInsets.symmetric(
+                  horizontal: detail ? Space.md : Space.md - Space.xs,
+                ),
                 child: MemoryPhotoGrid(
                   memory: memory,
                   mosaicAspect: detail ? null : CircleLayout.homeMosaicAspect,
@@ -293,7 +311,11 @@ class CircleMemoryCard extends ConsumerWidget {
                   ],
                 ),
               ),
-            const Divider(indent: Space.md, endIndent: Space.md),
+            Divider(
+              height: detail ? Space.md : Space.xs,
+              indent: Space.md,
+              endIndent: Space.md,
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -306,12 +328,18 @@ class CircleMemoryCard extends ConsumerWidget {
                 IconButton(
                   tooltip: 'Comment on $about',
                   onPressed: openDetail,
-                  icon: const Icon(LucideIcons.message_circle),
+                  icon: const Icon(
+                    LucideIcons.message_circle,
+                    size: CircleSizes.iconAction,
+                  ),
                 ),
                 IconButton(
                   tooltip: 'Choose a reaction for $about',
                   onPressed: pickReaction,
-                  icon: const Icon(LucideIcons.face_slightly_smiling),
+                  icon: const Icon(
+                    LucideIcons.face_slightly_smiling,
+                    size: CircleSizes.iconAction,
+                  ),
                 ),
                 IconButton(
                   tooltip: memory.saved ? 'Unsave $about' : 'Save $about',
@@ -319,6 +347,7 @@ class CircleMemoryCard extends ConsumerWidget {
                       runCalmly(context, () => controller.save(memory.id)),
                   icon: Icon(
                     memory.saved ? LucideIcons.bookmark : LucideIcons.bookmark,
+                    size: CircleSizes.iconAction,
                     color: memory.saved ? colors.primary : null,
                   ),
                 ),
@@ -379,7 +408,7 @@ class _LoveButton extends StatelessWidget {
           child: IconButton(
             isSelected: loved,
             onPressed: onTap,
-            icon: const Icon(LucideIcons.heart),
+            icon: const Icon(LucideIcons.heart, size: CircleSizes.iconAction),
             selectedIcon: Icon(Icons.favorite_rounded, color: accents.heart),
           ),
         ),

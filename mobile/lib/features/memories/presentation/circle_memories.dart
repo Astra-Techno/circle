@@ -147,9 +147,9 @@ class _HomeHeader extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     Space.md,
-                    Space.sm,
+                    Space.xs,
                     Space.md,
-                    Space.sm,
+                    Space.xs,
                   ),
                   child: Row(
                     children: [
@@ -161,7 +161,7 @@ class _HomeHeader extends ConsumerWidget {
                       const SizedBox(width: Space.sm),
                       Expanded(
                         child: Material(
-                          color: accents.recessed,
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(Space.hero),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(Space.hero),
@@ -172,23 +172,34 @@ class _HomeHeader extends ConsumerWidget {
                               ),
                               child: Center(
                                 heightFactor: 1,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: Space.md,
-                                    vertical: Space.sm,
-                                  ),
-                                  child: Text(
-                                    'Share a memory with your Circle...',
-                                    maxLines:
-                                        MediaQuery.textScalerOf(
-                                              context,
-                                            ).scale(1) <=
-                                            CircleLayout.largeTextThreshold
-                                        ? 1
-                                        : null,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: CircleTextStyles.input(
-                                      accents.caption,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Ink(
+                                    decoration: BoxDecoration(
+                                      color: accents.recessed,
+                                      borderRadius: BorderRadius.circular(
+                                        Space.hero,
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: Space.md,
+                                        vertical: Space.sm + Space.xs,
+                                      ),
+                                      child: Text(
+                                        'Share a memory with your Circle...',
+                                        maxLines:
+                                            MediaQuery.textScalerOf(
+                                                  context,
+                                                ).scale(1) <=
+                                                CircleLayout.largeTextThreshold
+                                            ? 1
+                                            : null,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: CircleTextStyles.homeBody(
+                                          accents.caption,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -230,7 +241,7 @@ class _HomeHeader extends ConsumerWidget {
                       const SizedBox(width: Space.sm),
                       Expanded(
                         child: _QuickActionIcon(
-                          icon: LucideIcons.calendar_days,
+                          icon: LucideIcons.calendar,
                           label: 'Event',
                           color: accents.sage,
                           onTap: features.has(CircleFeature.liveEvents)
@@ -241,7 +252,7 @@ class _HomeHeader extends ConsumerWidget {
                       const SizedBox(width: Space.sm),
                       Expanded(
                         child: _QuickActionIcon(
-                          icon: LucideIcons.list_todo,
+                          icon: LucideIcons.list,
                           label: 'Poll',
                           color: accents.amber,
                           onTap: features.has(CircleFeature.livePolls)
@@ -311,8 +322,8 @@ class _QuickActionIcon extends StatelessWidget {
                   Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: onTap != null
+                    style: CircleTextStyles.caption(
+                      onTap != null
                           ? theme.colorScheme.onSurface
                           : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                     ),
