@@ -15,7 +15,7 @@
 - **Screen titles:** Home uses brand `Circle` and tagline; other root tabs use their page title (e.g. `Circles`, `Events`) alongside the authentic logo; no redundant large second heading.
 - **Author lines:** show `Priya`, **not** `Priya shared a memory`; show `Arjun`, **not** `Arjun created an event`; show `Vignesh`, **not** `Vignesh created a poll`.
 - **Privacy:** don't repeat `Private` labels on every post in a closed Circle; show audience where needed for user control.
-- **Navigation:** exactly five root destinations: Home, Circles, Create, Events, Profile. Central Create is a raised primary action, not a sixth tab.
+- **Navigation (owner, 3 November 2026):** exactly five root destinations: Home, Circles, Chats, Events, Profile. Chats replaces the central Create action; Memory creation remains in Home's composer.
 - **Scope freeze:** V1 only. No time capsules, secret celebration rooms, AI recaps, rituals, or nostalgia mechanics in this implementation.
 - **Logo:** use the user's authentic purple infinity-loop icon as an **asset**; never substitute a generated or approximate infinity symbol.
 

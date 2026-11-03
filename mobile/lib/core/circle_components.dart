@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'circle_failure.dart';
 import 'design.dart';
+import 'design/circle_typography.dart';
 
 /// An editorial page opening: a headline and one quiet line, with an
 /// optional artwork (an avatar or photo) beside it. No panel, no motif
@@ -338,7 +339,12 @@ class CircleSectionTitle extends StatelessWidget {
         Expanded(
           child: Semantics(
             header: true,
-            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+            child: Text(
+              title,
+              style: CircleTextStyles.sectionTitle(
+                Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
           ),
         ),
         ?trailing,
@@ -358,6 +364,46 @@ class CircleRow extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [child, if (divider) const Divider(height: 1)],
+  );
+}
+
+/// A Home-style rounded surface for the other root-page lists.
+/// Insets may grow with content; interactive cards retain a 48px target.
+class CircleSurfaceCard extends StatelessWidget {
+  const CircleSurfaceCard({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.padding = const EdgeInsets.all(Space.md),
+    this.margin = const EdgeInsets.only(bottom: Space.sm),
+  });
+  final Widget child;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding, margin;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: margin,
+    child: Material(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(CircleRadius.card),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: Space.large),
+          child: ListTileTheme.merge(
+            titleTextStyle: CircleTextStyles.homeAuthor(
+              Theme.of(context).colorScheme.onSurface,
+            ),
+            subtitleTextStyle: CircleTextStyles.metadata(
+              CircleAccents.of(context).caption,
+            ),
+            child: Padding(padding: padding, child: child),
+          ),
+        ),
+      ),
+    ),
   );
 }
 

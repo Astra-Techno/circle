@@ -595,6 +595,13 @@ abstract final class CircleRadius {
 /// Standard page padding: 24px editorial margins, with room at the bottom
 /// so the floating dock and action button never cover the last item.
 abstract final class CircleInsets {
+  /// Root lists share Home's compact side inset and clear the floating dock.
+  static const rootPage = EdgeInsets.fromLTRB(
+    Space.md,
+    Space.sm,
+    Space.md,
+    Space.hero * 3,
+  );
   static const page = EdgeInsets.fromLTRB(
     Space.section,
     Space.sm,

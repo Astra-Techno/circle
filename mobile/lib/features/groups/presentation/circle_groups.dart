@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_typography.dart';
 import '../../../core/two_pane.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../workspace/application/workspace_providers.dart';
@@ -42,6 +43,15 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
     builder: (workspace) {
       final theme = Theme.of(context);
       final accents = CircleAccents.of(context);
+      Widget filterChip(_CircleFilter filter) => _FilterChip(
+        label: switch (filter) {
+          _CircleFilter.all => 'All',
+          _CircleFilter.joined => 'Joined',
+          _CircleFilter.invited => 'Invited',
+        },
+        selected: _filter == filter,
+        onTap: () => setState(() => _filter = filter),
+      );
 
       // Build group entries based on filter.
       List<GroupTreeEntry> entries;
@@ -122,25 +132,26 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                       top: Space.md,
                       bottom: Space.md,
                     ),
-                    child: Row(
-                      children: [
-                        for (final filter in _CircleFilter.values) ...[
-                          if (filter != _CircleFilter.all)
-                            const SizedBox(width: Space.sm),
-                          Expanded(
-                            child: _FilterChip(
-                              label: switch (filter) {
-                                _CircleFilter.all => 'All',
-                                _CircleFilter.joined => 'Joined',
-                                _CircleFilter.invited => 'Invited',
-                              },
-                              selected: _filter == filter,
-                              onTap: () => setState(() => _filter = filter),
-                            ),
+                    child:
+                        MediaQuery.textScalerOf(context).scale(1) >
+                            CircleLayout.largeTextThreshold
+                        ? Wrap(
+                            spacing: Space.sm,
+                            runSpacing: Space.sm,
+                            children: [
+                              for (final filter in _CircleFilter.values)
+                                filterChip(filter),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              for (final filter in _CircleFilter.values) ...[
+                                if (filter != _CircleFilter.all)
+                                  const SizedBox(width: Space.sm),
+                                Expanded(child: filterChip(filter)),
+                              ],
+                            ],
                           ),
-                        ],
-                      ],
-                    ),
                   ),
                   if (_filter == _CircleFilter.invited) ...[
                     if (workspace.invitations.isEmpty)
@@ -348,17 +359,20 @@ class _FilterChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(CircleRadius.button),
         onTap: onTap,
         child: Container(
-          height: Space.large,
-          alignment: Alignment.center,
+          constraints: const BoxConstraints(minHeight: Space.large),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.sm,
+            vertical: Space.sm,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(CircleRadius.button),
             border: selected ? null : Border.all(color: accents.hairline),
           ),
           child: Text(
             label,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: selected ? theme.colorScheme.onPrimary : accents.caption,
-              fontWeight: FontWeight.w600,
+            textAlign: TextAlign.center,
+            style: CircleTextStyles.label(
+              selected ? theme.colorScheme.onPrimary : accents.caption,
             ),
           ),
         ),
@@ -409,14 +423,15 @@ class _CircleCard extends ConsumerWidget {
     final visibleAvatars = memberIds.take(3).toList();
     final remaining = memberCount - visibleAvatars.length;
 
-    return InkWell(
-      onTap: () {
-        if (!CirclePaneScope.select(context, 'groups', group.id)) {
-          context.push('/groups/g/${group.id}');
-        }
-      },
-      child: Padding(
-        padding: EdgeInsetsDirectional.only(start: indent),
+    return Padding(
+      padding: EdgeInsetsDirectional.only(start: indent),
+      child: CircleSurfaceCard(
+        onTap: () {
+          if (!CirclePaneScope.select(context, 'groups', group.id)) {
+            context.push('/groups/g/${group.id}');
+          }
+        },
+        padding: const EdgeInsets.symmetric(horizontal: Space.sm),
         child: Column(
           children: [
             Padding(
@@ -437,17 +452,15 @@ class _CircleCard extends ConsumerWidget {
                           group.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                          style: CircleTextStyles.homeAuthor(
+                            theme.colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 2),
                         // Member count.
                         Text(
                           '$memberCount ${memberCount == 1 ? 'member' : 'members'}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: accents.caption,
-                          ),
+                          style: CircleTextStyles.metadata(accents.caption),
                         ),
                         const SizedBox(height: Space.xs),
                         // Avatar stack + remaining count.
@@ -527,8 +540,8 @@ class _CircleCard extends ConsumerWidget {
                                   activity!.text,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: accents.caption,
+                                  style: CircleTextStyles.metadata(
+                                    accents.caption,
                                   ),
                                 ),
                               ),
@@ -592,7 +605,6 @@ class _CircleCard extends ConsumerWidget {
                   ),
                 ),
               ),
-            Divider(height: 1, color: accents.hairline),
           ],
         ),
       ),

@@ -5,6 +5,7 @@ import '../../groups/presentation/group_photos.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_typography.dart';
 import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
@@ -109,119 +110,114 @@ class ChatInboxRow extends StatelessWidget {
     final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
     final fresh = unread > 0;
-    final meta = theme.textTheme.bodySmall?.copyWith(
-      color: fresh ? theme.colorScheme.primary : accents.caption,
+    final stacked =
+        MediaQuery.textScalerOf(context).scale(1) >
+        CircleLayout.largeTextThreshold;
+    final meta = CircleTextStyles.metadata(
+      fresh ? theme.colorScheme.primary : accents.caption,
     );
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: Space.lg,
-          vertical: Space.sm,
-        ),
-        child: Row(
+    final status = Column(
+      crossAxisAlignment: stacked
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.end,
+      children: [
+        if (time != null) Text(time!, style: meta, textAlign: TextAlign.end),
+        const SizedBox(height: Space.xs),
+        Wrap(
+          spacing: Space.xs,
+          alignment: stacked ? WrapAlignment.start : WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            ChatIdentity(
-              name: name,
-              group: group,
-              groupId: groupId,
-              person: person,
-              size: CircleAvatarSize.large,
-            ),
-            const SizedBox(width: Space.md),
-            Expanded(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: accents.hairline)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: Space.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleMedium,
-                            ),
-                          ),
-                          if (time != null) ...[
-                            const SizedBox(width: Space.sm),
-                            Text(time!, style: meta),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: Space.xs),
-                      Row(
-                        children: [
-                          if (previewIcon != null) ...[
-                            Icon(
-                              previewIcon,
-                              size: Space.lg,
-                              color: accents.caption,
-                            ),
-                            const SizedBox(width: Space.xs),
-                          ],
-                          Expanded(
-                            child: Text(
-                              preview,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: highlight
-                                    ? theme.colorScheme.primary
-                                    : accents.caption,
-                              ),
-                            ),
-                          ),
-                          if (muted)
-                            Padding(
-                              padding: const EdgeInsetsDirectional.only(
-                                start: Space.xs,
-                              ),
-                              child: Icon(
-                                LucideIcons.volume_off,
-                                size: Space.lg + Space.xs,
-                                color: accents.caption,
-                                semanticLabel: 'Muted',
-                              ),
-                            ),
-                          if (pinned)
-                            Padding(
-                              padding: const EdgeInsetsDirectional.only(
-                                start: Space.xs,
-                              ),
-                              child: Icon(
-                                LucideIcons.pin,
-                                size: Space.lg + Space.xs,
-                                color: accents.caption,
-                                semanticLabel: 'Pinned',
-                              ),
-                            ),
-                          if (fresh)
-                            Padding(
-                              padding: const EdgeInsetsDirectional.only(
-                                start: Space.sm,
-                              ),
-                              child: Badge(
-                                label: Text(unread > 99 ? '99+' : '$unread'),
-                                backgroundColor: theme.colorScheme.primary,
-                                textColor: theme.colorScheme.onPrimary,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+            if (muted)
+              Icon(
+                LucideIcons.volume_off,
+                size: Space.md,
+                color: accents.caption,
+                semanticLabel: 'Muted',
               ),
-            ),
+            if (pinned)
+              Icon(
+                LucideIcons.pin,
+                size: Space.md,
+                color: accents.caption,
+                semanticLabel: 'Pinned',
+              ),
+            if (fresh)
+              Badge(
+                label: Text(unread > 99 ? '99+' : '$unread'),
+                backgroundColor: theme.colorScheme.primary,
+                textColor: theme.colorScheme.onPrimary,
+              ),
           ],
         ),
+      ],
+    );
+    return CircleSurfaceCard(
+      margin: const EdgeInsets.symmetric(
+        horizontal: Space.md,
+        vertical: Space.xs,
+      ),
+      padding: const EdgeInsets.all(Space.sm + Space.xs),
+      onTap: onTap,
+      child: Row(
+        children: [
+          ChatIdentity(
+            name: name,
+            group: group,
+            groupId: groupId,
+            person: person,
+            size: CircleAvatarSize.medium,
+          ),
+          const SizedBox(width: Space.sm + Space.xs),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: stacked ? null : 2,
+                  overflow: stacked
+                      ? TextOverflow.visible
+                      : TextOverflow.ellipsis,
+                  style: CircleTextStyles.homeAuthor(
+                    theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: Space.xs),
+                Row(
+                  children: [
+                    if (previewIcon != null) ...[
+                      Icon(previewIcon, size: Space.md, color: accents.caption),
+                      const SizedBox(width: Space.xs),
+                    ],
+                    Expanded(
+                      child: Text(
+                        preview,
+                        maxLines: stacked ? null : 2,
+                        overflow: stacked
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
+                        style: CircleTextStyles.metadata(
+                          highlight
+                              ? theme.colorScheme.primary
+                              : accents.caption,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (stacked) ...[const SizedBox(height: Space.sm), status],
+              ],
+            ),
+          ),
+          if (!stacked) ...[
+            const SizedBox(width: Space.sm),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: Space.large * 2),
+              child: status,
+            ),
+          ],
+        ],
       ),
     );
   }

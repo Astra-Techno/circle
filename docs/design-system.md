@@ -1,5 +1,18 @@
 # CIRCLE design system
 
+## Root-page refinement — 3 November 2026
+
+Owner requested applying the current Home styling to the other pages. Chats,
+Circles, Events and Profile now use Home's pale `recessed` canvas, rounded
+`surface` cards (`CircleSurfaceCard`), 16px root side insets, compact title/metadata
+roles and 22px page titles from `CircleTextStyles`. This supersedes the older
+divider-only treatment for these root lists. Home's brand, WhatsApp-style chat
+conversation, existing detail/form controls and privacy/access behavior remain.
+At large text sizes cards grow, chat metadata stacks and filter pills wrap.
+The five dock destinations are Home / Circles / Chats / Events / Profile; the
+owner replaced the central Create action with Chats. Memory creation stays in
+Home's composer. See [review and captures](design-previews/home-style-rollout/REVIEW.md).
+
 ## Current direction — Editorial, photo-first (owner, 28 Oct 2026)
 
 The owner approved the "Editorial, photo-first" mock-ups and asked for the whole app to follow them. This **supersedes** the Visual refinement, Soft 3D and Warm Keepsake sections below and the older token, typography and component tables, which are updated to match. README §4.0 (calm, easy UX) still governs.

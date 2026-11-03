@@ -772,9 +772,11 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     final shell = widget.shell, detail = widget.detail, path = widget.path;
 
     final index = shell.currentIndex;
-    final largeText =
+    final dockInset =
         MediaQuery.textScalerOf(context).scale(1) >
-        CircleLayout.largeTextThreshold;
+            CircleLayout.largeTextThreshold
+        ? Space.xs
+        : Space.section + Space.xs;
     final filter = ref.watch(homeGroupFilterProvider);
     final eventsFilter = ref.watch(eventsGroupFilterProvider);
     final workspace = ref.watch(circleWorkspaceProvider).value;
@@ -829,12 +831,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                 child: SafeArea(
                   top: false,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      Space.section + Space.xs,
-                      0,
-                      Space.section + Space.xs,
-                      0,
-                    ),
+                    padding: EdgeInsets.fromLTRB(dockInset, 0, dockInset, 0),
                     child: DecoratedBox(
                       decoration: CircleDepth.dock(context),
                       child: ConstrainedBox(
@@ -955,6 +952,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
           )
         : null;
     return Scaffold(
+      backgroundColor: CircleAccents.of(context).recessed,
       body: Listener(
         onPointerMove: (event) {
           // Restore navigation even if a refresh replaces the scroller with
@@ -978,15 +976,15 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
             top: false,
             child: CircleTabHeaderData(
               title: index == 0 ? 'Circle' : titles[index],
-              titleStyle: largeText
-                  ? theme.textTheme.titleLarge
-                  : theme.textTheme.headlineMedium,
+              titleStyle: CircleTextStyles.pageTitle(
+                theme.colorScheme.onSurface,
+              ),
               logo: logo,
               actions: [
                 const SearchButton(),
                 if (index != 2) ...[
                   const ActivityBell(),
-                  if (features.has(CircleFeature.liveChat))
+                  if (index == 0 && features.has(CircleFeature.liveChat))
                     IconButton(
                       tooltip: 'Chats',
                       icon: const Icon(LucideIcons.message_circle),
@@ -1076,6 +1074,8 @@ class _DockTab extends StatelessWidget {
               ),
               Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: CircleTextStyles.navLabel(color).copyWith(
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 ),

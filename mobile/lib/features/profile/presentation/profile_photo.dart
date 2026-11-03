@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/api/api_providers.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_typography.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/profile_providers.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -366,10 +367,16 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(name, style: theme.textTheme.headlineMedium),
+              Text(
+                name,
+                style: CircleTextStyles.pageTitle(theme.colorScheme.onSurface),
+              ),
               if (account.about.isNotEmpty) ...[
                 const SizedBox(height: Space.sm),
-                Text(account.about),
+                Text(
+                  account.about,
+                  style: CircleTextStyles.body(theme.colorScheme.onSurface),
+                ),
               ],
               if (_busy) ...[
                 const SizedBox(height: Space.md),
@@ -383,11 +390,21 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                 runSpacing: Space.sm,
                 children: [
                   FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      textStyle: CircleTextStyles.button(
+                        theme.colorScheme.onPrimary,
+                      ),
+                    ),
                     onPressed: _busy ? null : () => context.push('/you/edit'),
                     icon: const Icon(LucideIcons.pencil),
                     label: const Text('Edit profile'),
                   ),
                   OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      textStyle: CircleTextStyles.button(
+                        theme.colorScheme.primary,
+                      ),
+                    ),
                     onPressed: () => context.go('/groups'),
                     icon: const Icon(LucideIcons.users),
                     label: const Text('Your groups'),

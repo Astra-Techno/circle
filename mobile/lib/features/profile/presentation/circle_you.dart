@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_typography.dart';
 import '../../../core/theme_controller.dart';
 import 'profile_photo.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -52,11 +53,20 @@ class _CircleYouState extends ConsumerState<CircleYou> {
         required String subtitle,
         required String location,
         Widget? badgeLabel,
-      }) => CircleRow(
+      }) => CircleSurfaceCard(
+        padding: EdgeInsets.zero,
         child: ListTile(
           leading: CircleInitialAvatar(icon: icon),
-          title: Text(title),
-          subtitle: Text(subtitle),
+          title: Text(
+            title,
+            style: CircleTextStyles.homeAuthor(
+              Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: CircleTextStyles.metadata(CircleAccents.of(context).caption),
+          ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [?badgeLabel, const Icon(LucideIcons.chevron_right)],
@@ -69,17 +79,20 @@ class _CircleYouState extends ConsumerState<CircleYou> {
           slivers: [
             const CircleFloatingHeader(),
             SliverPadding(
-              padding: CircleInsets.page,
+              padding: CircleInsets.rootPage,
               sliver: SliverList.list(
                 children: [
                   if (account != null)
-                    ProfileHeader(
-                      key: const ValueKey('you-profile-card'),
-                      account: account,
+                    CircleSurfaceCard(
+                      child: ProfileHeader(
+                        key: const ValueKey('you-profile-card'),
+                        account: account,
+                      ),
                     ),
-                  const SizedBox(height: Space.section),
+                  const SizedBox(height: Space.md),
                   if (waiting > 0)
-                    CircleRow(
+                    CircleSurfaceCard(
+                      padding: EdgeInsets.zero,
                       child: ListTile(
                         leading: const CircleInitialAvatar(
                           icon: LucideIcons.mail,
@@ -172,7 +185,8 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                       ),
                     ])
                       if (detail.$3.isNotEmpty)
-                        CircleRow(
+                        CircleSurfaceCard(
+                          padding: EdgeInsets.zero,
                           child: ListTile(
                             leading: Icon(detail.$1),
                             title: Text(detail.$2),
@@ -239,7 +253,8 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                         ],
                       ),
                     ),
-                    itemBuilder: (_, memory) => CircleRow(
+                    itemBuilder: (_, memory) => CircleSurfaceCard(
+                      padding: EdgeInsets.zero,
                       child: ListTile(
                         title: Text(
                           memory.summary,

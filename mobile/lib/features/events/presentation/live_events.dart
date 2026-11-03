@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_typography.dart';
 import 'event_visuals.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../notifications/application/push_settings.dart'
@@ -52,7 +53,7 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
             // Collapsing pinned header: large title shrinks to compact bar.
             const CircleCollapsingHeader(),
             SliverPadding(
-              padding: CircleInsets.page,
+              padding: CircleInsets.rootPage,
               sliver: SliverList.list(
                 children: [
                   if (items.isEmpty)
@@ -450,74 +451,60 @@ class _LiveEventCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final caption = theme.textTheme.bodySmall?.copyWith(
-      color: CircleAccents.of(context).caption,
+    final caption = CircleTextStyles.metadata(
+      CircleAccents.of(context).caption,
     );
     final cancelled = item['status'] == 'cancelled';
     final venue = item['venue'] as String? ?? '';
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Space.lg),
-      child: Material(
-        color: theme.colorScheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(CircleRadius.card),
-          side: BorderSide(color: CircleAccents.of(context).hairline),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (item['cover_id'] case final String cover)
-                PrivatePhoto(
-                  load: ref.watch(
-                    liveEventCoverProvider((
-                      event: '${item['id']}',
-                      cover: cover,
-                    )),
-                  ),
-                  label: 'Event cover',
-                ),
-              Padding(
-                padding: const EdgeInsets.all(Space.lg),
-                child: Row(
-                  children: [
-                    EventDateBlock(
-                      wall: liveEventWall(
-                        item['start_at'] as String,
-                        item['timezone'] as String,
-                      ),
-                    ),
-                    const SizedBox(width: Space.lg),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['title'] as String,
-                            style: theme.textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: Space.xs),
-                          Text(liveEventLabel(item), style: caption),
-                          if (cancelled || venue.isNotEmpty)
-                            Text(
-                              cancelled ? 'Cancelled' : venue,
-                              style: caption,
-                            ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      LucideIcons.chevron_right,
-                      color: CircleAccents.of(context).caption,
-                    ),
-                  ],
-                ),
+    return CircleSurfaceCard(
+      padding: EdgeInsets.zero,
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (item['cover_id'] case final String cover)
+            PrivatePhoto(
+              load: ref.watch(
+                liveEventCoverProvider((event: '${item['id']}', cover: cover)),
               ),
-            ],
+              label: 'Event cover',
+            ),
+          Padding(
+            padding: const EdgeInsets.all(Space.lg),
+            child: Row(
+              children: [
+                EventDateBlock(
+                  wall: liveEventWall(
+                    item['start_at'] as String,
+                    item['timezone'] as String,
+                  ),
+                ),
+                const SizedBox(width: Space.lg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item['title'] as String,
+                        style: CircleTextStyles.homeAuthor(
+                          theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: Space.xs),
+                      Text(liveEventLabel(item), style: caption),
+                      if (cancelled || venue.isNotEmpty)
+                        Text(cancelled ? 'Cancelled' : venue, style: caption),
+                    ],
+                  ),
+                ),
+                Icon(
+                  LucideIcons.chevron_right,
+                  color: CircleAccents.of(context).caption,
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
