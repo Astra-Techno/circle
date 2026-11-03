@@ -56,6 +56,29 @@ PushBinding binding(String account, FakeHandler handler) {
 }
 
 void main() {
+  test(
+    'pending cold-launch tap does not block a registered connection',
+    () async {
+      final gateway = Gateway()
+        ..initialGate = Completer<Map<String, dynamic>?>();
+      final current = binding('1', (_) async => FakeResponse.ok({}));
+      final coordinator = PushSessionCoordinator(
+        gateway: gateway,
+        current: () async => current,
+        ledger: PushLedger(MemoryLocalSettingsStore()),
+        enabled: true,
+      );
+      expect(
+        await coordinator.start().timeout(const Duration(seconds: 2)),
+        isTrue,
+      );
+      expect(coordinator.active, isTrue);
+      gateway.initialGate!.complete(null);
+      await flush();
+      coordinator.dispose();
+    },
+  );
+
   test('token diagnostics use fixed codes and never expose SDK details', () {
     expect(safePushTokenCode('apns-token-not-set'), 'APNS_TOKEN_MISSING');
     expect(safePushTokenCode('network-request-failed'), 'FCM_NETWORK');

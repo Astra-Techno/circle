@@ -8,6 +8,7 @@ class Gateway implements FcmGateway {
   int initialized = 0, activated = 0, deactivated = 0, requests = 0;
   String? tokenValue = 'fictional-device';
   Completer<void>? initGate;
+  Completer<Map<String, dynamic>?>? initialGate;
   final tokens = StreamController<String>.broadcast(sync: true);
   final messages = StreamController<Map<String, dynamic>>.broadcast(sync: true);
   final taps = StreamController<Map<String, dynamic>>.broadcast(sync: true);
@@ -45,7 +46,8 @@ class Gateway implements FcmGateway {
   @override
   Stream<Map<String, dynamic>> get opened => taps.stream;
   @override
-  Future<Map<String, dynamic>?> initialMessage() async => null;
+  Future<Map<String, dynamic>?> initialMessage() async =>
+      initialGate == null ? null : await initialGate!.future;
   Future<void> close() async {
     await tokens.close();
     await messages.close();

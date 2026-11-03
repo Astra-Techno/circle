@@ -235,8 +235,19 @@ class PushSessionCoordinator {
           return false;
         }
         stage = PushConnectionProblem.delivery;
-        final initial = await gateway.initialMessage();
-        if (initial != null) _receive(initial, binding, epoch, PushAction.open);
+        // Cold-launch tap retrieval is optional and some native SDK versions
+        // leave it pending. It must not block saving notification preferences.
+        final capturedBinding = binding;
+        unawaited(() async {
+          try {
+            final initial = await gateway.initialMessage();
+            if (initial != null && await _valid(capturedBinding, epoch)) {
+              _receive(initial, capturedBinding, epoch, PushAction.open);
+            }
+          } catch (_) {
+            // A missing launch tap does not invalidate registered delivery.
+          }
+        }());
         return await _valid(binding, epoch);
       } catch (error) {
         if (epoch == _epoch) {
