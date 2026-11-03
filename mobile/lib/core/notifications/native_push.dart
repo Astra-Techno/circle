@@ -13,6 +13,7 @@ class NativePushBridge implements PushMutex {
   const NativePushBridge();
   static const _methods = MethodChannel('circle/push_native');
   static const _events = EventChannel('circle/push_taps');
+  Future<void> registerAPNS() => _methods.invokeMethod<void>('registerAPNS');
   Future<void> acknowledge(String id) =>
       _methods.invokeMethod<void>('ack', {'id': id});
   Future<void> bind(String? scope) =>

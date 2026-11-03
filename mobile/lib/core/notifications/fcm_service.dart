@@ -65,7 +65,13 @@ class FirebaseFcmGateway implements FcmGateway {
 
   @override
   // Keep Firebase auto-init off across restarts; token acquisition is explicit.
-  Future<void> activate() => _sdk.setAutoInitEnabled(false);
+  Future<void> activate() async {
+    await _sdk.setAutoInitEnabled(false);
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      await const NativePushBridge().registerAPNS();
+    }
+  }
+
   @override
   Future<void> bindScope(String? scope) => const NativePushBridge().bind(scope);
   @override
