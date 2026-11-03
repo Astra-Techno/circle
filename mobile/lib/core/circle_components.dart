@@ -981,8 +981,8 @@ class CircleFloatingHeader extends StatelessWidget {
       snap: true,
       pinned: false,
       automaticallyImplyLeading: false,
-      toolbarHeight: Space.hero * 2,
-      titleSpacing: Space.section,
+      toolbarHeight: CircleLayout.homeHeaderHeight,
+      titleSpacing: Space.md,
       title: _headerTitle(context, data),
       actions: [
         ...data.actions,

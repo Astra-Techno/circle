@@ -41,11 +41,13 @@ String photoViewerLocation(String memoryId, int index) => Uri(
 /// The Memory card's photo layout (see [PhotoGrid]); each photo opens the
 /// full-screen viewer.
 class MemoryPhotoGrid extends StatelessWidget {
-  const MemoryPhotoGrid({super.key, required this.memory});
+  const MemoryPhotoGrid({super.key, required this.memory, this.mosaicAspect});
   final CircleMemory memory;
+  final double? mosaicAspect;
   @override
   Widget build(BuildContext context) => PhotoGrid(
     photos: memory.photos,
+    mosaicAspect: mosaicAspect,
     onOpen: (index) => context.push(photoViewerLocation(memory.id, index)),
   );
 }
@@ -54,8 +56,14 @@ class MemoryPhotoGrid extends StatelessWidget {
 /// small with "+N more" on the last. Used by Memory cards and photo
 /// messages in chat.
 class PhotoGrid extends StatelessWidget {
-  const PhotoGrid({super.key, required this.photos, required this.onOpen});
+  const PhotoGrid({
+    super.key,
+    required this.photos,
+    required this.onOpen,
+    this.mosaicAspect,
+  });
   final List<MemoryPhoto> photos;
+  final double? mosaicAspect;
   final void Function(int index) onOpen;
   @override
   Widget build(BuildContext context) {
@@ -89,7 +97,7 @@ class PhotoGrid extends StatelessWidget {
         ),
       ),
       _ => AspectRatio(
-        aspectRatio: 4 / 3,
+        aspectRatio: mosaicAspect ?? 4 / 3,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

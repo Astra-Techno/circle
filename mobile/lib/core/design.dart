@@ -7,6 +7,14 @@ abstract final class CircleProfileLayout {
 
 abstract final class CircleLayout {
   static const largeTextThreshold = 1.4;
+  static const homeHeaderHeight = 56.0;
+  static const homeLogoSize = 40.0;
+  static const homeActionMinHeight = 48.0;
+  static const homeDockHeight = 64.0;
+  static const homeMosaicAspect = 2.8;
+  static const homeGridBreakpoint = 840.0;
+  static const homeComposerMaxWidth = 720.0;
+  static const homeDockMaxWidth = 640.0;
 }
 
 /// 8-point grid. [xs] (4) is the only half-step, kept for icon-to-text

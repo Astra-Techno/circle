@@ -823,95 +823,97 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
           detail ||
               _navigationVisible ||
               MediaQuery.accessibleNavigationOf(context)
-          ? SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  Space.md,
-                  0,
-                  Space.md,
-                  Space.sm,
+          ? Align(
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: CircleLayout.homeDockMaxWidth,
                 ),
-                child: DecoratedBox(
-                  decoration: CircleDepth.dock(context),
-                  child: MediaQuery.withClampedTextScaling(
-                    maxScaleFactor: navigationMaxTextScale,
-                    child: SizedBox(
-                      height: 72,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Expanded(
-                            child: _DockTab(
-                              icon: LucideIcons.house,
-                              activeIcon: LucideIcons.house,
-                              label: 'Home',
-                              selected: index == 0,
-                              onTap: () => shell.goBranch(0),
-                            ),
-                          ),
-                          Expanded(
-                            child: _DockTab(
-                              icon: LucideIcons.users,
-                              activeIcon: LucideIcons.users,
-                              label: 'Circles',
-                              selected: index == 2,
-                              onTap: () => shell.goBranch(2),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 60,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: Space.large,
-                                  height: Space.large,
-                                  child: Material(
-                                    color: theme.colorScheme.primary,
-                                    shape: const CircleBorder(),
-                                    child: InkWell(
-                                      customBorder: const CircleBorder(),
-                                      onTap: () =>
-                                          context.push(composeLocation(filter)),
-                                      child: Icon(
-                                        LucideIcons.plus,
-                                        color: theme.colorScheme.onPrimary,
-                                        size: Space.section,
-                                        semanticLabel: 'Create Memory',
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      Space.md,
+                      0,
+                      Space.md,
+                      Space.sm,
+                    ),
+                    child: DecoratedBox(
+                      decoration: CircleDepth.dock(context),
+                      child: MediaQuery.withClampedTextScaling(
+                        maxScaleFactor: navigationMaxTextScale,
+                        child: SizedBox(
+                          height: CircleLayout.homeDockHeight,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Expanded(
+                                child: _DockTab(
+                                  icon: LucideIcons.house,
+                                  activeIcon: LucideIcons.house,
+                                  label: 'Home',
+                                  selected: index == 0,
+                                  onTap: () => shell.goBranch(0),
+                                ),
+                              ),
+                              Expanded(
+                                child: _DockTab(
+                                  icon: LucideIcons.users,
+                                  activeIcon: LucideIcons.users,
+                                  label: 'Circles',
+                                  selected: index == 2,
+                                  onTap: () => shell.goBranch(2),
+                                ),
+                              ),
+                              SizedBox(
+                                width: 60,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: Space.large,
+                                      height: Space.large,
+                                      child: Material(
+                                        color: theme.colorScheme.primary,
+                                        shape: const CircleBorder(),
+                                        child: InkWell(
+                                          customBorder: const CircleBorder(),
+                                          onTap: () => context.push(
+                                            composeLocation(filter),
+                                          ),
+                                          child: Icon(
+                                            LucideIcons.plus,
+                                            color: theme.colorScheme.onPrimary,
+                                            size: Space.section,
+                                            semanticLabel: 'Create Memory',
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                                Text(
-                                  'Create',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: CircleAccents.of(context).caption,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                              ),
+                              Expanded(
+                                child: _DockTab(
+                                  icon: LucideIcons.calendar,
+                                  activeIcon: LucideIcons.calendar,
+                                  label: 'Events',
+                                  selected: index == 3,
+                                  onTap: () => shell.goBranch(3),
                                 ),
-                              ],
-                            ),
+                              ),
+                              Expanded(
+                                child: _DockTab(
+                                  icon: LucideIcons.user,
+                                  activeIcon: LucideIcons.user,
+                                  label: 'Profile',
+                                  selected: index == 4,
+                                  onTap: () => shell.goBranch(4),
+                                ),
+                              ),
+                            ],
                           ),
-                          Expanded(
-                            child: _DockTab(
-                              icon: LucideIcons.calendar,
-                              activeIcon: LucideIcons.calendar,
-                              label: 'Events',
-                              selected: index == 3,
-                              onTap: () => shell.goBranch(3),
-                            ),
-                          ),
-                          Expanded(
-                            child: _DockTab(
-                              icon: LucideIcons.user,
-                              activeIcon: LucideIcons.user,
-                              label: 'Profile',
-                              selected: index == 4,
-                              onTap: () => shell.goBranch(4),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -966,8 +968,8 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
             borderRadius: BorderRadius.circular(CircleRadius.small),
             child: Image.asset(
               CircleIdentity.artwork,
-              width: Space.large,
-              height: Space.large,
+              width: CircleLayout.homeLogoSize,
+              height: CircleLayout.homeLogoSize,
               fit: BoxFit.cover,
               semanticLabel: CircleIdentity.name,
             ),

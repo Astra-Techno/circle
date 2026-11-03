@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_typography.dart';
 import '../../groups/domain/group_tree.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
@@ -37,6 +38,7 @@ class CircleHome extends ConsumerWidget {
       return ColoredBox(
         color: CircleAccents.of(context).recessed,
         child: ReadingPane(
+          maxWidth: double.infinity,
           child: RefreshIndicator(
             onRefresh: () => runCalmly(
               context,
@@ -47,27 +49,60 @@ class CircleHome extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 const CircleFloatingHeader(),
-                SliverList.builder(
-                  itemCount: memories.length + 1 + (more ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index == memories.length + 1) {
-                      return const _LoadOlderMemories();
-                    }
-                    if (index == 0) {
-                      return _HomeHeader(
-                        workspace: workspace,
-                        groupId: groupId,
-                        hasMemories: memories.isNotEmpty,
-                        features: features,
-                      );
-                    }
-                    final memory = memories[index - 1];
-                    final group = workspace.group(memory.groupId)!;
-                    return CircleMemoryCard(
-                      key: ValueKey(memory.id),
-                      memory: memory,
-                      group: group,
-                      audience: audiencePath(group, workspace.groupsById),
+                SliverLayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns =
+                        constraints.crossAxisExtent >=
+                            CircleLayout.homeGridBreakpoint
+                        ? 2
+                        : 1;
+                    final rows = (memories.length + columns - 1) ~/ columns;
+                    return SliverList.builder(
+                      itemCount: rows + 1 + (more ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == rows + 1) {
+                          return const _LoadOlderMemories();
+                        }
+                        if (index == 0) {
+                          return _HomeHeader(
+                            workspace: workspace,
+                            groupId: groupId,
+                            hasMemories: memories.isNotEmpty,
+                            features: features,
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (var column = 0; column < columns; column++)
+                              Expanded(
+                                child:
+                                    (index - 1) * columns + column >=
+                                        memories.length
+                                    ? const SizedBox.shrink()
+                                    : Builder(
+                                        builder: (context) {
+                                          final memory =
+                                              memories[(index - 1) * columns +
+                                                  column];
+                                          final group = workspace.group(
+                                            memory.groupId,
+                                          )!;
+                                          return CircleMemoryCard(
+                                            key: ValueKey(memory.id),
+                                            memory: memory,
+                                            group: group,
+                                            audience: audiencePath(
+                                              group,
+                                              workspace.groupsById,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                              ),
+                          ],
+                        );
+                      },
                     );
                   },
                 ),
@@ -98,110 +133,136 @@ class _HomeHeader extends ConsumerWidget {
     final theme = Theme.of(context);
     return Material(
       color: theme.colorScheme.surface,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (workspace.groups.isNotEmpty) ...[
-            // Composer row: avatar + prompt.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Space.md,
-                Space.md,
-                Space.md,
-                Space.sm,
-              ),
-              child: Row(
-                children: [
-                  PersonAvatar(
-                    person: workspace.viewer,
-                    name: 'You',
-                    size: CircleAvatarSize.medium,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: CircleLayout.homeComposerMaxWidth,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (workspace.groups.isNotEmpty) ...[
+                // Composer row: avatar + prompt.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Space.md,
+                    Space.sm,
+                    Space.md,
+                    Space.sm,
                   ),
-                  const SizedBox(width: Space.sm),
-                  Expanded(
-                    child: Material(
-                      color: accents.recessed,
-                      borderRadius: BorderRadius.circular(Space.hero),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(Space.hero),
-                        onTap: () => context.push(composeLocation(groupId)),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: Space.section,
-                            vertical: Space.md,
-                          ),
-                          child: Text(
-                            'Share a memory with your Circle...',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: accents.caption,
+                  child: Row(
+                    children: [
+                      PersonAvatar(
+                        person: workspace.viewer,
+                        name: 'You',
+                        size: CircleAvatarSize.medium,
+                      ),
+                      const SizedBox(width: Space.sm),
+                      Expanded(
+                        child: Material(
+                          color: accents.recessed,
+                          borderRadius: BorderRadius.circular(Space.hero),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(Space.hero),
+                            onTap: () => context.push(composeLocation(groupId)),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minHeight: Space.large,
+                              ),
+                              child: Center(
+                                heightFactor: 1,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: Space.md,
+                                    vertical: Space.sm,
+                                  ),
+                                  child: Text(
+                                    'Share a memory with your Circle...',
+                                    maxLines:
+                                        MediaQuery.textScalerOf(
+                                              context,
+                                            ).scale(1) <=
+                                            CircleLayout.largeTextThreshold
+                                        ? 1
+                                        : null,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: CircleTextStyles.input(
+                                      accents.caption,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            // Four quick-action icons.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Space.md,
-                0,
-                Space.md,
-                Space.md,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _QuickActionIcon(
-                      icon: LucideIcons.image,
-                      label: 'Photo',
-                      color: theme.colorScheme.primary,
-                      onTap: () => context.push(composeLocation(groupId)),
-                    ),
+                ),
+                // Four quick-action icons.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Space.md,
+                    Space.xs,
+                    Space.md,
+                    Space.sm,
                   ),
-                  const SizedBox(width: Space.sm),
-                  Expanded(
-                    child: _QuickActionIcon(
-                      icon: LucideIcons.video,
-                      label: 'Video',
-                      color: accents.heart,
-                      onTap: null, // V1: video not yet supported
-                    ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _QuickActionIcon(
+                          icon: LucideIcons.image,
+                          label: 'Photo',
+                          color: theme.colorScheme.primary,
+                          onTap: () => context.push(composeLocation(groupId)),
+                        ),
+                      ),
+                      const SizedBox(width: Space.sm),
+                      Expanded(
+                        child: _QuickActionIcon(
+                          icon: LucideIcons.video,
+                          label: 'Video',
+                          color: accents.heart,
+                          onTap: null, // V1: video not yet supported
+                        ),
+                      ),
+                      const SizedBox(width: Space.sm),
+                      Expanded(
+                        child: _QuickActionIcon(
+                          icon: LucideIcons.calendar_days,
+                          label: 'Event',
+                          color: accents.sage,
+                          onTap: features.has(CircleFeature.liveEvents)
+                              ? () => context.push('/events/new')
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: Space.sm),
+                      Expanded(
+                        child: _QuickActionIcon(
+                          icon: LucideIcons.list_todo,
+                          label: 'Poll',
+                          color: accents.amber,
+                          onTap: features.has(CircleFeature.livePolls)
+                              ? () => context.push('/polls/new')
+                              : null,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: Space.sm),
-                  Expanded(
-                    child: _QuickActionIcon(
-                      icon: LucideIcons.calendar_days,
-                      label: 'Event',
-                      color: accents.sage,
-                      onTap: features.has(CircleFeature.liveEvents)
-                          ? () => context.push('/events/new')
-                          : null,
-                    ),
+                ),
+              ],
+              if (!hasMemories)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Space.section,
                   ),
-                  const SizedBox(width: Space.sm),
-                  Expanded(
-                    child: _QuickActionIcon(
-                      icon: LucideIcons.list_todo,
-                      label: 'Poll',
-                      color: accents.amber,
-                      onTap: features.has(CircleFeature.livePolls)
-                          ? () => context.push('/polls/new')
-                          : null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          if (!hasMemories)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.section),
-              child: _FirstSteps(workspace: workspace, groupId: groupId),
-            ),
-        ],
+                  child: _FirstSteps(workspace: workspace, groupId: groupId),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -237,15 +298,15 @@ class _QuickActionIcon extends StatelessWidget {
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(
-              minHeight: Space.large + Space.section,
+              minHeight: CircleLayout.homeActionMinHeight,
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: Space.sm),
+              padding: const EdgeInsets.symmetric(vertical: Space.xs),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, color: effectiveColor, size: Space.section),
+                  Icon(icon, color: effectiveColor, size: Space.md + Space.sm),
                   const SizedBox(height: Space.xs),
                   Text(
                     label,

@@ -1,0 +1,13 @@
+{
+  "mean_pixel_diff": 61.57,
+  "max_pixel_diff": 255,
+  "mismatch_pct": 49.79,
+  "ref_size": [
+    852,
+    1846
+  ],
+  "actual_size": [
+    852,
+    1846
+  ]
+}

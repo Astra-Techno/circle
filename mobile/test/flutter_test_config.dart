@@ -17,5 +17,9 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   await (FontLoader(
     'MaterialIcons',
   )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
+  await (FontLoader('packages/flutter_lucide/lucide')..addFont(
+        rootBundle.load('packages/flutter_lucide/lib/fonts/lucide.ttf'),
+      ))
+      .load();
   await testMain();
 }

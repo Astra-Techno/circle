@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_typography.dart';
 import '../../moderation/presentation/report_sheet.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/feature_gate.dart';
@@ -108,21 +109,18 @@ class CircleMemoryCard extends ConsumerWidget {
 
     final hasPhotos = memory.photos.isNotEmpty;
     final hasText = memory.text.isNotEmpty;
-    // A short words-only Memory reads as a quote.
-    final quote =
-        hasText &&
-        !hasPhotos &&
-        memory.poll == null &&
-        memory.text.length <= _quoteMaxLength;
     final text = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Space.section),
-      child: Text(memory.text, style: theme.textTheme.bodyLarge),
+      padding: const EdgeInsets.symmetric(horizontal: Space.md),
+      child: Text(memory.text, style: CircleTextStyles.body(colors.onSurface)),
     );
 
     return Padding(
-      padding: EdgeInsets.all(detail ? 0 : Space.sm),
+      padding: EdgeInsets.symmetric(
+        horizontal: detail ? 0 : Space.sm,
+        vertical: detail ? 0 : Space.xs,
+      ),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: Space.md),
+        padding: const EdgeInsets.symmetric(vertical: Space.sm),
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: BorderRadius.circular(CircleRadius.card),
@@ -149,7 +147,7 @@ class CircleMemoryCard extends ConsumerWidget {
               ),
             Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(
-                Space.section,
+                Space.md,
                 0,
                 Space.sm,
                 Space.sm,
@@ -170,7 +168,10 @@ class CircleMemoryCard extends ConsumerWidget {
                         Text(
                           [
                             audience ?? group.name,
-                            memoryTimeLabel(memory.createdAt, DateTime.now()),
+                            memoryTimeLabel(
+                              memory.createdAt,
+                              ref.watch(circleClockProvider)(),
+                            ),
                             if (memory.edited) 'Edited',
                           ].join(' · '),
                           style: caption,
@@ -217,41 +218,17 @@ class CircleMemoryCard extends ConsumerWidget {
             ),
             if (hasText && hasPhotos) ...[
               text,
-              const SizedBox(height: Space.md),
+              const SizedBox(height: Space.sm),
             ],
             if (hasPhotos)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Space.md),
-                child: MemoryPhotoGrid(memory: memory),
-              ),
-            if (quote)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Space.lg),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: accents.recessed,
-                    borderRadius: BorderRadius.circular(CircleRadius.card),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(Space.section),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ExcludeSemantics(
-                          child: Icon(
-                            LucideIcons.quote,
-                            color: accents.caption,
-                          ),
-                        ),
-                        const SizedBox(height: Space.sm),
-                        Text(memory.text, style: theme.textTheme.titleLarge),
-                      ],
-                    ),
-                  ),
+                child: MemoryPhotoGrid(
+                  memory: memory,
+                  mosaicAspect: detail ? null : CircleLayout.homeMosaicAspect,
                 ),
-              )
-            else if (hasText && !hasPhotos)
-              text,
+              ),
+            if (hasText && !hasPhotos) text,
             if (taken != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -353,9 +330,6 @@ class CircleMemoryCard extends ConsumerWidget {
     );
   }
 }
-
-/// Words-only Memories up to this length are shown as a quote.
-const _quoteMaxLength = 160;
 
 /// A vector heart: one tap toggles love; when the viewer chose another
 /// reaction, it shows that one and one tap removes it. Long-press opens the

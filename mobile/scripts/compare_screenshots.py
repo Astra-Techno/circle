@@ -18,6 +18,7 @@ Outputs:
 """
 
 import os
+import argparse
 import sys
 from pathlib import Path
 
@@ -110,7 +111,7 @@ def write_report(metrics: dict, output_path: str):
 
 ## Image Dimensions
 - Reference: {metrics['ref_size'][0]}x{metrics['ref_size'][1]}
-- Actual: {metrics['actual_size'][0]}x{metrics['actual_size'][1]}
+- Compared raster: {metrics['actual_size'][0]}x{metrics['actual_size'][1]} (actual scaled to the reference)
 
 ## Pixel Metrics
 - Mean pixel difference: {metrics['mean_pixel_diff']} / 255
@@ -123,10 +124,9 @@ def write_report(metrics: dict, output_path: str):
 - `home_feed_side_by_side.png` — reference and actual side by side
 
 ## Interpretation
-- Mean diff < 5: Excellent match (font rendering, antialiasing only)
-- Mean diff 5-15: Good match, minor layout differences
-- Mean diff > 15: Significant visual differences need investigation
-- Mismatch > 20%: Major layout or content mismatch
+- These are raw screenshot differences, not a layout acceptance score.
+- Different fictional content, photos, system chrome and emoji rendering confound whole-image metrics.
+- Verify component geometry separately; baseline generation is not visual approval.
 
 ## Notes
 - Photo content will always differ (test uses fictional scenes vs real photos)
@@ -141,9 +141,13 @@ def write_report(metrics: dict, output_path: str):
 
 def main():
     base = Path(__file__).parent.parent / "design_reference"
-    ref_path = str(base / "home_feed.png")
-    actual_path = str(base / "output" / "home_feed_actual.png")
-    out_dir = base / "output"
+    parser = argparse.ArgumentParser(description="Compare a real Flutter render with a reference image")
+    parser.add_argument('--reference', default=str(base / 'home_feed.png'))
+    parser.add_argument('--actual', default=str(base / 'output' / 'home_feed_actual.png'))
+    parser.add_argument('--output-dir', default=str(base / 'output'))
+    args = parser.parse_args()
+    ref_path, actual_path = args.reference, args.actual
+    out_dir = Path(args.output_dir)
     out_dir.mkdir(exist_ok=True)
 
     print("Loading images...")
