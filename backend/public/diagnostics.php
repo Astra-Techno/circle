@@ -75,6 +75,11 @@ try {
             $rows['Push reason: ' . $row['last_error']] = (string) (int) $row['total'];
         }
     }
+    foreach ($db->query("SELECT dt.platform, o.state, COUNT(*) AS total FROM notification_outbox o JOIN device_tokens dt ON dt.id=o.device_id WHERE o.created_at >= UTC_TIMESTAMP() - INTERVAL 1 DAY GROUP BY dt.platform,o.state") as $row) {
+        if (in_array($row['platform'], ['android','ios'], true) && in_array($row['state'], ['pending','sending','sent','cancelled','dead'], true)) {
+            $rows['Push last 24 hours: ' . $row['platform'] . ' / ' . $row['state']] = (string) (int) $row['total'];
+        }
+    }
     $rows['Database push checks'] = 'Completed';
 } catch (\Throwable $error) {
     $rows['Database push checks'] = 'Failed: inspect private server logs; schema or connection may be unavailable';
