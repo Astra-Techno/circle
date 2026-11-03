@@ -14,13 +14,13 @@ final class DiagnosticsTest extends TestCase
         self::assertNotFalse($script);
         $token = bin2hex(random_bytes(32));
         try {
-            foreach (['disabled', 'denied', 'allowed', 'deployment'] as $mode) {
+            foreach (['disabled', 'denied', 'allowed', 'deployment', 'deployment_post'] as $mode) {
                 $code = '<?php require ' . var_export(__DIR__ . '/../src/Core/Env.php', true)
                     . '; (new ReflectionProperty(\Circle\Core\Env::class, "loaded"))->setValue(null, true);'
-                    . '\Circle\Core\Env::set("DIAGNOSTICS_TOKEN", ' . var_export(in_array($mode, ['disabled', 'deployment'], true) ? '' : $token, true) . ');'
-                    . '\Circle\Core\Env::set("DEPLOY_KEY", ' . var_export($token, true) . ');'
+                    . '\Circle\Core\Env::set("DIAGNOSTICS_TOKEN", ' . var_export(in_array($mode, ['disabled', 'deployment', 'deployment_post'], true) ? '' : $token, true) . ');'
+                    . '\Circle\Core\Env::set("DEPLOY_KEY", ' . var_export($mode === 'disabled' ? '' : $token, true) . ');'
                     . '$_SERVER["HTTP_X_DEPLOY_KEY"] = ' . var_export($mode === 'deployment' ? $token : '', true) . ';'
-                    . '$_POST["token"] = ' . var_export($mode === 'allowed' ? $token : 'incorrect', true) . ';'
+                    . '$_POST["token"] = ' . var_export(in_array($mode, ['allowed', 'deployment_post'], true) ? $token : 'incorrect', true) . ';'
                     . 'require ' . var_export(__DIR__ . '/../public/diagnostics.php', true) . ';';
                 file_put_contents($script, $code);
                 $output = [];
@@ -29,7 +29,7 @@ final class DiagnosticsTest extends TestCase
                 self::assertSame(0, $status);
                 $html = implode("\n", $output);
                 self::assertStringNotContainsString($token, $html);
-                if (in_array($mode, ['allowed', 'deployment'], true)) {
+                if (in_array($mode, ['allowed', 'deployment', 'deployment_post'], true)) {
                     self::assertStringContainsString(PHP_VERSION, $html);
                     self::assertStringContainsString('memory_limit', $html);
                     self::assertStringContainsString('Extension: zip', $html);
