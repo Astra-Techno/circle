@@ -69,7 +69,7 @@ jobs:
   testflight:
     name: Sign and upload to TestFlight
     needs: validate
-    if: inputs.target == 'testflight' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ui/home-reference-tablet-alignment')
+    if: inputs.target == 'testflight' && github.ref == 'refs/heads/main'
     runs-on: macos-15
     environment: ios-testflight
     timeout-minutes: 45

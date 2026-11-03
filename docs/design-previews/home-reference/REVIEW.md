@@ -1,8 +1,9 @@
 # Home reference implementation review
 
 Base commit: `fc495575fae1faead62644d6e6c47b76f49b5e12`.
-Branch: `ui/home-reference-tablet-alignment` (owner's uploaded task explicitly
-requests a dedicated branch and PR; do not merge automatically).
+Historical review branch: `ui/home-reference-tablet-alignment`. Owner subsequently
+requested merging all code to main and deleting other branches on 3 November 2026.
+PR#1 is merged. All future work must use main; do not recreate this branch or PR.
 Approved source: `mobile/design_reference/home_feed.png` (852×1846).
 Measurable specification: `mobile/design_reference/home_feed_spec.md`.
 
