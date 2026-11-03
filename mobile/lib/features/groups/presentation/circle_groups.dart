@@ -213,14 +213,15 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                                 ),
                                 child: Row(
                                   children: [
-                                    Text(
-                                      'Recently active',
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                    Expanded(
+                                      child: Text(
+                                        'Recently active',
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
                                     ),
-                                    const Spacer(),
                                     Text(
                                       'Edit',
                                       style: theme.textTheme.bodySmall

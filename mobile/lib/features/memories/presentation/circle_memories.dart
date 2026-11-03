@@ -225,6 +225,7 @@ class _QuickActionIcon extends StatelessWidget {
     final effectiveColor = onTap != null ? color : color.withValues(alpha: 0.4);
     return Semantics(
       button: true,
+      enabled: onTap != null,
       label: label,
       child: InkWell(
         borderRadius: BorderRadius.circular(CircleRadius.card),
@@ -234,20 +235,29 @@ class _QuickActionIcon extends StatelessWidget {
             color: effectiveColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(CircleRadius.card),
           ),
-          child: SizedBox(
-            height: 72,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: effectiveColor, size: Space.section),
-                const SizedBox(height: Space.xs),
-                Text(
-                  label,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: Space.large + Space.section,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: Space.sm),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: effectiveColor, size: Space.section),
+                  const SizedBox(height: Space.xs),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: onTap != null
+                          ? theme.colorScheme.onSurface
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
