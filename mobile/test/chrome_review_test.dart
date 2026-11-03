@@ -44,12 +44,18 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
-  testWidgets('reference dock offers Events and opens composer', (
+  testWidgets('dock opens Chats and Home composer remains available', (
     tester,
   ) async {
-    await openCircle(tester);
+    final container = await openCircle(tester);
     expect(find.text('Events'), findsOneWidget);
-    await tester.tap(find.bySemanticsLabel('Create Memory'));
+    await tester.tap(find.text('Chats'));
+    await tester.pumpAndSettle();
+    final router = container.read(circleRouterProvider);
+    expect(router.routeInformationProvider.value.uri.path, '/chats');
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Share a memory with your Circle...'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(FilledButton, 'Create Memory'), findsOneWidget);
     await tester.tap(find.byType(BackButton).first);
