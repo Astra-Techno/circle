@@ -120,6 +120,11 @@ final class NotificationWorker
                         $data['memory_id'] = (string) $row['memory_id'];
                         $data['comment_id'] = $row['comment_id'] === null ? '' : (string) $row['comment_id'];
                     }
+                    if (Env::get('PUSH_PREVIEWS_ENABLED', 'false') === 'true') {
+                        $preview = NotificationPreview::forRow($row);
+                        $data['notification_title'] = $preview['title'];
+                        $data['notification_body'] = $preview['body'];
+                    }
                     $result = $this->transport->send((string) $device['fcm_token'], $data);
                 } catch (\Throwable) { $result = PushResult::retry(); }
                 if ($result->status === 'sent') {

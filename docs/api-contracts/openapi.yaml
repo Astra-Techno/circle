@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.4.4
+  version: 0.4.5
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -3999,6 +3999,8 @@ components:
       additionalProperties: false
       required: [event_id, type, api_base_url, recipient_id, session_scope, group_id, expires_at]
       properties:
+        notification_title: {type: string, maxLength: 80, description: Optional private circle-name lock-screen preview approved by owner.}
+        notification_body: {type: string, maxLength: 220, description: Optional private person/action/content preview; may remain visible after access changes.}
         event_id: {type: string, pattern: '^[a-f0-9]{64}$'}
         type: {type: string, const: group.report}
         api_base_url: {type: string, format: uri}
@@ -4010,13 +4012,15 @@ components:
       type: object
       additionalProperties: false
       description: |
-        Data-only reference envelope with no contact details or private text. Same trusted API,
+        Scoped reference envelope with optional bounded private notification previews. Same trusted API,
         recipient/session/expiry/dedup checks as PushMemoryEnvelope. Resolve through recipient-owned
         invitation API before display or navigation. Non-members may receive invitations, never
         Memory access. Worker rechecks pending state, expiry, permission, bans, parent membership,
         session and saved groups notification preferences. Native delivery remains device-dependent.
       required: [event_id, type, api_base_url, recipient_id, session_scope, group_id, invitation_id, expires_at]
       properties:
+        notification_title: {type: string, maxLength: 80, description: Optional private circle-name lock-screen preview approved by owner.}
+        notification_body: {type: string, maxLength: 220, description: Optional private person/action/content preview; may remain visible after access changes.}
         event_id: {type: string, pattern: '^[a-f0-9]{64}$'}
         type: {type: string, const: group.invitation}
         api_base_url: {type: string, format: uri, pattern: '^https://'}
@@ -4029,7 +4033,7 @@ components:
       type: object
       additionalProperties: false
       description: |
-        FCM data payload; Android is data-only, while iOS also receives a generic APNs alert. Contains references, never private text, names, media URLs,
+        FCM data payload; Android is data-only, while iOS also receives an APNs alert with optional private previews. Contains scoped references and optional bounded title/body preview strings; never media URLs,
         bearer tokens or a provider-controlled route. Client must verify canonical API URL,
         current recipient and SHA-256 of its JWT sid against session_scope, expiry,
         supported type and deduplication before displaying or routing. Dedup keys must
@@ -4041,6 +4045,8 @@ components:
         background/terminated delivery or visible notification display. No native validation claimed.
       required: [event_id, type, api_base_url, recipient_id, session_scope, group_id, memory_id, comment_id, expires_at]
       properties:
+        notification_title: {type: string, maxLength: 80, description: Optional private circle-name lock-screen preview approved by owner.}
+        notification_body: {type: string, maxLength: 220, description: Optional private person/action/content preview; may remain visible after access changes.}
         event_id: { type: string, pattern: '^[a-f0-9]{64}$', description: Stable SHA-256 of the committed event key, unchanged across device retries. }
         type: { type: string, enum: [memory.created, comment.created, comment.reply] }
         api_base_url: { type: string, format: uri, maxLength: 512, pattern: '^https://' }

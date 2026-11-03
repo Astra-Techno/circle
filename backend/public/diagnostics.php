@@ -52,6 +52,7 @@ $rows['Argon2id available'] = defined('PASSWORD_ARGON2ID') && in_array('argon2id
 require_once $root . '/vendor/autoload.php';
 $rows['Push queue enabled'] = \Circle\Core\Env::get('PUSH_QUEUE_ENABLED', 'false') === 'true' ? 'Yes' : 'No';
 $rows['Push delivery enabled'] = \Circle\Core\Env::get('PUSH_DELIVERY_ENABLED', 'false') === 'true' ? 'Yes' : 'No';
+$rows['Private notification previews enabled'] = \Circle\Core\Env::get('PUSH_PREVIEWS_ENABLED', 'false') === 'true' ? 'Yes' : 'No';
 $rows['Push API origin matches app'] = rtrim(\Circle\Core\Env::get('PUSH_API_BASE_URL'), '/') === 'https://circle.cloudkart24.com/api/v1' ? 'Yes' : 'No';
 $rows['Firebase project matches app'] = \Circle\Core\Env::get('FCM_PROJECT_ID') === 'circle-c6919' ? 'Yes' : 'No';
 $rows['FCM credentials and runtime ready'] = (new \Circle\Core\FcmSender())->isReady() ? 'Yes' : 'No';

@@ -36,6 +36,24 @@ class FailingStore extends MemoryLocalSettingsStore {
 }
 
 void main() {
+  test('bounded previews round-trip and retain scope validation', () {
+    final data = envelope()
+      ..addAll({
+        'notification_title': 'Fictional circle',
+        'notification_body': 'Mira shared a Memory: Hello',
+      });
+    final parsed = PushEnvelope.parse(data, scope, now)!;
+    expect(parsed.toData()['notification_body'], data['notification_body']);
+    expect(
+      PushEnvelope.parse({...data, 'recipient_id': '8'}, scope, now),
+      isNull,
+    );
+    expect(
+      PushEnvelope.parse({...data, 'notification_body': 'x' * 881}, scope, now),
+      isNull,
+    );
+  });
+
   test('validates strict current scope, type, IDs and expiry', () {
     final parsed = PushEnvelope.parse(envelope(), scope, now)!;
     expect(parsed.memoryId, '4');

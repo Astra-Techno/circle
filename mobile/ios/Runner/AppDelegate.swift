@@ -67,6 +67,26 @@ final class CirclePushBridge: NSObject, FlutterPlugin, FlutterStreamHandler {
     if pending.count >= 32 { pending.removeAll() }
     pending[id] = text; defaults.set(pending, forKey: "circle.push.pending"); sink?(text)
   }
+  private static func notificationBody(_ type: String) -> String {
+    switch type {
+    case "memory.created": return "Someone shared a new Memory in your circle."
+    case "comment.created": return "Someone commented on your Memory."
+    case "comment.reply": return "You have a new reply to a comment."
+    case "group.invitation": return "You have a new circle invitation."
+    case "group.report": return "A new report needs your attention."
+    case "chat.message": return "You have a new message."
+    case "poll.created": return "A new poll is available in your circle."
+    case "poll.closed": return "A poll in your circle has closed."
+    case "event.created": return "A new event was added to your circle."
+    case "event.updated": return "An event in your circle was updated."
+    case "event.cancelled": return "An event in your circle was cancelled."
+    case "event.rsvp": return "An event RSVP was updated."
+    case "event.reminder": return "An event in your circle is coming up."
+    case "scope": return "https://www.googleapis.com/auth/firebase.messaging"
+    case "grant_type": return "urn:ietf:params:oauth:grant-type:jwt-bearer"
+    default: return "You have a new update. Open CIRCLE to view it."
+    }
+  }
   func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     let args = call.arguments as? [String: Any] ?? [:]
     switch call.method {
@@ -106,7 +126,9 @@ final class CirclePushBridge: NSObject, FlutterPlugin, FlutterStreamHandler {
       guard history[id] == nil, history.count < 512 else { Self.mutex.unlock(); result(false); return }
       history[id] = expires.doubleValue; defaults.set(history, forKey: "circle.push.displayed"); Self.mutex.unlock()
       let content = UNMutableNotificationContent()
-      content.title = "CIRCLE"; content.body = "You have a new update. Open CIRCLE to view it."
+      let preview = (try? JSONSerialization.jsonObject(with: Data(payload.utf8))) as? [String: Any]
+      content.title = (preview?["notification_title"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "CIRCLE"
+      content.body = (preview?["notification_body"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? Self.notificationBody(preview?["type"] as? String ?? "")
       content.sound = .default; content.userInfo = ["circle_payload": payload]
       UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: nil)) { error in
         DispatchQueue.main.async {

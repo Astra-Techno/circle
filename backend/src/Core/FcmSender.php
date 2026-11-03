@@ -62,8 +62,28 @@ final class FcmSender implements \Circle\Notifications\PushTransport
             'apns' => ['headers' => ['apns-push-type' => 'alert', 'apns-priority' => '10',
                 'apns-collapse-id' => hash('sha256', $data['event_id'] ?? ''),
                 'apns-expiration' => (string)(time() + $ttl)],
-                'payload' => ['aps' => ['alert' => ['title' => 'CIRCLE',
-                    'body' => 'You have a new update. Open CIRCLE to view it.'], 'sound' => 'default']]]];
+                'payload' => ['aps' => ['alert' => ['title' => $data['notification_title'] ?? 'CIRCLE',
+                    'body' => $data['notification_body'] ?? self::notificationBody($data['type'] ?? '')], 'sound' => 'default']]]];
+    }
+
+    public static function notificationBody(string $type): string
+    {
+        return match ($type) {
+            'memory.created' => 'Someone shared a new Memory in your circle.',
+            'comment.created' => 'Someone commented on your Memory.',
+            'comment.reply' => 'You have a new reply to a comment.',
+            'group.invitation' => 'You have a new circle invitation.',
+            'group.report' => 'A new report needs your attention.',
+            'chat.message' => 'You have a new message.',
+            'poll.created' => 'A new poll is available in your circle.',
+            'poll.closed' => 'A poll in your circle has closed.',
+            'event.created' => 'A new event was added to your circle.',
+            'event.updated' => 'An event in your circle was updated.',
+            'event.cancelled' => 'An event in your circle was cancelled.',
+            'event.rsvp' => 'An event RSVP was updated.',
+            'event.reminder' => 'An event in your circle is coming up.',
+            default => 'You have a new update. Open CIRCLE to view it.',
+        };
     }
 
     public static function classify(int $status, string $body, string $retryAfter = ''): \Circle\Notifications\PushResult

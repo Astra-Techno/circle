@@ -37,12 +37,14 @@ final class NotificationWorkerTest extends ApiTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Env::set('PUSH_PREVIEWS_ENABLED', 'true');
         Env::set('PUSH_QUEUE_ENABLED', 'true');
         Env::set('PUSH_DELIVERY_ENABLED', 'true');
         Env::set('PUSH_API_BASE_URL', 'https://fictional.example/api/v1');
     }
     protected function tearDown(): void
     {
+        Env::set('PUSH_PREVIEWS_ENABLED', 'false');
         Env::set('PUSH_QUEUE_ENABLED', 'false');
         Env::set('PUSH_DELIVERY_ENABLED', 'false');
         Env::set('PUSH_API_BASE_URL', '');
@@ -75,7 +77,7 @@ final class NotificationWorkerTest extends ApiTestCase
         self::assertSame(1,(int)Database::queryOne("SELECT COUNT(*) n FROM notification_outbox WHERE kind='group.report'")['n']);
         $transport=new FakePushTransport(); $worker=new NotificationWorker($transport);
         self::assertSame(1,$worker->run()['sent']); self::assertCount(1,$transport->calls);
-        $data=$transport->calls[0]['data']; self::assertCount(7,$data); self::assertSame('group.report',$data['type']); self::assertSame((string)$gid,$data['group_id']);
+        $data=$transport->calls[0]['data']; self::assertCount(9,$data); self::assertSame('group.report',$data['type']); self::assertSame((string)$gid,$data['group_id']);
         foreach (['note','reason','reporter_id','memory_id','comment_id','invitation_id','body'] as $field) self::assertArrayNotHasKey($field,$data);
         Database::execute("UPDATE notification_outbox SET state='pending',available_at=UTC_TIMESTAMP() WHERE kind='group.report'");
         Database::execute("UPDATE group_members SET role='member' WHERE group_id=:g AND user_id=:u",['g'=>$gid,'u'=>$owner['id']]);
@@ -93,7 +95,7 @@ final class NotificationWorkerTest extends ApiTestCase
             self::assertSame(200, $this->request('POST', '/api/v1/devices/register',
                 ['fcm_token' => 'fictional-device-' . $user['id'], 'platform' => 'android'], $user['token'])->status());
         }
-        $memory = $this->createMemory($owner, $group, 'Fictional private text never included in push');
+        $memory = $this->createMemory($owner, $group, 'A fictional Memory preview');
         return compact('owner', 'member', 'group', 'memory');
     }
 
@@ -130,9 +132,10 @@ final class NotificationWorkerTest extends ApiTestCase
         self::assertSame(1, (new NotificationWorker($transport))->run()['sent']);
         $data = $transport->calls[0]['data'];
         $keys = array_keys($data); sort($keys);
-        $expected = ['event_id', 'type', 'api_base_url', 'recipient_id', 'session_scope', 'group_id', 'invitation_id', 'expires_at']; sort($expected);
+        $expected = ['event_id', 'type', 'api_base_url', 'recipient_id', 'session_scope', 'group_id', 'invitation_id', 'expires_at', 'notification_title', 'notification_body']; sort($expected);
         self::assertSame($expected, $keys);
         self::assertSame('group.invitation', $data['type']);
+        self::assertStringContainsString('Fictional inviter', $data['notification_body']);
         self::assertSame((string) $f['invitation'], $data['invitation_id']);
         self::assertSame((string) $f['recipient']['id'], $data['recipient_id']);
         self::assertSame((string) $f['group'], $data['group_id']);
@@ -236,7 +239,8 @@ final class NotificationWorkerTest extends ApiTestCase
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $data['event_id']);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $data['session_scope']);
         self::assertGreaterThan(time(), (int) $data['expires_at']);
-        self::assertArrayNotHasKey('body', $data); self::assertArrayNotHasKey('title', $data);
+        self::assertStringContainsString('Fictional Owner shared a Memory: A fictional Memory preview', $data['notification_body']);
+        self::assertLessThanOrEqual(220, mb_strlen($data['notification_body']));
     }
 
     public function testCommentsAndRepliesNotifyOnlyOwnerAndParentAuthorWithoutSelfPush(): void
@@ -407,7 +411,29 @@ final class NotificationWorkerTest extends ApiTestCase
         self::assertArrayNotHasKey('body', $transport->calls[1]['data']);
     }
 
-    public function testApnsAlertIsGenericAndRetainsScopedData(): void
+    public function testDisabledPreviewsPreserveLegacyClientEnvelope(): void
+    {
+        $this->fixture();
+        Env::set('PUSH_PREVIEWS_ENABLED', 'false');
+        $transport = new FakePushTransport();
+        self::assertSame(1, (new NotificationWorker($transport))->run()['sent']);
+        self::assertArrayNotHasKey('notification_title', $transport->calls[0]['data']);
+        self::assertArrayNotHasKey('notification_body', $transport->calls[0]['data']);
+    }
+
+    public function testPreviewTruncationPreservesUnicodeAndRemovesControlCharacters(): void
+    {
+        self::assertSame('Hello world', \Circle\Notifications\NotificationPreview::shorten("Hello\nworld", 80));
+        self::assertSame(80, mb_strlen(\Circle\Notifications\NotificationPreview::shorten(str_repeat('அ', 100), 80)));
+    }
+
+    public function testNotificationTextIsTypeSpecificAndUnknownTypesStayGeneric(): void
+    {
+        self::assertSame('Someone shared a new Memory in your circle.', FcmSender::notificationBody('memory.created'));
+        self::assertSame('You have a new update. Open CIRCLE to view it.', FcmSender::notificationBody('private unexpected value'));
+    }
+
+    public function testApnsAlertUsesActionTextAndRetainsScopedData(): void
     {
         $data=['event_id'=>'fictional-event','recipient_id'=>'42','type'=>'chat.message'];
         $message=FcmSender::message('fictional-token',$data,120);
@@ -415,7 +441,7 @@ final class NotificationWorkerTest extends ApiTestCase
         self::assertSame('normal',$message['android']['priority']);
         self::assertSame('alert',$message['apns']['headers']['apns-push-type']);
         self::assertSame('CIRCLE',$message['apns']['payload']['aps']['alert']['title']);
-        self::assertSame('You have a new update. Open CIRCLE to view it.',$message['apns']['payload']['aps']['alert']['body']);
+        self::assertSame('You have a new message.',$message['apns']['payload']['aps']['alert']['body']);
         self::assertSame(hash('sha256','fictional-event'),$message['apns']['headers']['apns-collapse-id']);
     }
 

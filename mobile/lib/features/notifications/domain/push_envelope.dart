@@ -80,7 +80,10 @@ class PushEnvelope {
     this.eventRef = '',
     this.eventVersion = '',
     this.pollRef = '',
+    this.notificationTitle = '',
+    this.notificationBody = '',
   });
+  final String notificationTitle, notificationBody;
   final String eventId, type, memoryId, groupId, commentId, invitationId;
   final String messageId, conversationId, eventRef, eventVersion;
   final String pollRef;
@@ -150,7 +153,15 @@ class PushEnvelope {
         'comment_id',
       ],
       'expires_at',
+      if (data.containsKey('notification_title')) 'notification_title',
+      if (data.containsKey('notification_body')) 'notification_body',
     };
+    if ((data['notification_title'] is String &&
+            (data['notification_title'] as String).length > 320) ||
+        (data['notification_body'] is String &&
+            (data['notification_body'] as String).length > 880)) {
+      return null;
+    }
     if (data.length != keys.length ||
         !keys.every(data.containsKey) ||
         data.values.any((v) => v is! String)) {
@@ -216,6 +227,8 @@ class PushEnvelope {
       groupId: group,
       commentId: comment,
       invitationId: invitationId,
+      notificationTitle: data['notification_title'] as String? ?? '',
+      notificationBody: data['notification_body'] as String? ?? '',
       expiresAt: expiry,
       scope: scope,
       messageId: chat ? data['message_id'] as String : '',
@@ -248,6 +261,8 @@ class PushEnvelope {
       'comment_id': commentId,
     },
     'expires_at': '$expiresAt',
+    if (notificationTitle.isNotEmpty) 'notification_title': notificationTitle,
+    if (notificationBody.isNotEmpty) 'notification_body': notificationBody,
   };
 
   /// Content is fetched through the active account API, never a payload URL.

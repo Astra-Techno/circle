@@ -107,6 +107,26 @@ public final class CirclePushPlugin implements FlutterPlugin, ActivityAware,
             result.error("unavailable", "Notification operation unavailable.", null);
         }
     }
+    private static String notificationBody(String type) {
+        switch (type) {
+            case "memory.created": return "Someone shared a new Memory in your circle.";
+            case "comment.created": return "Someone commented on your Memory.";
+            case "comment.reply": return "You have a new reply to a comment.";
+            case "group.invitation": return "You have a new circle invitation.";
+            case "group.report": return "A new report needs your attention.";
+            case "chat.message": return "You have a new message.";
+            case "poll.created": return "A new poll is available in your circle.";
+            case "poll.closed": return "A poll in your circle has closed.";
+            case "event.created": return "A new event was added to your circle.";
+            case "event.updated": return "An event in your circle was updated.";
+            case "event.cancelled": return "An event in your circle was cancelled.";
+            case "event.rsvp": return "An event RSVP was updated.";
+            case "event.reminder": return "An event in your circle is coming up.";
+            case "scope": return "https://www.googleapis.com/auth/firebase.messaging";
+            case "grant_type": return "urn:ietf:params:oauth:grant-type:jwt-bearer";
+            default: return "You have a new update. Open CIRCLE to view it.";
+        }
+    }
     private boolean show(MethodCall call) throws Exception {
         String scope = text(call, "scope"), event = text(call, "event"), payload = text(call, "payload");
         Object rawExpiry = call.argument("expires");
@@ -140,8 +160,10 @@ public final class CirclePushPlugin implements FlutterPlugin, ActivityAware,
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(context, CHANNEL) : new Notification.Builder(context);
         int icon = R.drawable.ic_circle_notification;
-        builder.setSmallIcon(icon).setContentTitle("CIRCLE")
-                .setContentText("There’s an update in your circle.")
+        JSONObject preview = new JSONObject(payload);
+        String body = preview.optString("notification_body", notificationBody(preview.optString("type", "")));
+        builder.setSmallIcon(icon).setContentTitle(preview.optString("notification_title", "CIRCLE"))
+                .setContentText(body).setStyle(new Notification.BigTextStyle().bigText(body))
                 .setVisibility(Notification.VISIBILITY_PRIVATE).setCategory(Notification.CATEGORY_SOCIAL)
                 .setContentIntent(tap).setAutoCancel(true).setOnlyAlertOnce(true);
         if (Build.VERSION.SDK_INT >= 26) builder.setTimeoutAfter((expiry - now) * 1000);
