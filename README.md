@@ -1,6 +1,6 @@
 # CIRCLE — Private Groups, Shared Memories
 
-> **Current branch policy (owner instruction):** Use `main` only for all work and pushes. Do not create feature/topic branches. This supersedes older branching/PR workflow recommendations below and in the startup prompt. Preserve user changes and never force-push.
+> **Current branch policy (owner reaffirmed 3 November 2026):** Keep only `main`; do not create any additional branches or pull requests. Use `main` only for all work and pushes. Do not create feature/topic branches. This supersedes older branching/PR workflow recommendations below and in the startup prompt. Preserve user changes and never force-push.
 
 > **Required reading for Codex, Claude Code and other coding agents:** follow [§0: shared implementation and release rules](#0-shared-implementation-and-release-rules) and [AGENTS.md](AGENTS.md) before making changes. [CLAUDE.md](CLAUDE.md) loads compact shared instructions for Claude Code; detailed rules are read as needed. Current owner instructions take precedence; older status snapshots and examples do not override the current rules.
 >
