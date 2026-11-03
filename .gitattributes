@@ -1,0 +1,5 @@
+# GitHub codeload/Git source archives are used by the shared-host deployer.
+# Mobile binaries remain available through raw GitHub/download.php, but must
+# not be downloaded and extracted for every backend/website deployment.
+/downloads/*.apk export-ignore
+/downloads/*.zip export-ignore
