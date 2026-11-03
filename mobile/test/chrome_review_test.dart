@@ -5,6 +5,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/circle_experience.dart';
 import 'support/circle_harness.dart';
+import 'support/server_harness.dart';
+import 'live_chat_events_test.dart' show LiveFixture;
 
 void main() {
   for (final layout in [
@@ -47,14 +49,20 @@ void main() {
   testWidgets('dock opens Chats and Home composer remains available', (
     tester,
   ) async {
-    final container = await openCircle(tester);
+    final fixture = LiveFixture();
+    final container = await openServerCircle(
+      tester,
+      fixture.server,
+      tokens: await storedSession(fixture.server, fixture.owner),
+    );
     expect(find.text('Events'), findsOneWidget);
     await tester.tap(find.text('Chats'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     final router = container.read(circleRouterProvider);
     expect(router.routeInformationProvider.value.uri.path, '/chats');
+    expect(find.text('Fictional live circle'), findsOneWidget);
     await tester.tap(find.text('Home'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('Share a memory with your Circle...'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(FilledButton, 'Create Memory'), findsOneWidget);
