@@ -10,17 +10,40 @@ import 'live_chat_events_test.dart' show LiveFixture;
 
 void main() {
   for (final brightness in Brightness.values) {
-    testWidgets('footer paints through iPhone safe area ${brightness.name}', (
+    testWidgets('footer stays compact with iPhone inset ${brightness.name}', (
       tester,
     ) async {
       tester.view.padding = const FakeViewPadding(bottom: 34);
-      addTearDown(tester.view.resetPadding);
+      tester.view.viewPadding = const FakeViewPadding(bottom: 34);
+      addTearDown(() {
+        tester.view.resetPadding();
+        tester.view.resetViewPadding();
+      });
       await openCircle(tester, brightness: brightness);
       final surface = find
           .ancestor(of: find.text('Home'), matching: find.byType(DecoratedBox))
           .first;
-      expect(tester.getRect(surface).bottom, 852);
-      expect(tester.getRect(find.text('Home')).bottom, lessThanOrEqualTo(818));
+      final bounds = tester.getRect(surface);
+      if (Platform.environment['CIRCLE_CAPTURE_COMPACT_FOOTER'] == 'true') {
+        await tester.runAsync(() async {
+          final boundary = tester.renderObject<RenderRepaintBoundary>(
+            find.byType(RepaintBoundary).first,
+          );
+          final frame = await boundary.toImage();
+          final bytes = await frame.toByteData(format: ui.ImageByteFormat.png);
+          final directory = Directory('../docs/design-previews/compact-footer');
+          await directory.create(recursive: true);
+          final phase = Platform.environment['CIRCLE_FOOTER_PHASE'] ?? 'after';
+          await File(
+            '${directory.path}/$phase-${brightness.name}.png',
+          ).writeAsBytes(bytes!.buffer.asUint8List());
+          frame.dispose();
+        });
+      }
+      expect(bounds.bottom, 852);
+      expect(bounds.height, lessThanOrEqualTo(64));
+      final labelBottom = tester.getRect(find.text('Home')).bottom;
+      expect(852 - labelBottom, inInclusiveRange(16, 28));
       final decoration =
           tester.widget<DecoratedBox>(surface).decoration as BoxDecoration;
       final theme = Theme.of(tester.element(find.text('Home')));

@@ -825,8 +825,13 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   decoration: CircleDepth.dock(context),
                   child: SafeArea(
                     top: false,
+                    bottom: false,
                     child: Padding(
-                      padding: EdgeInsets.zero,
+                      padding: EdgeInsets.only(
+                        bottom: CircleLayout.navigationBottomPadding(
+                          MediaQuery.viewPaddingOf(context).bottom,
+                        ),
+                      ),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
                           minHeight: CircleLayout.homeDockHeight,

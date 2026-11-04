@@ -24,7 +24,10 @@ abstract final class CircleLayout {
   static const homeLogoSize = 32.0;
   static const headerActionPaintSize = 40.0;
   static const homeActionMinHeight = 48.0;
-  static const homeDockHeight = 64.0;
+  // Minimum interactive row, not an extra block above the device inset.
+  static const homeDockHeight = 48.0;
+  static double navigationBottomPadding(double deviceInset) =>
+      deviceInset.clamp(0.0, Space.md).toDouble();
   static const homeMosaicAspect = 2.8;
   static const homeGridBreakpoint = 840.0;
   static const homeComposerMaxWidth = 720.0;
