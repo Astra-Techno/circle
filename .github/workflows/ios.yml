@@ -19,7 +19,8 @@ concurrency:
 jobs:
   validate:
     name: Compile iPhone app (unsigned)
-    runs-on: macos-15
+    # Use the Intel pool to avoid macOS arm64 runner capacity failures.
+    runs-on: macos-15-intel
     timeout-minutes: 45
     defaults:
       run:
@@ -70,7 +71,8 @@ jobs:
     name: Sign and upload to TestFlight
     needs: validate
     if: inputs.target == 'testflight' && github.ref == 'refs/heads/main'
-    runs-on: macos-15
+    # Use the Intel pool to avoid macOS arm64 runner capacity failures.
+    runs-on: macos-15-intel
     environment: ios-testflight
     timeout-minutes: 45
     defaults:
