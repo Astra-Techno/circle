@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/circle_experience.dart';
@@ -327,7 +328,7 @@ void main() {
     await settle(tester);
     container.read(circleRouterProvider).go('/home/memory/$memory');
     await settle(tester);
-    final field = find.widgetWithText(TextField, 'Add a comment');
+    final field = find.widgetWithText(TextField, 'Write a comment...');
     await reveal(tester, field);
     await tester.enterText(field, 'Thanks @D');
     await settle(tester);
@@ -336,7 +337,8 @@ void main() {
     expect(find.text('Dhruv'), findsNothing);
     await tester.tap(find.byKey(ValueKey('mention-$dev')));
     await settle(tester);
-    await tap(tester, find.text('Send comment'));
+    await tester.tap(find.byIcon(LucideIcons.send));
+    await settle(tester);
     final sent = server.adapter.requests
         .lastWhere((r) => r.path == '/memories/$memory/comments')
         .json;

@@ -224,9 +224,15 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                                 ),
                                 child: Row(
                                   children: [
+                                    Icon(
+                                      LucideIcons.pin,
+                                      size: Space.section,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                    const SizedBox(width: Space.sm),
                                     Expanded(
                                       child: Text(
-                                        'Recently active',
+                                        'Pinned Circles',
                                         style: theme.textTheme.titleMedium
                                             ?.copyWith(
                                               fontWeight: FontWeight.bold,
@@ -251,6 +257,11 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                                   level: 0,
                                   activity: activityMap[entry.group.id],
                                   eventCount: eventCounts[entry.group.id] ?? 0,
+                                  notificationCount: _notificationCount(
+                                    workspace,
+                                    entry.group.id,
+                                  ),
+                                  pinned: true,
                                   expanded: null,
                                   onToggle: null,
                                 ),
@@ -300,6 +311,10 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                         level: entry.level,
                         activity: activityMap[entry.group.id],
                         eventCount: eventCounts[entry.group.id] ?? 0,
+                        notificationCount: _notificationCount(
+                          workspace,
+                          entry.group.id,
+                        ),
                         expanded: !entry.hasChildren ? null : entry.expanded,
                         onToggle: () => setState(() {
                           if (!_collapsed.remove(entry.group.id)) {
@@ -381,6 +396,15 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
+/// Derive a notification count for a group from unread memories + comments.
+int _notificationCount(CircleWorkspace workspace, String groupId) {
+  var count = 0;
+  for (final memory in workspace.memories) {
+    if (memory.groupId == groupId) count++;
+  }
+  return count;
+}
+
 /// Latest activity info for a group.
 class _GroupActivity {
   const _GroupActivity({
@@ -402,6 +426,8 @@ class _CircleCard extends ConsumerWidget {
     this.level = 0,
     this.activity,
     this.eventCount = 0,
+    this.notificationCount = 0,
+    this.pinned = false,
     this.expanded,
     this.onToggle,
   });
@@ -410,6 +436,8 @@ class _CircleCard extends ConsumerWidget {
   final int level;
   final _GroupActivity? activity;
   final int eventCount;
+  final int notificationCount;
+  final bool pinned;
   final bool? expanded;
   final VoidCallback? onToggle;
 
@@ -447,14 +475,28 @@ class _CircleCard extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Name row.
-                        Text(
-                          group.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: CircleTextStyles.homeAuthor(
-                            theme.colorScheme.onSurface,
-                          ),
+                        // Name row with optional pin icon.
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                group.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: CircleTextStyles.homeAuthor(
+                                  theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            if (pinned) ...[
+                              const SizedBox(width: Space.xs),
+                              Icon(
+                                LucideIcons.pin,
+                                size: 14,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 2),
                         // Member count.
@@ -557,51 +599,100 @@ class _CircleCard extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  // Right side: event badge.
-                  if (eventCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Space.sm,
-                        vertical: Space.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: accents.heartContainer,
-                        borderRadius: BorderRadius.circular(
-                          CircleRadius.button,
+                  // Right side: event badge, notification count, chevron.
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (eventCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Space.sm,
+                            vertical: Space.xs,
+                          ),
+                          margin: const EdgeInsets.only(bottom: Space.xs),
+                          decoration: BoxDecoration(
+                            color: accents.heartContainer,
+                            borderRadius: BorderRadius.circular(
+                              CircleRadius.button,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                LucideIcons.calendar,
+                                size: 14,
+                                color: accents.heart,
+                              ),
+                              const SizedBox(width: Space.xs),
+                              Text(
+                                '$eventCount ${eventCount == 1 ? 'event' : 'events'}',
+                                style: CircleTextStyles.caption(accents.heart),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      child: Row(
+                      Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            LucideIcons.calendar,
-                            size: 14,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(width: Space.xs),
-                          Text(
-                            '$eventCount',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                          if (notificationCount > 0)
+                            Container(
+                              width: Space.section,
+                              height: Space.section,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '$notificationCount',
+                                style: CircleTextStyles.caption(
+                                  theme.colorScheme.onPrimary,
+                                ),
+                              ),
                             ),
+                          const SizedBox(width: Space.xs),
+                          Icon(
+                            LucideIcons.chevron_right,
+                            size: Space.section,
+                            color: accents.caption,
                           ),
                         ],
                       ),
-                    ),
+                    ],
+                  ),
                 ],
               ),
             ),
             if (expanded != null)
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: IconButton(
-                  tooltip: '${expanded! ? 'Collapse' : 'Expand'} ${group.name}',
-                  onPressed: onToggle,
-                  icon: Icon(
-                    expanded!
-                        ? LucideIcons.chevron_up
-                        : LucideIcons.chevron_down,
+              Tooltip(
+                message: '${expanded! ? 'Collapse' : 'Expand'} ${group.name}',
+                child: InkWell(
+                  onTap: onToggle,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: Space.sm,
+                      horizontal: Space.sm,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          expanded! ? 'Hide subgroups' : 'Show subgroups',
+                          style: CircleTextStyles.caption(accents.caption),
+                        ),
+                        const SizedBox(width: Space.xs),
+                        Icon(
+                          expanded!
+                              ? LucideIcons.chevron_up
+                              : LucideIcons.chevron_down,
+                          size: 14,
+                          color: accents.caption,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

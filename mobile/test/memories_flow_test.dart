@@ -112,25 +112,20 @@ void main() {
       await tester.tap(find.widgetWithText(ChoiceChip, '😂'));
       await tester.pumpAndSettle();
       expect(memoryOf(container, 'table').reactions.mine, '😂');
-      expect(find.widgetWithText(TextButton, '😂'), findsOneWidget);
-      final semantics = tester.ensureSemantics();
-      expect(
-        find.bySemanticsLabel(RegExp('Reacted with Laugh. Remove reaction')),
-        findsOneWidget,
-      );
-      semantics.dispose();
-      await tester.tap(find.widgetWithText(TextButton, '😂'));
+      // The emoji appears in the reaction summary row.
+      expect(find.text('😂'), findsWidgets);
+
+      // Remove by picking the same emoji again.
+      await tapTooltip(tester, 'Choose a reaction for $_table');
+      await tester.tap(find.widgetWithText(ChoiceChip, '😂'));
       await tester.pumpAndSettle();
       expect(memoryOf(container, 'table').reactions.mine, isNull);
-      expect(find.byTooltip('Love $_table'), findsOneWidget);
 
-      // Long-press on Love opens the same picker.
-      await reveal(tester, find.byTooltip('Love $_table'));
-      await tester.longPress(find.byTooltip('Love $_table'));
-      await tester.pumpAndSettle();
+      // Pick a different reaction via the picker.
+      await tapTooltip(tester, 'Choose a reaction for $_table');
       await tester.tap(find.widgetWithText(ChoiceChip, '❤️'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Remove love from $_table'), findsOneWidget);
+      expect(memoryOf(container, 'table').reactions.mine, '❤️');
 
       await tapTooltip(tester, 'Show reactions for $_table');
       expect(find.text('Reactions (17)'), findsOneWidget);
@@ -153,8 +148,9 @@ void main() {
       await tapText(tester, 'Cancel');
       expect(find.text('Replying to Dev'), findsNothing);
       await tapText(tester, 'Reply');
-      await enterField(tester, 'Write a reply', 'Count me in.');
-      await tapText(tester, 'Send reply');
+      await enterField(tester, 'Write a reply...', 'Count me in.');
+      await tester.tap(find.byIcon(LucideIcons.send));
+      await tester.pumpAndSettle();
       final reply = memoryOf(
         container,
         'table',

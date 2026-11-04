@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_icons.dart';
+import '../../../core/design/circle_typography.dart';
 import '../../groups/domain/group_tree.dart';
 import '../../moderation/presentation/report_sheet.dart';
 import '../../workspace/application/workspace_providers.dart';
-import '../../workspace/presentation/feature_gate.dart';
+import '../../profile/presentation/person_avatar.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import 'circle_memories.dart' show memoryTimeLabel;
 import 'memory_card.dart';
@@ -123,7 +126,7 @@ class _CircleMemoryDetailState extends ConsumerState<CircleMemoryDetail> {
                   context,
                   ref,
                   target: target,
-                  what: '${comment.authorName}’s comment',
+                  what: '${comment.authorName}\u2019s comment',
                 ),
         );
       }
@@ -151,34 +154,33 @@ class _CircleMemoryDetailState extends ConsumerState<CircleMemoryDetail> {
                   child: tile(reply),
                 ),
             ],
-            const SizedBox(height: Space.sm),
-            CircleTextEditor(
-              focusNode: _focus,
-              label: replyTo == null ? 'Add a comment' : 'Write a reply',
-              button: replyTo == null ? 'Send comment' : 'Send reply',
-              busyLabel: savingLabel(ref),
-              header: replyTo == null
-                  ? null
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Replying to ${replyTo.authorName}',
-                            style: Theme.of(context).textTheme.labelLarge,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => setState(() => _replyTo = null),
-                          child: Text(
-                            'Cancel',
-                            semanticsLabel:
-                                'Cancel reply to ${replyTo.authorName}',
-                          ),
-                        ),
-                      ],
+            const Divider(height: Space.section),
+            if (replyTo != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Space.sm),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Replying to ${replyTo.authorName}',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
                     ),
+                    TextButton(
+                      onPressed: () => setState(() => _replyTo = null),
+                      child: Text(
+                        'Cancel',
+                        semanticsLabel: 'Cancel reply to ${replyTo.authorName}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            _InlineCommentInput(
+              focusNode: _focus,
+              viewerId: workspace.viewer,
+              hint: replyTo == null ? 'Write a comment...' : 'Write a reply...',
               mentionMembers: members,
-              viewer: workspace.viewer,
               submit: (text, mentions) async {
                 await ref
                     .read(circleWorkspaceProvider.notifier)
@@ -218,9 +220,9 @@ class _CommentTile extends StatelessWidget {
   final Widget? hiddenNotice;
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: Space.sm),
+      padding: const EdgeInsets.only(bottom: Space.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -228,45 +230,96 @@ class _CommentTile extends StatelessWidget {
             hiddenNotice!,
             const SizedBox(height: Space.xs),
           ],
-          CommentBubble(comment),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: Space.xs,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.only(start: Space.md),
-                child: Text(
-                  memoryTimeLabel(comment.createdAt, DateTime.now()),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+              Expanded(child: CommentBubble(comment)),
+              const SizedBox(width: Space.sm),
+              // Heart icon + like count.
+              Column(
+                children: [
+                  const SizedBox(height: Space.md),
+                  Icon(
+                    LucideIcons.heart,
+                    size: Space.md,
+                    color: accents.caption,
                   ),
-                ),
+                  Text('0', style: CircleTextStyles.caption(accents.caption)),
+                ],
               ),
-              if (onReply != null)
-                TextButton(
-                  onPressed: onReply,
-                  child: Text(
-                    'Reply',
-                    semanticsLabel: 'Reply to ${comment.authorName}',
-                  ),
-                ),
-              if (own && onDelete != null)
-                TextButton(
-                  onPressed: onDelete,
-                  child: const Text(
-                    'Delete',
-                    semanticsLabel: 'Delete your comment',
-                  ),
-                ),
-              if (onReport != null)
-                TextButton(
-                  onPressed: onReport,
-                  child: Text(
-                    'Report',
-                    semanticsLabel: 'Report ${comment.authorName}’s comment',
-                  ),
-                ),
             ],
+          ),
+          // Time + Reply row.
+          Padding(
+            padding: const EdgeInsetsDirectional.only(
+              start: Space.large,
+              top: Space.xs,
+            ),
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: Space.md,
+              children: [
+                Text(
+                  memoryTimeLabel(comment.createdAt, DateTime.now()),
+                  style: CircleTextStyles.metadata(accents.caption),
+                ),
+                if (onReply != null)
+                  GestureDetector(
+                    onTap: onReply,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: 48,
+                        minWidth: 48,
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Reply',
+                          semanticsLabel: 'Reply to ${comment.authorName}',
+                          style: CircleTextStyles.label(accents.caption),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (own && onDelete != null)
+                  GestureDetector(
+                    onTap: onDelete,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: 48,
+                        minWidth: 48,
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Delete',
+                          semanticsLabel: 'Delete your comment',
+                          style: CircleTextStyles.label(accents.caption),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (onReport != null)
+                  GestureDetector(
+                    onTap: onReport,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: 48,
+                        minWidth: 48,
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Report',
+                          semanticsLabel:
+                              'Report ${comment.authorName}\u2019s comment',
+                          style: CircleTextStyles.label(accents.caption),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -382,4 +435,129 @@ class _CircleTextEditorState extends State<CircleTextEditor> {
       ),
     ],
   );
+}
+
+/// Inline comment row: avatar + rounded text field + send button.
+class _InlineCommentInput extends StatefulWidget {
+  const _InlineCommentInput({
+    required this.viewerId,
+    required this.hint,
+    required this.submit,
+    this.focusNode,
+    this.mentionMembers = const [],
+  });
+  final String viewerId, hint;
+  final FocusNode? focusNode;
+  final List<MentionCandidate> mentionMembers;
+  final Future<void> Function(String text, Map<String, String> mentions) submit;
+  @override
+  State<_InlineCommentInput> createState() => _InlineCommentInputState();
+}
+
+class _InlineCommentInputState extends State<_InlineCommentInput> {
+  final _text = TextEditingController();
+  final _mentions = MentionDraft();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    if (_busy || _text.text.trim().isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      await widget.submit(
+        _text.text,
+        _mentions.resolve(_text.text, {
+          for (final m in widget.mentionMembers) m.id,
+        }),
+      );
+      if (mounted) {
+        _mentions.clear();
+        _text.clear();
+        FocusScope.of(context).unfocus();
+      }
+    } on CircleFailure catch (_) {
+      // Error handled upstream.
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (widget.mentionMembers.isNotEmpty)
+          MentionSuggestions(
+            controller: _text,
+            draft: _mentions,
+            members: widget.mentionMembers,
+            viewer: widget.viewerId,
+          ),
+        Row(
+          children: [
+            PersonAvatar(
+              person: widget.viewerId,
+              name: '',
+              size: CircleAvatarSize.small,
+            ),
+            const SizedBox(width: Space.sm),
+            Expanded(
+              child: TextField(
+                controller: _text,
+                focusNode: widget.focusNode,
+                maxLines: 1,
+                maxLength: CommentRules.maxLength,
+                decoration: InputDecoration(
+                  hintText: widget.hint,
+                  counterText: '',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: Space.md,
+                    vertical: Space.sm,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(CircleRadius.button),
+                    borderSide: BorderSide(color: accents.hairline),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(CircleRadius.button),
+                    borderSide: BorderSide(color: accents.hairline),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: Space.sm),
+            Semantics(
+              label: 'Send comment',
+              button: true,
+              child: SizedBox(
+                width: 48,
+                height: 48,
+                child: Material(
+                  color: theme.colorScheme.primary,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: _busy ? null : _send,
+                    child: Icon(
+                      LucideIcons.send,
+                      size: CircleSizes.iconAction,
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }

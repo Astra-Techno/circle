@@ -80,6 +80,15 @@ abstract final class CircleDepth {
       const WidgetStatePropertyAll(0);
 }
 
+/// Immersive dark overlay colours for photo viewers and full-screen media.
+abstract final class CircleOverlay {
+  static const background = Colors.black;
+  static const foreground = Colors.white;
+  static final muted = Colors.white.withValues(alpha: 0.7);
+  static final divider = Colors.white.withValues(alpha: 0.2);
+  static const chipBackground = Colors.black54;
+}
+
 /// Editorial, photo-first (owner, 28 Oct 2026). 60/30/10: 60% white
 /// surface, 30% warm neutral fills and ink text, 10% deep indigo for the one
 /// primary action, selection and love. Photos carry the colour, not chrome.

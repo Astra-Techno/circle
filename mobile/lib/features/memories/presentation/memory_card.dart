@@ -316,42 +316,37 @@ class CircleMemoryCard extends ConsumerWidget {
               indent: Space.md,
               endIndent: Space.md,
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _LoveButton(
-                  reactions: reactions,
-                  about: about,
-                  onTap: () => react(reactions.mine ?? loveReaction),
-                  onLongPress: pickReaction,
-                ),
-                IconButton(
-                  tooltip: 'Comment on $about',
-                  onPressed: openDetail,
-                  icon: const Icon(
-                    LucideIcons.message_circle,
-                    size: CircleSizes.iconAction,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Space.sm),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _ActionButton(
+                      icon: LucideIcons.face_slightly_smiling,
+                      label: 'React',
+                      tooltip: 'Choose a reaction for $about',
+                      onTap: pickReaction,
+                    ),
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Choose a reaction for $about',
-                  onPressed: pickReaction,
-                  icon: const Icon(
-                    LucideIcons.face_slightly_smiling,
-                    size: CircleSizes.iconAction,
+                  Expanded(
+                    child: _ActionButton(
+                      icon: LucideIcons.message_square,
+                      label: 'Comment',
+                      tooltip: 'Comment on $about',
+                      onTap: openDetail,
+                    ),
                   ),
-                ),
-                IconButton(
-                  tooltip: memory.saved ? 'Unsave $about' : 'Save $about',
-                  onPressed: () =>
-                      runCalmly(context, () => controller.save(memory.id)),
-                  icon: Icon(
-                    memory.saved ? LucideIcons.bookmark : LucideIcons.bookmark,
-                    size: CircleSizes.iconAction,
-                    color: memory.saved ? colors.primary : null,
+                  Expanded(
+                    child: _ActionButton(
+                      icon: LucideIcons.share,
+                      label: 'Share',
+                      tooltip: 'Share $about',
+                      onTap: () =>
+                          runCalmly(context, () => controller.save(memory.id)),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -360,56 +355,48 @@ class CircleMemoryCard extends ConsumerWidget {
   }
 }
 
-/// A vector heart: one tap toggles love; when the viewer chose another
-/// reaction, it shows that one and one tap removes it. Long-press opens the
-/// picker, which is also reachable from "Choose a reaction" (README §4.0).
-/// Emoji appear only for a chosen non-love reaction and in the sheets.
-class _LoveButton extends StatelessWidget {
-  const _LoveButton({
-    required this.reactions,
-    required this.about,
+/// Action button with icon + label (React, Comment, Share).
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.tooltip,
     required this.onTap,
-    required this.onLongPress,
   });
-  final MemoryReactions reactions;
-  final String about;
-  final VoidCallback onTap, onLongPress;
+  final IconData icon;
+  final String label, tooltip;
+  final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
     final accents = CircleAccents.of(context);
-    final mine = reactions.mine;
-    if (mine != null && mine != loveReaction) {
-      return TextButton(
-        style: TextButton.styleFrom(foregroundColor: accents.heartText),
-        onPressed: onTap,
-        onLongPress: onLongPress,
-        child: Text(
-          mine,
-          semanticsLabel:
-              'Reacted with ${memoryReactionNames[mine]}. '
-              'Remove reaction from $about',
-        ),
-      );
-    }
-    final loved = mine == loveReaction;
-    return Semantics(
-      button: true,
-      toggled: loved,
-      label: loved ? 'Loved. Remove love from $about' : 'Love $about',
-      onLongPressHint: 'Choose a reaction',
-      excludeSemantics: true,
-      // Long-press belongs to the reaction picker, not the tooltip.
-      child: Tooltip(
-        message: loved ? 'Remove love from $about' : 'Love $about',
-        triggerMode: TooltipTriggerMode.manual,
-        excludeFromSemantics: true,
-        child: GestureDetector(
-          onLongPress: onLongPress,
-          child: IconButton(
-            isSelected: loved,
-            onPressed: onTap,
-            icon: const Icon(LucideIcons.heart, size: CircleSizes.iconAction),
-            selectedIcon: Icon(Icons.favorite_rounded, color: accents.heart),
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CircleRadius.button),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Space.sm),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: CircleSizes.iconAction,
+                  color: accents.caption,
+                ),
+                const SizedBox(width: Space.xs),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: CircleTextStyles.label(accents.caption),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -442,7 +429,13 @@ class _ReactionSummaryRow extends StatelessWidget {
             padding: const EdgeInsets.only(right: Space.xs),
             child: Text(emoji, style: Theme.of(context).textTheme.bodyLarge),
           ),
-        Text('${reactions.total}', style: caption),
+        Flexible(
+          child: Text(
+            '${reactions.total} ${reactions.total == 1 ? 'reaction' : 'reactions'}',
+            style: caption,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }

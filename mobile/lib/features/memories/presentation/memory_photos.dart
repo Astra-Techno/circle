@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/circle_signed_image.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_typography.dart';
 import '../application/media_providers.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
@@ -149,13 +150,19 @@ class MemoryPhotoViewer extends StatelessWidget {
           ),
         );
       }
-      return PhotoPager(photos: memory.photos, initialIndex: initialIndex);
+      return PhotoPager(
+        photos: memory.photos,
+        initialIndex: initialIndex,
+        caption: memory.text,
+        authorName: memory.author,
+        createdAt: memory.createdAt,
+      );
     },
   );
 }
 
-/// Full-screen photos: swipe between them, or use the previous/next
-/// buttons (no gesture-only navigation). Shows "n of N" and the caption.
+/// Full-screen immersive photo viewer with dark background, swipe
+/// navigation, "n of N" counter, caption/author and action bar.
 /// [footer] adds actions for the photo on screen (e.g. Remove).
 class PhotoPager extends StatefulWidget {
   const PhotoPager({
@@ -163,10 +170,15 @@ class PhotoPager extends StatefulWidget {
     required this.photos,
     this.initialIndex = 0,
     this.footer,
+    this.caption,
+    this.authorName,
+    this.createdAt,
   });
   final List<MemoryPhoto> photos;
   final int initialIndex;
   final Widget? Function(BuildContext context, MemoryPhoto photo)? footer;
+  final String? caption, authorName;
+  final DateTime? createdAt;
   @override
   State<PhotoPager> createState() => _PhotoPagerState();
 }
@@ -184,12 +196,6 @@ class _PhotoPagerState extends State<PhotoPager> {
     super.dispose();
   }
 
-  void _goTo(int index) => _pages.animateToPage(
-    index,
-    duration: const Duration(milliseconds: 250),
-    curve: Curves.easeOut,
-  );
-
   @override
   Widget build(BuildContext context) {
     final photos = widget.photos;
@@ -199,79 +205,237 @@ class _PhotoPagerState extends State<PhotoPager> {
           padding: CircleInsets.form,
           child: CircleEmpty(
             title: 'No photos here',
-            message: 'There’s nothing left to show.',
+            message: 'There\u2019s nothing left to show.',
           ),
         ),
       );
     }
     final index = _index.clamp(0, photos.length - 1);
     final photo = photos[index];
-    final theme = Theme.of(context);
     final footer = widget.footer?.call(context, photo);
-    return ReadingPane(
-      child: Padding(
-        padding: CircleInsets.form.copyWith(bottom: Space.lg),
+    return ColoredBox(
+      color: CircleOverlay.background,
+      child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _pages,
-                itemCount: photos.length,
-                onPageChanged: (page) => setState(() => _index = page),
-                itemBuilder: (context, page) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: Space.xs),
-                  child: MemoryPhotoTile(
-                    large: true,
-                    photo: photos[page],
-                    semanticsLabel:
-                        'Photo ${page + 1} of ${photos.length}: '
-                        '${photos[page].description}',
-                  ),
-                ),
+            // Top bar: X close + "n of N" + more options.
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Space.xs,
+                vertical: Space.xs,
               ),
-            ),
-            const SizedBox(height: Space.md),
-            Row(
-              children: [
-                IconButton(
-                  tooltip: 'Previous photo',
-                  onPressed: index == 0 ? null : () => _goTo(index - 1),
-                  icon: const Icon(LucideIcons.chevron_left),
-                ),
-                Expanded(
-                  child: Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      '${index + 1} of ${photos.length}',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.labelLarge,
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(
+                      LucideIcons.x,
+                      color: CircleOverlay.foreground,
                     ),
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Next photo',
-                  onPressed: index == photos.length - 1
-                      ? null
-                      : () => _goTo(index + 1),
-                  icon: const Icon(LucideIcons.chevron_right),
-                ),
-              ],
-            ),
-            if (photo.caption != null)
-              Text(
-                photo.caption!,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium,
+                  Expanded(
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        '${index + 1} of ${photos.length}',
+                        textAlign: TextAlign.center,
+                        style: CircleTextStyles.cardTitle(
+                          CircleOverlay.foreground,
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'More options',
+                    onPressed: () {},
+                    icon: const Icon(
+                      LucideIcons.ellipsis_vertical,
+                      color: CircleOverlay.foreground,
+                    ),
+                  ),
+                ],
               ),
+            ),
+            // Photo with navigation.
+            Expanded(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  PageView.builder(
+                    controller: _pages,
+                    itemCount: photos.length,
+                    onPageChanged: (page) => setState(() => _index = page),
+                    itemBuilder: (context, page) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+                      child: MemoryPhotoTile(
+                        large: true,
+                        photo: photos[page],
+                        semanticsLabel:
+                            'Photo ${page + 1} of ${photos.length}: '
+                            '${photos[page].description}',
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    child: IconButton(
+                      tooltip: 'Previous photo',
+                      onPressed: index > 0
+                          ? () => _pages.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            )
+                          : null,
+                      icon: const Icon(
+                        LucideIcons.chevron_left,
+                        color: CircleOverlay.foreground,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    child: IconButton(
+                      tooltip: 'Next photo',
+                      onPressed: index < photos.length - 1
+                          ? () => _pages.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            )
+                          : null,
+                      icon: const Icon(
+                        LucideIcons.chevron_right,
+                        color: CircleOverlay.foreground,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Caption + author.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Space.md,
+                Space.md,
+                Space.md,
+                Space.sm,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.caption != null && widget.caption!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Space.xs),
+                      child: Text(
+                        widget.caption!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: CircleTextStyles.bodyMedium(
+                          CircleOverlay.foreground,
+                        ),
+                      ),
+                    ),
+                  if (widget.authorName != null)
+                    Text(
+                      [
+                        widget.authorName!,
+                        if (widget.createdAt != null)
+                          _photoTimeAgo(widget.createdAt!),
+                      ].join(' \u00b7 '),
+                      style: CircleTextStyles.label(CircleOverlay.muted),
+                    ),
+                  if (photo.caption != null && photo.caption != widget.caption)
+                    Padding(
+                      padding: const EdgeInsets.only(top: Space.xs),
+                      child: Text(
+                        photo.caption!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: CircleTextStyles.label(CircleOverlay.muted),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Action bar.
+            Divider(
+              height: 1,
+              color: CircleOverlay.divider,
+              indent: Space.md,
+              endIndent: Space.md,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Space.md,
+                vertical: Space.sm,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: const [
+                  Expanded(
+                    child: _PhotoAction(
+                      icon: LucideIcons.face_slightly_smiling,
+                      label: 'React',
+                    ),
+                  ),
+                  Expanded(
+                    child: _PhotoAction(
+                      icon: LucideIcons.message_square,
+                      label: 'Comment',
+                    ),
+                  ),
+                  Expanded(
+                    child: _PhotoAction(
+                      icon: LucideIcons.share,
+                      label: 'Share',
+                    ),
+                  ),
+                ],
+              ),
+            ),
             ?footer,
           ],
         ),
       ),
     );
   }
+}
+
+/// Action button for the photo viewer (white on dark).
+class _PhotoAction extends StatelessWidget {
+  const _PhotoAction({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 20, color: CircleOverlay.foreground),
+      const SizedBox(width: Space.xs),
+      Flexible(
+        child: Text(
+          label,
+          overflow: TextOverflow.ellipsis,
+          style: CircleTextStyles.label(CircleOverlay.foreground),
+        ),
+      ),
+    ],
+  );
+}
+
+String _photoTimeAgo(DateTime time) {
+  final diff = DateTime.now().difference(time);
+  if (diff.inMinutes < 1) return 'just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+  if (diff.inHours < 24) {
+    return '${diff.inHours} ${diff.inHours == 1 ? 'hour' : 'hours'} ago';
+  }
+  if (diff.inDays < 7) {
+    return '${diff.inDays} ${diff.inDays == 1 ? 'day' : 'days'} ago';
+  }
+  return '${(diff.inDays / 7).floor()} ${diff.inDays < 14 ? 'week' : 'weeks'} ago';
 }
 
 /// One photo: a fictional scene tile, or an uploaded photo loaded through

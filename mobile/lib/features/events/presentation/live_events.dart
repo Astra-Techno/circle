@@ -451,11 +451,19 @@ class _LiveEventCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final caption = CircleTextStyles.metadata(
-      CircleAccents.of(context).caption,
-    );
+    final accents = CircleAccents.of(context);
+    final caption = CircleTextStyles.metadata(accents.caption);
     final cancelled = item['status'] == 'cancelled';
     final venue = item['venue'] as String? ?? '';
+    final going = (item['going_count'] as num?)?.toInt() ?? 0;
+    final maybe = (item['maybe_count'] as num?)?.toInt() ?? 0;
+    final groupName = item['group_name'] as String? ?? '';
+    // Days until the event.
+    final startAt = DateTime.tryParse(item['start_at'] as String? ?? '');
+    final daysUntil = startAt != null
+        ? startAt.toLocal().difference(DateTime.now()).inDays
+        : null;
+
     return CircleSurfaceCard(
       padding: EdgeInsets.zero,
       onTap: onTap,
@@ -463,23 +471,79 @@ class _LiveEventCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (item['cover_id'] case final String cover)
-            PrivatePhoto(
-              load: ref.watch(
-                liveEventCoverProvider((event: '${item['id']}', cover: cover)),
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(CircleRadius.card),
               ),
-              label: 'Event cover',
+              child: SizedBox(
+                height: 140,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    PrivatePhoto(
+                      load: ref.watch(
+                        liveEventCoverProvider((
+                          event: '${item['id']}',
+                          cover: cover,
+                        )),
+                      ),
+                      label: 'Event cover',
+                    ),
+                    // Group name chip overlay.
+                    if (groupName.isNotEmpty)
+                      Positioned(
+                        left: Space.sm,
+                        top: Space.sm,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Space.sm,
+                            vertical: Space.xs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: CircleOverlay.chipBackground,
+                            borderRadius: BorderRadius.circular(
+                              CircleRadius.button,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                LucideIcons.users_round,
+                                size: 12,
+                                color: CircleOverlay.foreground,
+                              ),
+                              const SizedBox(width: Space.xs),
+                              Text(
+                                groupName,
+                                style: CircleTextStyles.caption(
+                                  CircleOverlay.foreground,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           Padding(
-            padding: const EdgeInsets.all(Space.lg),
+            padding: const EdgeInsets.all(Space.md),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                EventDateBlock(
-                  wall: liveEventWall(
-                    item['start_at'] as String,
-                    item['timezone'] as String,
+                // Cover photo thumbnail when no cover image.
+                if (item['cover_id'] == null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: Space.md),
+                    child: EventDateBlock(
+                      wall: liveEventWall(
+                        item['start_at'] as String,
+                        item['timezone'] as String,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: Space.lg),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,16 +554,121 @@ class _LiveEventCard extends ConsumerWidget {
                           theme.colorScheme.onSurface,
                         ),
                       ),
+                      if (groupName.isNotEmpty && item['cover_id'] == null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: Space.xs),
+                          child: Row(
+                            children: [
+                              Icon(
+                                LucideIcons.users_round,
+                                size: 12,
+                                color: accents.caption,
+                              ),
+                              const SizedBox(width: Space.xs),
+                              Expanded(child: Text(groupName, style: caption)),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: Space.xs),
-                      Text(liveEventLabel(item), style: caption),
+                      Row(
+                        children: [
+                          Icon(
+                            LucideIcons.calendar,
+                            size: 14,
+                            color: accents.caption,
+                          ),
+                          const SizedBox(width: Space.xs),
+                          Expanded(
+                            child: Text(liveEventLabel(item), style: caption),
+                          ),
+                        ],
+                      ),
+                      if (going > 0 || maybe > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: Space.xs),
+                          child: Row(
+                            children: [
+                              Icon(
+                                LucideIcons.users,
+                                size: 14,
+                                color: accents.caption,
+                              ),
+                              const SizedBox(width: Space.xs),
+                              Expanded(
+                                child: Text(
+                                  [
+                                    if (going > 0) '$going going',
+                                    if (maybe > 0) '$maybe maybe',
+                                  ].join(' \u00b7 '),
+                                  style: caption,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       if (cancelled || venue.isNotEmpty)
-                        Text(cancelled ? 'Cancelled' : venue, style: caption),
+                        Padding(
+                          padding: const EdgeInsets.only(top: Space.xs),
+                          child: Row(
+                            children: [
+                              Icon(
+                                cancelled
+                                    ? LucideIcons.circle_x
+                                    : LucideIcons.map_pin,
+                                size: 14,
+                                color: cancelled
+                                    ? accents.heart
+                                    : accents.caption,
+                              ),
+                              const SizedBox(width: Space.xs),
+                              Expanded(
+                                child: Text(
+                                  cancelled ? 'Cancelled' : venue,
+                                  style: caption,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                Icon(
-                  LucideIcons.chevron_right,
-                  color: CircleAccents.of(context).caption,
+                // Days badge + chevron.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (daysUntil != null && daysUntil >= 0 && !cancelled)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Space.sm,
+                            vertical: Space.xs,
+                          ),
+                          margin: const EdgeInsets.only(bottom: Space.xs),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(
+                              CircleRadius.button,
+                            ),
+                          ),
+                          child: Text(
+                            daysUntil == 0
+                                ? 'Today'
+                                : daysUntil == 1
+                                ? 'Tomorrow'
+                                : 'In $daysUntil days',
+                            style: CircleTextStyles.caption(
+                              theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      Icon(LucideIcons.chevron_right, color: accents.caption),
+                    ],
+                  ),
                 ),
               ],
             ),

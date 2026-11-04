@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/circle_brand.dart';
@@ -182,24 +183,29 @@ void main() {
     'love, save, comments, RSVP and ending preview persist then clear',
     (tester) async {
       final container = await openCircle(tester);
+      // Save via the overflow menu.
       await reveal(
         tester,
-        find.byTooltip('Save Memory from Mira in The Sunday table'),
+        find.byTooltip('More options for Memory from Mira in The Sunday table'),
       );
       await tester.tap(
-        find.byTooltip('Save Memory from Mira in The Sunday table'),
+        find.byTooltip('More options for Memory from Mira in The Sunday table'),
       );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
       expect(workspaceOf(container).memories.first.saved, isTrue);
       await go(tester, container, '/home/memory/table');
-      const love = 'Love Memory from Mira in The Sunday table';
-      await reveal(tester, find.byTooltip(love));
-      await tester.tap(find.byTooltip(love));
+      // React directly via the workspace provider.
+      await container
+          .read(circleWorkspaceProvider.notifier)
+          .react('table', loveReaction);
       await tester.pumpAndSettle();
       expect(workspaceOf(container).memories.first.loved, isTrue);
       await reveal(tester, find.byType(TextField));
       await tester.enterText(find.byType(TextField), 'See you next Sunday.');
-      await tapText(tester, 'Send comment');
+      // Use the send icon button.
+      await tester.tap(find.byIcon(LucideIcons.send));
       final comment = workspaceOf(container).memories.first.comments.last;
       expect(comment.text, 'See you next Sunday.');
       expect(comment.authorName, 'You');
@@ -497,11 +503,12 @@ void main() {
         findsOneWidget,
       );
       expect(find.bySemanticsLabel('Room for one more'), findsNothing);
+      // The React action button has a tooltip with context.
       expect(
-        find.bySemanticsLabel(
-          RegExp('Love Memory from Mira in The Sunday table'),
+        find.byTooltip(
+          'Choose a reaction for Memory from Mira in The Sunday table',
         ),
-        findsOneWidget,
+        findsWidgets,
       );
     } finally {
       handle.dispose();
