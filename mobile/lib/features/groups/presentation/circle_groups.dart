@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../../core/two_pane.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -467,7 +468,7 @@ class _CircleCard extends ConsumerWidget {
                               const SizedBox(width: Space.xs),
                               Icon(
                                 LucideIcons.pin,
-                                size: 14,
+                                size: CircleSizes.iconInline,
                                 color: theme.colorScheme.primary,
                               ),
                             ],
@@ -594,7 +595,7 @@ class _CircleCard extends ConsumerWidget {
                             children: [
                               Icon(
                                 LucideIcons.calendar,
-                                size: 14,
+                                size: CircleSizes.iconInline,
                                 color: accents.heart,
                               ),
                               const SizedBox(width: Space.xs),
@@ -642,12 +643,16 @@ class _CircleCard extends ConsumerWidget {
                 message: '${expanded! ? 'Collapse' : 'Expand'} ${group.name}',
                 child: InkWell(
                   onTap: onToggle,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: Space.sm,
-                      horizontal: Space.sm,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: CircleSizes.minTouchTarget,
                     ),
-                    child: Row(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: Space.sm,
+                        horizontal: Space.sm,
+                      ),
+                      child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -660,11 +665,12 @@ class _CircleCard extends ConsumerWidget {
                           expanded!
                               ? LucideIcons.chevron_up
                               : LucideIcons.chevron_down,
-                          size: 14,
+                          size: CircleSizes.iconInline,
                           color: accents.caption,
                         ),
                       ],
                     ),
+                  ),
                   ),
                 ),
               ),
@@ -707,7 +713,10 @@ class _GroupCoverPhoto extends ConsumerWidget {
         width: Space.large * 2 + Space.md,
         height: Space.large * 2,
         child: image != null
-            ? Image(image: image, fit: BoxFit.cover)
+            ? Semantics(
+                label: 'Cover photo',
+                child: Image(image: image, fit: BoxFit.cover),
+              )
             : Container(
                 color: accents.recessed,
                 alignment: Alignment.center,

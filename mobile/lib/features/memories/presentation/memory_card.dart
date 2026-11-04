@@ -285,7 +285,7 @@ class CircleMemoryCard extends ConsumerWidget {
                             onTap: () =>
                                 showReactionSummary(context, reactions),
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(minHeight: 48),
+                              constraints: const BoxConstraints(minHeight: CircleSizes.minTouchTarget),
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: _ReactionSummaryRow(
@@ -298,13 +298,16 @@ class CircleMemoryCard extends ConsumerWidget {
                       ),
                     if (reactions.total == 0) const Spacer(),
                     if (comments > 0)
-                      InkWell(
-                        onTap: openDetail,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 48),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text('$comments comments', style: caption),
+                      Tooltip(
+                        message: 'View $comments comments',
+                        child: InkWell(
+                          onTap: openDetail,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: CircleSizes.minTouchTarget),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text('$comments comments', style: caption),
+                            ),
                           ),
                         ),
                       ),
@@ -375,7 +378,7 @@ class _ActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(CircleRadius.button),
         onTap: onTap,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
+          constraints: const BoxConstraints(minHeight: CircleSizes.minTouchTarget),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: Space.sm),
             child: Row(

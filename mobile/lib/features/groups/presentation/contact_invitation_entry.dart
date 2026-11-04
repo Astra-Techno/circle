@@ -104,8 +104,8 @@ class _ContactInvitationEntryState extends ConsumerState<ContactInvitationEntry>
                           shape: BoxShape.circle,
                         ),
                         constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
+                          minWidth: Space.section,
+                          minHeight: Space.section,
                         ),
                         child: Text(
                           '$_count',

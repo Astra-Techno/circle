@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import 'event_visuals.dart';
 import '../../workspace/application/workspace_providers.dart';
@@ -507,7 +508,7 @@ class _LiveEventCard extends ConsumerWidget {
                             children: [
                               const Icon(
                                 LucideIcons.users_round,
-                                size: 12,
+                                size: CircleSizes.iconInline,
                                 color: CircleOverlay.foreground,
                               ),
                               const SizedBox(width: Space.xs),
@@ -558,7 +559,7 @@ class _LiveEventCard extends ConsumerWidget {
                             children: [
                               Icon(
                                 LucideIcons.users_round,
-                                size: 12,
+                                size: CircleSizes.iconInline,
                                 color: accents.caption,
                               ),
                               const SizedBox(width: Space.xs),
@@ -571,7 +572,7 @@ class _LiveEventCard extends ConsumerWidget {
                         children: [
                           Icon(
                             LucideIcons.calendar,
-                            size: 14,
+                            size: CircleSizes.iconInline,
                             color: accents.caption,
                           ),
                           const SizedBox(width: Space.xs),
@@ -587,7 +588,7 @@ class _LiveEventCard extends ConsumerWidget {
                             children: [
                               Icon(
                                 LucideIcons.users,
-                                size: 14,
+                                size: CircleSizes.iconInline,
                                 color: accents.caption,
                               ),
                               const SizedBox(width: Space.xs),
@@ -613,7 +614,7 @@ class _LiveEventCard extends ConsumerWidget {
                                 cancelled
                                     ? LucideIcons.circle_x
                                     : LucideIcons.map_pin,
-                                size: 14,
+                                size: CircleSizes.iconInline,
                                 color: cancelled
                                     ? accents.heart
                                     : accents.caption,

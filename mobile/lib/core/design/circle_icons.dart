@@ -51,6 +51,12 @@ abstract final class CircleIcons {
 
 /// Tokenized icon sizes from the blueprint.
 abstract final class CircleSizes {
+  /// Tiny icon beside caption/metadata text (12–14dp range).
+  static const iconInline = 14.0;
+
+  /// Photo-viewer action icons (React, Comment, Share).
+  static const iconPhoto = 20.0;
+
   static const iconSmall = 17.0;
   static const iconDefault = 22.0;
   static const iconQuickAction = 24.0;

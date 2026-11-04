@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_icons.dart';
 import '../../../core/circle_brand.dart';
 import '../../../core/circle_failure.dart';
 import '../domain/access_validation.dart';
@@ -227,7 +228,7 @@ class _PhotoCollage extends StatelessWidget {
                               ),
                               Icon(
                                 LucideIcons.heart,
-                                size: 14,
+                                size: CircleSizes.iconInline,
                                 color: accents.heart,
                               ),
                             ],

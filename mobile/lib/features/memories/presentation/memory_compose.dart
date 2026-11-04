@@ -845,20 +845,24 @@ class _CompactPhotoRow extends StatelessWidget {
             child: Semantics(
               button: true,
               label: 'Add photos',
-              child: GestureDetector(
-                onTap: onAdd,
-                child: Container(
-                  width: _thumbSize,
-                  height: _thumbSize,
-                  decoration: BoxDecoration(
-                    color: accents.recessed,
-                    borderRadius: BorderRadius.circular(CircleRadius.card),
-                    border: Border.all(color: accents.hairline),
-                  ),
-                  child: Icon(
-                    LucideIcons.plus,
-                    size: Space.hero,
-                    color: theme.colorScheme.primary,
+              child: Material(
+                color: accents.recessed,
+                borderRadius: BorderRadius.circular(CircleRadius.card),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(CircleRadius.card),
+                  onTap: onAdd,
+                  child: Container(
+                    width: _thumbSize,
+                    height: _thumbSize,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(CircleRadius.card),
+                      border: Border.all(color: accents.hairline),
+                    ),
+                    child: Icon(
+                      LucideIcons.plus,
+                      size: Space.hero,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
               ),

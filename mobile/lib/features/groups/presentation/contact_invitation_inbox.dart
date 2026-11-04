@@ -5,6 +5,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/contact_invitations.dart';
@@ -525,8 +526,8 @@ class _InvitationCard extends StatelessWidget {
                   onTap: onBlock,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
-                      minHeight: 48,
-                      minWidth: 48,
+                      minHeight: CircleSizes.minTouchTarget,
+                      minWidth: CircleSizes.minTouchTarget,
                     ),
                     child: Align(
                       alignment: Alignment.centerLeft,

@@ -505,8 +505,9 @@ class ChatMessageBubble extends StatelessWidget {
                     const CustomSemanticsAction(label: 'Message options'):
                         onOptions!,
                   },
-            child: GestureDetector(
+            child: InkWell(
               onLongPress: onOptions,
+              borderRadius: BorderRadius.circular(CircleRadius.tile),
               child: withReactions,
             ),
           ),

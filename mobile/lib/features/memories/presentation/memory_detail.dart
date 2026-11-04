@@ -269,8 +269,8 @@ class _CommentTile extends StatelessWidget {
                     onTap: onReply,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(
-                        minHeight: 48,
-                        minWidth: 48,
+                        minHeight: CircleSizes.minTouchTarget,
+                        minWidth: CircleSizes.minTouchTarget,
                       ),
                       child: Align(
                         alignment: Alignment.centerLeft,
@@ -288,8 +288,8 @@ class _CommentTile extends StatelessWidget {
                     onTap: onDelete,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(
-                        minHeight: 48,
-                        minWidth: 48,
+                        minHeight: CircleSizes.minTouchTarget,
+                        minWidth: CircleSizes.minTouchTarget,
                       ),
                       child: Align(
                         alignment: Alignment.centerLeft,
@@ -307,8 +307,8 @@ class _CommentTile extends StatelessWidget {
                     onTap: onReport,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(
-                        minHeight: 48,
-                        minWidth: 48,
+                        minHeight: CircleSizes.minTouchTarget,
+                        minWidth: CircleSizes.minTouchTarget,
                       ),
                       child: Align(
                         alignment: Alignment.centerLeft,
@@ -541,8 +541,8 @@ class _InlineCommentInputState extends State<_InlineCommentInput> {
               label: 'Send comment',
               button: true,
               child: SizedBox(
-                width: 48,
-                height: 48,
+                width: CircleSizes.minTouchTarget,
+                height: CircleSizes.minTouchTarget,
                 child: Material(
                   color: theme.colorScheme.primary,
                   shape: const CircleBorder(),

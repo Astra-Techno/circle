@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/circle_signed_image.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import '../application/media_providers.dart';
 import '../../workspace/application/workspace_providers.dart';
@@ -247,7 +248,7 @@ class _PhotoPagerState extends State<PhotoPager> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  const SizedBox(width: CircleSizes.minTouchTarget),
                 ],
               ),
             ),
@@ -405,7 +406,7 @@ class _PhotoAction extends StatelessWidget {
     mainAxisAlignment: MainAxisAlignment.center,
     mainAxisSize: MainAxisSize.min,
     children: [
-      Icon(icon, size: 20, color: CircleOverlay.foreground),
+      Icon(icon, size: CircleSizes.iconPhoto, color: CircleOverlay.foreground),
       const SizedBox(width: Space.xs),
       Flexible(
         child: Text(
