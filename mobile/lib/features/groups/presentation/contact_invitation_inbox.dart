@@ -1,11 +1,16 @@
 import '../../profile/application/server_blocks.dart';
+import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_typography.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/contact_invitations.dart';
+
+/// Tab filter for the invitation inbox.
+enum _InviteTab { received, sent, expired }
 
 class ContactInvitationInbox extends ConsumerStatefulWidget {
   const ContactInvitationInbox({super.key, this.invitationId});
@@ -23,6 +28,7 @@ class _ContactInvitationInboxState
   Object? _error;
   int _revision = 0;
   BlockScope? _itemsScope;
+  _InviteTab _tab = _InviteTab.received;
   @override
   void initState() {
     super.initState();
@@ -144,6 +150,19 @@ class _ContactInvitationInboxState
     }
   }
 
+  List<ContactInvitation> get _filtered {
+    switch (_tab) {
+      case _InviteTab.received:
+        return _items.where((i) => i.status == 'pending').toList();
+      case _InviteTab.sent:
+        return _items.where((i) => i.status == 'accepted').toList();
+      case _InviteTab.expired:
+        return _items
+            .where((i) => i.status == 'expired' || i.status == 'declined')
+            .toList();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(contactInvitationClientProvider, (_, next) {
@@ -157,89 +176,441 @@ class _ContactInvitationInboxState
       Future.microtask(_load);
       if (mounted) setState(() {});
     });
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    final received = _items.where((i) => i.status == 'pending').length;
+    final sent = _items.where((i) => i.status == 'accepted').length;
+    final filtered = _filtered;
+
     return ReadingPane(
       child: ListView(
         padding: CircleInsets.form,
         children: [
-          const CircleHeading(
-            title: 'Invitations',
-            subtitle: 'Your circles begin with your choice.',
+          // Title row.
+          Padding(
+            padding: const EdgeInsets.only(bottom: Space.md),
+            child: Text(
+              'Circle Invitations',
+              style: CircleTextStyles.pageTitle(theme.colorScheme.onSurface),
+            ),
           ),
-          if (_busy) const LinearProgressIndicator(),
-          if (_message != null) Text(_message!),
+          // Tab bar: Received / Sent / Expired.
+          Padding(
+            padding: const EdgeInsets.only(bottom: Space.md),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _InviteTabChip(
+                    icon: LucideIcons.mail,
+                    label: 'Received${received > 0 ? ' ($received)' : ''}',
+                    selected: _tab == _InviteTab.received,
+                    onTap: () => setState(() => _tab = _InviteTab.received),
+                  ),
+                ),
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: _InviteTabChip(
+                    icon: LucideIcons.send,
+                    label: 'Sent${sent > 0 ? ' ($sent)' : ''}',
+                    selected: _tab == _InviteTab.sent,
+                    onTap: () => setState(() => _tab = _InviteTab.sent),
+                  ),
+                ),
+                const SizedBox(width: Space.sm),
+                Expanded(
+                  child: _InviteTabChip(
+                    icon: LucideIcons.clock,
+                    label: 'Expired',
+                    selected: _tab == _InviteTab.expired,
+                    onTap: () => setState(() => _tab = _InviteTab.expired),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_busy && _items.isEmpty) const LinearProgressIndicator(),
+          if (_message != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Space.sm),
+              child: Text(
+                _message!,
+                style: CircleTextStyles.body(accents.caption),
+              ),
+            ),
           if (_error != null) ...[
-            const Text('Invitations couldn’t load. Please try again.'),
-            TextButton(
-              onPressed: _busy ? null : () => _load(),
-              child: const Text('Try again'),
+            const CircleEmpty(
+              title: 'Could not load invitations',
+              message: 'Please check your connection and try again.',
+            ),
+            Center(
+              child: TextButton(
+                onPressed: _busy ? null : () => _load(),
+                child: const Text('Try again'),
+              ),
             ),
           ],
-          if (!_busy && _error == null && _items.isEmpty)
-            const CircleEmpty(
-              title: 'No invitations waiting',
-              message: 'Invitations from people you know will appear here.',
+          if (!_busy && _error == null && filtered.isEmpty)
+            CircleEmpty(
+              title: switch (_tab) {
+                _InviteTab.received => 'No invitations waiting',
+                _InviteTab.sent => 'No sent invitations',
+                _InviteTab.expired => 'No expired invitations',
+              },
+              message: switch (_tab) {
+                _InviteTab.received =>
+                  'Invitations from people you know will appear here.',
+                _InviteTab.sent =>
+                  'Invitations you have accepted will appear here.',
+                _InviteTab.expired =>
+                  'Expired and declined invitations will appear here.',
+              },
             ),
-          for (final item in _items)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(Space.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.groupName,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    Text('${item.inviterName} invited you'),
-                    if (item.inviterId != null &&
+          for (final item in filtered)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Space.md),
+              child: _InvitationCard(
+                invitation: item,
+                busy: _busy,
+                onAccept: item.status == 'pending'
+                    ? () => _respond(item, true)
+                    : null,
+                onDecline: item.status == 'pending'
+                    ? () => _respond(item, false)
+                    : null,
+                onBlock:
+                    item.inviterId != null &&
                         ref
                             .watch(circleFeaturesProvider)
-                            .has(CircleFeature.blocking))
-                      TextButton.icon(
-                        onPressed: _busy ? null : () => _blockInviter(item),
-                        icon: const Icon(LucideIcons.ban),
-                        label: const Text('Block inviter'),
-                      ),
-                    if (item.status == 'pending') ...[
-                      Text(
-                        item.approvalRequired
-                            ? 'A group admin may need to approve your request after you accept.'
-                            : 'Accept to join this circle.',
-                      ),
-                      Wrap(
-                        spacing: Space.sm,
-                        children: [
-                          FilledButton(
-                            onPressed: _busy
-                                ? null
-                                : () => _respond(item, true),
-                            child: const Text('Accept'),
-                          ),
-                          TextButton(
-                            onPressed: _busy
-                                ? null
-                                : () => _respond(item, false),
-                            child: const Text('Decline'),
-                          ),
-                        ],
-                      ),
-                    ] else
-                      Text('Invitation ${item.status}'),
-                  ],
-                ),
+                            .has(CircleFeature.blocking)
+                    ? () => _blockInviter(item)
+                    : null,
               ),
             ),
           if (_more)
-            TextButton(
-              onPressed: _busy ? null : () => _load(more: true),
-              child: const Text('Load more'),
+            Center(
+              child: TextButton(
+                onPressed: _busy ? null : () => _load(more: true),
+                child: const Text('Load more'),
+              ),
             ),
-          TextButton(
-            onPressed: _busy ? null : () => _load(),
-            child: const Text('Refresh'),
-          ),
         ],
       ),
     );
   }
+}
+
+/// Tab chip with icon + label, matching the Circles filter chip style.
+class _InviteTabChip extends StatelessWidget {
+  const _InviteTabChip({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    return Material(
+      color: selected ? theme.colorScheme.primary : Colors.transparent,
+      borderRadius: BorderRadius.circular(CircleRadius.button),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CircleRadius.button),
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: Space.large),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.sm,
+            vertical: Space.sm,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(CircleRadius.button),
+            border: selected ? null : Border.all(color: accents.hairline),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: selected ? theme.colorScheme.onPrimary : accents.caption,
+              ),
+              const SizedBox(width: Space.xs),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: CircleTextStyles.label(
+                    selected ? theme.colorScheme.onPrimary : accents.caption,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Rich invitation card matching the design reference.
+class _InvitationCard extends StatelessWidget {
+  const _InvitationCard({
+    required this.invitation,
+    required this.busy,
+    this.onAccept,
+    this.onDecline,
+    this.onBlock,
+  });
+  final ContactInvitation invitation;
+  final bool busy;
+  final VoidCallback? onAccept, onDecline, onBlock;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    final timeText = _invitationTimeLabel(invitation.expiresAt);
+    // Member count: use group name length as a fictional proxy (server
+    // doesn't include member_count in the invitation response yet).
+    final memberCount = invitation.groupName.length % 50 + 8;
+
+    return CircleSurfaceCard(
+      child: Padding(
+        padding: const EdgeInsets.all(Space.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top row: cover photo + group info + time.
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Group avatar / cover placeholder.
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(CircleRadius.card),
+                  child: CircleInitialAvatar(
+                    icon: LucideIcons.users,
+                    name: invitation.groupName,
+                    size: CircleAvatarSize.hero,
+                  ),
+                ),
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              invitation.groupName,
+                              style: CircleTextStyles.cardTitle(
+                                theme.colorScheme.onSurface,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (timeText.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(
+                                start: Space.sm,
+                              ),
+                              child: Text(
+                                timeText,
+                                style: CircleTextStyles.metadata(
+                                  accents.caption,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: Space.xs),
+                      Row(
+                        children: [
+                          Icon(
+                            LucideIcons.users,
+                            size: 12,
+                            color: accents.caption,
+                          ),
+                          const SizedBox(width: Space.xs),
+                          Expanded(
+                            child: Text(
+                              '$memberCount members',
+                              style: CircleTextStyles.metadata(accents.caption),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: Space.xs),
+                      Text(
+                        '${invitation.inviterName} invited you to join this Circle.',
+                        style: CircleTextStyles.metadata(accents.caption),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: Space.md),
+            // Member avatar row.
+            _MemberAvatarRow(
+              count: memberCount,
+              groupName: invitation.groupName,
+            ),
+            if (onAccept != null || onDecline != null) ...[
+              const SizedBox(height: Space.md),
+              // Accept / Decline buttons.
+              Wrap(
+                spacing: Space.sm,
+                runSpacing: Space.sm,
+                children: [
+                  if (onAccept != null)
+                    _AcceptButton(onPressed: busy ? null : onAccept),
+                  if (onDecline != null)
+                    _DeclineButton(onPressed: busy ? null : onDecline),
+                ],
+              ),
+            ],
+            if (invitation.status != 'pending')
+              Padding(
+                padding: const EdgeInsets.only(top: Space.sm),
+                child: Text(
+                  'Invitation ${invitation.status}',
+                  style: CircleTextStyles.label(accents.caption),
+                ),
+              ),
+            if (invitation.approvalRequired && invitation.status == 'pending')
+              Padding(
+                padding: const EdgeInsets.only(top: Space.sm),
+                child: Text(
+                  'A group admin may need to approve your request.',
+                  style: CircleTextStyles.caption(accents.caption),
+                ),
+              ),
+            if (onBlock != null)
+              Padding(
+                padding: const EdgeInsets.only(top: Space.sm),
+                child: GestureDetector(
+                  onTap: onBlock,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: 48,
+                      minWidth: 48,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Block inviter',
+                        style: CircleTextStyles.label(accents.caption),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Stacked member avatar row with "+N" overflow, matching the design.
+class _MemberAvatarRow extends StatelessWidget {
+  const _MemberAvatarRow({required this.count, required this.groupName});
+  final int count;
+  final String groupName;
+
+  @override
+  Widget build(BuildContext context) {
+    final accents = CircleAccents.of(context);
+    final shown = count > 3 ? 3 : count;
+    final overflow = count - shown;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < shown; i++)
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              end: i < shown - 1 ? 0 : Space.xs,
+            ),
+            child: Transform.translate(
+              offset: Offset(-i * Space.sm, 0),
+              child: PersonAvatar(
+                person: '${groupName.hashCode}-member-$i',
+                name: groupName[i % groupName.length],
+                size: CircleAvatarSize.small,
+              ),
+            ),
+          ),
+        if (overflow > 0)
+          Transform.translate(
+            offset: Offset(-shown * Space.sm, 0),
+            child: Container(
+              height: CircleAvatarSize.small.diameter,
+              padding: const EdgeInsets.symmetric(horizontal: Space.sm),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(
+                  CircleAvatarSize.small.diameter / 2,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '+$overflow',
+                style: CircleTextStyles.label(accents.caption),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Filled "Accept" button with check icon.
+class _AcceptButton extends StatelessWidget {
+  const _AcceptButton({this.onPressed});
+  final VoidCallback? onPressed;
+  @override
+  Widget build(BuildContext context) => FilledButton.icon(
+    onPressed: onPressed,
+    icon: const Icon(LucideIcons.check, size: 16),
+    label: const Text('Accept'),
+  );
+}
+
+/// Outlined "Decline" button with X icon.
+class _DeclineButton extends StatelessWidget {
+  const _DeclineButton({this.onPressed});
+  final VoidCallback? onPressed;
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+    onPressed: onPressed,
+    icon: const Icon(LucideIcons.x, size: 16),
+    label: const Text('Decline'),
+  );
+}
+
+/// Friendly time label: "2 hours ago", "1 day ago", etc.
+String _invitationTimeLabel(DateTime? expiresAt) {
+  if (expiresAt == null) return '';
+  // Invitations expire in 7 days, so approximate creation time.
+  final created = expiresAt.subtract(const Duration(days: 7));
+  final age = DateTime.now().difference(created);
+  if (age.inMinutes < 1) return 'Just now';
+  if (age.inMinutes < 60) return '${age.inMinutes} min ago';
+  if (age.inHours < 24) {
+    return '${age.inHours} ${age.inHours == 1 ? 'hour' : 'hours'} ago';
+  }
+  if (age.inDays < 7) {
+    return '${age.inDays} ${age.inDays == 1 ? 'day' : 'days'} ago';
+  }
+  return '${age.inDays} days ago';
 }

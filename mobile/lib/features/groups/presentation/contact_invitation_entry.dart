@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../application/contact_invitations.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_typography.dart';
 import '../../../core/circle_components.dart';
 
 /// Inbox discovery remains available when OS notifications are disabled.
@@ -67,41 +68,86 @@ class _ContactInvitationEntryState extends ConsumerState<ContactInvitationEntry>
     ref.listen(contactInvitationClientProvider, (_, next) {
       if (mounted) setState(() => _count = null);
     });
-    final largeText =
-        MediaQuery.textScalerOf(context).scale(1) >
-        CircleLayout.largeTextThreshold;
-    final refresh = IconButton(
-      tooltip: 'Refresh invitations',
-      onPressed: _busy ? null : _load,
-      icon: const Icon(LucideIcons.refresh_cw),
-    );
-    return CircleRow(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ListTile(
-            leading: largeText ? null : const Icon(LucideIcons.mail),
-            title: const Text('Invitations for you'),
-            subtitle: Text(
-              _error
-                  ? 'Couldn’t check invitations. Tap refresh to retry.'
-                  : _busy
-                  ? 'Checking invitations…'
-                  : _count == null
-                  ? 'Review your invitations'
-                  : _count == 0
-                  ? 'No invitations waiting'
-                  : '$_count waiting on the latest page',
-            ),
-            trailing: largeText ? null : refresh,
-            onTap: () async {
-              await context.push('/you/invitations');
-              if (mounted) _load();
-            },
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    return CircleSurfaceCard(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        onTap: () async {
+          await context.push('/you/invitations');
+          if (mounted) _load();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.md,
+            vertical: Space.md,
           ),
-          if (largeText)
-            Align(alignment: AlignmentDirectional.centerEnd, child: refresh),
-        ],
+          child: Row(
+            children: [
+              // Mail icon with optional badge.
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    LucideIcons.mail,
+                    size: Space.section,
+                    color: theme.colorScheme.primary,
+                  ),
+                  if (_count != null && _count! > 0)
+                    Positioned(
+                      top: -Space.xs,
+                      right: -Space.xs,
+                      child: Container(
+                        padding: const EdgeInsets.all(Space.xs),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          '$_count',
+                          textAlign: TextAlign.center,
+                          style: CircleTextStyles.caption(
+                            theme.colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Circle Invitations',
+                      style: CircleTextStyles.homeAuthor(
+                        theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      _error
+                          ? 'Tap to check invitations'
+                          : _busy
+                          ? 'Checking...'
+                          : _count == null
+                          ? 'Review your invitations'
+                          : _count == 0
+                          ? 'No invitations waiting'
+                          : '$_count pending',
+                      style: CircleTextStyles.metadata(accents.caption),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(LucideIcons.chevron_right, color: accents.caption),
+            ],
+          ),
+        ),
       ),
     );
   }
