@@ -127,3 +127,14 @@ run must be linked to the pushed source SHA; upload and Apple processing are
 separate from tests. After installing, check Profile → Account for Social 1.
 
 Reproduce: `CIRCLE_CAPTURE_DESIGN=true flutter test test/consistent_design_review_test.dart`.
+
+## Completed TestFlight build
+
+[Run41794929174](https://github.com/Astra-Techno/circle/actions/runs/41794929174)
+succeeded from source db31874. Native compile, signature verification and App
+Store Connect upload passed. The downloaded signed IPA was independently
+inspected: version1.0.27, build1035.1, bundle com.circlecommunity.mobile, compiled
+Social1 marker present, Roboto Regular/SemiBold assets present, and SHA-256
+matches the CI manifest. [Machine-readable evidence](BUILD.json). Apple processing,
+tester-group availability and the installed phone's visual acceptance remain
+separate. After installation, Profile → Account must show Interface version: Social1.

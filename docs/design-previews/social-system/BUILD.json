@@ -1,0 +1,17 @@
+{
+  "version": "1.0.27",
+  "build": "1035.1",
+  "bundle_id": "com.circlecommunity.mobile",
+  "social_1_in_compiled_app": true,
+  "bundled_fonts": {
+    "Roboto-Regular.ttf": true,
+    "Roboto-SemiBold.ttf": true
+  },
+  "ipa_sha256": "3ef84c077fbe4f60fcdab5fcef3a36471cf4116368a8eb91c6df8fdf35ccfb3c",
+  "checksum_matches_ci_manifest": true,
+  "source_commit": "db31874aaa6b5137f563b3ce8c7ce5eef9663c62",
+  "workflow_run": 41794929174,
+  "workflow_url": "https://github.com/Astra-Techno/circle/actions/runs/41794929174",
+  "native_compile_signature_upload": "success",
+  "apple_processing_and_device_acceptance": "not independently verified"
+}
