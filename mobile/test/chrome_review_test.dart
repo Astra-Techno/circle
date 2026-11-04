@@ -9,6 +9,25 @@ import 'support/server_harness.dart';
 import 'live_chat_events_test.dart' show LiveFixture;
 
 void main() {
+  for (final brightness in Brightness.values) {
+    testWidgets('footer paints through iPhone safe area ${brightness.name}', (
+      tester,
+    ) async {
+      tester.view.padding = const FakeViewPadding(bottom: 34);
+      addTearDown(tester.view.resetPadding);
+      await openCircle(tester, brightness: brightness);
+      final surface = find
+          .ancestor(of: find.text('Home'), matching: find.byType(DecoratedBox))
+          .first;
+      expect(tester.getRect(surface).bottom, 852);
+      expect(tester.getRect(find.text('Home')).bottom, lessThanOrEqualTo(818));
+      final decoration =
+          tester.widget<DecoratedBox>(surface).decoration as BoxDecoration;
+      final theme = Theme.of(tester.element(find.text('Home')));
+      expect(decoration.color, theme.colorScheme.surface);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
   for (final layout in [
     (393.0, 1.0, Brightness.light),
     (320.0, 2.0, Brightness.dark),
