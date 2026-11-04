@@ -235,7 +235,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                                         'Pinned Circles',
                                         style: theme.textTheme.titleMedium
                                             ?.copyWith(
-                                              fontWeight: FontWeight.bold,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                       ),
                                     ),
@@ -281,7 +281,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                             Text(
                               'All Circles',
                               style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                             const Spacer(),
@@ -560,7 +560,7 @@ class _CircleCard extends ConsumerWidget {
                                   '+$remaining',
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     color: accents.caption,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               ),

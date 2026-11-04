@@ -1,5 +1,17 @@
 # CIRCLE design system
 
+## Social 1 — 4 November 2026
+
+Owner requests Facebook-inspired consistency across every screen. This supersedes
+the older Jakarta/Home-only typography and floating-pill navigation directions.
+Use bundled Roboto400/600 exclusively, with CircleTextStyles and the Material
+TextTheme sharing the same semantic roles. Body/card text16, page titles24,
+sections20, metadata13; use tokens rather than per-screen sizes. All primary
+icons are Lucide outlines; selected filled hearts retain their state meaning.
+Use the gray/white canvas,12px cards,10px controls and full-width five-tab bar.
+Preserve CIRCLE purple, feature/access gates and real data behavior.
+[Audit and actual Flutter renders](design-previews/social-system/REVIEW.md).
+
 ## Root-page refinement — 3 November 2026
 
 Owner requested applying the current Home styling to the other pages. Chats,

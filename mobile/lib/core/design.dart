@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'design/circle_typography.dart';
+import 'design/circle_icons.dart';
 
 abstract final class CircleProfileLayout {
   static const coverAspectRatio = 2.6;
@@ -10,7 +12,7 @@ abstract final class CircleLayout {
   static const homeHeaderHeight = 56.0;
   static const homeLogoSize = 40.0;
   static const homeActionMinHeight = 48.0;
-  static const homeDockHeight = 52.0;
+  static const homeDockHeight = 64.0;
   static const homeMosaicAspect = 2.8;
   static const homeGridBreakpoint = 840.0;
   static const homeComposerMaxWidth = 720.0;
@@ -37,7 +39,7 @@ abstract final class CircleDepth {
   static const buttonElevation = 0.0;
   static const pressedElevation = 0.0;
   static const floatingElevation = 2.0;
-  static const _ink = Color(0xFF1C1B22);
+  static const _ink = Color(0xFF1C1E21);
 
   static Color shadow(Brightness brightness) => brightness == Brightness.light
       ? _ink.withValues(alpha: 0.08)
@@ -59,22 +61,10 @@ abstract final class CircleDepth {
   );
 
   /// The floating navigation dock: surface, hairline and one soft shadow.
-  static BoxDecoration dock(BuildContext context) {
-    final theme = Theme.of(context);
-    return BoxDecoration(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(CircleRadius.sheet),
-      border: Border.all(color: CircleAccents.of(context).hairline),
-      boxShadow: [
-        BoxShadow(
-          color: shadow(theme.brightness),
-          offset: const Offset(0, 8),
-          blurRadius: 24,
-          spreadRadius: -4,
-        ),
-      ],
-    );
-  }
+  static BoxDecoration dock(BuildContext context) => BoxDecoration(
+    color: Theme.of(context).colorScheme.surface,
+    border: Border(top: BorderSide(color: CircleAccents.of(context).hairline)),
+  );
 
   static WidgetStateProperty<double> get buttonLift =>
       const WidgetStatePropertyAll(0);
@@ -160,12 +150,12 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     videoContainer: Color(0xFFFDE8E8),
     amber: Color(0xFFD68F00),
     amberContainer: Color(0xFFFFF3DB),
-    recessed: Color(0xFFF5F5F8),
-    hairline: Color(0xFFECECF2),
-    title: Color(0xFF1C1B22),
-    caption: Color(0xFF6B6878),
+    recessed: Color(0xFFF0F2F5),
+    hairline: Color(0xFFCED0D4),
+    title: Color(0xFF1C1E21),
+    caption: Color(0xFF65676B),
     activeDot: Color(0xFF3F7A68),
-    chatWallpaper: Color(0xFFEFEAE2),
+    chatWallpaper: Color(0xFFF0F2F5),
     chatIncoming: Color(0xFFFFFFFF),
     chatOutgoing: Color(0xFFE4DEFA),
   );
@@ -184,13 +174,13 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     videoContainer: Color(0xFF442727),
     amber: Color(0xFFFFCC80),
     amberContainer: Color(0xFF3E2F10),
-    recessed: Color(0xFF1E1C22),
-    hairline: Color(0xFF2C2A31),
-    title: Color(0xFFF2EFEA),
-    caption: Color(0xFFA19DAA),
+    recessed: Color(0xFF18191A),
+    hairline: Color(0xFF3E4042),
+    title: Color(0xFFE4E6EB),
+    caption: Color(0xFFB0B3B8),
     activeDot: Color(0xFF9CCFB9),
-    chatWallpaper: Color(0xFF0E0D12),
-    chatIncoming: Color(0xFF1F1E25),
+    chatWallpaper: Color(0xFF18191A),
+    chatIncoming: Color(0xFF242526),
     chatOutgoing: Color(0xFF332B66),
   );
 
@@ -205,45 +195,24 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
       other is CircleAccents && t >= 0.5 ? other : this;
 }
 
-const _font = 'PlusJakartaSans';
+const _font = CircleTextStyles.fontFamily;
 
-/// Editorial type: exactly four sizes (28 / 20 / 16 / 13) and two weights
-/// (400 / 600), all in the app's bundled PlusJakartaSans. Headlines get
-/// slightly tighter tracking. Body text stays 16px for readability (§4.0).
-TextTheme _textTheme({required Color title, required Color body}) {
-  TextStyle sans(double size, FontWeight weight, double height, Color ink) =>
-      TextStyle(
-        fontFamily: _font,
-        fontSize: size,
-        fontWeight: weight,
-        height: height / size,
-        letterSpacing: 0,
-        color: ink,
-      );
-  TextStyle headline(double size, double height) => TextStyle(
-    fontFamily: _font,
-    fontSize: size,
-    fontWeight: FontWeight.w600,
-    height: height / size,
-    letterSpacing: -0.02 * size,
-    color: title,
-  );
-  return TextTheme(
-    displaySmall: headline(28, 36),
-    headlineLarge: headline(28, 36),
-    headlineMedium: headline(28, 36),
-    headlineSmall: headline(20, 28),
-    titleLarge: headline(20, 28),
-    titleMedium: sans(16, FontWeight.w600, 24, title),
-    titleSmall: sans(13, FontWeight.w600, 16, title),
-    bodyLarge: sans(16, FontWeight.w400, 24, body),
-    bodyMedium: sans(16, FontWeight.w400, 24, body),
-    bodySmall: sans(13, FontWeight.w400, 16, body),
-    labelLarge: sans(16, FontWeight.w600, 24, title),
-    labelMedium: sans(13, FontWeight.w600, 16, title),
-    labelSmall: sans(13, FontWeight.w400, 16, title),
-  );
-}
+/// Theme-based and explicitly styled screens resolve to exactly the same roles.
+TextTheme _textTheme({required Color title, required Color body}) => TextTheme(
+  displaySmall: CircleTextStyles.brand(title),
+  headlineLarge: CircleTextStyles.brand(title),
+  headlineMedium: CircleTextStyles.pageTitle(title),
+  headlineSmall: CircleTextStyles.sectionTitle(title),
+  titleLarge: CircleTextStyles.pageTitle(title),
+  titleMedium: CircleTextStyles.cardTitle(title),
+  titleSmall: CircleTextStyles.label(title),
+  bodyLarge: CircleTextStyles.body(body),
+  bodyMedium: CircleTextStyles.body(body),
+  bodySmall: CircleTextStyles.metadata(body),
+  labelLarge: CircleTextStyles.button(title),
+  labelMedium: CircleTextStyles.label(title),
+  labelSmall: CircleTextStyles.caption(body),
+);
 
 /// Editorial, photo-first (owner, 28 Oct 2026): white canvas, warm neutral
 /// fills, ink text and one deep indigo accent, built on Material 3 tokens.
@@ -267,18 +236,18 @@ ThemeData circleTheme(Brightness brightness) {
     tertiary: accents.sageText,
     tertiaryContainer: accents.sageContainer,
     onTertiaryContainer: accents.sageText,
-    surface: light ? Colors.white : const Color(0xFF121116),
+    surface: light ? Colors.white : const Color(0xFF242526),
     onSurface: accents.title,
     onSurfaceVariant: body,
-    surfaceContainerLowest: light ? Colors.white : const Color(0xFF17161B),
-    surfaceContainerLow: light ? Colors.white : const Color(0xFF17161B),
+    surfaceContainerLowest: light ? Colors.white : const Color(0xFF242526),
+    surfaceContainerLow: light ? Colors.white : const Color(0xFF242526),
     surfaceContainer: accents.recessed,
     surfaceContainerHigh: light
         ? const Color(0xFFECE8E1)
         : const Color(0xFF26242B),
     surfaceContainerHighest: light
         ? const Color(0xFFE6E1D8)
-        : const Color(0xFF2C2A31),
+        : const Color(0xFF3E4042),
     outline: accents.caption,
     outlineVariant: accents.hairline,
   );
@@ -295,6 +264,10 @@ ThemeData circleTheme(Brightness brightness) {
     useMaterial3: true,
     colorScheme: colors,
     textTheme: text,
+    iconTheme: IconThemeData(
+      size: CircleSizes.iconDefault,
+      color: accents.title,
+    ),
     extensions: [accents],
     scaffoldBackgroundColor: colors.surface,
     splashColor: pressedWash,
@@ -353,7 +326,7 @@ ThemeData circleTheme(Brightness brightness) {
           FilledButton.styleFrom(
             minimumSize: const Size(48, 48),
             shape: rounded(CircleRadius.button),
-            textStyle: text.labelLarge?.copyWith(fontSize: 16),
+            textStyle: text.labelLarge,
             padding: const EdgeInsets.symmetric(
               horizontal: Space.section,
               vertical: Space.md,
@@ -370,7 +343,7 @@ ThemeData circleTheme(Brightness brightness) {
         backgroundColor: colors.surfaceContainerLowest,
         foregroundColor: accents.title,
         side: hairline,
-        textStyle: text.labelLarge?.copyWith(fontSize: 16),
+        textStyle: text.labelLarge,
         padding: const EdgeInsets.symmetric(
           horizontal: Space.section,
           vertical: Space.md,
@@ -392,7 +365,7 @@ ThemeData circleTheme(Brightness brightness) {
       focusElevation: 0,
       hoverElevation: 0,
       highlightElevation: 0,
-      extendedTextStyle: text.labelLarge?.copyWith(fontSize: 16),
+      extendedTextStyle: text.labelLarge,
     ),
     navigationBarTheme: NavigationBarThemeData(
       elevation: 0,
@@ -524,7 +497,10 @@ ThemeData circleTheme(Brightness brightness) {
       textStyle: text.labelSmall,
     ),
     iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+      style: IconButton.styleFrom(
+        iconSize: CircleSizes.iconDefault,
+        minimumSize: const Size(48, 48),
+      ),
     ),
     tooltipTheme: TooltipThemeData(
       textStyle: text.bodySmall?.copyWith(color: colors.onPrimary),
@@ -583,19 +559,19 @@ abstract final class CircleRadius {
   static const xsmall = 4.0;
 
   /// Core interactive elements, tooltips and input fields.
-  static const small = 8.0, input = 8.0;
+  static const small = 8.0, input = 10.0;
 
   /// Buttons are pills: half of the 48px minimum height.
-  static const button = 24.0;
+  static const button = 10.0;
 
   /// Photo mosaics and image tiles.
   static const photo = 12.0;
 
   /// Tiles, inner panels, cards, menus and floating buttons.
-  static const tile = 16.0, inner = 16.0, card = 16.0;
+  static const tile = 12.0, inner = 12.0, card = 12.0;
 
   /// Sheets, dialogs and hero surfaces.
-  static const sheet = 24.0, hero = sheet;
+  static const sheet = 16.0, hero = sheet;
 
   /// Chips, avatars, badges and micro-tags.
   static const pill = 999.0;

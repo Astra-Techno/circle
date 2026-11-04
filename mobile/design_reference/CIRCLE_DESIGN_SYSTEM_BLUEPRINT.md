@@ -1,5 +1,10 @@
 # CIRCLE — Unified Design System & Flutter Theme Blueprint
 
+> Current direction,4 November2026: Social1 overrides the older proposed typography
+> and dock values below. Use Roboto400/600, the shared CircleTextStyles/Material
+> roles and a full-width five-tab navigation bar. See docs/design-system.md and
+> docs/design-previews/social-system/REVIEW.md for the implemented design.
+
 **Version:** 1.2 (responsive controls, tablet layout and visual precision standards)  
 **Product:** Circle — *My Circle. Billion Memories.*  
 **Scope:** V1 mobile app; future features intentionally excluded  

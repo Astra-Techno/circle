@@ -1079,7 +1079,7 @@ Widget _headerTitle(
                     ? theme.textTheme.headlineMedium
                     : data.logo != null
                     ? theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       )
                     : theme.textTheme.titleLarge,
               ),

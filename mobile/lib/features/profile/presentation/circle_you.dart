@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/circle_brand.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../../core/theme_controller.dart';
 import 'profile_photo.dart';
@@ -345,6 +346,11 @@ class AccountScreen extends ConsumerWidget {
               () => ref.read(circleWorkspaceProvider.notifier).logOut(),
             ),
             child: const Text('Log out'),
+          ),
+          const SizedBox(height: Space.md),
+          Text(
+            'Interface version: ${CircleIdentity.interfaceVersion}',
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
       ),

@@ -772,11 +772,6 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     final shell = widget.shell, detail = widget.detail, path = widget.path;
 
     final index = shell.currentIndex;
-    final dockInset =
-        MediaQuery.textScalerOf(context).scale(1) >
-            CircleLayout.largeTextThreshold
-        ? Space.xs
-        : Space.section + Space.xs;
     final filter = ref.watch(homeGroupFilterProvider);
     final eventsFilter = ref.watch(eventsGroupFilterProvider);
     final workspace = ref.watch(circleWorkspaceProvider).value;
@@ -825,13 +820,11 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
           ? Align(
               heightFactor: 1,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: CircleLayout.homeDockMaxWidth,
-                ),
+                constraints: const BoxConstraints(maxWidth: double.infinity),
                 child: SafeArea(
                   top: false,
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(dockInset, 0, dockInset, 0),
+                    padding: EdgeInsets.zero,
                     child: DecoratedBox(
                       decoration: CircleDepth.dock(context),
                       child: ConstrainedBox(

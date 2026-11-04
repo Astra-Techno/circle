@@ -226,7 +226,7 @@ class _PhotoCollage extends StatelessWidget {
                                 ),
                               ),
                               Icon(
-                                Icons.favorite,
+                                LucideIcons.heart,
                                 size: 14,
                                 color: accents.heart,
                               ),

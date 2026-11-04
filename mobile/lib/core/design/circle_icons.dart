@@ -56,7 +56,7 @@ abstract final class CircleSizes {
   static const iconQuickAction = 24.0;
   static const iconCreate = 28.0;
   static const iconAction = 21.0;
-  static const minTouchTarget = 44.0;
+  static const minTouchTarget = 48.0;
   static const avatarPost = 40.0;
   static const logoHeader = 40.0;
   static const dockCreate = 56.0;
