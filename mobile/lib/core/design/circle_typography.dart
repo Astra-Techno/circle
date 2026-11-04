@@ -30,7 +30,7 @@ abstract final class CircleTextStyles {
   static TextStyle metadata(Color ink) => _style(ink, 13, 18);
   static TextStyle caption(Color ink) => _style(ink, 12, 16);
   static TextStyle button(Color ink) => _style(ink, 15, 20, emphasis: true);
-  static TextStyle navLabel(Color ink) => _style(ink, 12, 16, emphasis: true);
+  static TextStyle navLabel(Color ink) => _style(ink, 11, 14, emphasis: true);
   static TextStyle input(Color ink) => body(ink);
 
   // Compatibility roles keep all existing screens on the same hierarchy.

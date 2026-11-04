@@ -37,6 +37,7 @@ import '../features/notifications/presentation/push_presentation_host.dart';
 import '../features/profile/presentation/circle_you.dart';
 import '../features/profile/presentation/profile_edit.dart';
 import '../features/profile/presentation/person_profile.dart';
+import '../features/profile/presentation/person_avatar.dart';
 import '../features/search/presentation/search_screen.dart';
 import '../features/workspace/application/workspace_providers.dart';
 import '../features/workspace/presentation/feature_gate.dart';
@@ -775,6 +776,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     final filter = ref.watch(homeGroupFilterProvider);
     final eventsFilter = ref.watch(eventsGroupFilterProvider);
     final workspace = ref.watch(circleWorkspaceProvider).value;
+    final account = ref.watch(serverAccountProvider);
     final features = ref.watch(circleFeaturesProvider);
     // "New event" only when the viewer may create an event somewhere.
     final canCreateEvent =
@@ -827,10 +829,12 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                     top: false,
                     bottom: false,
                     child: Padding(
-                      padding: EdgeInsets.only(
-                        bottom: CircleLayout.navigationBottomPadding(
-                          MediaQuery.viewPaddingOf(context).bottom,
-                        ),
+                      padding: EdgeInsets.symmetric(
+                        vertical:
+                            CircleLayout.navigationBottomPadding(
+                              MediaQuery.viewPaddingOf(context).bottom,
+                            ) /
+                            2,
                       ),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
@@ -881,6 +885,12 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                                   icon: LucideIcons.user,
                                   activeIcon: LucideIcons.user,
                                   label: 'Profile',
+                                  leading: PersonAvatar(
+                                    person:
+                                        account?.id ?? workspace?.viewer ?? '',
+                                    name: account?.displayName ?? 'You',
+                                    size: CircleAvatarSize.navigation,
+                                  ),
                                   selected: index == 4,
                                   onTap: () => shell.goBranch(4),
                                 ),
@@ -1008,7 +1018,9 @@ class _DockTab extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.leading,
   });
+  final Widget? leading;
   final IconData icon, activeIcon;
   final String label;
   final bool selected;
@@ -1045,11 +1057,13 @@ class _DockTab extends StatelessWidget {
                   borderRadius: BorderRadius.circular(CircleRadius.tile),
                 ),
                 alignment: Alignment.center,
-                child: Icon(
-                  selected ? activeIcon : icon,
-                  color: color,
-                  size: Space.section,
-                ),
+                child:
+                    leading ??
+                    Icon(
+                      selected ? activeIcon : icon,
+                      color: color,
+                      size: Space.section,
+                    ),
               ),
               Text(
                 label,

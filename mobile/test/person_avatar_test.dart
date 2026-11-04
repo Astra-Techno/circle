@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:mobile/core/theme_controller.dart';
+import 'package:mobile/core/circle_components.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -201,7 +202,14 @@ void main() {
     await settle(tester);
     await openTab(tester, 'Members');
     await settle(tester);
-    expect(find.byType(PersonAvatar), findsNWidgets(30));
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is PersonAvatar &&
+            widget.size != CircleAvatarSize.navigation,
+      ),
+      findsNWidgets(30),
+    );
     expect(find.text('Show more members'), findsOneWidget);
     expect(
       server.adapter.requests

@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:mobile/features/profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,8 +44,23 @@ void main() {
       }
       expect(bounds.bottom, 852);
       expect(bounds.height, lessThanOrEqualTo(64));
+      final homeIcon = tester.getRect(find.byIcon(LucideIcons.house).last);
+      final profileAvatar = find
+          .descendant(
+            of: find.byType(PersonAvatar),
+            matching: find.byType(CircleAvatar),
+          )
+          .last;
+      expect(tester.getRect(profileAvatar).center.dy, homeIcon.center.dy);
+      expect(tester.widget<Text>(find.text('Home')).style!.fontSize, 11);
+      final label = tester.getRect(find.text('Home'));
+      expect(homeIcon.center.dx, label.center.dx);
+      expect(
+        (homeIcon.top + label.bottom + 4) / 2,
+        closeTo(bounds.center.dy, 1),
+      );
       final labelBottom = tester.getRect(find.text('Home')).bottom;
-      expect(852 - labelBottom, inInclusiveRange(16, 28));
+      expect(852 - labelBottom, inInclusiveRange(12, 20));
       final decoration =
           tester.widget<DecoratedBox>(surface).decoration as BoxDecoration;
       final theme = Theme.of(tester.element(find.text('Home')));

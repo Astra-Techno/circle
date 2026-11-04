@@ -524,6 +524,7 @@ class CirclePill extends StatelessWidget {
 
 /// Avatar sizes used across the app.
 enum CircleAvatarSize {
+  navigation(24),
   small(32),
   medium(40),
   large(56),
