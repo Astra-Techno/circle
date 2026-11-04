@@ -226,26 +226,17 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                                   children: [
                                     Icon(
                                       LucideIcons.pin,
-                                      size: Space.section,
-                                      color: theme.colorScheme.onSurface,
+                                      size: Space.md,
+                                      color: accents.caption,
                                     ),
                                     const SizedBox(width: Space.sm),
                                     Expanded(
                                       child: Text(
-                                        'Pinned Circles',
-                                        style: theme.textTheme.titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                        'PINNED CIRCLES',
+                                        style: CircleTextStyles.label(
+                                          accents.caption,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      'Edit',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: theme.colorScheme.primary,
-                                            fontWeight: FontWeight.w600,
-                                          ),
                                     ),
                                   ],
                                 ),
@@ -276,27 +267,9 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                           top: Space.md,
                           bottom: Space.sm,
                         ),
-                        child: Row(
-                          children: [
-                            Text(
-                              'All Circles',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              'Sort by',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: accents.caption,
-                              ),
-                            ),
-                            Icon(
-                              LucideIcons.chevron_down,
-                              size: 18,
-                              color: accents.caption,
-                            ),
-                          ],
+                        child: Text(
+                          'ALL CIRCLES',
+                          style: CircleTextStyles.label(accents.caption),
                         ),
                       ),
                     for (final entry in entries) ...[
@@ -368,7 +341,9 @@ class _FilterChip extends StatelessWidget {
     final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
     return Material(
-      color: selected ? theme.colorScheme.primary : Colors.transparent,
+      color: selected
+          ? theme.colorScheme.primary
+          : theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(CircleRadius.button),
       child: InkWell(
         borderRadius: BorderRadius.circular(CircleRadius.button),
@@ -498,7 +473,7 @@ class _CircleCard extends ConsumerWidget {
                             ],
                           ],
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: Space.xs),
                         // Member count.
                         Text(
                           '$memberCount ${memberCount == 1 ? 'member' : 'members'}',
@@ -558,9 +533,8 @@ class _CircleCard extends ConsumerWidget {
                                 ),
                                 child: Text(
                                   '+$remaining',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: accents.caption,
-                                    fontWeight: FontWeight.w400,
+                                  style: CircleTextStyles.caption(
+                                    accents.caption,
                                   ),
                                 ),
                               ),
@@ -590,10 +564,8 @@ class _CircleCard extends ConsumerWidget {
                             ],
                           ),
                           Text(
-                            _timeAgo(activity!.time),
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: accents.caption,
-                            ),
+                            circleTimeAgo(activity!.time),
+                            style: CircleTextStyles.caption(accents.caption),
                           ),
                         ],
                       ],
@@ -750,19 +722,6 @@ class _GroupCoverPhoto extends ConsumerWidget {
   }
 }
 
-/// Relative time label: "2 hours ago", "1 day ago", etc.
-String _timeAgo(DateTime time) {
-  final diff = DateTime.now().difference(time);
-  if (diff.inMinutes < 1) return 'just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-  if (diff.inHours < 24) {
-    return '${diff.inHours} ${diff.inHours == 1 ? 'hour' : 'hours'} ago';
-  }
-  if (diff.inDays < 7) {
-    return '${diff.inDays} ${diff.inDays == 1 ? 'day' : 'days'} ago';
-  }
-  return '${(diff.inDays / 7).floor()} ${diff.inDays < 14 ? 'week' : 'weeks'} ago';
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CircleGroupTile is kept for backward compatibility with tests/detail pages.

@@ -264,6 +264,13 @@ class _ContactInvitationInboxState
                 _InviteTab.expired =>
                   'Expired and declined invitations will appear here.',
               },
+              action: _tab == _InviteTab.received
+                  ? TextButton.icon(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(LucideIcons.link),
+                      label: const Text('Open an invite link'),
+                    )
+                  : null,
             ),
           for (final item in filtered)
             Padding(
@@ -317,7 +324,9 @@ class _InviteTabChip extends StatelessWidget {
     final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
     return Material(
-      color: selected ? theme.colorScheme.primary : Colors.transparent,
+      color: selected
+          ? theme.colorScheme.primary
+          : theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(CircleRadius.button),
       child: InkWell(
         borderRadius: BorderRadius.circular(CircleRadius.button),
@@ -337,7 +346,7 @@ class _InviteTabChip extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                size: 14,
+                size: Space.md,
                 color: selected ? theme.colorScheme.onPrimary : accents.caption,
               ),
               const SizedBox(width: Space.xs),
@@ -382,8 +391,21 @@ class _InvitationCard extends StatelessWidget {
     final memberCount = invitation.groupName.length % 50 + 8;
 
     return CircleSurfaceCard(
-      child: Padding(
-        padding: const EdgeInsets.all(Space.md),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Accent top border for visual warmth.
+          Container(
+            height: Space.xs,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(CircleRadius.card),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(Space.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -435,7 +457,7 @@ class _InvitationCard extends StatelessWidget {
                         children: [
                           Icon(
                             LucideIcons.users,
-                            size: 12,
+                            size: Space.md,
                             color: accents.caption,
                           ),
                           const SizedBox(width: Space.xs),
@@ -466,7 +488,7 @@ class _InvitationCard extends StatelessWidget {
               groupName: invitation.groupName,
             ),
             if (onAccept != null || onDecline != null) ...[
-              const SizedBox(height: Space.md),
+              const SizedBox(height: Space.section),
               // Accept / Decline buttons.
               Wrap(
                 spacing: Space.sm,
@@ -498,7 +520,8 @@ class _InvitationCard extends StatelessWidget {
             if (onBlock != null)
               Padding(
                 padding: const EdgeInsets.only(top: Space.sm),
-                child: GestureDetector(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(CircleRadius.button),
                   onTap: onBlock,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
@@ -517,6 +540,8 @@ class _InvitationCard extends StatelessWidget {
               ),
           ],
         ),
+      ),
+        ],
       ),
     );
   }
@@ -598,19 +623,9 @@ class _DeclineButton extends StatelessWidget {
   );
 }
 
-/// Friendly time label: "2 hours ago", "1 day ago", etc.
+/// Approximate creation time from the expiry (invitations expire in 7 days).
 String _invitationTimeLabel(DateTime? expiresAt) {
   if (expiresAt == null) return '';
-  // Invitations expire in 7 days, so approximate creation time.
   final created = expiresAt.subtract(const Duration(days: 7));
-  final age = DateTime.now().difference(created);
-  if (age.inMinutes < 1) return 'Just now';
-  if (age.inMinutes < 60) return '${age.inMinutes} min ago';
-  if (age.inHours < 24) {
-    return '${age.inHours} ${age.inHours == 1 ? 'hour' : 'hours'} ago';
-  }
-  if (age.inDays < 7) {
-    return '${age.inDays} ${age.inDays == 1 ? 'day' : 'days'} ago';
-  }
-  return '${age.inDays} days ago';
+  return circleTimeAgo(created);
 }

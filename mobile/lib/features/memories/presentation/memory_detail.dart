@@ -264,7 +264,8 @@ class _CommentTile extends StatelessWidget {
                   style: CircleTextStyles.metadata(accents.caption),
                 ),
                 if (onReply != null)
-                  GestureDetector(
+                  InkWell(
+                    borderRadius: BorderRadius.circular(CircleRadius.button),
                     onTap: onReply,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(
@@ -282,7 +283,8 @@ class _CommentTile extends StatelessWidget {
                     ),
                   ),
                 if (own && onDelete != null)
-                  GestureDetector(
+                  InkWell(
+                    borderRadius: BorderRadius.circular(CircleRadius.button),
                     onTap: onDelete,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(
@@ -300,7 +302,8 @@ class _CommentTile extends StatelessWidget {
                     ),
                   ),
                 if (onReport != null)
-                  GestureDetector(
+                  InkWell(
+                    borderRadius: BorderRadius.circular(CircleRadius.button),
                     onTap: onReport,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(

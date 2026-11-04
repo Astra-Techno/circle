@@ -1164,3 +1164,19 @@ class CircleSkeletonPage extends StatelessWidget {
     ),
   );
 }
+
+/// Relative time label shared across features: "just now", "5 min ago",
+/// "2 hours ago", "3 days ago", "1 week ago".
+String circleTimeAgo(DateTime time) {
+  final diff = DateTime.now().difference(time);
+  if (diff.inMinutes < 1) return 'just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+  if (diff.inHours < 24) {
+    return '${diff.inHours} ${diff.inHours == 1 ? 'hour' : 'hours'} ago';
+  }
+  if (diff.inDays < 7) {
+    return '${diff.inDays} ${diff.inDays == 1 ? 'day' : 'days'} ago';
+  }
+  final weeks = diff.inDays ~/ 7;
+  return '$weeks ${weeks == 1 ? 'week' : 'weeks'} ago';
+}

@@ -247,14 +247,7 @@ class _PhotoPagerState extends State<PhotoPager> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'More options',
-                    onPressed: () {},
-                    icon: const Icon(
-                      LucideIcons.ellipsis_vertical,
-                      color: CircleOverlay.foreground,
-                    ),
-                  ),
+                  const SizedBox(width: 48),
                 ],
               ),
             ),
@@ -341,7 +334,7 @@ class _PhotoPagerState extends State<PhotoPager> {
                       [
                         widget.authorName!,
                         if (widget.createdAt != null)
-                          _photoTimeAgo(widget.createdAt!),
+                          circleTimeAgo(widget.createdAt!),
                       ].join(' \u00b7 '),
                       style: CircleTextStyles.label(CircleOverlay.muted),
                     ),
@@ -425,18 +418,6 @@ class _PhotoAction extends StatelessWidget {
   );
 }
 
-String _photoTimeAgo(DateTime time) {
-  final diff = DateTime.now().difference(time);
-  if (diff.inMinutes < 1) return 'just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-  if (diff.inHours < 24) {
-    return '${diff.inHours} ${diff.inHours == 1 ? 'hour' : 'hours'} ago';
-  }
-  if (diff.inDays < 7) {
-    return '${diff.inDays} ${diff.inDays == 1 ? 'day' : 'days'} ago';
-  }
-  return '${(diff.inDays / 7).floor()} ${diff.inDays < 14 ? 'week' : 'weeks'} ago';
-}
 
 /// One photo: a fictional scene tile, or an uploaded photo loaded through
 /// a short-lived signed link selected for the physical display area.

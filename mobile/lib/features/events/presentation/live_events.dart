@@ -412,10 +412,9 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                           chosen == null
                               ? 'Are you coming?'
                               : 'Your answer: ${_answerLabel(chosen)}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: CircleAccents.of(context).caption,
-                              ),
+                          style: CircleTextStyles.metadata(
+                            CircleAccents.of(context).caption,
+                          ),
                         ),
                         const SizedBox(height: Space.sm),
                         Row(
