@@ -84,13 +84,26 @@ Future<void> reveal(WidgetTester tester, Finder finder) async {
     (widget) =>
         widget is Scrollable && widget.axisDirection == AxisDirection.down,
   );
+  // SelectableText and TextField create internal scrollables too. Choose
+  // a scrollable that can actually move instead of a zero-range text viewport.
+  Finder movingScroll() {
+    final candidates = vertical.evaluate().where((element) {
+      final state = (element as StatefulElement).state as ScrollableState;
+      return state.position.hasContentDimensions &&
+          state.position.maxScrollExtent > 0;
+    }).toList();
+    return candidates.isEmpty
+        ? vertical.last
+        : find.byWidget(candidates.last.widget);
+  }
+
   for (final delta in [200.0, -200.0]) {
     if (finder.evaluate().isNotEmpty) break;
     try {
       await tester.scrollUntilVisible(
         finder,
         delta,
-        scrollable: vertical.last,
+        scrollable: movingScroll(),
         maxScrolls: 60,
       );
     } on StateError {

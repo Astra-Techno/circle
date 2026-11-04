@@ -123,11 +123,14 @@ class _InviteLinkScreenState extends ConsumerState<InviteLinkScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Invite'),
-      leading: BackButton(
-        onPressed: () =>
-            context.canPop() ? context.pop() : context.go('/groups'),
+      toolbarHeight: CircleLayout.headerHeight(context),
+      leading: CircleHeaderAction(
+        child: BackButton(
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/groups'),
+        ),
       ),
+      title: const Text('Invite'),
     ),
     body: SafeArea(
       child: ReadingPane(

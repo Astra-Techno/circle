@@ -254,7 +254,7 @@ class ChatTopBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: Space.xs),
           child: Row(
             children: [
-              BackButton(onPressed: onBack),
+              CircleHeaderAction(child: BackButton(onPressed: onBack)),
               ChatIdentity(
                 name: name,
                 person: person,
@@ -286,10 +286,12 @@ class ChatTopBar extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                tooltip: 'Conversation options',
-                onPressed: onOptions,
-                icon: const Icon(LucideIcons.ellipsis_vertical),
+              CircleHeaderAction(
+                child: IconButton(
+                  tooltip: 'Conversation options',
+                  onPressed: onOptions,
+                  icon: const Icon(LucideIcons.ellipsis),
+                ),
               ),
             ],
           ),

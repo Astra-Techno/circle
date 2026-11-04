@@ -1,5 +1,20 @@
 # CIRCLE design system
 
+## Social 1.1 — headers and forms,4 November2026
+
+Root headers use one title row,32px Home logo,22px outline icons in40px quiet
+circles with48px touch targets. Omit the tagline from navigation bars. Keep
+Search plus a relevant create/settings action; Home uses Search/Activity.
+Detail/auth/invite headers share the Back/title treatment; conversation identity
+remains visible. Headers grow with text scaling. Home has compact supported
+Photo/Event/Poll shortcuts and no Video placeholder.
+
+Standard inputs follow CircleFormMetrics:56px minimum height,16px text/padding
+and field gaps,24px section gaps,16px side margins. Do not fix heights around
+multiline/error content. Primary form actions are at least56px tall. Shared
+InputDecorationTheme controls borders, labels, hints, errors and icon alignment.
+[Full header review and actual captures](design-previews/headers-forms/REVIEW.md).
+
 ## Social 1 — 4 November 2026
 
 Owner requests Facebook-inspired consistency across every screen. This supersedes

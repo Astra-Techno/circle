@@ -681,7 +681,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                               value: d,
                               child: Text(
                                 '${d.flag} ${d.code}',
-                                style: Theme.of(context).textTheme.bodySmall,
+                                style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             ),
                           )
@@ -835,7 +835,10 @@ class _AccessPage extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     appBar: back
         ? AppBar(
-            leading: BackButton(onPressed: () => context.go('/')),
+            toolbarHeight: CircleLayout.headerHeight(context),
+            leading: CircleHeaderAction(
+              child: BackButton(onPressed: () => context.go('/')),
+            ),
             title: const Text('Account'),
           )
         : null,
@@ -845,7 +848,7 @@ class _AccessPage extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: ListView(
-            padding: const EdgeInsets.all(Space.section),
+            padding: CircleInsets.form,
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             children: children,
           ),

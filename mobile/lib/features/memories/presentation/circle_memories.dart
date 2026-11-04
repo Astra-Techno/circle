@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
+import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../groups/domain/group_tree.dart';
 import '../../workspace/application/workspace_providers.dart';
@@ -187,7 +188,7 @@ class _HomeHeader extends ConsumerWidget {
                                         vertical: Space.sm + Space.xs,
                                       ),
                                       child: Text(
-                                        'Share a memory with your Circle...',
+                                        'Share a memory…',
                                         maxLines:
                                             MediaQuery.textScalerOf(
                                                   context,
@@ -211,7 +212,7 @@ class _HomeHeader extends ConsumerWidget {
                     ],
                   ),
                 ),
-                // Four quick-action icons.
+                // One restrained row of supported quick actions.
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     Space.md,
@@ -219,47 +220,35 @@ class _HomeHeader extends ConsumerWidget {
                     Space.md,
                     Space.sm,
                   ),
-                  child: Row(
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    spacing: Space.sm,
                     children: [
-                      Expanded(
-                        child: _QuickActionIcon(
-                          icon: LucideIcons.image,
-                          label: 'Photo',
-                          color: theme.colorScheme.primary,
-                          onTap: () => context.push(composeLocation(groupId)),
-                        ),
+                      _QuickActionIcon(
+                        icon: LucideIcons.image,
+                        label: 'Photo',
+                        onTap: () => context.push(composeLocation(groupId)),
                       ),
-                      const SizedBox(width: Space.sm),
-                      Expanded(
-                        child: _QuickActionIcon(
-                          icon: LucideIcons.video,
-                          label: 'Video',
-                          color: accents.heart,
-                          onTap: null, // V1: video not yet supported
-                        ),
-                      ),
-                      const SizedBox(width: Space.sm),
-                      Expanded(
-                        child: _QuickActionIcon(
+                      if (features.has(CircleFeature.liveEvents))
+                        _QuickActionIcon(
                           icon: LucideIcons.calendar,
                           label: 'Event',
-                          color: accents.sage,
-                          onTap: features.has(CircleFeature.liveEvents)
-                              ? () => context.push('/events/new')
-                              : null,
+                          onTap: () => context.push(
+                            groupId == null
+                                ? '/events/new'
+                                : '/events/new?group=$groupId',
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: Space.sm),
-                      Expanded(
-                        child: _QuickActionIcon(
+                      if (features.has(CircleFeature.livePolls))
+                        _QuickActionIcon(
                           icon: LucideIcons.list,
                           label: 'Poll',
-                          color: accents.amber,
-                          onTap: features.has(CircleFeature.livePolls)
-                              ? () => context.push('/polls/new')
-                              : null,
+                          onTap: () => context.push(
+                            groupId == null
+                                ? '/polls/new'
+                                : '/polls/new?group=$groupId',
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -279,63 +268,30 @@ class _HomeHeader extends ConsumerWidget {
   }
 }
 
-/// Quick action tile with a pastel tinted background and a visible label.
+/// Compact supported action: a consistent outline icon and readable label.
 class _QuickActionIcon extends StatelessWidget {
   const _QuickActionIcon({
     required this.icon,
     required this.label,
-    required this.color,
-    this.onTap,
+    required this.onTap,
   });
   final IconData icon;
   final String label;
-  final Color color;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final effectiveColor = onTap != null ? color : color.withValues(alpha: 0.4);
-    return Semantics(
-      button: true,
-      enabled: onTap != null,
-      label: label,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(CircleRadius.card),
-        onTap: onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: effectiveColor.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(CircleRadius.card),
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: CircleLayout.homeActionMinHeight,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: Space.xs),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, color: effectiveColor, size: Space.md + Space.sm),
-                  const SizedBox(height: Space.xs),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: CircleTextStyles.caption(
-                      onTap != null
-                          ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+  Widget build(BuildContext context) => TextButton.icon(
+    onPressed: onTap,
+    style: TextButton.styleFrom(
+      minimumSize: const Size(Space.large, Space.large),
+      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+      padding: const EdgeInsets.symmetric(horizontal: Space.sm),
+      textStyle: CircleTextStyles.label(
+        Theme.of(context).colorScheme.onSurface,
       ),
-    );
-  }
+    ),
+    icon: Icon(icon, size: CircleSizes.iconDefault),
+    label: Text(label),
+  );
 }
 
 class _LoadOlderMemories extends ConsumerStatefulWidget {

@@ -336,7 +336,7 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
           ),
           const SizedBox(height: Space.md),
 
-          // Caption text area — borderless, matches reference.
+          // Caption follows the same input geometry as other forms.
           TextField(
             controller: _text,
             readOnly: _resumeDraft != null,
@@ -349,8 +349,7 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
               hintStyle: theme.textTheme.bodyLarge?.copyWith(
                 color: accents.caption,
               ),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+              contentPadding: CircleFormMetrics.fieldPadding,
               counterText: '',
               errorText: _textError,
               errorMaxLines: 3,

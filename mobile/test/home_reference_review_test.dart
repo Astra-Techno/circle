@@ -63,7 +63,7 @@ void main() {
         'composer',
         find
             .ancestor(
-              of: find.text('Share a memory with your Circle...'),
+              of: find.text('Share a memory…'),
               matching: find.byType(InkWell),
             )
             .first,
@@ -195,7 +195,7 @@ void main() {
               'composer': rect(
                 find
                     .ancestor(
-                      of: find.text('Share a memory with your Circle...'),
+                      of: find.text('Share a memory…'),
                       matching: find.byType(InkWell),
                     )
                     .first,

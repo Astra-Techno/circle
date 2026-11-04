@@ -32,7 +32,7 @@ void main() {
       await openCircle(tester);
       // Home opens with the composer and feed (unified redesign).
       expect(find.text('Circle'), findsOneWidget);
-      expect(find.text('Share a memory with your Circle...'), findsOneWidget);
+      expect(find.text('Share a memory…'), findsOneWidget);
       for (final label in ['Home', 'Circles', 'Events', 'Profile']) {
         expect(find.text(label), findsOneWidget);
       }
@@ -53,7 +53,7 @@ void main() {
       expect(workspaceOf(container).groups.single.name, 'Our weekend circle');
       await tester.tap(find.text('Home'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Share a memory with your Circle...'));
+      await tester.tap(find.text('Share a memory…'));
       await tester.pumpAndSettle();
       // With a single group the only possible audience is shown.
       expect(find.text('Our weekend circle'), findsOneWidget);
@@ -70,7 +70,7 @@ void main() {
   group('compose audience', () {
     testWidgets('no silent default when several groups exist', (tester) async {
       final container = await openCircle(tester);
-      await tester.tap(find.text('Share a memory with your Circle...'));
+      await tester.tap(find.text('Share a memory…'));
       await tester.pumpAndSettle();
       expect(find.text('Choose a group'), findsOneWidget);
       await tester.enterText(
@@ -88,7 +88,7 @@ void main() {
 
     testWidgets('Home compose opens for default group', (tester) async {
       final container = await openCircle(tester);
-      await tester.tap(find.text('Share a memory with your Circle...'));
+      await tester.tap(find.text('Share a memory…'));
       await tester.pumpAndSettle();
       expect(currentUri(container).path, '/compose');
     });

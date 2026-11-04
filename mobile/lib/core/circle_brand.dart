@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 /// lettering and tagline, without cropping, recolouring or recreating it.
 abstract final class CircleIdentity {
   static const name = 'CIRCLE';
-  static const interfaceVersion = 'Social 1';
+  static const interfaceVersion = 'Social 1.1';
   static const tagline = 'My Circle. Billion Memories.';
   static const artwork = 'assets/brand/circle-brand.png';
   static const semantics = '$name. $tagline';

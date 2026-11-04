@@ -82,7 +82,7 @@ void main() {
     expect(find.text('Fictional live circle'), findsOneWidget);
     await tester.tap(find.text('Home'));
     await settle(tester);
-    await tester.tap(find.text('Share a memory with your Circle...'));
+    await tester.tap(find.text('Share a memory…'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(FilledButton, 'Create Memory'), findsOneWidget);
     await tester.tap(find.byType(BackButton).first);

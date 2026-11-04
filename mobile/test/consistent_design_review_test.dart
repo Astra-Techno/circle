@@ -119,7 +119,8 @@ void main() {
                 format: ui.ImageByteFormat.png,
               );
               final directory = Directory(
-                '../docs/design-previews/social-system',
+                Platform.environment['CIRCLE_DESIGN_CAPTURE_DIR'] ??
+                    '../docs/design-previews/social-system',
               );
               await directory.create(recursive: true);
               final name = route.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '-');

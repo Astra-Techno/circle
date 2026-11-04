@@ -27,17 +27,12 @@ Future<void> tapTooltip(WidgetTester tester, String tooltip) async {
 
 void main() {
   group('compose', () {
-    testWidgets('Home shows Video tile but it is not tappable', (tester) async {
+    testWidgets('Home only offers supported compact actions', (tester) async {
       await openCircle(tester);
       expect(find.text('Photo'), findsOneWidget);
-      expect(find.text('Video'), findsOneWidget);
-      // Video tile is present but disabled (V1: not yet supported).
-      final videoInk = find.ancestor(
-        of: find.text('Video'),
-        matching: find.byType(InkWell),
-      );
-      final inkWell = tester.widget<InkWell>(videoInk.first);
-      expect(inkWell.onTap, isNull);
+      expect(find.text('Event'), findsOneWidget);
+      expect(find.text('Poll'), findsOneWidget);
+      expect(find.text('Video'), findsNothing);
     });
 
     testWidgets('caption, year and place render on the new card', (

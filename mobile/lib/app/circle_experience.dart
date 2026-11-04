@@ -896,7 +896,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     if (detail) {
       return Scaffold(
         appBar: AppBar(
-          toolbarHeight: Space.hero * 2 + Space.sm,
+          toolbarHeight: CircleLayout.headerHeight(context),
           titleSpacing: 0,
           title: Semantics(
             header: true,
@@ -907,10 +907,12 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
               style: theme.textTheme.titleLarge,
             ),
           ),
-          leading: BackButton(
-            onPressed: () => context.canPop()
-                ? context.pop()
-                : shell.goBranch(index, initialLocation: true),
+          leading: CircleHeaderAction(
+            child: BackButton(
+              onPressed: () => context.canPop()
+                  ? context.pop()
+                  : shell.goBranch(index, initialLocation: true),
+            ),
           ),
         ),
         body: SafeArea(
@@ -932,7 +934,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
 
     // Root tab pages: no AppBar — each screen draws its own scroll-aware
     // SliverAppBar. The shell passes header data via CircleTabHeaderData.
-    final logo = (index == 0 || index == 2)
+    final logo = index == 0
         ? ClipRRect(
             borderRadius: BorderRadius.circular(CircleRadius.small),
             child: Image.asset(
@@ -975,33 +977,12 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
               logo: logo,
               actions: [
                 const SearchButton(),
-                if (index != 2) ...[
-                  const ActivityBell(),
-                  if (index == 0 && features.has(CircleFeature.liveChat))
-                    IconButton(
-                      tooltip: 'Chats',
-                      icon: const Icon(LucideIcons.message_circle),
-                      onPressed: () => shell.goBranch(1),
-                    ),
-                ],
-                if (index == 2)
-                  SizedBox(
-                    width: Space.large,
-                    height: Space.large,
-                    child: Material(
-                      color: theme.colorScheme.primary,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () => context.push('/groups/new'),
-                        child: Icon(
-                          LucideIcons.plus,
-                          color: theme.colorScheme.onPrimary,
-                          size: Space.section,
-                          semanticLabel: 'Create group',
-                        ),
-                      ),
-                    ),
+                if (index == 0) const ActivityBell(),
+                if (index == 4)
+                  IconButton(
+                    tooltip: 'Account settings',
+                    onPressed: () => context.push('/you/account'),
+                    icon: const Icon(LucideIcons.settings),
                   ),
               ],
               fab: fab,

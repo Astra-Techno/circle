@@ -10,13 +10,42 @@ abstract final class CircleProfileLayout {
 abstract final class CircleLayout {
   static const largeTextThreshold = 1.4;
   static const homeHeaderHeight = 56.0;
-  static const homeLogoSize = 40.0;
+  static double headerHeight(BuildContext context) {
+    final style = CircleTextStyles.pageTitle(
+      Theme.of(context).colorScheme.onSurface,
+    );
+    final height =
+        MediaQuery.textScalerOf(context).scale(style.fontSize!) *
+            style.height! +
+        Space.sm * 2;
+    return height > homeHeaderHeight ? height : homeHeaderHeight;
+  }
+
+  static const homeLogoSize = 32.0;
+  static const headerActionPaintSize = 40.0;
   static const homeActionMinHeight = 48.0;
   static const homeDockHeight = 64.0;
   static const homeMosaicAspect = 2.8;
   static const homeGridBreakpoint = 840.0;
   static const homeComposerMaxWidth = 720.0;
   static const homeDockMaxWidth = 640.0;
+}
+
+/// Shared geometry for every standard input and primary form action.
+abstract final class CircleFormMetrics {
+  static const minFieldHeight = 56.0;
+  static const fieldGap = 16.0;
+  static const sectionGap = 24.0;
+  static const actionNoticeMargin = EdgeInsets.fromLTRB(
+    Space.md,
+    0,
+    Space.md,
+    Space.hero * 3,
+  );
+  static const fieldPadding = EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 16,
+  );
 }
 
 /// 8-point grid. [xs] (4) is the only half-step, kept for icon-to-text
@@ -264,6 +293,10 @@ ThemeData circleTheme(Brightness brightness) {
     useMaterial3: true,
     colorScheme: colors,
     textTheme: text,
+    actionIconTheme: ActionIconThemeData(
+      backButtonIconBuilder: (_) => const Icon(CircleIcons.back),
+      closeButtonIconBuilder: (_) => const Icon(CircleIcons.close),
+    ),
     iconTheme: IconThemeData(
       size: CircleSizes.iconDefault,
       color: accents.title,
@@ -274,6 +307,7 @@ ThemeData circleTheme(Brightness brightness) {
     highlightColor: pressedWash,
     hoverColor: pressedWash,
     appBarTheme: AppBarTheme(
+      toolbarHeight: CircleLayout.homeHeaderHeight,
       centerTitle: false,
       backgroundColor: colors.surface,
       surfaceTintColor: Colors.transparent,
@@ -282,13 +316,27 @@ ThemeData circleTheme(Brightness brightness) {
       titleTextStyle: text.titleLarge,
     ),
     inputDecorationTheme: InputDecorationTheme(
+      constraints: const BoxConstraints(
+        minHeight: CircleFormMetrics.minFieldHeight,
+      ),
+      labelStyle: text.bodyMedium?.copyWith(color: accents.caption),
+      floatingLabelStyle: text.bodySmall?.copyWith(color: accents.caption),
+      helperStyle: text.bodySmall?.copyWith(color: accents.caption),
+      errorStyle: text.bodySmall?.copyWith(color: colors.error),
+      errorMaxLines: 3,
+      helperMaxLines: 3,
+      prefixIconConstraints: const BoxConstraints(
+        minWidth: Space.large,
+        minHeight: CircleFormMetrics.minFieldHeight,
+      ),
+      suffixIconConstraints: const BoxConstraints(
+        minWidth: Space.large,
+        minHeight: CircleFormMetrics.minFieldHeight,
+      ),
       filled: true,
       fillColor: colors.surfaceContainerLowest,
       hintStyle: text.bodyMedium?.copyWith(color: accents.caption),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: Space.lg,
-        vertical: Space.md,
-      ),
+      contentPadding: CircleFormMetrics.fieldPadding,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(CircleRadius.input),
         borderSide: hairline,
@@ -324,7 +372,10 @@ ThemeData circleTheme(Brightness brightness) {
     filledButtonTheme: FilledButtonThemeData(
       style:
           FilledButton.styleFrom(
-            minimumSize: const Size(48, 48),
+            minimumSize: const Size(
+              Space.large,
+              CircleFormMetrics.minFieldHeight,
+            ),
             shape: rounded(CircleRadius.button),
             textStyle: text.labelLarge,
             padding: const EdgeInsets.symmetric(
@@ -338,7 +389,7 @@ ThemeData circleTheme(Brightness brightness) {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size(48, 48),
+        minimumSize: const Size(Space.large, CircleFormMetrics.minFieldHeight),
         shape: rounded(CircleRadius.button),
         backgroundColor: colors.surfaceContainerLowest,
         foregroundColor: accents.title,
@@ -596,9 +647,9 @@ abstract final class CircleInsets {
 
   /// Pages without a floating action button (details, forms, settings).
   static const form = EdgeInsets.fromLTRB(
-    Space.section,
-    Space.sm,
-    Space.section,
+    Space.md,
+    Space.md,
+    Space.md,
     Space.hero,
   );
 }

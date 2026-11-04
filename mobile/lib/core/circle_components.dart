@@ -249,23 +249,33 @@ class CirclePageTitle extends InheritedWidget {
 class CircleEditorLayout extends StatelessWidget {
   const CircleEditorLayout({super.key, required this.children});
   final List<Widget> children;
+  List<Widget> _spaced(List<Widget> fields) => [
+    for (var i = 0; i < fields.length; i++) ...[
+      if (i > 0 &&
+          fields[i - 1] is! SizedBox &&
+          fields[i] is! SizedBox &&
+          fields[i - 1] is! CircleHeading)
+        const SizedBox(height: CircleFormMetrics.fieldGap),
+      fields[i],
+    ],
+  ];
   @override
   Widget build(BuildContext context) {
     if (MediaQuery.textScalerOf(context).scale(16) > 24) {
-      return ListView(padding: CircleInsets.form, children: children);
+      return ListView(padding: CircleInsets.form, children: _spaced(children));
     }
     return Column(
       children: [
         Expanded(
           child: ListView(
             padding: CircleInsets.form,
-            children: children.sublist(0, children.length - 1),
+            children: _spaced(children.sublist(0, children.length - 1)),
           ),
         ),
         SafeArea(
           top: false,
           child: Padding(
-            padding: CircleInsets.page,
+            padding: CircleInsets.form,
             child: SizedBox(width: double.infinity, child: children.last),
           ),
         ),
@@ -677,11 +687,28 @@ class CircleBadge extends StatelessWidget {
       CirclePill(label, tone: strong ? CircleTone.strong : CircleTone.calm);
 }
 
-void _show(ScaffoldMessengerState? messenger, String text, VoidCallback? undo) {
+EdgeInsets? _noticeMargin(BuildContext context) {
+  final path =
+      GoRouter.maybeOf(context)?.routeInformationProvider.value.uri.path ?? '';
+  final pinnedAction =
+      path == '/compose' ||
+      path.endsWith('/new') ||
+      path.endsWith('/edit') ||
+      RegExp(r'^/(chats/c|events/e|home/memory)/[^/]+$').hasMatch(path);
+  return pinnedAction ? CircleFormMetrics.actionNoticeMargin : null;
+}
+
+void _show(
+  ScaffoldMessengerState? messenger,
+  String text,
+  VoidCallback? undo, {
+  EdgeInsets? margin,
+}) {
   messenger
     ?..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
+        margin: margin,
         content: Text(text),
         action: undo == null
             ? null
@@ -695,7 +722,12 @@ void showCircleMessage(
   BuildContext context,
   String message, {
   VoidCallback? onUndo,
-}) => _show(ScaffoldMessenger.maybeOf(context), message, onUndo);
+}) => _show(
+  ScaffoldMessenger.maybeOf(context),
+  message,
+  onUndo,
+  margin: _noticeMargin(context),
+);
 
 /// Awaits [action]; on failure shows a calm message instead of throwing.
 /// Returns null when the action failed.
@@ -706,14 +738,20 @@ Future<T?> runCalmly<T>(
   VoidCallback? onUndo,
 }) async {
   final messenger = ScaffoldMessenger.maybeOf(context);
+  final margin = _noticeMargin(context);
   try {
     final result = await action();
-    if (success != null) _show(messenger, success, onUndo);
+    if (success != null) _show(messenger, success, onUndo, margin: margin);
     return result;
   } on CircleFailure catch (failure) {
-    _show(messenger, failure.message, null);
+    _show(messenger, failure.message, null, margin: margin);
   } catch (_) {
-    _show(messenger, 'That didn’t work. Please try again.', null);
+    _show(
+      messenger,
+      'That didn’t work. Please try again.',
+      null,
+      margin: margin,
+    );
   }
   return null;
 }
@@ -776,13 +814,19 @@ VoidCallback undoDetached(
   Future<void> Function() action,
 ) {
   final messenger = ScaffoldMessenger.maybeOf(context);
+  final margin = _noticeMargin(context);
   return () async {
     try {
       await action();
     } on CircleFailure catch (failure) {
-      _show(messenger, failure.message, null);
+      _show(messenger, failure.message, null, margin: margin);
     } catch (_) {
-      _show(messenger, 'That didn’t work. Please try again.', null);
+      _show(
+        messenger,
+        'That didn’t work. Please try again.',
+        null,
+        margin: margin,
+      );
     }
   };
 }
@@ -1022,25 +1066,25 @@ class CircleFloatingHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = CircleTabHeaderData.of(context);
     if (data == null) return const SliverToBoxAdapter();
-    final home = data.title == 'Circle';
     return SliverAppBar(
       floating: true,
       snap: true,
       pinned: false,
       automaticallyImplyLeading: false,
-      toolbarHeight: CircleLayout.homeHeaderHeight,
+      toolbarHeight: CircleLayout.headerHeight(context),
       titleSpacing: Space.md,
-      title: Padding(
-        padding: EdgeInsets.only(top: home ? Space.sm : 0),
-        child: _headerTitle(context, data),
-      ),
+      title: _headerTitle(context, data),
       actions: [
-        for (final action in data.actions)
-          Padding(
-            padding: EdgeInsets.only(top: home ? Space.sm : 0),
-            child: action,
+        for (final action in data.actions) CircleHeaderAction(child: action),
+        if (data.fab != null && data.title != 'Circle')
+          CircleHeaderAction(
+            child: IconButton(
+              tooltip: data.fab!.label,
+              onPressed: () => GoRouter.of(context).push(data.fab!.location),
+              icon: const Icon(LucideIcons.plus),
+            ),
           ),
-        const SizedBox(width: Space.xs),
+        const SizedBox(width: Space.sm),
       ],
     );
   }
@@ -1054,61 +1098,50 @@ class CircleCollapsingHeader extends StatelessWidget {
   Widget build(BuildContext context) => const CircleFloatingHeader();
 }
 
-Widget _headerTitle(
-  BuildContext context,
-  CircleTabHeaderData data, {
-  bool large = false,
-}) {
-  final theme = Theme.of(context);
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      if (data.logo != null) ...[data.logo!, const SizedBox(width: Space.sm)],
-      Flexible(
-        child: Semantics(
-          header: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                data.title,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                style: large
-                    ? theme.textTheme.headlineMedium
-                    : data.logo != null
-                    ? theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      )
-                    : theme.textTheme.titleLarge,
-              ),
-              if (data.logo != null)
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'My Circle. Billion Memories.',
-                    maxLines: 1,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w400,
-                      color: CircleAccents.of(context).caption,
-                    ),
-                  ),
-                ),
-            ],
+/// A quiet 40px circle inside an unchanged 48px interactive target.
+/// Wrapping the existing control preserves its tooltip, badge and action.
+class CircleHeaderAction extends StatelessWidget {
+  const CircleHeaderAction({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: Space.large,
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        IgnorePointer(
+          child: Container(
+            width: CircleLayout.headerActionPaintSize,
+            height: CircleLayout.headerActionPaintSize,
+            decoration: BoxDecoration(
+              color: CircleAccents.of(context).recessed,
+              shape: BoxShape.circle,
+            ),
           ),
         ),
-      ),
-      if (data.fab != null && data.logo == null)
-        IconButton(
-          tooltip: data.fab!.label,
-          onPressed: () => GoRouter.of(context).push(data.fab!.location),
-          icon: const Icon(LucideIcons.square_plus),
-        ),
-    ],
+        child,
+      ],
+    ),
   );
 }
+
+Widget _headerTitle(BuildContext context, CircleTabHeaderData data) => Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    if (data.logo != null) ...[data.logo!, const SizedBox(width: Space.sm)],
+    Flexible(
+      child: Semantics(
+        header: true,
+        child: Text(
+          data.title,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+          style: data.titleStyle ?? Theme.of(context).textTheme.titleLarge,
+        ),
+      ),
+    ),
+  ],
+);
 
 /// A whole page that is still loading: [CircleSkeleton] in the reading
 /// column with the standard page padding.
