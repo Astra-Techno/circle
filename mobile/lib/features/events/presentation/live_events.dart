@@ -460,9 +460,7 @@ class _LiveEventCard extends ConsumerWidget {
     final groupName = item['group_name'] as String? ?? '';
     // Days until the event.
     final startAt = DateTime.tryParse(item['start_at'] as String? ?? '');
-    final daysUntil = startAt != null
-        ? startAt.toLocal().difference(DateTime.now()).inDays
-        : null;
+    final daysUntil = startAt?.toLocal().difference(DateTime.now()).inDays;
 
     return CircleSurfaceCard(
       padding: EdgeInsets.zero,
