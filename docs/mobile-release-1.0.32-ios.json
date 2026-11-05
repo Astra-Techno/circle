@@ -1,0 +1,43 @@
+{
+  "run": 42000758282,
+  "sourceCommit": "019e1469ea4e3bea4141c5ab58fb74a487a5d4c6",
+  "bundle": "com.circlecommunity.mobile",
+  "version": "1.0.32",
+  "build": "1050.1",
+  "bytes": 25862405,
+  "sha256": "16ab393d444f0ac028a5f23061ee2117a5a8386995c7bf1ecd1fce02444c9916",
+  "interfaceMarkerSocial2_0": true,
+  "interAssets": [
+    {
+      "asset": "Inter-Regular.ttf",
+      "bytes": 341396,
+      "sha256": "ce89a342f5919265f6d121a204728fa0eb7216f035fb0976fd4f0f5b750282aa"
+    },
+    {
+      "asset": "Inter-Medium.ttf",
+      "bytes": 341984,
+      "sha256": "9cd7fbf16574ef79386c34de58bad683b0d8df03ab48cd4530bdd892694fb2c6"
+    },
+    {
+      "asset": "Inter-SemiBold.ttf",
+      "bytes": 342660,
+      "sha256": "57c8cf10f9e10db5b15042525dc5d1935e8fb8d073352262fac6f8f44b497c31"
+    }
+  ],
+  "interLicenseBundled": true,
+  "bodyFontFamilies": [
+    "Inter"
+  ],
+  "jobDurationSeconds": 1079,
+  "checksumManifestMatches": true,
+  "windowsVerificationRun": 42000757942,
+  "windowsTestsPassed": 747,
+  "windowsTestsSkipped": 1,
+  "nativeDeviceAcceptance": "not performed; Apple processing and tester availability separate",
+  "interAssetsMatchSource": true,
+  "uploadAccepted": true,
+  "uploadWarning": {
+    "code": 90068,
+    "description": "Apple accepted this upload; iOS deployment target must be at least 15.0 starting April 2027. Current target is 13.0."
+  }
+}
