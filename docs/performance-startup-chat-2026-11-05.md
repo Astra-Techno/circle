@@ -4,7 +4,7 @@ Source version1.0.30+35; Account interface Social1.5.
 
 ## Changes
 
-- Workspace hydration requests groups and Memories concurrently. Each group's members and settings also load concurrently; the workspace is still exposed only after authorization, roles and reaction state finish loading. Existing concurrency limits on group hydration remain.
+- Workspace hydration requests groups and Memories concurrently. Each group's members and settings also load concurrently; the workspace is still exposed only after authorization, roles and reaction state finish loading. At most four groups are hydrated at once, each with at most two initial detail requests.
 - Preview photos use thumb/medium variants rather than full2048px renditions on high-DPI screens. Decode widths are bounded to1080px and bucketed for cache reuse; expanded viewers retain full resolution and zoom. Signed URL checks remain intact.
 - Small group avatars reuse the existing45-second/64-entry session-scoped in-memory LRU. Membership and photo version are checked before cache access; covers are not retained by this cache. No private-photo disk cache added.
 - Opening Chats with an empty outbox no longer invalidates and restarts its initial request. Periodic refresh, resume refresh and retrying queued sends remain supported.
@@ -16,7 +16,7 @@ Source version1.0.30+35; Account interface Social1.5.
 
 Complete backend suite:234 tests/4275 assertions pass against circle_test. PHPStan level6 clean. The regression measurement reads MySQL Com_select around authenticated conversation requests:1-message page10 SELECTs;50-message page10 SELECTs. This verifies bounded query count, not production response-time or device cold-start timing.
 
-Focused mobile checks:67 tests pass, covering request overlap, single-request chat entry, preview/full rendition selection, media access, avatar reuse/revocation and repository/design behavior. Dart format and Flutter analysis clean. Full Windows comparisons and signed TestFlight build follow the commit. No API response schema changes or database migration required.
+Focused mobile checks:67 tests pass, covering request overlap, single-request chat entry, preview/full rendition selection, media access, avatar reuse/revocation and repository/design behavior. Dart format and Flutter analysis clean. Full Windows comparison CI [41979322883](https://github.com/Astra-Techno/circle/actions/runs/41979322883) passed730 tests/1 skipped. Signed TestFlight [41979322563](https://github.com/Astra-Techno/circle/actions/runs/41979322563) passed release guards and is compiling from a8321eae9a8836d6037211cd1fbeee1aec934ecd; upload completion is not yet claimed. No API response schema changes or database migration required.
 
 ## Deployment
 
