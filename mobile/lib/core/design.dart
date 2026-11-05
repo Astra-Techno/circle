@@ -9,6 +9,11 @@ export 'design/circle_motion.dart';
 abstract final class CirclePhotoMetrics {
   static const thumbnailPixels = 320.0;
   static const previewMaxDecodeWidth = 1080;
+  // Cover list tiles crop wide banners. Keep medium on high-DPI displays
+  // instead of enlarging a short 320px-wide banner crop.
+  static bool coverThumbnailFits(double pixelRatio) =>
+      Space.large * 2 * pixelRatio * CircleProfileLayout.coverAspectRatio <=
+      thumbnailPixels;
   static int previewDecodeWidth(double pixels) =>
       ((pixels.clamp(1, previewMaxDecodeWidth) / 64).ceil() * 64).clamp(
         1,

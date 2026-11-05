@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,7 +29,82 @@ class PagedRepository extends MockCircleRepository
   }
 }
 
+class SwitchingQueryRepository extends MockCircleRepository
+    implements MemoryQueryReader {
+  SwitchingQueryRepository() : super(showcase: true);
+  final oldPage = Completer<MemoryPage>();
+  final calls = <String>[];
+  @override
+  Future<MemoryPage> queryMemories(
+    String viewer,
+    MemoryQuery query, {
+    String? cursor,
+  }) async {
+    calls.add('${query.text}:${cursor == null ? 'first' : 'more'}');
+    if (cursor != null && query.text == 'old') return oldPage.future;
+    final memories = (await load(viewer)).memories;
+    return cursor == null
+        ? MemoryPage(
+            items: memories.take(1).toList(),
+            cursor: 'same-cursor',
+            hasMore: true,
+          )
+        : MemoryPage(items: memories.take(2).toList());
+  }
+}
+
 void main() {
+  testWidgets(
+    'new query resets a same-cursor sentinel and ignores old pagination failure',
+    (tester) async {
+      final repo = SwitchingQueryRepository();
+      final query = ValueNotifier(const MemoryQuery(text: 'old'));
+      addTearDown(query.dispose);
+      addTearDown(() {
+        if (!repo.oldPage.isCompleted) {
+          repo.oldPage.complete(MemoryPage(items: []));
+        }
+      });
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            circleRepositoryProvider.overrideWithValue(repo),
+            circleViewerProvider.overrideWithValue('you'),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ValueListenableBuilder<MemoryQuery>(
+                  valueListenable: query,
+                  builder: (_, value, _) => ScopedMemoryList(
+                    query: value,
+                    empty: const Text('Empty'),
+                    itemBuilder: (_, memory) =>
+                        SizedBox(height: 80, child: Text(memory.id)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(repo.calls, contains('old:more'));
+      query.value = const MemoryQuery(text: 'new');
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(repo.calls, contains('new:more'));
+      expect(find.text("You've seen all Memories"), findsOneWidget);
+      repo.oldPage.completeError(Exception('old request failed'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Retry loading older Memories'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   testWidgets(
     'pagination waits for viewport, retries errors and continues across cursors',
     (tester) async {

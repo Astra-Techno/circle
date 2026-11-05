@@ -6,6 +6,25 @@ use Circle\Core\Database;
 
 final class ModerationTest extends ApiTestCase
 {
+    public function testReportListQueriesDoNotGrowPerTarget():void
+    {
+        $owner=$this->user('Fictional owner');$writer=$this->user('Fictional writer');$reporter=$this->user('Fictional reporter');$g=$this->createGroup($owner);
+        foreach([$writer,$reporter] as $user)Database::execute("INSERT INTO group_members(group_id,user_id,role,status) VALUES(:g,:u,'member','active')",['g'=>$g,'u'=>$user['id']]);
+        for($i=0;$i<10;$i++){
+            $id=$this->request('POST',"/api/v1/groups/$g/memories",['body'=>'Fictional item '.$i],$writer['token'])->data()['id'];
+            self::assertSame(200,$this->request('POST',"/api/v1/groups/$g/reports",['kind'=>'memory','target_id'=>$id,'reason'=>'spam','note'=>'Fictional secret note'],$reporter['token'])->status());
+        }
+        $count=static fn():int=>(int)(Database::queryOne("SHOW SESSION STATUS LIKE 'Com_select'")['Value']??0);
+        $before=$count();$one=$this->request('GET',"/api/v1/groups/$g/reports?limit=1",[],$owner['token']);$small=$count()-$before;
+        $before=$count();$many=$this->request('GET',"/api/v1/groups/$g/reports?limit=10",[],$owner['token']);$large=$count()-$before;
+        self::assertCount(1,$one->data()['items']);self::assertCount(10,$many->data()['items']);
+        self::assertStringNotContainsString('Fictional reporter',json_encode($many->json(),JSON_THROW_ON_ERROR));
+        self::assertStringNotContainsString('Fictional secret note',json_encode($many->json(),JSON_THROW_ON_ERROR));
+        foreach($many->data()['items'] as $item)self::assertSame([['reason'=>'spam','count'=>1]],$item['reasons']);
+        self::assertLessThanOrEqual($small+1,$large,'Report pages must not query per target.');
+        if(getenv('CIRCLE_TEST_QUERY_METRICS')==='true')fwrite(STDERR,sprintf("Moderation SELECTs:1 target=%d;10 targets=%d\n",$small,$large));
+    }
+
     public function testReportsArePersistentAnonymousIdempotentAndExactGroupAdminOnly(): void
     {
         $owner=$this->user('Owner'); $writer=$this->user('Writer'); $reporter=$this->user('Secret reporter'); $stranger=$this->user('Stranger');

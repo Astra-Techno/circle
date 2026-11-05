@@ -697,7 +697,11 @@ class _GroupCoverPhoto extends ConsumerWidget {
     if (coverVersion != null) {
       final bytes = ref
           .watch(
-            groupPhotoBytesProvider((
+            (CirclePhotoMetrics.coverThumbnailFits(
+                  MediaQuery.devicePixelRatioOf(context),
+                )
+                ? groupPhotoPreviewBytesProvider
+                : groupPhotoBytesProvider)((
               group: groupId,
               kind: ProfilePhotoKind.cover,
               version: coverVersion,

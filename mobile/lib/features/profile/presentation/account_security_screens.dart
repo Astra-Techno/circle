@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
@@ -31,13 +32,6 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
       _error = null;
     });
     try {
-      if (device) {
-        try {
-          await service.updateDevice().timeout(const Duration(seconds: 2));
-        } catch (_) {
-          /* Optional metadata must not block security controls. */
-        }
-      }
       final page = await service.sessions(offset: more ? _items.length : 0);
       if (!mounted || generation != _generation || !service.active) return;
       setState(() {
@@ -45,6 +39,16 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
         _items.addAll(page.items);
         _total = page.total;
       });
+      if (device) {
+        // Security controls use server session data immediately. Optional
+        // platform labels update in the background and appear on refresh.
+        unawaited(
+          service
+              .updateDevice()
+              .timeout(const Duration(seconds: 2))
+              .catchError((Object _) {}),
+        );
+      }
     } catch (_) {
       if (mounted && generation == _generation) {
         setState(

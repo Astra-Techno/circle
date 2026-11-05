@@ -35,4 +35,4 @@ final signedMediaUrlProvider = FutureProvider.autoDispose
         throw const CircleFailure('Photos aren’t available here.');
       }
       return media.link(photo.mediaId, photo.size);
-    });
+    }, retry: (_, _) => null);

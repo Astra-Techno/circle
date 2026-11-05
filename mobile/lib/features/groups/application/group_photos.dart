@@ -5,69 +5,87 @@ import '../../workspace/application/workspace_providers.dart';
 import '../../profile/application/profile_providers.dart';
 export '../../profile/application/profile_providers.dart' show ProfilePhotoKind;
 
+typedef GroupPhotoRequest = ({
+  String group,
+  ProfilePhotoKind kind,
+  String version,
+});
+
 final groupPhotoBytesProvider = FutureProvider.autoDispose
-    .family<
-      Uint8List,
-      ({String group, ProfilePhotoKind kind, String version})
-    >((ref, photo) async {
-      final api = ref.watch(apiClientProvider),
-          account = ref.watch(serverAccountProvider);
-      final access = ref.watch(
-        circleWorkspaceProvider.select((state) {
-          final group = state.value?.group(photo.group);
-          return (
-            member: account != null && group?.isMember(account.id) == true,
-            version: photo.kind == ProfilePhotoKind.avatar
-                ? group?.avatarVersion
-                : group?.coverVersion,
-          );
-        }),
+    .family<Uint8List, GroupPhotoRequest>(
+      (ref, photo) => _loadGroupPhoto(ref, photo),
+      retry: (_, _) => null,
+    );
+
+/// Small Circle list covers use the server thumbnail, not a banner rendition.
+final groupPhotoPreviewBytesProvider = FutureProvider.autoDispose
+    .family<Uint8List, GroupPhotoRequest>(
+      (ref, photo) => _loadGroupPhoto(ref, photo, thumbnail: true),
+      retry: (_, _) => null,
+    );
+
+Future<Uint8List> _loadGroupPhoto(
+  Ref ref,
+  GroupPhotoRequest photo, {
+  bool thumbnail = false,
+}) async {
+  final api = ref.watch(apiClientProvider),
+      account = ref.watch(serverAccountProvider);
+  final access = ref.watch(
+    circleWorkspaceProvider.select((state) {
+      final group = state.value?.group(photo.group);
+      return (
+        member: account != null && group?.isMember(account.id) == true,
+        version: photo.kind == ProfilePhotoKind.avatar
+            ? group?.avatarVersion
+            : group?.coverVersion,
       );
-      final version = access.version;
-      if (api == null ||
-          account == null ||
-          !access.member ||
-          version != photo.version) {
-        throw const CircleFailure('This group photo isn’t available.');
-      }
-      final revision = api.sessionRevision;
-      // Reuse small avatars across list remounts, after the same membership
-      // and photo-version checks as a network request. Covers stay uncached.
-      final cache = ref.watch(personPhotoCacheProvider);
-      final cacheKey = 'group:${photo.group}:$version:avatar';
-      if (photo.kind == ProfilePhotoKind.avatar) {
-        final cached = cache.read(cacheKey, revision)?.bytes;
-        if (cached != null) return cached;
-      }
-      final bytes = await api.getBytes(
-        '/groups/${Uri.encodeComponent(photo.group)}/photos/${photo.kind.name}',
-        query: {
-          'size': photo.kind == ProfilePhotoKind.avatar ? 'thumb' : 'medium',
-        },
-        expectedAccount: account.id,
-        expectedSession: revision,
-      );
-      if (!ref.mounted ||
-          api.sessionRevision != revision ||
-          !identical(ref.read(apiClientProvider), api)) {
-        throw const CircleFailure('Your session changed.');
-      }
-      final current = ref
-          .read(circleWorkspaceProvider)
-          .value
-          ?.group(photo.group);
-      if (current?.isMember(account.id) != true ||
-          (photo.kind == ProfilePhotoKind.avatar
-                  ? current?.avatarVersion
-                  : current?.coverVersion) !=
-              version) {
-        throw const CircleFailure('This group photo changed.');
-      }
-      if (photo.kind == ProfilePhotoKind.avatar) {
-        cache.put(cacheKey, bytes, revision);
-      }
-      return bytes;
-    }, retry: (_, _) => null);
+    }),
+  );
+  final version = access.version;
+  if (api == null ||
+      account == null ||
+      !access.member ||
+      version != photo.version) {
+    throw const CircleFailure('This group photo isn’t available.');
+  }
+  final revision = api.sessionRevision;
+  final size = photo.kind == ProfilePhotoKind.avatar || thumbnail
+      ? 'thumb'
+      : 'medium';
+  final cacheSmall = photo.kind == ProfilePhotoKind.avatar || thumbnail;
+  // Reuse small avatars across list remounts, after the same membership
+  // and photo-version checks as a network request. Large covers stay uncached.
+  final cache = ref.watch(personPhotoCacheProvider);
+  final cacheKey = 'group:${photo.group}:$version:${photo.kind.name}:$size';
+  if (cacheSmall) {
+    final cached = cache.read(cacheKey, revision)?.bytes;
+    if (cached != null) return cached;
+  }
+  final bytes = await api.getBytes(
+    '/groups/${Uri.encodeComponent(photo.group)}/photos/${photo.kind.name}',
+    query: {'size': size},
+    expectedAccount: account.id,
+    expectedSession: revision,
+  );
+  if (!ref.mounted ||
+      api.sessionRevision != revision ||
+      !identical(ref.read(apiClientProvider), api)) {
+    throw const CircleFailure('Your session changed.');
+  }
+  final current = ref.read(circleWorkspaceProvider).value?.group(photo.group);
+  if (current?.isMember(account.id) != true ||
+      (photo.kind == ProfilePhotoKind.avatar
+              ? current?.avatarVersion
+              : current?.coverVersion) !=
+          version) {
+    throw const CircleFailure('This group photo changed.');
+  }
+  if (cacheSmall) {
+    cache.put(cacheKey, bytes, revision);
+  }
+  return bytes;
+}
 
 final groupPhotoActionsProvider = Provider<GroupPhotoActions>(
   (ref) => GroupPhotoActions(ref),

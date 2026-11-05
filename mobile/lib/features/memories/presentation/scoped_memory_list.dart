@@ -23,8 +23,21 @@ class ScopedMemoryList extends ConsumerStatefulWidget {
 class _ScopedMemoryListState extends ConsumerState<ScopedMemoryList> {
   bool _loadingMore = false;
   bool _moreFailed = false;
+  int _generation = 0;
+
+  @override
+  void didUpdateWidget(ScopedMemoryList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.query != widget.query) {
+      _generation++;
+      _loadingMore = false;
+      _moreFailed = false;
+    }
+  }
+
   Future<void> _more() async {
     if (_loadingMore) return;
+    final generation = _generation;
     setState(() {
       _loadingMore = true;
       _moreFailed = false;
@@ -32,9 +45,13 @@ class _ScopedMemoryListState extends ConsumerState<ScopedMemoryList> {
     try {
       await ref.read(memoryTimelineProvider(widget.query).notifier).loadMore();
     } catch (_) {
-      if (mounted) setState(() => _moreFailed = true);
+      if (mounted && generation == _generation) {
+        setState(() => _moreFailed = true);
+      }
     } finally {
-      if (mounted) setState(() => _loadingMore = false);
+      if (mounted && generation == _generation) {
+        setState(() => _loadingMore = false);
+      }
     }
   }
 
@@ -56,7 +73,7 @@ class _ScopedMemoryListState extends ConsumerState<ScopedMemoryList> {
                 )
               else
                 _AutoLoader(
-                  key: ValueKey(page.cursor),
+                  key: ValueKey((widget.query, page.cursor)),
                   loading: _loadingMore,
                   onVisible: _more,
                 ),
@@ -148,10 +165,12 @@ class _AutoLoaderState extends State<_AutoLoader> {
     padding: const EdgeInsets.symmetric(vertical: Space.md),
     child: Center(
       child: Semantics(
-        label: 'Loading older Memories',
-        child: const SizedBox.square(
+        label: widget.loading ? 'Loading older Memories' : null,
+        child: SizedBox.square(
           dimension: Space.section,
-          child: CircularProgressIndicator(strokeWidth: 2),
+          child: widget.loading
+              ? const CircularProgressIndicator(strokeWidth: 2)
+              : null,
         ),
       ),
     ),

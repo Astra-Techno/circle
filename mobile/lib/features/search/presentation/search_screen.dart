@@ -1,5 +1,6 @@
 import '../../groups/presentation/group_photos.dart';
 import '../../profile/presentation/person_avatar.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,17 +20,35 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _field = TextEditingController();
-  String _query = '';
+  String _query = '', _serverQuery = '';
+  Timer? _debounce;
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _field.dispose();
     super.dispose();
   }
 
   void _set(String value) {
+    _debounce?.cancel();
     _field.text = value;
+    setState(() {
+      _query = value;
+      _serverQuery = value.trim();
+    });
+  }
+
+  void _changed(String value) {
+    _debounce?.cancel();
     setState(() => _query = value);
+    if (!SearchRules.ready(value)) {
+      setState(() => _serverQuery = value.trim());
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _serverQuery = value.trim());
+    });
   }
 
   void _open(String location) {
@@ -57,9 +76,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             controller: _field,
             autofocus: true,
             textInputAction: TextInputAction.search,
-            onChanged: (value) => setState(() => _query = value),
-            onSubmitted: (value) =>
-                ref.read(recentSearchesProvider.notifier).remember(value),
+            onChanged: _changed,
+            onSubmitted: (value) {
+              _set(value);
+              ref.read(recentSearchesProvider.notifier).remember(value);
+            },
             decoration: InputDecoration(
               hintText: 'Search your circles',
               prefixIcon: const Icon(LucideIcons.search),
@@ -130,28 +151,33 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ..._results(results, includeMemories: !server),
           if (ready && server) ...[
             const CircleSectionTitle('Memories'),
-            ScopedMemoryList(
-              query: MemoryQuery(text: _query.trim()),
-              empty: const CircleEmpty(
-                title: 'No matching Memories',
-                message: 'Try another word from the Memory or its place.',
-              ),
-              itemBuilder: (_, memory) => CircleRow(
-                child: ListTile(
-                  leading: PersonAvatar(
-                    person: memory.authorId,
-                    name: memory.author,
+            if (_serverQuery != _query.trim())
+              const LinearProgressIndicator(
+                semanticsLabel: 'Searching Memories',
+              )
+            else
+              ScopedMemoryList(
+                query: MemoryQuery(text: _serverQuery),
+                empty: const CircleEmpty(
+                  title: 'No matching Memories',
+                  message: 'Try another word from the Memory or its place.',
+                ),
+                itemBuilder: (_, memory) => CircleRow(
+                  child: ListTile(
+                    leading: PersonAvatar(
+                      person: memory.authorId,
+                      name: memory.author,
+                    ),
+                    title: Text(
+                      memory.summary,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(memory.author),
+                    onTap: () => _open('/home/memory/${memory.id}'),
                   ),
-                  title: Text(
-                    memory.summary,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(memory.author),
-                  onTap: () => _open('/home/memory/${memory.id}'),
                 ),
               ),
-            ),
           ],
         ],
       ),

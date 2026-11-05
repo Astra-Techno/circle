@@ -79,12 +79,29 @@ final class ModerationController
         $gid=(int)$request->param('id');
         MemberRepository::requireAdmin($gid,$request->userId());
         $offset=$request->queryInt('offset',0,0,1000000); $limit=$request->queryInt('limit',30,1,50);
-        $rows=Database::query('SELECT t.* FROM moderation_targets t WHERE t.group_id=:gid AND (EXISTS(SELECT 1 FROM reports r WHERE r.target_id=t.id AND r.dismissed=0) OR (t.kind=\'memory\' AND EXISTS(SELECT 1 FROM memories m WHERE m.id=t.target_id AND m.status=\'hidden\')) OR (t.kind=\'comment\' AND EXISTS(SELECT 1 FROM comments c JOIN memories cm ON cm.id=c.memory_id WHERE c.id=t.target_id AND c.status=\'hidden\' AND cm.status<>\'removed\'))) ORDER BY t.updated_at DESC,t.id DESC LIMIT :lim OFFSET :off', ['gid'=>$gid,'lim'=>$limit+1,'off'=>$offset]);
+        $rows=Database::query("SELECT t.*,
+            CASE t.kind WHEN 'memory' THEN listed_memory.body WHEN 'comment' THEN IF(listed_parent.id IS NULL,NULL,listed_comment.body) WHEN 'member' THEN listed_user.display_name END content_body,
+            CASE t.kind WHEN 'memory' THEN listed_memory.status WHEN 'comment' THEN IF(listed_parent.id IS NULL,NULL,listed_comment.status) WHEN 'member' THEN listed_member.status END content_status
+            FROM moderation_targets t
+            LEFT JOIN memories listed_memory ON t.kind='memory' AND listed_memory.id=t.target_id AND listed_memory.group_id=t.group_id
+            LEFT JOIN comments listed_comment ON t.kind='comment' AND listed_comment.id=t.target_id
+            LEFT JOIN memories listed_parent ON listed_parent.id=listed_comment.memory_id AND listed_parent.group_id=t.group_id AND listed_parent.status<>'removed'
+            LEFT JOIN group_members listed_member ON t.kind='member' AND listed_member.user_id=t.target_id AND listed_member.group_id=t.group_id
+            LEFT JOIN users listed_user ON listed_user.id=listed_member.user_id
+            WHERE t.group_id=:gid AND (EXISTS(SELECT 1 FROM reports r WHERE r.target_id=t.id AND r.dismissed=0) OR (t.kind='memory' AND EXISTS(SELECT 1 FROM memories m WHERE m.id=t.target_id AND m.status='hidden')) OR (t.kind='comment' AND EXISTS(SELECT 1 FROM comments c JOIN memories cm ON cm.id=c.memory_id WHERE c.id=t.target_id AND c.status='hidden' AND cm.status<>'removed'))) ORDER BY t.updated_at DESC,t.id DESC LIMIT :lim OFFSET :off", ['gid'=>$gid,'lim'=>$limit+1,'off'=>$offset]);
         $more=count($rows)>$limit; if ($more) array_pop($rows);
+        $reasonMap=[];$reasonParams=[];$slots=[];
+        foreach($rows as $i=>$row){$key='target_'.$i;$slots[]=':'.$key;$reasonParams[$key]=(int)$row['id'];}
+        if($slots!==[]){
+            $in=implode(',',$slots);
+            foreach(Database::query("SELECT target_id,reason,COUNT(*) AS count FROM reports WHERE target_id IN ($in) AND dismissed=0 GROUP BY target_id,reason ORDER BY target_id,reason",$reasonParams) as $reason){
+                $reasonMap[(int)$reason['target_id']][]=['reason'=>$reason['reason'],'count'=>(int)$reason['count']];
+            }
+        }
         $items=[];
         foreach ($rows as $row) {
-            $content=self::content($gid,(string)$row['kind'],(int)$row['target_id']);
-            $reasons=Database::query('SELECT reason,COUNT(*) AS count FROM reports WHERE target_id=:id AND dismissed=0 GROUP BY reason ORDER BY reason',['id'=>$row['id']]);
+            $content=$row['content_status']===null?null:['body'=>$row['content_body'],'status'=>$row['content_status']];
+            $reasons=$reasonMap[(int)$row['id']]??[];
             // Notes are intentionally not forwarded: their text may identify the reporter.
             $items[]=['id'=>(int)$row['id'],'kind'=>$row['kind'],'target_id'=>(int)$row['target_id'],'version'=>(int)$row['version'],'updated_at'=>$row['updated_at'],'summary'=>$content!==null && $content['status']!=='removed'?self::summary((string)$content['body']):null,'hidden'=>($content['status']??'')==='hidden','available'=>$content!==null && in_array($content['status'],['active','hidden'],true),'reasons'=>array_map(static fn(array $r):array=>['reason'=>$r['reason'],'count'=>(int)$r['count']],$reasons)];
         }

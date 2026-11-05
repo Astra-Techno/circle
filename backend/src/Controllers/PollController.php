@@ -63,8 +63,27 @@ final class PollController
     public static function index(Request $r):void
     {
         Response::header('Cache-Control','private, no-store');$g=$r->queryInt('group_id',0,0,PHP_INT_MAX);$event=$r->queryInt('event_id',0,0,PHP_INT_MAX);$memory=$r->queryInt('memory_id',0,0,PHP_INT_MAX);$limit=$r->queryInt('limit',30,1,100);$offset=$r->queryInt('offset',0,0,1000000);
-        $rows=Database::query("SELECT p.* FROM polls p JOIN group_members gm ON gm.group_id=p.group_id AND gm.user_id=:u AND gm.status='active' LEFT JOIN memories m ON m.id=p.memory_id WHERE (:allg=0 OR p.group_id=:g) AND (:alle=0 OR p.event_id=:e) AND (:allm=0 OR p.memory_id=:m) AND (p.memory_id IS NULL OR (m.status='active')) ORDER BY p.id DESC LIMIT :lim OFFSET :off",['u'=>$r->userId(),'allg'=>$g,'g'=>$g,'alle'=>$event,'e'=>$event,'allm'=>$memory,'m'=>$memory,'lim'=>$limit+1,'off'=>$offset]);$more=count($rows)>$limit;if($more)array_pop($rows);Response::ok(['items'=>array_map(static fn(array $p):array=>self::payload($p,$r->userId()),$rows),'has_more'=>$more]);
+        $rows=Database::query("SELECT p.*,gm.role AS viewer_role,g.name AS page_group_name FROM polls p JOIN `groups` g ON g.id=p.group_id JOIN group_members gm ON gm.group_id=p.group_id AND gm.user_id=:u AND gm.status='active' LEFT JOIN memories m ON m.id=p.memory_id WHERE (:allg=0 OR p.group_id=:g) AND (:alle=0 OR p.event_id=:e) AND (:allm=0 OR p.memory_id=:m) AND (p.memory_id IS NULL OR (m.status='active')) ORDER BY p.id DESC LIMIT :lim OFFSET :off",['u'=>$r->userId(),'allg'=>$g,'g'=>$g,'alle'=>$event,'e'=>$event,'allm'=>$memory,'m'=>$memory,'lim'=>$limit+1,'off'=>$offset]);$more=count($rows)>$limit;if($more)array_pop($rows);Response::ok(['items'=>self::pagePayloads($rows,$r->userId()),'has_more'=>$more]);
     }
+    /** @param list<array<string,mixed>> $rows
+     * @return list<array<string,mixed>> */
+    private static function pagePayloads(array $rows,int $user):array
+    {
+        if($rows===[])return [];
+        $params=[];$slots=[];
+        foreach($rows as $i=>$row){$key='page_poll_'.$i;$params[$key]=(int)$row['id'];$slots[]=':'.$key;}
+        $in=implode(',',$slots);$mine=[];$options=[];$totals=[];
+        foreach(Database::query("SELECT poll_id,option_id FROM poll_votes WHERE poll_id IN ($in) AND user_id=:viewer ORDER BY poll_id,option_id",['viewer'=>$user,...$params]) as $vote){$mine[(int)$vote['poll_id']][]=(int)$vote['option_id'];}
+        foreach(Database::query("SELECT o.poll_id,o.id,o.label,COUNT(v.id) votes FROM poll_options o LEFT JOIN poll_votes v ON v.option_id=o.id AND v.poll_id=o.poll_id WHERE o.poll_id IN ($in) GROUP BY o.poll_id,o.id,o.label,o.sort_order ORDER BY o.poll_id,o.sort_order,o.id",$params) as $option){
+            $options[(int)$option['poll_id']][]=['id'=>$option['id'],'label'=>$option['label'],'votes'=>$option['votes']];
+        }
+        foreach(Database::query("SELECT poll_id,COUNT(DISTINCT user_id) n FROM poll_votes WHERE poll_id IN ($in) GROUP BY poll_id",$params) as $total){$totals[(int)$total['poll_id']]=(int)$total['n'];}
+        return array_map(static function(array $p)use($user,$mine,$options,$totals):array {
+            $id=(int)$p['id'];
+            return self::payload($p,$user,['mine'=>$mine[$id]??[],'options'=>$options[$id]??[],'total'=>$totals[$id]??0,'group_name'=>$p['page_group_name'],'can_manage'=>(int)$p['created_by']===$user||$p['viewer_role']==='admin']);
+        },$rows);
+    }
+
     public static function create(Request $r):void
     {
         $f=$r->all();$allowed=['question','options','poll_type','anonymous','allow_add_options','results_visibility','allow_change_vote','closes_at','client_id','memory_id','event_id'];if(array_diff(array_keys($f),$allowed)!==[])Response::validationError('Choose supported poll settings.');
@@ -92,14 +111,15 @@ final class PollController
     }
     public static function show(Request $r):void{Response::header('Cache-Control','private, no-store');Response::ok(self::payload(self::access($r),$r->userId()));}
     /** @param array<string,mixed> $p
+     * @param array<string,mixed>|null $loaded
      * @return array<string,mixed> */
-    private static function payload(array $p,int $user):array
+    private static function payload(array $p,int $user,?array $loaded=null):array
     {
-        $mine=array_map('intval',array_column(Database::query('SELECT option_id FROM poll_votes WHERE poll_id=:p AND user_id=:u ORDER BY option_id',['p'=>$p['id'],'u'=>$user]),'option_id'));$closed=self::closed($p);$results=$p['results_visibility']==='always'||$closed||($p['results_visibility']==='after_voting'&&$mine!==[]);
-        $options=Database::query('SELECT o.id,o.label,COUNT(v.id) votes FROM poll_options o LEFT JOIN poll_votes v ON v.option_id=o.id AND v.poll_id=o.poll_id WHERE o.poll_id=:p GROUP BY o.id,o.label,o.sort_order ORDER BY o.sort_order,o.id',['p'=>$p['id']]);foreach($options as &$o){$o['id']=(int)$o['id'];if($results)$o['votes']=(int)$o['votes'];else unset($o['votes']);}unset($o);
+        $mine=$loaded['mine']??array_map('intval',array_column(Database::query('SELECT option_id FROM poll_votes WHERE poll_id=:p AND user_id=:u ORDER BY option_id',['p'=>$p['id'],'u'=>$user]),'option_id'));$closed=self::closed($p);$results=self::resultsAvailable($p,$user,$mine);
+        $options=$loaded['options']??Database::query('SELECT o.id,o.label,COUNT(v.id) votes FROM poll_options o LEFT JOIN poll_votes v ON v.option_id=o.id AND v.poll_id=o.poll_id WHERE o.poll_id=:p GROUP BY o.id,o.label,o.sort_order ORDER BY o.sort_order,o.id',['p'=>$p['id']]);foreach($options as &$o){$o['id']=(int)$o['id'];if($results)$o['votes']=(int)$o['votes'];else unset($o['votes']);}unset($o);
         $out=[];foreach(['id','group_id','created_by','memory_id','event_id','question','poll_type','results_visibility','closes_at'] as $k)$out[$k]=$p[$k];foreach(['id','group_id','created_by','memory_id','event_id'] as $k)if($out[$k]!==null)$out[$k]=(int)$out[$k];if($out['closes_at']!==null)$out['closes_at']=str_replace(' ','T',(string)$out['closes_at']).'Z';foreach(['anonymous','allow_add_options','allow_change_vote'] as $k)$out[$k]=(bool)$p[$k];
-        $out['group_name']=Database::queryOne('SELECT name FROM `groups` WHERE id=:id',['id'=>$p['group_id']])['name']??'Circle';
-        return [...$out,'closed'=>$closed,'options'=>$options,'my_votes'=>$mine,'results_available'=>$results,'voter_count'=>$results?(int)(Database::queryOne('SELECT COUNT(DISTINCT user_id) n FROM poll_votes WHERE poll_id=:p',['p'=>$p['id']])['n']??0):null,'can_manage'=>self::canManage($p,$user),'notification_allowed'=>true];
+        $out['group_name']=$loaded['group_name']??Database::queryOne('SELECT name FROM `groups` WHERE id=:id',['id'=>$p['group_id']])['name']??'Circle';
+        return [...$out,'closed'=>$closed,'options'=>$options,'my_votes'=>$mine,'results_available'=>$results,'voter_count'=>$results?($loaded!==null?(int)$loaded['total']:(int)(Database::queryOne('SELECT COUNT(DISTINCT user_id) n FROM poll_votes WHERE poll_id=:p',['p'=>$p['id']])['n']??0)):null,'can_manage'=>($loaded['can_manage']??self::canManage($p,$user)),'notification_allowed'=>true];
     }
     public static function vote(Request $r):void
     {
@@ -115,8 +135,17 @@ final class PollController
     {
         if(!$r->jsonIsObject()||$r->all()!==[])Response::validationError('No fields are needed.');self::write(static function()use($r):void{$p=self::access($r,true);if(!self::canManage($p,$r->userId(),true))Response::forbidden('Only the creator or group admins can close this poll.');Database::execute('UPDATE polls SET closed_at=COALESCE(closed_at,UTC_TIMESTAMP()) WHERE id=:id',['id'=>$p['id']]);PollNotifications::closed((int)$p['id'],$r->userId());});self::show($r);
     }
+    /** @param array<string,mixed> $p
+     * @param list<int>|null $mine */
+    private static function resultsAvailable(array $p,int $user,?array $mine=null):bool
+    {
+        if($p['results_visibility']==='always'||self::closed($p))return true;
+        if($p['results_visibility']!=='after_voting')return false;
+        return $mine!==null?$mine!==[]:Database::queryOne('SELECT id FROM poll_votes WHERE poll_id=:p AND user_id=:u LIMIT 1',['p'=>$p['id'],'u'=>$user])!==null;
+    }
+
     public static function voters(Request $r):void
     {
-        Response::header('Cache-Control','private, no-store');$p=self::access($r);if($p['anonymous']||!self::payload($p,$r->userId())['results_available'])Response::forbidden('Voter identities are private for this poll.');$limit=$r->queryInt('limit',30,1,100);$offset=$r->queryInt('offset',0,0,1000000);$rows=Database::query('SELECT u.id,u.display_name,v.option_id,o.label FROM poll_votes v JOIN users u ON u.id=v.user_id JOIN poll_options o ON o.id=v.option_id AND o.poll_id=v.poll_id WHERE v.poll_id=:p ORDER BY v.user_id,v.option_id LIMIT :lim OFFSET :off',['p'=>$p['id'],'lim'=>$limit+1,'off'=>$offset]);$more=count($rows)>$limit;if($more)array_pop($rows);foreach($rows as &$v){$v['id']=(int)$v['id'];$v['option_id']=(int)$v['option_id'];}Response::ok(['items'=>$rows,'has_more'=>$more]);
+        Response::header('Cache-Control','private, no-store');$p=self::access($r);if($p['anonymous']||!self::resultsAvailable($p,$r->userId()))Response::forbidden('Voter identities are private for this poll.');$limit=$r->queryInt('limit',30,1,100);$offset=$r->queryInt('offset',0,0,1000000);$rows=Database::query('SELECT u.id,u.display_name,v.option_id,o.label FROM poll_votes v JOIN users u ON u.id=v.user_id JOIN poll_options o ON o.id=v.option_id AND o.poll_id=v.poll_id WHERE v.poll_id=:p ORDER BY v.user_id,v.option_id LIMIT :lim OFFSET :off',['p'=>$p['id'],'lim'=>$limit+1,'off'=>$offset]);$more=count($rows)>$limit;if($more)array_pop($rows);foreach($rows as &$v){$v['id']=(int)$v['id'];$v['option_id']=(int)$v['option_id'];}Response::ok(['items'=>$rows,'has_more'=>$more]);
     }
 }

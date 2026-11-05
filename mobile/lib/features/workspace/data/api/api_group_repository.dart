@@ -113,8 +113,7 @@ mixin ApiGroupRepository on ApiRepositoryBase implements GroupRepository {
     if (!_groups.containsKey(groupId)) {
       throw const CircleFailure('This group is not shared with you.');
     }
-    await _syncSettings(groupId);
-    await _syncMembers(groupId);
+    await Future.wait([_syncSettings(groupId), _syncMembers(groupId)]);
     return _requireGroup(groupId);
   }
 

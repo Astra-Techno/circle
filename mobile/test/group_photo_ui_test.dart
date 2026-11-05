@@ -30,6 +30,45 @@ final image = ProfilePickedPhoto(
   mimeType: 'image/png',
 );
 void main() {
+  for (final ratio in [1.0, 3.0]) {
+    testWidgets('Circle cover rendition respects device pixel ratio $ratio', (
+      tester,
+    ) async {
+      final server = FakeCircleServer(mediaAvailable: true);
+      final owner = server.addUser(
+        '+9995550000791',
+        'fictional password',
+        'Owner',
+      );
+      final id = server.addGroup('Fictional cover', owner);
+      server.groups[id]!['cover_version'] = 'cover-v1';
+      server.groupPhotos['$id:cover'] = (
+        bytes: image.bytes,
+        mime: image.mimeType,
+      );
+      final c = await openServerCircle(
+        tester,
+        server,
+        tokens: await storedSession(server, owner),
+      );
+      tester.view.devicePixelRatio = ratio;
+      tester.view.physicalSize = Size(393 * ratio, 852 * ratio);
+      c.read(circleRouterProvider).go('/groups');
+      await settle(tester);
+      final reads = server.adapter.requests.where(
+        (r) => r.path == '/groups/$id/photos/cover',
+      );
+      expect(reads, isNotEmpty);
+      expect(
+        reads.every(
+          (r) => r.query['size'] == (ratio == 1 ? 'thumb' : 'medium'),
+        ),
+        isTrue,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
   test(
     'group avatar cache avoids remount downloads and rechecks membership',
     () async {
@@ -41,6 +80,11 @@ void main() {
       );
       final id = server.addGroup('Fictional cached group', owner);
       server.groups[id]!['avatar_version'] = 'v1';
+      server.groups[id]!['cover_version'] = 'cover-v1';
+      server.groupPhotos['$id:cover'] = (
+        bytes: image.bytes,
+        mime: image.mimeType,
+      );
       server.groupPhotos['$id:avatar'] = (
         bytes: image.bytes,
         mime: image.mimeType,
@@ -74,9 +118,32 @@ void main() {
       c.invalidate(photo);
       expect(await c.read(photo.future), image.bytes);
       expect(server.adapter.count('GET', '/groups/$id/photos/avatar'), 1);
+      final cover = (
+        group: '$id',
+        kind: ProfilePhotoKind.cover,
+        version: 'cover-v1',
+      );
+      final preview = groupPhotoPreviewBytesProvider(cover);
+      final banner = groupPhotoBytesProvider(cover);
+      final previewSub = c.listen(preview, (_, _) {});
+      expect(await c.read(preview.future), image.bytes);
+      final bannerSub = c.listen(banner, (_, _) {});
+      expect(await c.read(banner.future), image.bytes);
+      c.invalidate(preview);
+      expect(await c.read(preview.future), image.bytes);
+      expect(
+        server.adapter.requests
+            .where((r) => r.path == '/groups/$id/photos/cover')
+            .map((r) => r.query['size']),
+        ['thumb', 'medium'],
+      );
       server.members[id]!.remove(owner);
       await c.read(circleWorkspaceProvider.notifier).refresh();
       await expectLater(c.read(photo.future), throwsA(anything));
+      await expectLater(c.read(preview.future), throwsA(anything));
+      await expectLater(c.read(banner.future), throwsA(anything));
+      previewSub.close();
+      bannerSub.close();
       expect(server.adapter.count('GET', '/groups/$id/photos/avatar'), 1);
       subscription.close();
     },

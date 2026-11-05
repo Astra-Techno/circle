@@ -20,6 +20,22 @@ final class PollTest extends ApiTestCase
     private function poll(array $u,int $group,array $fields=[]):int {
         $r=$this->request('POST',"/api/v1/groups/$group/polls",['question'=>'Fictional lunch?','options'=>['Park','Cafe'],'client_id'=>'fictional-poll-'.bin2hex(random_bytes(8)),...$fields],$u['token']);self::assertSame(200,$r->status(),json_encode($r->json())?:'');return $r->data()['id'];
     }
+    public function testListQueryCountIsBoundedAndHiddenResultsStayPrivate():void
+    {
+        $owner=$this->user('Fictional owner');$viewer=$this->user('Fictional viewer');$g=$this->createGroup($owner);$this->join($owner,$viewer,$g);
+        for($i=0;$i<10;$i++)$this->poll($owner,$g,['results_visibility'=>'after_voting']);
+        $count=static fn():int=>(int)(Database::queryOne("SHOW SESSION STATUS LIKE 'Com_select'")['Value']??0);
+        $before=$count();$one=$this->request('GET','/api/v1/polls?limit=1',[],$viewer['token']);$small=$count()-$before;
+        $before=$count();$many=$this->request('GET','/api/v1/polls?limit=10',[],$viewer['token']);$large=$count()-$before;
+        self::assertCount(1,$one->data()['items']);self::assertCount(10,$many->data()['items']);
+        foreach($many->data()['items'] as $poll){
+            self::assertFalse($poll['results_available']);self::assertNull($poll['voter_count']);self::assertFalse($poll['can_manage']);
+            foreach($poll['options'] as $option){self::assertArrayNotHasKey('votes',$option);self::assertArrayNotHasKey('poll_id',$option);}
+        }
+        self::assertLessThanOrEqual($small+1,$large,'Poll pages must not query per poll.');
+        if(getenv('CIRCLE_TEST_QUERY_METRICS')==='true')fwrite(STDERR,sprintf("Poll SELECTs:1 poll=%d;10 polls=%d\n",$small,$large));
+    }
+
     public function testCreateRetryValidationAndExactGroupAuthorization():void
     {
         $a=$this->user('Owner');$b=$this->user('Parent member');$g=$this->createGroup($a);$child=$this->createGroup($a,'Private child',$g);$this->join($a,$b,$g);

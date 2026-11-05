@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/viewport_load.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
@@ -422,9 +423,49 @@ class _PhotoAction extends StatelessWidget {
 /// One photo: a fictional scene tile, or an uploaded photo loaded through
 /// a short-lived signed link selected for the physical display area.
 /// Zoom viewers request the full rendition.
-class MemoryPhotoTile extends ConsumerWidget {
+class MemoryPhotoTile extends StatelessWidget {
   const MemoryPhotoTile({
     super.key,
+    required this.photo,
+    required this.semanticsLabel,
+    this.onTap,
+    this.more,
+    this.large = false,
+  });
+  final MemoryPhoto photo;
+  final String semanticsLabel;
+  final VoidCallback? onTap;
+  final String? more;
+  final bool large;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget load(BuildContext _) => _LoadedMemoryPhotoTile(
+      photo: photo,
+      semanticsLabel: semanticsLabel,
+      onTap: onTap,
+      more: more,
+      large: large,
+    );
+    if (photo.mediaId == null) return load(context);
+    return CircleViewportLoad(
+      key: ValueKey(photo.mediaId),
+      builder: load,
+      placeholder: CirclePhotoFrame(
+        semanticsLabel: semanticsLabel,
+        onTap: onTap,
+        more: more,
+        large: large,
+        child: ColoredBox(
+          color: Theme.of(context).colorScheme.surfaceContainer,
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadedMemoryPhotoTile extends ConsumerWidget {
+  const _LoadedMemoryPhotoTile({
     required this.photo,
     required this.semanticsLabel,
     this.onTap,

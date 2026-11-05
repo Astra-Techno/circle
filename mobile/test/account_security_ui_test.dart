@@ -26,6 +26,12 @@ class FakeSessionDevice extends SessionDevice {
   }
 }
 
+class SlowSessionDevice extends FakeSessionDevice {
+  final pending = Completer<Map<String, String>>();
+  @override
+  Future<Map<String, String>> details() => pending.future;
+}
+
 Map<String, Object?> row(bool current) => {
   'id': (current ? 'a' : 'b') * 32,
   'is_current': current,
@@ -88,6 +94,27 @@ Future<ProviderContainer> open(
 }
 
 void main() {
+  testWidgets(
+    'device security controls do not wait for optional platform details',
+    (tester) async {
+      final device = SlowSessionDevice();
+      addTearDown(() {
+        if (!device.pending.isCompleted) device.pending.complete({});
+      });
+      final c = await open(tester, device: device);
+      c.read(circleRouterProvider).go('/you/account/sessions');
+      for (var i = 0; i < 5; i++) {
+        await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(device.pending.isCompleted, isFalse);
+      expect(find.text('This device'), findsOneWidget);
+      device.pending.complete({});
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   testWidgets(
     'password success clears auth/drafts and invalidates optional push independently',
     (tester) async {

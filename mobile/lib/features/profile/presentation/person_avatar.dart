@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/viewport_load.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../workspace/application/workspace_providers.dart';
@@ -6,9 +7,40 @@ import '../application/profile_providers.dart';
 
 /// One identity-based avatar for every person row. Never resolves by name.
 /// Unknown/missing photos and preview-only people remain initials without HTTP.
-class PersonAvatar extends ConsumerWidget {
+class PersonAvatar extends StatelessWidget {
   const PersonAvatar({
     super.key,
+    required this.person,
+    required this.name,
+    this.size = CircleAvatarSize.medium,
+    this.tone = CircleTone.calm,
+    this.active = false,
+  });
+  final String person, name;
+  final CircleAvatarSize size;
+  final CircleTone tone;
+  final bool active;
+  @override
+  Widget build(BuildContext context) => CircleViewportLoad(
+    key: ValueKey(person),
+    builder: (_) => _LoadedPersonAvatar(
+      person: person,
+      name: name,
+      size: size,
+      tone: tone,
+      active: active,
+    ),
+    placeholder: CircleInitialAvatar(
+      name: name,
+      size: size,
+      tone: tone,
+      active: active,
+    ),
+  );
+}
+
+class _LoadedPersonAvatar extends ConsumerWidget {
+  const _LoadedPersonAvatar({
     required this.person,
     required this.name,
     this.size = CircleAvatarSize.medium,
