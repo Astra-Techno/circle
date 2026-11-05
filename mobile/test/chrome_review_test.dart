@@ -11,6 +11,49 @@ import 'support/server_harness.dart';
 import 'live_chat_events_test.dart' show LiveFixture;
 
 void main() {
+  testWidgets('group chat route uses full-screen conversation chrome', (
+    tester,
+  ) async {
+    final fixture = LiveFixture();
+    final container = await openServerCircle(
+      tester,
+      fixture.server,
+      tokens: await storedSession(fixture.server, fixture.owner),
+    );
+    container.read(circleRouterProvider).go('/chats/g/${fixture.group}');
+    await settle(tester);
+    expect(find.text('Home'), findsNothing);
+    expect(find.text('Profile'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+  testWidgets(
+    'subgroup creation remains reachable with keyboard and large text',
+    (tester) async {
+      final container = await openCircle(
+        tester,
+        size: const Size(320, 700),
+        scale: 2,
+      );
+      container.read(circleRouterProvider).go('/groups/g/friends');
+      await tester.pumpAndSettle();
+      final create = find
+          .widgetWithText(OutlinedButton, 'Create subgroup')
+          .first;
+      await reveal(tester, create);
+      await tester.tap(create);
+      await tester.pumpAndSettle();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 250);
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextField, 'Subgroup name'), findsOneWidget);
+      final submit = find.widgetWithText(FilledButton, 'Create subgroup');
+      await tester.ensureVisible(submit);
+      await tester.pumpAndSettle();
+      expect(submit.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
   for (final brightness in Brightness.values) {
     testWidgets('footer stays compact with iPhone inset ${brightness.name}', (
       tester,

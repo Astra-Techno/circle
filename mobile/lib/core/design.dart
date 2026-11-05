@@ -604,6 +604,7 @@ class _CirclePageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
+    if (MediaQuery.disableAnimationsOf(context)) return child;
     final fade = CurvedAnimation(
       parent: animation,
       curve: CircleMotion.enterCurve,

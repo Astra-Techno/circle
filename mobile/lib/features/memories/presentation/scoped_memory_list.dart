@@ -22,14 +22,17 @@ class ScopedMemoryList extends ConsumerStatefulWidget {
 
 class _ScopedMemoryListState extends ConsumerState<ScopedMemoryList> {
   bool _loadingMore = false;
+  bool _moreFailed = false;
   Future<void> _more() async {
-    setState(() => _loadingMore = true);
+    if (_loadingMore) return;
+    setState(() {
+      _loadingMore = true;
+      _moreFailed = false;
+    });
     try {
-      await runCalmly(
-        context,
-        () =>
-            ref.read(memoryTimelineProvider(widget.query).notifier).loadMore(),
-      );
+      await ref.read(memoryTimelineProvider(widget.query).notifier).loadMore();
+    } catch (_) {
+      if (mounted) setState(() => _moreFailed = true);
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }
@@ -46,7 +49,17 @@ class _ScopedMemoryListState extends ConsumerState<ScopedMemoryList> {
             for (final memory in page.items)
               widget.itemBuilder(context, memory),
             if (page.hasMore)
-              _AutoLoader(loading: _loadingMore, onVisible: _more),
+              if (_moreFailed)
+                TextButton(
+                  onPressed: _more,
+                  child: const Text('Retry loading older Memories'),
+                )
+              else
+                _AutoLoader(
+                  key: ValueKey(page.cursor),
+                  loading: _loadingMore,
+                  onVisible: _more,
+                ),
             if (!page.hasMore && page.items.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: Space.md),
@@ -75,12 +88,13 @@ class _ScopedMemoryListState extends ConsumerState<ScopedMemoryList> {
       );
 }
 
-/// Triggers [onVisible] once via a post-frame callback when first built
-/// (i.e. when the user scrolls to this position), then shows a spinner.
-/// Replaced by list content on the next page load, or removed when no
-/// more pages remain.
+/// Requests each cursor only when its loader enters the scroll viewport.
 class _AutoLoader extends StatefulWidget {
-  const _AutoLoader({required this.loading, required this.onVisible});
+  const _AutoLoader({
+    super.key,
+    required this.loading,
+    required this.onVisible,
+  });
   final bool loading;
   final VoidCallback onVisible;
   @override
@@ -88,14 +102,45 @@ class _AutoLoader extends StatefulWidget {
 }
 
 class _AutoLoaderState extends State<_AutoLoader> {
+  ScrollPosition? _position;
+  bool _requested = false;
+
   @override
-  void initState() {
-    super.initState();
-    if (!widget.loading) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onVisible();
-      });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = Scrollable.maybeOf(context)?.position;
+    if (_position != next) {
+      _position?.removeListener(_checkVisible);
+      _position = next;
+      _position?.addListener(_checkVisible);
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkVisible());
+  }
+
+  void _checkVisible() {
+    if (!mounted || _requested || widget.loading) return;
+    final box = context.findRenderObject();
+    final scrollable = Scrollable.maybeOf(context);
+    final viewport = scrollable?.context.findRenderObject();
+    if (box is! RenderBox ||
+        viewport is! RenderBox ||
+        !box.hasSize ||
+        !viewport.hasSize) {
+      return;
+    }
+    final top = box.localToGlobal(Offset.zero).dy;
+    final viewportTop = viewport.localToGlobal(Offset.zero).dy;
+    if (top < viewportTop + viewport.size.height &&
+        top + box.size.height > viewportTop) {
+      _requested = true;
+      widget.onVisible();
+    }
+  }
+
+  @override
+  void dispose() {
+    _position?.removeListener(_checkVisible);
+    super.dispose();
   }
 
   @override

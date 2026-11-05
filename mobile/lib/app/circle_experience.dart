@@ -442,10 +442,8 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'g/:id',
-                    builder: (_, state) => _idRoute(
-                      state,
-                      (id) => _chatsPane('g-$id'),
-                    ),
+                    builder: (_, state) =>
+                        _idRoute(state, (id) => _chatsPane('g-$id')),
                   ),
                 ],
               ),
@@ -814,7 +812,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     const titles = ['Memories', 'Chats', 'Circles', 'Events', 'Profile'];
     // Like WhatsApp, an open live conversation is full screen: it draws its
     // own bar (back, photo, name, options) and hides the tab dock.
-    if (RegExp(r'^/chats/c/[^/]+$').hasMatch(path)) {
+    if (RegExp(r'^/chats/[cg]/[^/]+$').hasMatch(path)) {
       return Scaffold(body: SafeArea(child: shell));
     }
     final bottomNav = AnimatedSize(

@@ -90,12 +90,12 @@ class CircleHome extends ConsumerWidget {
                                             memory.groupId,
                                           )!;
                                           return CircleFadeIn(
-                                            key: ValueKey(
-                                              'fade-${memory.id}',
-                                            ),
-                                            delay: CircleMotion.staggerDelay *
-                                                ((index - 1) * columns +
-                                                    column),
+                                            key: ValueKey('fade-${memory.id}'),
+                                            delay:
+                                                CircleMotion.staggerDelay *
+                                                (((index - 1) * columns +
+                                                        column)
+                                                    .clamp(0, 5)),
                                             child: CircleMemoryCard(
                                               key: ValueKey(memory.id),
                                               memory: memory,

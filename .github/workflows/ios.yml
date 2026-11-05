@@ -19,6 +19,7 @@ concurrency:
 jobs:
   validate:
     name: Compile iPhone app (unsigned)
+    if: inputs.target == 'validate'
     # Use the Intel pool to avoid macOS arm64 runner capacity failures.
     runs-on: macos-15-intel
     timeout-minutes: 45
@@ -69,7 +70,6 @@ jobs:
 
   testflight:
     name: Sign and upload to TestFlight
-    needs: validate
     if: inputs.target == 'testflight' && github.ref == 'refs/heads/main'
     # Use the Intel pool to avoid macOS arm64 runner capacity failures.
     runs-on: macos-15-intel
@@ -104,8 +104,14 @@ jobs:
           cache: true
       - name: Import signing identity into temporary keychain
         run: python3 ../scripts/ios/signing.py prepare
-      - name: Resolve locked dependencies
-        run: flutter pub get --enforce-lockfile
+      - name: Resolve locked dependencies and verify release guards
+        run: |
+          xcodebuild -version
+          python3 -m unittest discover -s ../scripts/ios -p 'test_*.py'
+          flutter pub get --enforce-lockfile
+          dart format --output=none --set-exit-if-changed lib test
+          flutter analyze
+          flutter test test/design_system_guard_test.dart test/push_session_test.dart
       - name: Build signed App Store IPA
         run: |
           # Dedicated iOS sequence, with an increasing suffix for reruns.

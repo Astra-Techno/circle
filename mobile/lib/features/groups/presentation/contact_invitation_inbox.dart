@@ -1,5 +1,5 @@
 import '../../profile/application/server_blocks.dart';
-import '../../profile/presentation/person_avatar.dart';
+import 'invite_link_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -267,7 +267,7 @@ class _ContactInvitationInboxState
               },
               action: _tab == _InviteTab.received
                   ? TextButton.icon(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () => openInviteLinkDialog(context, ref),
                       icon: const Icon(LucideIcons.link),
                       label: const Text('Open an invite link'),
                     )
@@ -325,9 +325,7 @@ class _InviteTabChip extends StatelessWidget {
     final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
     return Material(
-      color: selected
-          ? theme.colorScheme.primary
-          : theme.colorScheme.surface,
+      color: selected ? theme.colorScheme.primary : theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(CircleRadius.button),
       child: InkWell(
         borderRadius: BorderRadius.circular(CircleRadius.button),
@@ -387,9 +385,6 @@ class _InvitationCard extends StatelessWidget {
     final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
     final timeText = _invitationTimeLabel(invitation.expiresAt);
-    // Member count: use group name length as a fictional proxy (server
-    // doesn't include member_count in the invitation response yet).
-    final memberCount = invitation.groupName.length % 50 + 8;
 
     return CircleSurfaceCard(
       child: Column(
@@ -407,200 +402,126 @@ class _InvitationCard extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(Space.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top row: cover photo + group info + time.
-            Row(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Group avatar / cover placeholder.
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(CircleRadius.card),
-                  child: CircleInitialAvatar(
-                    icon: LucideIcons.users,
-                    name: invitation.groupName,
-                    size: CircleAvatarSize.hero,
-                  ),
-                ),
-                const SizedBox(width: Space.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                // Top row: cover photo + group info + time.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Group avatar / cover placeholder.
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(CircleRadius.card),
+                      child: CircleInitialAvatar(
+                        icon: LucideIcons.users,
+                        name: invitation.groupName,
+                        size: CircleAvatarSize.hero,
+                      ),
+                    ),
+                    const SizedBox(width: Space.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              invitation.groupName,
-                              style: CircleTextStyles.cardTitle(
-                                theme.colorScheme.onSurface,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (timeText.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsetsDirectional.only(
-                                start: Space.sm,
-                              ),
-                              child: Text(
-                                timeText,
-                                style: CircleTextStyles.metadata(
-                                  accents.caption,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  invitation.groupName,
+                                  style: CircleTextStyles.cardTitle(
+                                    theme.colorScheme.onSurface,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                            ),
+                              if (timeText.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsetsDirectional.only(
+                                    start: Space.sm,
+                                  ),
+                                  child: Text(
+                                    timeText,
+                                    style: CircleTextStyles.metadata(
+                                      accents.caption,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: Space.xs),
+                          Text(
+                            '${invitation.inviterName} invited you to join this Circle.',
+                            style: CircleTextStyles.metadata(accents.caption),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ),
-                      const SizedBox(height: Space.xs),
-                      Row(
-                        children: [
-                          Icon(
-                            LucideIcons.users,
-                            size: Space.md,
-                            color: accents.caption,
-                          ),
-                          const SizedBox(width: Space.xs),
-                          Expanded(
-                            child: Text(
-                              '$memberCount members',
-                              style: CircleTextStyles.metadata(accents.caption),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: Space.xs),
-                      Text(
-                        '${invitation.inviterName} invited you to join this Circle.',
-                        style: CircleTextStyles.metadata(accents.caption),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Space.md),
+                if (onAccept != null || onDecline != null) ...[
+                  const SizedBox(height: Space.section),
+                  // Accept / Decline buttons.
+                  Wrap(
+                    spacing: Space.sm,
+                    runSpacing: Space.sm,
+                    children: [
+                      if (onAccept != null)
+                        _AcceptButton(onPressed: busy ? null : onAccept),
+                      if (onDecline != null)
+                        _DeclineButton(onPressed: busy ? null : onDecline),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: Space.md),
-            // Member avatar row.
-            _MemberAvatarRow(
-              count: memberCount,
-              groupName: invitation.groupName,
-            ),
-            if (onAccept != null || onDecline != null) ...[
-              const SizedBox(height: Space.section),
-              // Accept / Decline buttons.
-              Wrap(
-                spacing: Space.sm,
-                runSpacing: Space.sm,
-                children: [
-                  if (onAccept != null)
-                    _AcceptButton(onPressed: busy ? null : onAccept),
-                  if (onDecline != null)
-                    _DeclineButton(onPressed: busy ? null : onDecline),
                 ],
-              ),
-            ],
-            if (invitation.status != 'pending')
-              Padding(
-                padding: const EdgeInsets.only(top: Space.sm),
-                child: Text(
-                  'Invitation ${invitation.status}',
-                  style: CircleTextStyles.label(accents.caption),
-                ),
-              ),
-            if (invitation.approvalRequired && invitation.status == 'pending')
-              Padding(
-                padding: const EdgeInsets.only(top: Space.sm),
-                child: Text(
-                  'A group admin may need to approve your request.',
-                  style: CircleTextStyles.caption(accents.caption),
-                ),
-              ),
-            if (onBlock != null)
-              Padding(
-                padding: const EdgeInsets.only(top: Space.sm),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(CircleRadius.button),
-                  onTap: onBlock,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: CircleSizes.minTouchTarget,
-                      minWidth: CircleSizes.minTouchTarget,
+                if (invitation.status != 'pending')
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.sm),
+                    child: Text(
+                      'Invitation ${invitation.status}',
+                      style: CircleTextStyles.label(accents.caption),
                     ),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Block inviter',
-                        style: CircleTextStyles.label(accents.caption),
+                  ),
+                if (invitation.approvalRequired &&
+                    invitation.status == 'pending')
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.sm),
+                    child: Text(
+                      'A group admin may need to approve your request.',
+                      style: CircleTextStyles.caption(accents.caption),
+                    ),
+                  ),
+                if (onBlock != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.sm),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(CircleRadius.button),
+                      onTap: onBlock,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minHeight: CircleSizes.minTouchTarget,
+                          minWidth: CircleSizes.minTouchTarget,
+                        ),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Block inviter',
+                            style: CircleTextStyles.label(accents.caption),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-          ],
-        ),
-      ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// Stacked member avatar row with "+N" overflow, matching the design.
-class _MemberAvatarRow extends StatelessWidget {
-  const _MemberAvatarRow({required this.count, required this.groupName});
-  final int count;
-  final String groupName;
-
-  @override
-  Widget build(BuildContext context) {
-    final accents = CircleAccents.of(context);
-    final shown = count > 3 ? 3 : count;
-    final overflow = count - shown;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < shown; i++)
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              end: i < shown - 1 ? 0 : Space.xs,
-            ),
-            child: Transform.translate(
-              offset: Offset(-i * Space.sm, 0),
-              child: PersonAvatar(
-                person: '${groupName.hashCode}-member-$i',
-                name: groupName[i % groupName.length],
-                size: CircleAvatarSize.small,
-              ),
-            ),
-          ),
-        if (overflow > 0)
-          Transform.translate(
-            offset: Offset(-shown * Space.sm, 0),
-            child: Container(
-              height: CircleAvatarSize.small.diameter,
-              padding: const EdgeInsets.symmetric(horizontal: Space.sm),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(
-                  CircleAvatarSize.small.diameter / 2,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                '+$overflow',
-                style: CircleTextStyles.label(accents.caption),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-/// Filled "Accept" button with check icon.
 class _AcceptButton extends StatelessWidget {
   const _AcceptButton({this.onPressed});
   final VoidCallback? onPressed;

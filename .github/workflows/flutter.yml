@@ -3,6 +3,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      refresh_goldens:
+        description: 'Render Windows visual baselines for review (artifact only)'
+        type: boolean
+        default: false
 jobs:
   flutter:
     runs-on: windows-latest
@@ -19,4 +24,19 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze
-      - run: flutter test
+      - name: Run tests
+        shell: pwsh
+        run: |
+          if ('${{ inputs.refresh_goldens }}' -eq 'true') {
+            flutter test --update-goldens
+          } else {
+            flutter test
+          }
+      - name: Upload Windows visual baselines for review
+        if: inputs.refresh_goldens == true && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-visual-baselines
+          path: mobile/test/goldens/
+          if-no-files-found: error
+          retention-days: 7

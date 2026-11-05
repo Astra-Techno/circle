@@ -287,11 +287,11 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                           level: entry.level,
                           activity: activityMap[entry.group.id],
                           eventCount: eventCounts[entry.group.id] ?? 0,
-                        notificationCount: _notificationCount(
-                          workspace,
-                          entry.group.id,
-                        ),
-                        expanded: !entry.hasChildren ? null : entry.expanded,
+                          notificationCount: _notificationCount(
+                            workspace,
+                            entry.group.id,
+                          ),
+                          expanded: !entry.hasChildren ? null : entry.expanded,
                           onToggle: () => setState(() {
                             if (!_collapsed.remove(entry.group.id)) {
                               _collapsed.add(entry.group.id);
@@ -345,9 +345,7 @@ class _FilterChip extends StatelessWidget {
     final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
     return Material(
-      color: selected
-          ? theme.colorScheme.primary
-          : theme.colorScheme.surface,
+      color: selected ? theme.colorScheme.primary : theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(CircleRadius.button),
       child: InkWell(
         borderRadius: BorderRadius.circular(CircleRadius.button),
@@ -656,24 +654,24 @@ class _CircleCard extends ConsumerWidget {
                         horizontal: Space.sm,
                       ),
                       child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          expanded! ? 'Hide subgroups' : 'Show subgroups',
-                          style: CircleTextStyles.caption(accents.caption),
-                        ),
-                        const SizedBox(width: Space.xs),
-                        Icon(
-                          expanded!
-                              ? LucideIcons.chevron_up
-                              : LucideIcons.chevron_down,
-                          size: CircleSizes.iconInline,
-                          color: accents.caption,
-                        ),
-                      ],
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            expanded! ? 'Hide subgroups' : 'Show subgroups',
+                            style: CircleTextStyles.caption(accents.caption),
+                          ),
+                          const SizedBox(width: Space.xs),
+                          Icon(
+                            expanded!
+                                ? LucideIcons.chevron_up
+                                : LucideIcons.chevron_down,
+                            size: CircleSizes.iconInline,
+                            color: accents.caption,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   ),
                 ),
               ),
@@ -733,7 +731,6 @@ class _GroupCoverPhoto extends ConsumerWidget {
     );
   }
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CircleGroupTile is kept for backward compatibility with tests/detail pages.

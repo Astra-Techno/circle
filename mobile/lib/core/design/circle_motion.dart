@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 /// Shared animation tokens. Durations follow Material motion guidance:
@@ -38,21 +39,30 @@ class _CirclePressableState extends State<CirclePressable>
   );
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize while the element is active, including reduced-motion builds.
+    _ctrl;
+  }
+
+  @override
   void dispose() {
     _ctrl.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => Listener(
-        onPointerDown: (_) => _ctrl.reverse(),
-        onPointerUp: (_) {
-          _ctrl.forward();
-          widget.onTap?.call();
-        },
-        onPointerCancel: (_) => _ctrl.forward(),
-        child: ScaleTransition(scale: _ctrl, child: widget.child),
-      );
+  Widget build(BuildContext context) => MediaQuery.disableAnimationsOf(context)
+      ? widget.child
+      : Listener(
+          onPointerDown: (_) => _ctrl.reverse(),
+          onPointerUp: (_) {
+            _ctrl.forward();
+            widget.onTap?.call();
+          },
+          onPointerCancel: (_) => _ctrl.forward(),
+          child: ScaleTransition(scale: _ctrl, child: widget.child),
+        );
 }
 
 /// Animates a child in with fade + slide-up when first built.
@@ -84,27 +94,40 @@ class _CircleFadeInState extends State<CircleFadeIn>
     end: Offset.zero,
   ).animate(_opacity);
 
+  Timer? _delayTimer;
+  bool _started = false;
+
   @override
-  void initState() {
-    super.initState();
-    if (widget.delay == Duration.zero) {
-      _ctrl.forward();
-    } else {
-      Future.delayed(widget.delay, () {
-        if (mounted) _ctrl.forward();
-      });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _delayTimer?.cancel();
+      _ctrl.value = 1;
+      _started = true;
+    } else if (!_started) {
+      _started = true;
+      if (widget.delay == Duration.zero) {
+        _ctrl.forward();
+      } else {
+        _delayTimer = Timer(widget.delay, () {
+          if (mounted) _ctrl.forward();
+        });
+      }
     }
   }
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
     _ctrl.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => FadeTransition(
-        opacity: _opacity,
-        child: SlideTransition(position: _slide, child: widget.child),
-      );
+  Widget build(BuildContext context) => MediaQuery.disableAnimationsOf(context)
+      ? widget.child
+      : FadeTransition(
+          opacity: _opacity,
+          child: SlideTransition(position: _slide, child: widget.child),
+        );
 }

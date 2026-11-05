@@ -432,73 +432,75 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
         Space.md,
         Space.md + MediaQuery.viewInsetsOf(context).bottom,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Create subgroup in ${widget.parent.name}',
-            style: theme.textTheme.titleLarge,
-          ),
-          const SizedBox(height: Space.xs),
-          Text(
-            'Only members of ${widget.parent.name} can join.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: CircleAccents.of(context).caption,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Create subgroup in ${widget.parent.name}',
+              style: theme.textTheme.titleLarge,
             ),
-          ),
-          const SizedBox(height: Space.section),
-          TextField(
-            controller: _name,
-            autofocus: true,
-            maxLength: 100,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              labelText: 'Subgroup name',
-              errorText: _error,
-              errorMaxLines: 3,
+            const SizedBox(height: Space.xs),
+            Text(
+              'Only members of ${widget.parent.name} can join.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: CircleAccents.of(context).caption,
+              ),
             ),
-            onSubmitted: (_) => _create(),
-          ),
-          const SizedBox(height: Space.md),
-          DropdownButtonFormField<CircleType>(
-            initialValue: _type,
-            decoration: const InputDecoration(labelText: 'Kind of group'),
-            items: [
-              for (final type in CircleType.values)
-                DropdownMenuItem(
-                  value: type,
-                  child: Text(circleTypeLabel(type)),
-                ),
-            ],
-            onChanged: (type) {
-              if (type != null) setState(() => _type = type);
-            },
-          ),
-          const SizedBox(height: Space.md),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text('List in ${widget.parent.name}'),
-            subtitle: Text(
-              _listed
-                  ? 'Members of ${widget.parent.name} can see its name and ask to join.'
-                  : 'Hidden: only people you invite will know it exists.',
+            const SizedBox(height: Space.section),
+            TextField(
+              controller: _name,
+              autofocus: true,
+              maxLength: 100,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: 'Subgroup name',
+                errorText: _error,
+                errorMaxLines: 3,
+              ),
+              onSubmitted: (_) => _create(),
             ),
-            value: _listed,
-            onChanged: (value) => setState(() => _listed = value),
-          ),
-          const SizedBox(height: Space.md),
-          FilledButton.icon(
-            onPressed: _busy ? null : _create,
-            icon: _busy
-                ? const SizedBox.square(
-                    dimension: Space.md,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(LucideIcons.plus),
-            label: Text(_busy ? 'Creating\u2026' : 'Create subgroup'),
-          ),
-        ],
+            const SizedBox(height: Space.md),
+            DropdownButtonFormField<CircleType>(
+              initialValue: _type,
+              decoration: const InputDecoration(labelText: 'Kind of group'),
+              items: [
+                for (final type in CircleType.values)
+                  DropdownMenuItem(
+                    value: type,
+                    child: Text(circleTypeLabel(type)),
+                  ),
+              ],
+              onChanged: (type) {
+                if (type != null) setState(() => _type = type);
+              },
+            ),
+            const SizedBox(height: Space.md),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('List in ${widget.parent.name}'),
+              subtitle: Text(
+                _listed
+                    ? 'Members of ${widget.parent.name} can see its name and ask to join.'
+                    : 'Hidden: only people you invite will know it exists.',
+              ),
+              value: _listed,
+              onChanged: (value) => setState(() => _listed = value),
+            ),
+            const SizedBox(height: Space.md),
+            FilledButton.icon(
+              onPressed: _busy ? null : _create,
+              icon: _busy
+                  ? const SizedBox.square(
+                      dimension: Space.md,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(LucideIcons.plus),
+              label: Text(_busy ? 'Creating\u2026' : 'Create subgroup'),
+            ),
+          ],
+        ),
       ),
     );
   }

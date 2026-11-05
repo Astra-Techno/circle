@@ -64,7 +64,7 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                     ),
                   for (final (i, item) in items.indexed)
                     CircleFadeIn(
-                      delay: CircleMotion.staggerDelay * i,
+                      delay: CircleMotion.staggerDelay * i.clamp(0, 5),
                       child: _LiveEventCard(
                         item: item,
                         onTap: () => context.go('/events/e/${item['id']}'),
@@ -470,214 +470,216 @@ class _LiveEventCard extends ConsumerWidget {
         padding: EdgeInsets.zero,
         onTap: onTap,
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (item['cover_id'] case final String cover)
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(CircleRadius.card),
-              ),
-              child: SizedBox(
-                height: 140,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    PrivatePhoto(
-                      load: ref.watch(
-                        liveEventCoverProvider((
-                          event: '${item['id']}',
-                          cover: cover,
-                        )),
-                      ),
-                      label: 'Event cover',
-                    ),
-                    // Group name chip overlay.
-                    if (groupName.isNotEmpty)
-                      Positioned(
-                        left: Space.sm,
-                        top: Space.sm,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: Space.sm,
-                            vertical: Space.xs,
-                          ),
-                          decoration: BoxDecoration(
-                            color: CircleOverlay.chipBackground,
-                            borderRadius: BorderRadius.circular(
-                              CircleRadius.button,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                LucideIcons.users_round,
-                                size: CircleSizes.iconInline,
-                                color: CircleOverlay.foreground,
-                              ),
-                              const SizedBox(width: Space.xs),
-                              Text(
-                                groupName,
-                                style: CircleTextStyles.caption(
-                                  CircleOverlay.foreground,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (item['cover_id'] case final String cover)
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(CircleRadius.card),
                 ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(Space.md),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Cover photo thumbnail when no cover image.
-                if (item['cover_id'] == null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: Space.md),
-                    child: EventDateBlock(
-                      wall: liveEventWall(
-                        item['start_at'] as String,
-                        item['timezone'] as String,
-                      ),
-                    ),
-                  ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                child: SizedBox(
+                  height: 140,
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Text(
-                        item['title'] as String,
-                        style: CircleTextStyles.homeAuthor(
-                          theme.colorScheme.onSurface,
+                      PrivatePhoto(
+                        load: ref.watch(
+                          liveEventCoverProvider((
+                            event: '${item['id']}',
+                            cover: cover,
+                          )),
                         ),
+                        label: 'Event cover',
                       ),
-                      if (groupName.isNotEmpty && item['cover_id'] == null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: Space.xs),
-                          child: Row(
-                            children: [
-                              Icon(
-                                LucideIcons.users_round,
-                                size: CircleSizes.iconInline,
-                                color: accents.caption,
+                      // Group name chip overlay.
+                      if (groupName.isNotEmpty)
+                        Positioned(
+                          left: Space.sm,
+                          top: Space.sm,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Space.sm,
+                              vertical: Space.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: CircleOverlay.chipBackground,
+                              borderRadius: BorderRadius.circular(
+                                CircleRadius.button,
                               ),
-                              const SizedBox(width: Space.xs),
-                              Expanded(child: Text(groupName, style: caption)),
-                            ],
-                          ),
-                        ),
-                      const SizedBox(height: Space.xs),
-                      Row(
-                        children: [
-                          Icon(
-                            LucideIcons.calendar,
-                            size: CircleSizes.iconInline,
-                            color: accents.caption,
-                          ),
-                          const SizedBox(width: Space.xs),
-                          Expanded(
-                            child: Text(liveEventLabel(item), style: caption),
-                          ),
-                        ],
-                      ),
-                      if (going > 0 || maybe > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: Space.xs),
-                          child: Row(
-                            children: [
-                              Icon(
-                                LucideIcons.users,
-                                size: CircleSizes.iconInline,
-                                color: accents.caption,
-                              ),
-                              const SizedBox(width: Space.xs),
-                              Expanded(
-                                child: Text(
-                                  [
-                                    if (going > 0) '$going going',
-                                    if (maybe > 0) '$maybe maybe',
-                                  ].join(' \u00b7 '),
-                                  style: caption,
-                                  overflow: TextOverflow.ellipsis,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  LucideIcons.users_round,
+                                  size: CircleSizes.iconInline,
+                                  color: CircleOverlay.foreground,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (cancelled || venue.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: Space.xs),
-                          child: Row(
-                            children: [
-                              Icon(
-                                cancelled
-                                    ? LucideIcons.circle_x
-                                    : LucideIcons.map_pin,
-                                size: CircleSizes.iconInline,
-                                color: cancelled
-                                    ? accents.heart
-                                    : accents.caption,
-                              ),
-                              const SizedBox(width: Space.xs),
-                              Expanded(
-                                child: Text(
-                                  cancelled ? 'Cancelled' : venue,
-                                  style: caption,
+                                const SizedBox(width: Space.xs),
+                                Text(
+                                  groupName,
+                                  style: CircleTextStyles.caption(
+                                    CircleOverlay.foreground,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                     ],
                   ),
                 ),
-                // Days badge + chevron.
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 100),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (daysUntil != null && daysUntil >= 0 && !cancelled)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: Space.sm,
-                            vertical: Space.xs,
-                          ),
-                          margin: const EdgeInsets.only(bottom: Space.xs),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: 0.1,
-                            ),
-                            borderRadius: BorderRadius.circular(
-                              CircleRadius.button,
-                            ),
-                          ),
-                          child: Text(
-                            daysUntil == 0
-                                ? 'Today'
-                                : daysUntil == 1
-                                ? 'Tomorrow'
-                                : 'In $daysUntil days',
-                            style: CircleTextStyles.caption(
-                              theme.colorScheme.primary,
-                            ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(Space.md),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Cover photo thumbnail when no cover image.
+                  if (item['cover_id'] == null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: Space.md),
+                      child: EventDateBlock(
+                        wall: liveEventWall(
+                          item['start_at'] as String,
+                          item['timezone'] as String,
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['title'] as String,
+                          style: CircleTextStyles.homeAuthor(
+                            theme.colorScheme.onSurface,
                           ),
                         ),
-                      Icon(LucideIcons.chevron_right, color: accents.caption),
-                    ],
+                        if (groupName.isNotEmpty && item['cover_id'] == null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: Space.xs),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  LucideIcons.users_round,
+                                  size: CircleSizes.iconInline,
+                                  color: accents.caption,
+                                ),
+                                const SizedBox(width: Space.xs),
+                                Expanded(
+                                  child: Text(groupName, style: caption),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: Space.xs),
+                        Row(
+                          children: [
+                            Icon(
+                              LucideIcons.calendar,
+                              size: CircleSizes.iconInline,
+                              color: accents.caption,
+                            ),
+                            const SizedBox(width: Space.xs),
+                            Expanded(
+                              child: Text(liveEventLabel(item), style: caption),
+                            ),
+                          ],
+                        ),
+                        if (going > 0 || maybe > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: Space.xs),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  LucideIcons.users,
+                                  size: CircleSizes.iconInline,
+                                  color: accents.caption,
+                                ),
+                                const SizedBox(width: Space.xs),
+                                Expanded(
+                                  child: Text(
+                                    [
+                                      if (going > 0) '$going going',
+                                      if (maybe > 0) '$maybe maybe',
+                                    ].join(' \u00b7 '),
+                                    style: caption,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (cancelled || venue.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: Space.xs),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  cancelled
+                                      ? LucideIcons.circle_x
+                                      : LucideIcons.map_pin,
+                                  size: CircleSizes.iconInline,
+                                  color: cancelled
+                                      ? accents.heart
+                                      : accents.caption,
+                                ),
+                                const SizedBox(width: Space.xs),
+                                Expanded(
+                                  child: Text(
+                                    cancelled ? 'Cancelled' : venue,
+                                    style: caption,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  // Days badge + chevron.
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 100),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (daysUntil != null && daysUntil >= 0 && !cancelled)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Space.sm,
+                              vertical: Space.xs,
+                            ),
+                            margin: const EdgeInsets.only(bottom: Space.xs),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.1,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                CircleRadius.button,
+                              ),
+                            ),
+                            child: Text(
+                              daysUntil == 0
+                                  ? 'Today'
+                                  : daysUntil == 1
+                                  ? 'Tomorrow'
+                                  : 'In $daysUntil days',
+                              style: CircleTextStyles.caption(
+                                theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        Icon(LucideIcons.chevron_right, color: accents.caption),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 }

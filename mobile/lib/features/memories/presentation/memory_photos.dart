@@ -419,7 +419,6 @@ class _PhotoAction extends StatelessWidget {
   );
 }
 
-
 /// One photo: a fictional scene tile, or an uploaded photo loaded through
 /// a short-lived signed link selected for the physical display area.
 /// Zoom viewers request the full rendition.

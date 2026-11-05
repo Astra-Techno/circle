@@ -168,7 +168,8 @@ void main() {
       previousY = y;
       previousX = x;
     }
-    // The deepest group sits indented under Section A.
+    // Reveal the deep row again after scrolling to the final root group.
+    await reveal(tester, find.text('The window-seat crew'));
     expect(find.text('The window-seat crew'), findsOneWidget);
     await reveal(tester, find.byTooltip('Collapse Northbank 2009'));
     await tester.tap(find.byTooltip('Collapse Northbank 2009'));

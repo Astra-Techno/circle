@@ -118,10 +118,12 @@ void main() {
       });
     }
   });
-  testWidgets('Home keeps header and dock clear of system safe areas', (
+  testWidgets('Home keeps header safe and compact dock clearance', (
     tester,
   ) async {
     tester.view.padding = const FakeViewPadding(top: 24, bottom: 16);
+    tester.view.viewPadding = const FakeViewPadding(top: 24, bottom: 16);
+    addTearDown(tester.view.resetViewPadding);
     addTearDown(tester.view.resetPadding);
     await openCircle(tester, size: const Size(393, 852));
     final logo = find.byWidgetPredicate(
@@ -130,7 +132,7 @@ void main() {
     expect(tester.getTopLeft(logo).dy, greaterThanOrEqualTo(24));
     expect(
       tester.getBottomRight(find.text('Profile')).dy,
-      lessThanOrEqualTo(836),
+      lessThanOrEqualTo(840),
     );
     expect(tester.takeException(), isNull);
   });

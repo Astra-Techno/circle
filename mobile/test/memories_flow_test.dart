@@ -222,10 +222,21 @@ void main() {
       const mine = 'Memory from You in The Sunday table';
 
       await tapTooltip(tester, 'More options for $_table');
-      expect(find.text('Save'), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text('Save'),
+          matching: find.byWidgetPredicate((widget) => widget is PopupMenuItem),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Delete'), findsNothing);
       expect(find.text('Edit text'), findsNothing);
-      await tester.tap(find.text('Save'));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('Save'),
+          matching: find.byWidgetPredicate((widget) => widget is PopupMenuItem),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(memoryOf(container, 'table').saved, isTrue);
 
