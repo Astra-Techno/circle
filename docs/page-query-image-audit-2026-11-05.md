@@ -73,7 +73,7 @@ Scope: every registered page family in `mobile/lib/app/circle_experience.dart`, 
 - Moderation queue:6 SELECTs for1 target and6 SELECTs for10 targets.
 - Previous chat measurement retained:10 SELECTs for1 message and10 SELECTs for50 messages.
 - Complete backend:236 tests/4408 assertions passed on circle_test; PHPStan level6 clean.
-- Mobile:63 focused checks passed, followed by a two-case pagination/query-switch rerun and5 shared-layout checks covering108 renders, including nested-grid deferral, no off-screen spinner/network work, explicit retry, one settled search query, density-aware cover quality, cached-variant separation/revocation, device controls and repository permissions. Format/analyzer clean. Full Windows comparison CI follows this batch; no Linux golden replacement.
+- Mobile:63 focused checks passed, followed by a two-case pagination/query-switch rerun and5 shared-layout checks covering108 renders, including nested-grid deferral, no off-screen spinner/network work, explicit retry, one settled search query, density-aware cover quality, cached-variant separation/revocation, device controls and repository permissions. Format/analyzer clean. Full Windows comparison CI [41986651549](https://github.com/Astra-Techno/circle/actions/runs/41986651549) passed738 tests/1 skipped; no Linux golden replacement.
 
 ## Remaining measured-follow-up candidates
 
@@ -85,3 +85,5 @@ Scope: every registered page family in `mobile/lib/app/circle_experience.dart`, 
 ## Delivery
 
 Existing `backend/deploy/deploy.php` copies backend source and runs pending migrations. No new migration is required for these query rewrites. Run the existing deployment link after this commit to activate server changes; a Git push is not proof of live deployment. Install the new mobile build for viewport/search/device-loading changes. Android signing credentials are still absent here, so no replacement APK/download metadata is published.
+
+Release result: [TestFlight41986651454](https://github.com/Astra-Techno/circle/actions/runs/41986651454) completed signing, verification and App Store Connect upload successfully from75379df. Signed job duration12m29s. Source version1.0.31+36, interface Social1.6. Apple processing and physical-device acceptance are separate; backend deployment remains unverified here.
