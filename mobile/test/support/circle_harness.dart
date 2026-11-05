@@ -46,6 +46,9 @@ Future<ProviderContainer> openCircle(
   final appClock = clock ?? (now == null ? null : () => now);
   repository ??= MockCircleRepository(showcase: showcase, now: appClock);
   final container = ProviderContainer(
+    // This fixture deliberately has no live API. Retrying cannot recover and
+    // can leak timers while a slow Windows golden is being written.
+    retry: (_, _) => null,
     overrides: [
       if (appClock != null) circleClockProvider.overrideWithValue(appClock),
       apiConfigProvider.overrideWithValue(

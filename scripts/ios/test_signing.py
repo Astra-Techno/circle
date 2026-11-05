@@ -15,6 +15,9 @@ spec.loader.exec_module(signing)
 
 class SigningValidationTest(unittest.TestCase):
     def setUp(self):
+        push_setting = patch.dict(os.environ, {'CIRCLE_IOS_PUSH_ENABLED': 'false'})
+        push_setting.start()
+        self.addCleanup(push_setting.stop)
         self.now = dt.datetime(2026, 10, 29, tzinfo=dt.timezone.utc)
         self.profile = {
             'TeamIdentifier': ['ABCDE12345'],
@@ -28,6 +31,13 @@ class SigningValidationTest(unittest.TestCase):
 
     def test_matching_app_store_profile(self):
         signing.profile_checks(self.profile, 'ABCDE12345', self.now)
+
+    def test_push_profile_requires_production_entitlement(self):
+        with patch.dict(os.environ, {'CIRCLE_IOS_PUSH_ENABLED': 'true'}):
+            with self.assertRaisesRegex(ValueError, 'production push profile'):
+                signing.profile_checks(self.profile, 'ABCDE12345', self.now)
+            self.profile['Entitlements']['aps-environment'] = 'production'
+            signing.profile_checks(self.profile, 'ABCDE12345', self.now)
 
     def test_rejects_other_team_bundle_expiry_and_profile_types(self):
         for change in [
