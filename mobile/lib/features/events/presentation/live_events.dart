@@ -62,10 +62,13 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                       title: 'Something to look forward to',
                       message: 'Plan the first event for one of your circles.',
                     ),
-                  for (final item in items)
-                    _LiveEventCard(
-                      item: item,
-                      onTap: () => context.go('/events/e/${item['id']}'),
+                  for (final (i, item) in items.indexed)
+                    CircleFadeIn(
+                      delay: CircleMotion.staggerDelay * i,
+                      child: _LiveEventCard(
+                        item: item,
+                        onTap: () => context.go('/events/e/${item['id']}'),
+                      ),
                     ),
                   ?end,
                 ],
@@ -462,10 +465,11 @@ class _LiveEventCard extends ConsumerWidget {
     final startAt = DateTime.tryParse(item['start_at'] as String? ?? '');
     final daysUntil = startAt?.toLocal().difference(DateTime.now()).inDays;
 
-    return CircleSurfaceCard(
-      padding: EdgeInsets.zero,
-      onTap: onTap,
-      child: Column(
+    return CirclePressable(
+      child: CircleSurfaceCard(
+        padding: EdgeInsets.zero,
+        onTap: onTap,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (item['cover_id'] case final String cover)
@@ -673,6 +677,7 @@ class _LiveEventCard extends ConsumerWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

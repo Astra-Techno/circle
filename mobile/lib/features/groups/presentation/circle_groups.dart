@@ -273,28 +273,31 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                           style: CircleTextStyles.label(accents.caption),
                         ),
                       ),
-                    for (final entry in entries) ...[
+                    for (final (i, entry) in entries.indexed) ...[
                       if (_query.isNotEmpty && entry.path.isNotEmpty)
                         Text(
                           entry.path.join(' › '),
                           style: theme.textTheme.bodySmall,
                         ),
-                      _CircleCard(
-                        group: entry.group,
-                        workspace: workspace,
-                        level: entry.level,
-                        activity: activityMap[entry.group.id],
-                        eventCount: eventCounts[entry.group.id] ?? 0,
+                      CircleFadeIn(
+                        delay: CircleMotion.staggerDelay * i,
+                        child: _CircleCard(
+                          group: entry.group,
+                          workspace: workspace,
+                          level: entry.level,
+                          activity: activityMap[entry.group.id],
+                          eventCount: eventCounts[entry.group.id] ?? 0,
                         notificationCount: _notificationCount(
                           workspace,
                           entry.group.id,
                         ),
                         expanded: !entry.hasChildren ? null : entry.expanded,
-                        onToggle: () => setState(() {
-                          if (!_collapsed.remove(entry.group.id)) {
-                            _collapsed.add(entry.group.id);
-                          }
-                        }),
+                          onToggle: () => setState(() {
+                            if (!_collapsed.remove(entry.group.id)) {
+                              _collapsed.add(entry.group.id);
+                            }
+                          }),
+                        ),
                       ),
                     ],
                     if (workspace.pending.isNotEmpty) ...[

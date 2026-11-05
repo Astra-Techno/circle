@@ -89,13 +89,21 @@ class CircleHome extends ConsumerWidget {
                                           final group = workspace.group(
                                             memory.groupId,
                                           )!;
-                                          return CircleMemoryCard(
-                                            key: ValueKey(memory.id),
-                                            memory: memory,
-                                            group: group,
-                                            audience: audiencePath(
-                                              group,
-                                              workspace.groupsById,
+                                          return CircleFadeIn(
+                                            key: ValueKey(
+                                              'fade-${memory.id}',
+                                            ),
+                                            delay: CircleMotion.staggerDelay *
+                                                ((index - 1) * columns +
+                                                    column),
+                                            child: CircleMemoryCard(
+                                              key: ValueKey(memory.id),
+                                              memory: memory,
+                                              group: group,
+                                              audience: audiencePath(
+                                                group,
+                                                workspace.groupsById,
+                                              ),
                                             ),
                                           );
                                         },

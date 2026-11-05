@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'design/circle_typography.dart';
 import 'design/circle_icons.dart';
+import 'design/circle_motion.dart';
+export 'design/circle_motion.dart';
 
 abstract final class CircleProfileLayout {
   static const coverAspectRatio = 2.6;
@@ -296,6 +298,12 @@ ThemeData circleTheme(Brightness brightness) {
     useMaterial3: true,
     colorScheme: colors,
     textTheme: text,
+    pageTransitionsTheme: PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: _CirclePageTransitionsBuilder(),
+        TargetPlatform.iOS: _CirclePageTransitionsBuilder(),
+      },
+    ),
     actionIconTheme: ActionIconThemeData(
       backButtonIconBuilder: (_) => const Icon(CircleIcons.back),
       closeButtonIconBuilder: (_) => const Icon(CircleIcons.close),
@@ -584,6 +592,31 @@ ThemeData circleTheme(Brightness brightness) {
       ),
     ),
   );
+}
+
+/// Fade + gentle slide-up for all page transitions.
+class _CirclePageTransitionsBuilder extends PageTransitionsBuilder {
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final fade = CurvedAnimation(
+      parent: animation,
+      curve: CircleMotion.enterCurve,
+    );
+    final slide = Tween<Offset>(
+      begin: const Offset(0, 0.03),
+      end: Offset.zero,
+    ).animate(fade);
+    return FadeTransition(
+      opacity: fade,
+      child: SlideTransition(position: slide, child: child),
+    );
+  }
 }
 
 /// Fades the trailing edge of a horizontally scrolling row (tabs, chips) so
