@@ -456,9 +456,9 @@ class MemoryPhotoTile extends ConsumerWidget {
         final pixels =
             constraints.biggest.longestSide *
             MediaQuery.devicePixelRatioOf(context);
-        final size = large || pixels > 1080
+        final size = large
             ? MediaSize.full
-            : pixels > 320
+            : pixels > CirclePhotoMetrics.thumbnailPixels
             ? MediaSize.medium
             : MediaSize.thumb;
         final request = (mediaId: mediaId, size: size);
@@ -481,6 +481,9 @@ class MemoryPhotoTile extends ConsumerWidget {
           data: (url) {
             final image = CircleSignedImage(
               url: url,
+              cacheWidth: large || !pixels.isFinite
+                  ? null
+                  : CirclePhotoMetrics.previewDecodeWidth(pixels),
               onRetry: retry,
               semanticsLabel: semanticsLabel,
               onTap: onTap,

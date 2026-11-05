@@ -280,8 +280,9 @@ abstract class ApiRepositoryBase {
 
   Future<void> _syncAll() => _syncing ??= () async {
     try {
-      await _syncGroups();
-      await _syncMemories();
+      // Neither request depends on the other. Wait for both before exposing
+      // a workspace so membership and reaction state remain complete.
+      await Future.wait([_syncGroups(), _syncMemories()]);
       _loaded = true;
     } finally {
       _syncing = null;

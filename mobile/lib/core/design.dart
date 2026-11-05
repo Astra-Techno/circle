@@ -4,6 +4,18 @@ import 'design/circle_icons.dart';
 import 'design/circle_motion.dart';
 export 'design/circle_motion.dart';
 
+/// Decode budgets for private image previews. Full-screen viewing keeps the
+/// original image resolution for pinch-to-zoom.
+abstract final class CirclePhotoMetrics {
+  static const thumbnailPixels = 320.0;
+  static const previewMaxDecodeWidth = 1080;
+  static int previewDecodeWidth(double pixels) =>
+      ((pixels.clamp(1, previewMaxDecodeWidth) / 64).ceil() * 64).clamp(
+        1,
+        previewMaxDecodeWidth,
+      );
+}
+
 abstract final class CircleProfileLayout {
   static const coverAspectRatio = 2.6;
   static const minCoverHeight = 112.0, maxCoverHeight = 200.0;

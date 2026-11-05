@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'api_repository_test.dart' show signedIn;
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -28,6 +30,58 @@ final image = ProfilePickedPhoto(
   mimeType: 'image/png',
 );
 void main() {
+  test(
+    'group avatar cache avoids remount downloads and rechecks membership',
+    () async {
+      final server = FakeCircleServer(mediaAvailable: true);
+      final owner = server.addUser(
+        '+9995550000790',
+        'fictional password',
+        'Owner',
+      );
+      final id = server.addGroup('Fictional cached group', owner);
+      server.groups[id]!['avatar_version'] = 'v1';
+      server.groupPhotos['$id:avatar'] = (
+        bytes: image.bytes,
+        mime: image.mimeType,
+      );
+      final repo = await signedIn(server, owner);
+      final tokens = (await repo.api.currentTokens())!;
+      await repo.api.saveTokens(
+        tokens.copyWith(
+          account: ApiAccount(id: '$owner', displayName: 'Owner').stored,
+        ),
+      );
+      final c = ProviderContainer(
+        overrides: [
+          apiClientProvider.overrideWithValue(repo.api),
+          serverAccountProvider.overrideWithValue(
+            ApiAccount(id: '$owner', displayName: 'Owner'),
+          ),
+          circleRepositoryProvider.overrideWithValue(repo),
+          circleViewerProvider.overrideWithValue('$owner'),
+        ],
+      );
+      addTearDown(c.dispose);
+      await c.read(circleWorkspaceProvider.future);
+      final photo = groupPhotoBytesProvider((
+        group: '$id',
+        kind: ProfilePhotoKind.avatar,
+        version: 'v1',
+      ));
+      final subscription = c.listen(photo, (_, _) {});
+      expect(await c.read(photo.future), image.bytes);
+      c.invalidate(photo);
+      expect(await c.read(photo.future), image.bytes);
+      expect(server.adapter.count('GET', '/groups/$id/photos/avatar'), 1);
+      server.members[id]!.remove(owner);
+      await c.read(circleWorkspaceProvider.notifier).refresh();
+      await expectLater(c.read(photo.future), throwsA(anything));
+      expect(server.adapter.count('GET', '/groups/$id/photos/avatar'), 1);
+      subscription.close();
+    },
+  );
+
   testWidgets('admin adds replaces and independently removes group photos', (
     tester,
   ) async {

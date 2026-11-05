@@ -29,8 +29,10 @@ mixin ApiGroupRepository on ApiRepositoryBase implements GroupRepository {
   Future<void> _syncGroupDetails(String groupId) async {
     final entry = _groups[groupId];
     if (entry == null) return;
-    await _syncMembers(groupId);
-    if (entry.linkSharing == null) await _syncSettings(groupId);
+    await Future.wait([
+      _syncMembers(groupId),
+      if (entry.linkSharing == null) _syncSettings(groupId),
+    ]);
     if (!_isAdmin(groupId)) return;
     final requests = ApiJson.list(
       await api.get('/groups/$groupId/join-requests'),

@@ -19,6 +19,26 @@ final class LiveFeaturesTest extends ApiTestCase
     protected function setUp():void{parent::setUp();Env::set('PUSH_QUEUE_ENABLED','true');Env::set('PUSH_DELIVERY_ENABLED','true');Env::set('PUSH_API_BASE_URL','https://fictional.example/api/v1');}
     protected function tearDown():void{Env::set('PUSH_QUEUE_ENABLED','false');Env::set('PUSH_DELIVERY_ENABLED','false');Env::set('PUSH_API_BASE_URL','');parent::tearDown();}
     private function chatId(int $g):int{return (int)Database::queryOne('SELECT id FROM conversations WHERE group_id=:g',['g'=>$g])['id'];}
+    public function testConversationMetadataQueriesStayBoundedAsPageGrows():void
+    {
+        $a=$this->user('Fictional author');$b=$this->user('Fictional reader');
+        $g=$this->createGroup($a);$this->join($a,$b,$g);$path='/api/v1/chats/'.$this->chatId($g);
+        $first=null;
+        for($i=1;$i<=50;$i++){
+            $sent=$this->request('POST',$path.'/messages',['body'=>'Fictional message '.$i,'client_id'=>sprintf('fictional-batch-%04d',$i)],$a['token']);
+            self::assertSame(200,$sent->status());$first??=$sent->data()['id'];
+        }
+        $this->request('PUT',$path.'/messages/'.$first.'/reaction',['emoji'=>'❤️'],$b['token']);
+        $selects=static fn():int=>(int)(Database::queryOne("SHOW SESSION STATUS LIKE 'Com_select'")['Value']??0);
+        $before=$selects();$short=$this->request('GET',$path.'?limit=1',[],$b['token']);$smallCost=$selects()-$before;
+        $before=$selects();$long=$this->request('GET',$path.'?limit=50',[],$b['token']);$largeCost=$selects()-$before;
+        self::assertCount(1,$short->data()['items']);self::assertCount(50,$long->data()['items']);
+        self::assertSame('Fictional message 1',$long->data()['items'][0]['body']);
+        self::assertSame([['user_id'=>$b['id'],'emoji'=>'❤️']],$long->data()['items'][0]['reactions']);
+        self::assertLessThanOrEqual($smallCost+2,$largeCost,'Opening more messages must not add per-message SELECTs.');
+        if(getenv('CIRCLE_TEST_QUERY_METRICS')==='true')fwrite(STDERR,sprintf("Chat SELECTs:1 message=%d;50 messages=%d\n",$smallCost,$largeCost));
+    }
+
     public function testGroupChatRetryRepliesReceiptsEditAndFrozenVersions():void
     {
         $a=$this->user('Owner');$b=$this->user('Member');$c=$this->user('Outsider');$g=$this->createGroup($a);$this->join($a,$b,$g);$cid=$this->chatId($g);$path="/api/v1/chats/$cid";$send=['body'=>'Fictional original','client_id'=>'fictional-message-0001'];

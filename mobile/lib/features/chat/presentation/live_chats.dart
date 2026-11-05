@@ -51,7 +51,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
       _visible = visible;
       if (visible) {
         _start();
-        Future.microtask(_retrySaved);
+        Future.microtask(() => _retrySaved(opening: true));
       } else {
         _timer?.cancel();
       }
@@ -66,7 +66,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
     });
   }
 
-  void _retrySaved() {
+  void _retrySaved({bool opening = false}) {
     if (!mounted ||
         !_visible ||
         !TickerMode.valuesOf(context).enabled ||
@@ -81,14 +81,15 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
     } catch (_) {
       return;
     }
-    unawaited(
-      api
-          .flush()
-          .then((_) {
-            if (mounted) _refresh();
-          })
-          .catchError((Object _) {}),
-    );
+    Future<void> recover() async {
+      // The initial inbox/conversation request is already in flight. Do not
+      // discard it after an empty outbox flush and start the same GET again.
+      final refresh = !opening || (await api.outbox.pending()).isNotEmpty;
+      await api.flush();
+      if (mounted && refresh) _refresh();
+    }
+
+    unawaited(recover().catchError((Object _) {}));
   }
 
   void _refresh() {

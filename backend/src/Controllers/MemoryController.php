@@ -19,13 +19,13 @@ final class MemoryController
     private const VISIBLE_COMMENTS = "WITH RECURSIVE visible_comments AS (
         SELECT c.id,c.memory_id,0 AS depth FROM comments c JOIN memories vm ON vm.id=c.memory_id AND vm.status='active'
         JOIN group_members vg ON vg.group_id=vm.group_id AND vg.user_id=:visible_viewer AND vg.status='active'
-        WHERE c.parent_id IS NULL AND c.status='active'
+        WHERE c.parent_id IS NULL AND c.status='active' %s
         UNION ALL SELECT c.id,c.memory_id,p.depth+1 FROM comments c JOIN visible_comments p ON c.parent_id=p.id AND c.memory_id=p.memory_id WHERE c.status='active' AND p.depth<31
     ) ";
 
     public static function commentIsVisible(int $id, int $userId): bool
     {
-        return Database::queryOne(self::VISIBLE_COMMENTS . "SELECT v.id FROM visible_comments v JOIN memories m ON m.id=v.memory_id AND m.status='active' WHERE v.id=:id", ['id'=>$id,'visible_viewer'=>$userId]) !== null;
+        return Database::queryOne(sprintf(self::VISIBLE_COMMENTS, '') . "SELECT v.id FROM visible_comments v JOIN memories m ON m.id=v.memory_id AND m.status='active' WHERE v.id=:id", ['id'=>$id,'visible_viewer'=>$userId]) !== null;
     }
 
     /** Reactions are limited to a short, fixed set. */
@@ -59,7 +59,7 @@ final class MemoryController
             Response::validationError('q must be valid UTF-8 text with at most 200 characters.');
         }
 
-        $params = ['visible_viewer' => $userId, 'viewer' => $userId, 'gm_status' => 'active', 'm_status' => 'active'];
+        $params = ['viewer' => $userId, 'gm_status' => 'active', 'm_status' => 'active'];
         $where = 'WHERE m.status = :m_status AND gm.user_id = :viewer AND gm.status = :gm_status';
 
         if ($groupId !== '') {
@@ -96,12 +96,12 @@ final class MemoryController
         $params['lim'] = $limit + 1;
 
         $memories = Database::query(
-            self::VISIBLE_COMMENTS . "SELECT m.id, m.group_id, m.author_id, m.body, m.memory_date, m.place,
+            "SELECT m.id, m.group_id, m.author_id, m.body, m.memory_date, m.place,
                     m.created_at, m.updated_at,
                     u.display_name AS author_name, u.avatar_path AS author_avatar,
                     g.name AS group_name, g.`type` AS group_type,
                     (SELECT COUNT(*) FROM reactions r WHERE r.memory_id = m.id) AS reaction_count,
-                    (SELECT COUNT(*) FROM visible_comments c WHERE c.memory_id = m.id) AS comment_count,
+                    0 AS comment_count,
                     EXISTS(SELECT 1 FROM reactions r2 WHERE r2.memory_id = m.id AND r2.user_id = :reacted_uid) AS user_reacted,
                     EXISTS(SELECT 1 FROM saves sv WHERE sv.memory_id = m.id AND sv.user_id = :saved_uid) AS user_saved
              FROM memories m
@@ -117,6 +117,25 @@ final class MemoryController
         $hasMore = count($memories) > $limit;
         if ($hasMore) {
             array_pop($memories);
+        }
+
+        // Count visible comment branches only for the returned page, not every
+        // Memory in every group before LIMIT is applied.
+        if ($memories !== []) {
+            $commentParams = ['visible_viewer' => $userId];
+            $slots = [];
+            foreach ($memories as $i => $memory) {
+                $key = 'page_memory_' . $i;
+                $slots[] = ':' . $key;
+                $commentParams[$key] = (int) $memory['id'];
+            }
+            $scope = 'AND c.memory_id IN (' . implode(',', $slots) . ')';
+            $counts = Database::query(sprintf(self::VISIBLE_COMMENTS, $scope)
+                . 'SELECT memory_id,COUNT(*) total FROM visible_comments GROUP BY memory_id', $commentParams);
+            $byMemory = array_column($counts, 'total', 'memory_id');
+            foreach ($memories as $i => $memory) {
+                $memories[$i]['comment_count'] = (int) ($byMemory[$memory['id']] ?? 0);
+            }
         }
 
         $memories = array_map(self::normaliseListItem(...), $memories);
@@ -146,7 +165,7 @@ final class MemoryController
             'parent_id' => $c['parent_id'] !== null ? (int) $c['parent_id'] : null,
             'author_id' => (int) $c['author_id'],
         ], Database::query(
-            self::VISIBLE_COMMENTS . 'SELECT c.id, c.parent_id, c.author_id, c.body, c.created_at,
+            sprintf(self::VISIBLE_COMMENTS, '') . 'SELECT c.id, c.parent_id, c.author_id, c.body, c.created_at,
                     u.display_name AS author_name, u.avatar_path AS author_avatar
              FROM comments c
              JOIN users u ON c.author_id = u.id
@@ -368,7 +387,7 @@ final class MemoryController
         if ($parentId !== null && $parentId !== '') {
             $pid = is_int($parentId) || (is_string($parentId) && ctype_digit($parentId)) ? (int) $parentId : 0;
             $parent = Database::queryOne(
-                self::VISIBLE_COMMENTS . 'SELECT id FROM visible_comments WHERE id = :id AND memory_id = :mid AND depth<31',
+                sprintf(self::VISIBLE_COMMENTS, '') . 'SELECT id FROM visible_comments WHERE id = :id AND memory_id = :mid AND depth<31',
                 ['id' => $pid, 'mid' => $memoryId, 'visible_viewer' => $userId]
             );
             if ($parent === null) {

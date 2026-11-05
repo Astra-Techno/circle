@@ -184,6 +184,22 @@ class LiveFixture {
 }
 
 void main() {
+  testWidgets('opening Chats with an empty outbox requests the inbox once', (
+    tester,
+  ) async {
+    final fixture = LiveFixture();
+    final c = await openServerCircle(
+      tester,
+      fixture.server,
+      tokens: await storedSession(fixture.server, fixture.owner),
+    );
+    final before = fixture.server.adapter.count('GET', '/chats');
+    c.read(circleRouterProvider).go('/chats');
+    await settle(tester);
+    expect(fixture.server.adapter.count('GET', '/chats') - before, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   test(
     'event instants use IANA zones and reject nonexistent DST wall time',
     () {

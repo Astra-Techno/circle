@@ -20,8 +20,12 @@ class CircleSignedImage extends StatefulWidget {
     this.onRetry,
     this.more,
     this.large = false,
+    this.cacheWidth,
   });
   final SignedMediaUrl url;
+
+  /// Physical pixel decode width for previews; null preserves original detail.
+  final int? cacheWidth;
   final String semanticsLabel;
   final BoxFit fit;
   final VoidCallback? onTap;
@@ -47,7 +51,11 @@ class _CircleSignedImageState extends State<CircleSignedImage> {
   }
 
   Future<void> _retry() async {
-    await NetworkImage(widget.url.toString()).evict();
+    await ResizeImage.resizeIfNeeded(
+      widget.cacheWidth,
+      null,
+      NetworkImage(widget.url.toString()),
+    ).evict();
     if (!mounted) return;
     setState(() {
       _failed = false;
@@ -67,6 +75,7 @@ class _CircleSignedImageState extends State<CircleSignedImage> {
     child: Image.network(
       widget.url.toString(),
       key: ValueKey(_attempt),
+      cacheWidth: widget.cacheWidth,
       fit: widget.fit,
       gaplessPlayback: true,
       filterQuality: FilterQuality.medium,

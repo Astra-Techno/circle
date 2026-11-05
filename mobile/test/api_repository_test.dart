@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/api/api_client.dart';
 import 'package:mobile/features/workspace/data/api/api_circle_repository.dart';
@@ -41,6 +42,58 @@ void main() {
     asha = server.addUser('+15550000001', 'a' * 20, 'Asha');
     dev = server.addUser('+15550000002', 'd' * 20, 'Dev');
   });
+
+  test(
+    'startup overlaps independent requests but waits for authorized workspace',
+    () async {
+      final group = server.addGroup('Fictional startup group', asha);
+      server.addMemory(group, asha, 'Fictional startup memory');
+      final repo = await signedIn(server, asha);
+      final releaseGroups = Completer<void>(),
+          releaseMembers = Completer<void>(),
+          releaseFeed = Completer<void>();
+      final feedStarted = Completer<void>(),
+          membersStarted = Completer<void>(),
+          settingsStarted = Completer<void>();
+      for (final gate in [releaseGroups, releaseMembers, releaseFeed]) {
+        addTearDown(() {
+          if (!gate.isCompleted) gate.complete();
+        });
+      }
+      final handler = server.adapter.handler;
+      server.adapter.handler = (request) async {
+        if (request.path == '/groups') await releaseGroups.future;
+        if (request.path == '/memories') {
+          if (!feedStarted.isCompleted) feedStarted.complete();
+          await releaseFeed.future;
+        }
+        if (request.path == '/groups/$group/members') {
+          if (!membersStarted.isCompleted) membersStarted.complete();
+          await releaseMembers.future;
+        }
+        if (request.path == '/groups/$group' && !settingsStarted.isCompleted) {
+          settingsStarted.complete();
+        }
+        return handler(request);
+      };
+      var completed = false;
+      final loading = repo.load('$asha').then((workspace) {
+        completed = true;
+        return workspace;
+      });
+      await feedStarted.future.timeout(const Duration(seconds: 2));
+      releaseGroups.complete();
+      await membersStarted.future.timeout(const Duration(seconds: 2));
+      await settingsStarted.future.timeout(const Duration(seconds: 2));
+      expect(completed, isFalse);
+      releaseMembers.complete();
+      releaseFeed.complete();
+      final workspace = await loading;
+      expect(workspace.group('$group')!.roleOf('$asha'), CircleRole.owner);
+      expect(workspace.memories.single.text, 'Fictional startup memory');
+      repo.dispose();
+    },
+  );
 
   test(
     'scoped saved, group and search pages find Memories beyond Home',

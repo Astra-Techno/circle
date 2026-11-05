@@ -31,6 +31,14 @@ final groupPhotoBytesProvider = FutureProvider.autoDispose
         throw const CircleFailure('This group photo isn’t available.');
       }
       final revision = api.sessionRevision;
+      // Reuse small avatars across list remounts, after the same membership
+      // and photo-version checks as a network request. Covers stay uncached.
+      final cache = ref.watch(personPhotoCacheProvider);
+      final cacheKey = 'group:${photo.group}:$version:avatar';
+      if (photo.kind == ProfilePhotoKind.avatar) {
+        final cached = cache.read(cacheKey, revision)?.bytes;
+        if (cached != null) return cached;
+      }
       final bytes = await api.getBytes(
         '/groups/${Uri.encodeComponent(photo.group)}/photos/${photo.kind.name}',
         query: {
@@ -54,6 +62,9 @@ final groupPhotoBytesProvider = FutureProvider.autoDispose
                   : current?.coverVersion) !=
               version) {
         throw const CircleFailure('This group photo changed.');
+      }
+      if (photo.kind == ProfilePhotoKind.avatar) {
+        cache.put(cacheKey, bytes, revision);
       }
       return bytes;
     }, retry: (_, _) => null);
