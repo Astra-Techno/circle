@@ -1,0 +1,49 @@
+{
+  "run": 42031235809,
+  "sourceCommit": "1f018d1bcfe9e5fa1adc029c6080f404bd0ba3e3",
+  "bundle": "com.circlecommunity.mobile",
+  "version": "1.0.33",
+  "build": "1051.1",
+  "bytes": 25861704,
+  "sha256": "95e27bcba5669e85d055ec6b69d05d6c8c8ae1bf9eeb8766c1d9194a3aababb3",
+  "interfaceMarkerSocial2_1": true,
+  "interAssets": [
+    {
+      "asset": "Inter-Regular.ttf",
+      "bytes": 341396,
+      "sha256": "24d565799a415e4e7d13bb21564fe4b68bb6e95672903558e463e1321a435c3a",
+      "postScriptName": "Inter-Regular",
+      "weight": 400
+    },
+    {
+      "asset": "Inter-Medium.ttf",
+      "bytes": 342004,
+      "sha256": "14a04ae30884bc99e6a94e24090d9972d3ab224284c84c26a44dcf75e93f4b63",
+      "postScriptName": "Inter-Medium",
+      "weight": 500
+    },
+    {
+      "asset": "Inter-SemiBold.ttf",
+      "bytes": 342688,
+      "sha256": "cb90ee5c8a946a49ed964398e193d15ccdb8f89bcb381002cd1a9208e0089b11",
+      "postScriptName": "Inter-SemiBold",
+      "weight": 600
+    }
+  ],
+  "interAssetsMatchSource": true,
+  "interLicenseBundled": true,
+  "applePreferredFontFamily": "CupertinoSystemText (system font; source/unit-tested selection, device rendering unverified)",
+  "jobDurationSeconds": 1274,
+  "checksumManifestMatches": true,
+  "windowsRefreshRun": 42031231585,
+  "windowsVerificationRun": 42032425301,
+  "windowsTestsPassed": 752,
+  "windowsTestsSkipped": 1,
+  "uploadAccepted": true,
+  "nativeDeviceAcceptance": "not performed; Apple processing and tester availability separate",
+  "productionPhotoDelivery": "expired-link recovery simulated; real screenshot error unverified",
+  "uploadWarning": {
+    "code": 90068,
+    "description": "Upload accepted. Current iOS target13.0 must be at least15.0 starting April2027."
+  }
+}

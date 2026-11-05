@@ -18,7 +18,7 @@ The earlier IPA inspection proved the font files were bundled and matched source
 
 ## Checks and limits
 
-The source font-identity test passes. Focused Flutter checks pass22 tests, including native-family/regular-weight selection, simulated403 renewal bounded to one, persistent404/manual retry, off-screen download behavior, preview decode budgets, design guard, forms and112 route/configuration renders. Final analyzer/format and Windows integration/release results will be recorded below.
+The source font-identity test passes. Focused Flutter checks pass22 tests, including native-family/regular-weight selection, simulated403 renewal bounded to one, persistent404/manual retry, off-screen download behavior, preview decode budgets, design guard, forms and112 route/configuration renders. Final analyzer/format are clean; full Windows and signed-release results follow below.
 
 Windows renders remain layout references, not an iOS-native font preview. Actual iPhone appearance still needs owner acceptance. Photo renewal is verified for simulated expired-link failures; the screenshot's real delivery error has not been diagnosed from an authenticated production request. Missing storage files or persistent server errors are not claimed repaired. The owner was asked whether tapping Retry loads the image; work does not depend on that optional answer.
 
@@ -26,4 +26,10 @@ All prior membership/privacy, scoped media, drafts, pagination and backend query
 
 ## Windows verification
 
-Source `1f018d1` passed analyzer/format and Windows run `42031231585`: **752 tests passed, 1 skipped**. All22 decoded baseline PNGs were reviewed across light/dark, auth, Home, Circles, compose, profile and responsive layouts, then copied from Windows CI. These fixtures include simulated loading/error states and are not production or native-iPhone evidence. Artifact13416123427 SHA256: `1457df0f34e719d69ef4ac0e48a64725746bce4773f4d86dde578c7e5437cfc6`. Signed iOS run42031235809 is in progress; normal golden comparison will run after this baseline commit.
+Source `1f018d1` passed analyzer/format and Windows run `42031231585`: **752 tests passed, 1 skipped**. All22 decoded baseline PNGs were reviewed across light/dark, auth, Home, Circles, compose, profile and responsive layouts, then copied from Windows CI. These fixtures include simulated loading/error states and are not production or native-iPhone evidence. Artifact13416123427 SHA256: `1457df0f34e719d69ef4ac0e48a64725746bce4773f4d86dde578c7e5437cfc6`. Normal comparison run `42032425301` also passed **752 tests, 1 skipped** from baseline commit `f5bbe0d`.
+
+## Signed iOS delivery
+
+TestFlight run `42031235809` succeeded in21m14s. Apple accepted the upload without errors. The archived IPA is **1.0.33 (1051.1)**, source `1f018d1`, interface marker **Social2.1**. The later baseline commit changes only PNGs/docs, not runtime code. Actual Info.plist, bundle ID, compiled marker, checksum manifest, font bytes, internal PostScript identities/weights and bundled license were inspected. Receipt: [mobile-release-1.0.33-ios.json](mobile-release-1.0.33-ios.json).
+
+Apple warning90068 is nonblocking for this upload: the current iOS13 deployment target must become at least15 before April2027 uploads. Apple processing, tester availability and physical iPhone acceptance remain separate. This change does not prove that missing production photos are restored. Android downloads remain unchanged because the original signing material is absent.
