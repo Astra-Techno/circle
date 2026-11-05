@@ -52,18 +52,41 @@ class _CircleMemoryDetailState extends ConsumerState<CircleMemoryDetail> {
     _focus.requestFocus();
   }
 
-  Future<void> _delete(MemoryComment comment) {
+  Future<void> _delete(MemoryComment comment) async {
+    final confirmed = await confirmCircleAction(
+      context,
+      title: 'Delete this comment?',
+      message: 'It will be removed for everyone.',
+      confirm: 'Delete',
+    );
+    if (!confirmed || !mounted) return;
     final controller = ref.read(circleWorkspaceProvider.notifier);
     if (_replyTo == comment.id) setState(() => _replyTo = null);
-    return runCalmly(
+    final undo = undoDetached(
       context,
-      () => controller.deleteComment(widget.id, comment.id),
-      success: 'Comment deleted.',
-      onUndo: undoDetached(
-        context,
-        () => controller.restoreComment(widget.id, comment.id),
-      ),
+      () => controller.restoreComment(widget.id, comment.id),
     );
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      await controller.deleteComment(widget.id, comment.id);
+      if (mounted) {
+        messenger
+          ?..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: const Text('Comment deleted'),
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(label: 'Undo', onPressed: undo),
+            ),
+          );
+      }
+    } on CircleFailure catch (failure) {
+      if (mounted) showCircleMessage(context, failure.message);
+    } catch (_) {
+      if (mounted) {
+        showCircleMessage(context, 'That didn\u2019t work. Please try again.');
+      }
+    }
   }
 
   @override

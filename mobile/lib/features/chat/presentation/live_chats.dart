@@ -146,6 +146,46 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
             '${r['user_id']}' == ref.read(liveChatApiProvider).scope.account &&
             r['emoji'] == '❤️',
       );
+
+  /// Shows a confirmation dialog and, on confirm, unsends the message.
+  Future<void> _unsend(String chat, Map<String, Object?> item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unsend message?'),
+        content: const Text(
+          'Unsend this message? It will be removed for everyone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Unsend'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      final scope = ref.read(liveChatApiProvider);
+      setState(() => _busy = true);
+      await runCalmly(
+        context,
+        () => scope.message(chat, ApiJson.id(item['id']), {'removed': true}),
+        success: 'Message unsent',
+      );
+      if (mounted) {
+        setState(() => _busy = false);
+        _refresh();
+      }
+    }
+  }
+
   Future<void> _edit(String chat, Map<String, Object?> item) async {
     final scope = ref.read(liveChatApiProvider);
     final value = await showDialog<String>(
@@ -554,17 +594,29 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
           title: const Text('Edit'),
           onTap: _busy ? null : () => _edit(chat, item),
         ),
-      if (active && mine)
+      if (active && mine && removed)
         ListTile(
-          leading: Icon(removed ? LucideIcons.undo : LucideIcons.trash),
-          title: Text(removed ? 'Undo unsend' : 'Unsend'),
+          leading: const Icon(LucideIcons.undo),
+          title: const Text('Undo unsend'),
           onTap: _busy
               ? null
               : () => _run(
                   (api) => api.message(chat, ApiJson.id(item['id']), {
-                    'removed': !removed,
+                    'removed': false,
                   }),
                 ),
+        ),
+      if (active && mine && !removed)
+        ListTile(
+          leading: Icon(
+            LucideIcons.trash,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          title: Text(
+            'Unsend',
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+          onTap: _busy ? null : () => _unsend(chat, item),
         ),
       if (data['kind'] == 'direct' && !removed && !mine)
         ListTile(

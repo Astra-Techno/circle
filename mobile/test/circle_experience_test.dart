@@ -192,7 +192,7 @@ void main() {
         find.byTooltip('More options for Memory from Mira in The Sunday table'),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Save'));
+      await tester.tap(find.text('Save').last);
       await tester.pumpAndSettle();
       expect(workspaceOf(container).memories.first.saved, isTrue);
       await go(tester, container, '/home/memory/table');

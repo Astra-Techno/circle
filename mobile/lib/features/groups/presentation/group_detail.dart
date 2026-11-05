@@ -329,6 +329,15 @@ class _GroupHeader extends ConsumerWidget {
                 label: Text(requests == 1 ? '1 request' : '$requests requests'),
               ),
             if (reports > 0) GroupReportsButton(group: group, count: reports),
+            if (MembershipRules.canCreateGroup(
+              person: viewer,
+              parent: group,
+            ).allowed)
+              OutlinedButton.icon(
+                onPressed: () => _showCreateSubgroupSheet(context, ref, group),
+                icon: const Icon(LucideIcons.plus),
+                label: const Text('Create subgroup'),
+              ),
             TextButton.icon(
               onPressed: () => context.push('/groups/g/${group.id}/settings'),
               icon: const Icon(LucideIcons.settings),
@@ -338,6 +347,159 @@ class _GroupHeader extends ConsumerWidget {
         ),
         const SizedBox(height: Space.md),
       ],
+    );
+  }
+}
+
+Future<void> _showCreateSubgroupSheet(
+  BuildContext context,
+  WidgetRef ref,
+  CircleGroup parent,
+) async {
+  final created = await showModalBottomSheet<CircleGroup>(
+    context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (context) => _CreateSubgroupSheet(parent: parent),
+  );
+  if (created != null && context.mounted) {
+    context.push('/groups/g/${created.id}');
+  }
+}
+
+class _CreateSubgroupSheet extends ConsumerStatefulWidget {
+  const _CreateSubgroupSheet({required this.parent});
+  final CircleGroup parent;
+
+  @override
+  ConsumerState<_CreateSubgroupSheet> createState() =>
+      _CreateSubgroupSheetState();
+}
+
+class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
+  final _name = TextEditingController();
+  CircleType _type = CircleType.friends;
+  bool _listed = true;
+  String? _error;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _create() async {
+    final trimmed = _name.text.trim();
+    if (trimmed.isEmpty) {
+      setState(() => _error = 'Enter a name for the subgroup.');
+      return;
+    }
+    if (trimmed.length > 100) {
+      setState(() => _error = 'Name must be 100 characters or fewer.');
+      return;
+    }
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final group = await ref
+          .read(circleWorkspaceProvider.notifier)
+          .createGroup(
+            trimmed,
+            _type,
+            parentId: widget.parent.id,
+            hidden: !_listed,
+          );
+      if (mounted) Navigator.of(context).pop(group);
+    } on CircleFailure catch (failure) {
+      if (mounted) setState(() => _error = failure.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        Space.md,
+        0,
+        Space.md,
+        Space.md + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Create subgroup in ${widget.parent.name}',
+            style: theme.textTheme.titleLarge,
+          ),
+          const SizedBox(height: Space.xs),
+          Text(
+            'Only members of ${widget.parent.name} can join.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: CircleAccents.of(context).caption,
+            ),
+          ),
+          const SizedBox(height: Space.section),
+          TextField(
+            controller: _name,
+            autofocus: true,
+            maxLength: 100,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: 'Subgroup name',
+              errorText: _error,
+              errorMaxLines: 3,
+            ),
+            onSubmitted: (_) => _create(),
+          ),
+          const SizedBox(height: Space.md),
+          DropdownButtonFormField<CircleType>(
+            initialValue: _type,
+            decoration: const InputDecoration(labelText: 'Kind of group'),
+            items: [
+              for (final type in CircleType.values)
+                DropdownMenuItem(
+                  value: type,
+                  child: Text(circleTypeLabel(type)),
+                ),
+            ],
+            onChanged: (type) {
+              if (type != null) setState(() => _type = type);
+            },
+          ),
+          const SizedBox(height: Space.md),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('List in ${widget.parent.name}'),
+            subtitle: Text(
+              _listed
+                  ? 'Members of ${widget.parent.name} can see its name and ask to join.'
+                  : 'Hidden: only people you invite will know it exists.',
+            ),
+            value: _listed,
+            onChanged: (value) => setState(() => _listed = value),
+          ),
+          const SizedBox(height: Space.md),
+          FilledButton.icon(
+            onPressed: _busy ? null : _create,
+            icon: _busy
+                ? const SizedBox.square(
+                    dimension: Space.md,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(LucideIcons.plus),
+            label: Text(_busy ? 'Creating\u2026' : 'Create subgroup'),
+          ),
+        ],
+      ),
     );
   }
 }
