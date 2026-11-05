@@ -1,0 +1,18 @@
+{
+  "run": 41971736808,
+  "sourceCommit": "00e64c112c33cae7a12233d9576124620aad066b",
+  "bundle": "com.circlecommunity.mobile",
+  "version": "1.0.29",
+  "build": "1047.1",
+  "bytes": 25764893,
+  "sha256": "773cdbf4154adb83d7158799641830384f9f96f64de16cd7d75d023facac6ec7",
+  "interfaceMarkerSocial1_4": true,
+  "jakartaAssets": [
+    "PlusJakartaSans-Medium.ttf",
+    "PlusJakartaSans-SemiBold.ttf",
+    "PlusJakartaSans-Regular.ttf",
+    "PlusJakartaSans-Bold.ttf"
+  ],
+  "jobDurationSeconds": 792,
+  "checksumManifestMatches": true
+}
