@@ -23,3 +23,7 @@ The source font-identity test passes. Focused Flutter checks pass22 tests, inclu
 Windows renders remain layout references, not an iOS-native font preview. Actual iPhone appearance still needs owner acceptance. Photo renewal is verified for simulated expired-link failures; the screenshot's real delivery error has not been diagnosed from an authenticated production request. Missing storage files or persistent server errors are not claimed repaired. The owner was asked whether tapping Retry loads the image; work does not depend on that optional answer.
 
 All prior membership/privacy, scoped media, drafts, pagination and backend query optimizations remain. No backend or SQL migration changed. Android signing is still unavailable; current Android downloads remain unchanged.
+
+## Windows verification
+
+Source `1f018d1` passed analyzer/format and Windows run `42031231585`: **752 tests passed, 1 skipped**. All22 decoded baseline PNGs were reviewed across light/dark, auth, Home, Circles, compose, profile and responsive layouts, then copied from Windows CI. These fixtures include simulated loading/error states and are not production or native-iPhone evidence. Artifact13416123427 SHA256: `1457df0f34e719d69ef4ac0e48a64725746bce4773f4d86dde578c7e5437cfc6`. Signed iOS run42031235809 is in progress; normal golden comparison will run after this baseline commit.
