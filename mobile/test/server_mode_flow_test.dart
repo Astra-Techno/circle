@@ -69,7 +69,7 @@ void main() {
     // A real app: no demo tour, no preview wording.
     expect(find.text('Explore fictional circles'), findsNothing);
     expect(find.textContaining('Nothing is sent or stored'), findsNothing);
-    await tap(tester, find.text('Get Started'));
+    await tap(tester, find.text('Create account'));
     expect(find.text('Preview registration'), findsNothing);
     await reveal(tester, find.textContaining('sent to circle.test only'));
     expect(find.textContaining('sent to circle.test only'), findsOneWidget);

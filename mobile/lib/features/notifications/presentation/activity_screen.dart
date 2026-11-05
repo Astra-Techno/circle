@@ -65,6 +65,7 @@ class ActivityScreen extends ConsumerWidget {
           padding: CircleInsets.form,
           children: [
             CircleEmpty(
+              icon: LucideIcons.wifi_off,
               title: 'Activity couldn’t load',
               message: 'Try again in a moment.',
               action: FilledButton(
@@ -105,6 +106,7 @@ class ActivityScreen extends ConsumerWidget {
                 ),
               if (feed.entries.isEmpty)
                 const CircleEmpty(
+                  icon: LucideIcons.bell,
                   title: 'All quiet',
                   message:
                       'Mentions, replies, invitations and event updates will '

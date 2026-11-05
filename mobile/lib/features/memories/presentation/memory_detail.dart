@@ -100,6 +100,7 @@ class _CircleMemoryDetailState extends ConsumerState<CircleMemoryDetail> {
           child: Padding(
             padding: CircleInsets.form,
             child: CircleEmpty(
+              icon: LucideIcons.lock_keyhole,
               title: 'Memory unavailable',
               message: 'This Memory is not shared with your current groups.',
             ),
@@ -573,7 +574,7 @@ class _InlineCommentInputState extends State<_InlineCommentInput> {
                     customBorder: const CircleBorder(),
                     onTap: _busy ? null : _send,
                     child: Icon(
-                      LucideIcons.send,
+                      CircleIcons.send,
                       size: CircleSizes.iconAction,
                       color: theme.colorScheme.onPrimary,
                     ),

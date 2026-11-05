@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 /// lettering and tagline, without cropping, recolouring or recreating it.
 abstract final class CircleIdentity {
   static const name = 'CIRCLE';
-  static const interfaceVersion = 'Social 1.6';
+  static const interfaceVersion = 'Social 2.0';
   static const tagline = 'My Circle. Billion Memories.';
   static const artwork = 'assets/brand/circle-brand.png';
   static const semantics = '$name. $tagline';
@@ -13,7 +13,7 @@ abstract final class CircleIdentity {
 class CircleBrand extends StatelessWidget {
   const CircleBrand({super.key, bool compact = false})
     : _maxWidth = compact ? 240 : 480;
-  const CircleBrand.access({super.key}) : _maxWidth = 128;
+  const CircleBrand.access({super.key}) : _maxWidth = 88;
   const CircleBrand.home({super.key}) : _maxWidth = 96;
   final double _maxWidth;
 

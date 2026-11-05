@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import '../../../core/form_exit_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,7 @@ class GroupSettingsScreen extends StatelessWidget {
       if (group == null) {
         return const ReadingPane(
           child: CircleEmpty(
+            icon: LucideIcons.users,
             title: 'This circle is private',
             message: 'You need membership in this exact group.',
           ),
@@ -159,7 +161,7 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
           padding: CircleInsets.form,
           children: [
             CircleHeading(
-              title: 'Settings',
+              title: 'Group settings',
               subtitle: admin
                   ? 'Changes apply to ${group.name} only. Subgroups keep their own settings.'
                   : 'Only admins can change these settings.',
@@ -330,7 +332,7 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
                 subtitle: const Text(
                   'Review reports privately with this group’s admins.',
                 ),
-                trailing: const Icon(LucideIcons.chevron_right),
+                trailing: const Icon(CircleIcons.chevronRight),
                 onTap: () => context.push('/groups/g/${group.id}/reports'),
               ),
             ],
@@ -341,7 +343,7 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
                 leading: const Icon(LucideIcons.crown),
                 title: const Text('Transfer ownership'),
                 subtitle: const Text('Choose a member to own this group.'),
-                trailing: const Icon(LucideIcons.chevron_right),
+                trailing: const Icon(CircleIcons.chevronRight),
                 enabled: group.roles.length > 1,
                 onTap: _transfer,
               ),

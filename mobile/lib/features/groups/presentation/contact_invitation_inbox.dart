@@ -177,7 +177,6 @@ class _ContactInvitationInboxState
       Future.microtask(_load);
       if (mounted) setState(() {});
     });
-    final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
     final received = _items.where((i) => i.status == 'pending').length;
     final sent = _items.where((i) => i.status == 'accepted').length;
@@ -187,44 +186,34 @@ class _ContactInvitationInboxState
       child: ListView(
         padding: CircleInsets.form,
         children: [
-          // Title row.
-          Padding(
-            padding: const EdgeInsets.only(bottom: Space.md),
-            child: Text(
-              'Circle Invitations',
-              style: CircleTextStyles.pageTitle(theme.colorScheme.onSurface),
-            ),
+          const CircleHeading(
+            title: 'Invitations',
+            subtitle: 'Choose which circles to join.',
           ),
           // Tab bar: Received / Sent / Expired.
           Padding(
             padding: const EdgeInsets.only(bottom: Space.md),
-            child: Row(
+            child: Wrap(
+              spacing: Space.sm,
+              runSpacing: Space.sm,
               children: [
-                Expanded(
-                  child: _InviteTabChip(
-                    icon: LucideIcons.mail,
-                    label: 'Received${received > 0 ? ' ($received)' : ''}',
-                    selected: _tab == _InviteTab.received,
-                    onTap: () => setState(() => _tab = _InviteTab.received),
-                  ),
+                _InviteTabChip(
+                  icon: LucideIcons.mail,
+                  label: 'Received${received > 0 ? ' ($received)' : ''}',
+                  selected: _tab == _InviteTab.received,
+                  onTap: () => setState(() => _tab = _InviteTab.received),
                 ),
-                const SizedBox(width: Space.sm),
-                Expanded(
-                  child: _InviteTabChip(
-                    icon: LucideIcons.send,
-                    label: 'Sent${sent > 0 ? ' ($sent)' : ''}',
-                    selected: _tab == _InviteTab.sent,
-                    onTap: () => setState(() => _tab = _InviteTab.sent),
-                  ),
+                _InviteTabChip(
+                  icon: CircleIcons.send,
+                  label: 'Sent${sent > 0 ? ' ($sent)' : ''}',
+                  selected: _tab == _InviteTab.sent,
+                  onTap: () => setState(() => _tab = _InviteTab.sent),
                 ),
-                const SizedBox(width: Space.sm),
-                Expanded(
-                  child: _InviteTabChip(
-                    icon: LucideIcons.clock,
-                    label: 'Expired',
-                    selected: _tab == _InviteTab.expired,
-                    onTap: () => setState(() => _tab = _InviteTab.expired),
-                  ),
+                _InviteTabChip(
+                  icon: LucideIcons.clock,
+                  label: 'Expired',
+                  selected: _tab == _InviteTab.expired,
+                  onTap: () => setState(() => _tab = _InviteTab.expired),
                 ),
               ],
             ),
@@ -240,6 +229,7 @@ class _ContactInvitationInboxState
             ),
           if (_error != null) ...[
             const CircleEmpty(
+              icon: LucideIcons.wifi_off,
               title: 'Could not load invitations',
               message: 'Please check your connection and try again.',
             ),
@@ -321,53 +311,20 @@ class _InviteTabChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accents = CircleAccents.of(context);
-    return Material(
-      color: selected ? theme.colorScheme.primary : theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(CircleRadius.button),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(CircleRadius.button),
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: Space.large),
-          padding: const EdgeInsets.symmetric(
-            horizontal: Space.sm,
-            vertical: Space.sm,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(CircleRadius.button),
-            border: selected ? null : Border.all(color: accents.hairline),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: Space.md,
-                color: selected ? theme.colorScheme.onPrimary : accents.caption,
-              ),
-              const SizedBox(width: Space.xs),
-              Flexible(
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: CircleTextStyles.label(
-                    selected ? theme.colorScheme.onPrimary : accents.caption,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ChoiceChip(
+    avatar: Icon(
+      icon,
+      size: Space.md,
+      color: selected
+          ? Theme.of(context).colorScheme.onPrimary
+          : CircleAccents.of(context).caption,
+    ),
+    label: Text(label),
+    selected: selected,
+    onSelected: (_) => onTap(),
+  );
 }
 
-/// Rich invitation card matching the design reference.
 class _InvitationCard extends StatelessWidget {
   const _InvitationCard({
     required this.invitation,
@@ -540,7 +497,7 @@ class _DeclineButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => OutlinedButton.icon(
     onPressed: onPressed,
-    icon: const Icon(LucideIcons.x, size: 16),
+    icon: const Icon(CircleIcons.close, size: 16),
     label: const Text('Decline'),
   );
 }

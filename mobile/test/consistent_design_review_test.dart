@@ -26,7 +26,7 @@ void main() {
       );
       expect(CircleTextStyles.homeBody(ink), CircleTextStyles.body(ink));
       expect(CircleTextStyles.homeAuthor(ink), CircleTextStyles.cardTitle(ink));
-      expect(theme.textTheme.bodyMedium!.fontFamily, 'Roboto');
+      expect(theme.textTheme.bodyMedium!.fontFamily, 'Inter');
     }
   });
 
@@ -70,6 +70,7 @@ void main() {
           '/groups',
           '/groups/new',
           '/groups/g/$group',
+          '/groups/g/$group/events',
           '/groups/g/$group/settings',
           '/groups/g/$group/invite',
           '/groups/g/$group/invite/link',

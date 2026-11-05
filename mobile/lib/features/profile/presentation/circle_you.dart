@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../memories/presentation/memory_grid.dart';
@@ -54,8 +55,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
         required String subtitle,
         required String location,
         Widget? badgeLabel,
-      }) => CircleSurfaceCard(
-        padding: EdgeInsets.zero,
+      }) => CircleRow(
         child: ListTile(
           leading: CircleInitialAvatar(icon: icon),
           title: Text(
@@ -70,7 +70,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
-            children: [?badgeLabel, const Icon(LucideIcons.chevron_right)],
+            children: [?badgeLabel, const Icon(CircleIcons.chevronRight)],
           ),
           onTap: () => context.push(location),
         ),
@@ -104,56 +104,85 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                               : '$waiting invitations waiting',
                         ),
                         subtitle: const Text('Review them in Groups.'),
-                        trailing: const Icon(LucideIcons.chevron_right),
+                        trailing: const Icon(CircleIcons.chevronRight),
                         onTap: () => context.go('/groups'),
                       ),
                     ),
-                  if (features.has(CircleFeature.activity))
-                    entry(
-                      icon: LucideIcons.bell,
-                      title: 'Activity',
-                      subtitle:
-                          'Mentions, replies, invitations and event updates',
-                      location: '/activity',
-                      badgeLabel: badge == 0
-                          ? null
-                          : Padding(
-                              padding: const EdgeInsetsDirectional.only(
-                                end: Space.sm,
-                              ),
-                              child: Badge(
-                                label: Text(
-                                  '$badge',
-                                  semanticsLabel: '$badge need you',
-                                ),
-                              ),
-                            ),
-                    ),
-                  if (features.has(CircleFeature.notificationSettings))
-                    entry(
-                      icon: LucideIcons.sliders_horizontal,
-                      title: 'Notifications',
-                      subtitle: 'Your updates and quiet hours',
-                      location: '/you/notifications',
-                    ),
-                  if (features.has(CircleFeature.blocking))
-                    entry(
-                      icon: LucideIcons.lock,
-                      title: 'Privacy and blocking',
-                      subtitle: 'Manage blocked people',
-                      location: '/you/privacy',
-                    ),
-                  entry(
-                    icon: LucideIcons.mail,
-                    title: 'Invitations',
-                    subtitle: 'Choose which circles to join',
-                    location: '/you/invitations',
+                  const CircleSectionTitle('Your Memories'),
+                  MemoryGrid(
+                    memories: [
+                      for (final memory in workspace.memories)
+                        if (memory.authorId == workspace.viewer) memory,
+                    ],
+                    empty: workspace.hasMoreMemories
+                        ? 'Your Memories may be in older items. Load more below.'
+                        : 'Memories you share appear here.',
                   ),
-                  entry(
-                    icon: LucideIcons.user_cog,
-                    title: 'Account',
-                    subtitle: 'Appearance, connection and sign out',
-                    location: '/you/account',
+                  if (workspace.hasMoreMemories)
+                    TextButton.icon(
+                      onPressed: () => runCalmly(
+                        context,
+                        () => ref
+                            .read(circleWorkspaceProvider.notifier)
+                            .loadMoreMemories(),
+                      ),
+                      icon: const Icon(LucideIcons.chevron_down),
+                      label: const Text('Load older Memories'),
+                    ),
+                  const SizedBox(height: Space.md),
+                  CircleSurfaceCard(
+                    padding: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                        if (features.has(CircleFeature.activity))
+                          entry(
+                            icon: LucideIcons.bell,
+                            title: 'Activity',
+                            subtitle:
+                                'Mentions, replies, invitations and event updates',
+                            location: '/activity',
+                            badgeLabel: badge == 0
+                                ? null
+                                : Padding(
+                                    padding: const EdgeInsetsDirectional.only(
+                                      end: Space.sm,
+                                    ),
+                                    child: Badge(
+                                      label: Text(
+                                        '$badge',
+                                        semanticsLabel: '$badge need you',
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        if (features.has(CircleFeature.notificationSettings))
+                          entry(
+                            icon: LucideIcons.sliders_horizontal,
+                            title: 'Notifications',
+                            subtitle: 'Your updates and quiet hours',
+                            location: '/you/notifications',
+                          ),
+                        if (features.has(CircleFeature.blocking))
+                          entry(
+                            icon: LucideIcons.lock,
+                            title: 'Privacy and blocking',
+                            subtitle: 'Manage blocked people',
+                            location: '/you/privacy',
+                          ),
+                        entry(
+                          icon: LucideIcons.mail,
+                          title: 'Invitations',
+                          subtitle: 'Choose which circles to join',
+                          location: '/you/invitations',
+                        ),
+                        entry(
+                          icon: LucideIcons.user_cog,
+                          title: 'Account',
+                          subtitle: 'Appearance, connection and sign out',
+                          location: '/you/account',
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: Space.md),
                   if (account != null) ...[
@@ -196,62 +225,18 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                         ),
                     const SizedBox(height: Space.section),
                   ],
-                  const CircleSectionTitle('Your Memories'),
-                  MemoryGrid(
-                    memories: [
-                      for (final memory in workspace.memories)
-                        if (memory.authorId == workspace.viewer) memory,
-                    ],
-                    empty: workspace.hasMoreMemories
-                        ? 'Your Memories may be in older items. Load more below.'
-                        : 'Memories you share appear here.',
-                  ),
-                  if (workspace.hasMoreMemories)
-                    TextButton.icon(
-                      onPressed: () => runCalmly(
-                        context,
-                        () => ref
-                            .read(circleWorkspaceProvider.notifier)
-                            .loadMoreMemories(),
-                      ),
-                      icon: const Icon(LucideIcons.chevron_down),
-                      label: const Text('Load older Memories'),
-                    ),
                   const CircleSectionTitle('Saved Memories'),
                   ScopedMemoryList(
                     query: const MemoryQuery(saved: true),
-                    empty: Container(
-                      padding: const EdgeInsets.all(Space.section),
-                      decoration: CircleDepth.panel(
-                        context,
-                        radius: CircleRadius.card,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: CircleInitialAvatar(
-                              icon: LucideIcons.bookmark,
-                              size: CircleAvatarSize.large,
-                            ),
-                          ),
-                          const SizedBox(height: Space.lg),
-                          Text(
-                            'Keep a Memory close',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: Space.sm),
-                          const Text(
-                            'Save a Memory from your circles and find it here whenever you want.',
-                          ),
-                          const SizedBox(height: Space.lg),
-                          OutlinedButton.icon(
-                            icon: const Icon(LucideIcons.images),
-                            label: const Text('Browse Memories'),
-                            onPressed: () => context.go('/home'),
-                          ),
-                        ],
+                    empty: CircleEmpty(
+                      icon: LucideIcons.bookmark,
+                      title: 'Keep a Memory close',
+                      message:
+                          'Save a Memory to find it here later. Only you see your saved list.',
+                      action: TextButton.icon(
+                        onPressed: () => context.go('/home'),
+                        icon: const Icon(CircleIcons.home),
+                        label: const Text('Browse Memories'),
                       ),
                     ),
                     itemBuilder: (_, memory) => CircleSurfaceCard(
@@ -262,7 +247,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        trailing: const Icon(LucideIcons.chevron_right),
+                        trailing: const Icon(CircleIcons.chevronRight),
                         onTap: () => context.push('/home/memory/${memory.id}'),
                       ),
                     ),
@@ -312,14 +297,14 @@ class AccountScreen extends ConsumerWidget {
             ListTile(
               leading: const Icon(LucideIcons.lock),
               title: const Text('Change password'),
-              trailing: const Icon(LucideIcons.chevron_right),
+              trailing: const Icon(CircleIcons.chevronRight),
               onTap: () => context.push('/you/account/password'),
             ),
             ListTile(
               leading: const Icon(LucideIcons.monitor_smartphone),
               title: const Text('Your devices'),
               subtitle: const Text('Locations and session logout'),
-              trailing: const Icon(LucideIcons.chevron_right),
+              trailing: const Icon(CircleIcons.chevronRight),
               onTap: () => context.push('/you/account/sessions'),
             ),
             ExpansionTile(
@@ -334,10 +319,11 @@ class AccountScreen extends ConsumerWidget {
           ],
           const SizedBox(height: Space.section),
           CircleEmpty(
+            icon: LucideIcons.lock,
             title: 'Quiet by design',
             message: features.has(CircleFeature.notificationSettings)
                 ? 'Choose which updates reach you in Notifications. CIRCLE never uploads your contacts. Logging out removes your session from this device.'
-                : 'CIRCLE sends no notifications and never uploads your contacts. Logging out removes your session from this device.',
+                : 'Notification controls are unavailable in this build. CIRCLE never uploads your contacts. Logging out removes your session from this device.',
           ),
           const SizedBox(height: Space.md),
           OutlinedButton(

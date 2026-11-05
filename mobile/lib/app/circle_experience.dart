@@ -9,6 +9,7 @@ import '../core/api/api_providers.dart';
 import '../core/circle_brand.dart';
 import '../core/circle_components.dart';
 import '../core/design.dart';
+import '../core/design/circle_icons.dart';
 import '../core/design/circle_typography.dart';
 import '../core/invite_entry.dart';
 import '../core/theme_controller.dart';
@@ -85,7 +86,7 @@ String? circleReturnDestination(String? input) {
       RegExp(r'^/groups/g/[A-Za-z0-9_-]+/invite/link$').hasMatch(path) ||
       RegExp(r'^/events/e/[A-Za-z0-9_-]+/(attendees|edit)$').hasMatch(path) ||
       RegExp(
-        r'^/groups/g/[A-Za-z0-9_-]+/(settings|invite|reports)$',
+        r'^/groups/g/[A-Za-z0-9_-]+/(settings|invite|reports|events)$',
       ).hasMatch(path) ||
       RegExp(
         r'^/groups/g/[A-Za-z0-9_-]+/albums/[A-Za-z0-9_-]+(/photos)?$',
@@ -107,12 +108,14 @@ String circleDetailTitle(String path, String fallback) {
   if (path.endsWith('/account')) return 'Account';
   if (path.contains('/invitations')) return 'Invitations';
   if (path == '/chats/privacy') return 'Messaging privacy';
+  if (path == '/you/privacy') return 'Privacy and blocking';
   if (path == '/chats/new') return 'New chat';
   if (path == '/groups/new') return 'New group';
   if (path.endsWith('/settings')) return 'Group settings';
   if (path.endsWith('/invite/link')) return 'Invite link';
   if (path.endsWith('/invite')) return 'Invite people';
   if (path.endsWith('/reports')) return 'Group reports';
+  if (RegExp(r'^/groups/g/[^/]+/events$').hasMatch(path)) return 'Group events';
   if (path == '/events/new') return 'New event';
   if (path.startsWith('/events/') && path.endsWith('/edit')) {
     return 'Edit event';
@@ -127,9 +130,13 @@ String circleDetailTitle(String path, String fallback) {
 /// Back to wherever the person came from.
 Widget _page(BuildContext context, String title, Widget child) => Scaffold(
   appBar: AppBar(
-    title: Text(title),
-    leading: BackButton(
-      onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+    toolbarHeight: CircleLayout.headerHeight(context, title: title),
+    titleSpacing: 0,
+    title: Semantics(header: true, child: Text(title, maxLines: 2)),
+    leading: CircleHeaderAction(
+      child: BackButton(
+        onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+      ),
     ),
   ),
   body: SafeArea(
@@ -379,6 +386,7 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
           shell: shell,
           detail: circleIsDetailPath(state.uri.path),
           path: state.uri.path,
+          eventsGroup: state.uri.queryParameters['group'],
         ),
         branches: [
           StatefulShellBranch(
@@ -469,6 +477,16 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                     path: 'g/:id',
                     builder: (_, state) => _idRoute(state, _groupsPane),
                     routes: [
+                      GoRoute(
+                        path: 'events',
+                        builder: (_, state) => _idRoute(
+                          state,
+                          (id) => _gate(
+                            CircleFeature.liveEvents,
+                            LiveEventsScreen(group: id),
+                          ),
+                        ),
+                      ),
                       GoRoute(
                         path: 'reports',
                         builder: (_, state) => _gate(
@@ -720,7 +738,9 @@ class CircleAppShell extends ConsumerStatefulWidget {
     required this.shell,
     required this.detail,
     this.path = '',
+    this.eventsGroup,
   });
+  final String? eventsGroup;
   final StatefulNavigationShell shell;
 
   /// True when a detail page (not a branch root) is showing.
@@ -779,7 +799,8 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
 
     final index = shell.currentIndex;
     final filter = ref.watch(homeGroupFilterProvider);
-    final eventsFilter = ref.watch(eventsGroupFilterProvider);
+    final savedEventsFilter = ref.watch(eventsGroupFilterProvider);
+    final eventsFilter = widget.eventsGroup ?? savedEventsFilter;
     final workspace = ref.watch(circleWorkspaceProvider).value;
     final account = ref.watch(serverAccountProvider);
     final features = ref.watch(circleFeaturesProvider);
@@ -845,63 +866,49 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                         constraints: const BoxConstraints(
                           minHeight: CircleLayout.homeDockHeight,
                         ),
-                        child: IntrinsicHeight(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Expanded(
-                                child: _DockTab(
-                                  icon: LucideIcons.house,
-                                  activeIcon: LucideIcons.house,
-                                  label: 'Home',
-                                  selected: index == 0,
-                                  onTap: () => shell.goBranch(0),
-                                ),
+                        child: _DockLayout(
+                          children: [
+                            _DockTab(
+                              icon: CircleIcons.home,
+                              activeIcon: CircleIcons.home,
+                              label: 'Home',
+                              selected: index == 0,
+                              onTap: () => shell.goBranch(0),
+                            ),
+                            _DockTab(
+                              icon: CircleIcons.circles,
+                              activeIcon: CircleIcons.circles,
+                              label: 'Circles',
+                              selected: index == 2,
+                              onTap: () => shell.goBranch(2),
+                            ),
+                            _DockTab(
+                              icon: CircleIcons.chat,
+                              activeIcon: CircleIcons.chat,
+                              label: 'Chats',
+                              selected: index == 1,
+                              onTap: () => shell.goBranch(1),
+                            ),
+                            _DockTab(
+                              icon: CircleIcons.events,
+                              activeIcon: CircleIcons.events,
+                              label: 'Events',
+                              selected: index == 3,
+                              onTap: () => shell.goBranch(3),
+                            ),
+                            _DockTab(
+                              icon: CircleIcons.profile,
+                              activeIcon: CircleIcons.profile,
+                              label: 'Profile',
+                              leading: PersonAvatar(
+                                person: account?.id ?? workspace?.viewer ?? '',
+                                name: account?.displayName ?? 'You',
+                                size: CircleAvatarSize.navigation,
                               ),
-                              Expanded(
-                                child: _DockTab(
-                                  icon: LucideIcons.users,
-                                  activeIcon: LucideIcons.users,
-                                  label: 'Circles',
-                                  selected: index == 2,
-                                  onTap: () => shell.goBranch(2),
-                                ),
-                              ),
-                              Expanded(
-                                child: _DockTab(
-                                  icon: LucideIcons.message_circle,
-                                  activeIcon: LucideIcons.message_circle,
-                                  label: 'Chats',
-                                  selected: index == 1,
-                                  onTap: () => shell.goBranch(1),
-                                ),
-                              ),
-                              Expanded(
-                                child: _DockTab(
-                                  icon: LucideIcons.calendar,
-                                  activeIcon: LucideIcons.calendar,
-                                  label: 'Events',
-                                  selected: index == 3,
-                                  onTap: () => shell.goBranch(3),
-                                ),
-                              ),
-                              Expanded(
-                                child: _DockTab(
-                                  icon: LucideIcons.user,
-                                  activeIcon: LucideIcons.user,
-                                  label: 'Profile',
-                                  leading: PersonAvatar(
-                                    person:
-                                        account?.id ?? workspace?.viewer ?? '',
-                                    name: account?.displayName ?? 'You',
-                                    size: CircleAvatarSize.navigation,
-                                  ),
-                                  selected: index == 4,
-                                  onTap: () => shell.goBranch(4),
-                                ),
-                              ),
-                            ],
-                          ),
+                              selected: index == 4,
+                              onTap: () => shell.goBranch(4),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -916,17 +923,35 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     if (detail) {
       return Scaffold(
         appBar: AppBar(
-          toolbarHeight: CircleLayout.headerHeight(context),
+          toolbarHeight: CircleLayout.headerHeight(
+            context,
+            title: circleDetailTitle(path, titles[index]),
+          ),
           titleSpacing: 0,
           title: Semantics(
             header: true,
             child: Text(
               circleDetailTitle(path, titles[index]),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
+              maxLines: 2,
               style: theme.textTheme.titleLarge,
             ),
           ),
+          actions: [
+            if (RegExp(r'^/groups/g/[^/]+/events$').hasMatch(path))
+              if (workspace?.group(path.split('/')[3]) case final group?)
+                if (MembershipRules.canCreateEvent(
+                  group,
+                  workspace!.viewer,
+                ).allowed)
+                  CircleHeaderAction(
+                    child: IconButton(
+                      tooltip: 'New event',
+                      icon: const Icon(CircleIcons.create),
+                      onPressed: () =>
+                          context.push(eventCreateLocation(group.id)),
+                    ),
+                  ),
+          ],
           leading: CircleHeaderAction(
             child: BackButton(
               onPressed: () => context.canPop()
@@ -1092,4 +1117,27 @@ class _DockTab extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Keep five compact tabs normally; reflow rather than truncate large labels.
+class _DockLayout extends StatelessWidget {
+  const _DockLayout({required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final minimum = CircleLayout.navigationItemWidth(context);
+      final fit = (constraints.maxWidth / minimum).floor();
+      final columns = fit >= children.length
+          ? children.length
+          : fit.clamp(1, 3);
+      return Wrap(
+        alignment: WrapAlignment.center,
+        children: [
+          for (final child in children)
+            SizedBox(width: constraints.maxWidth / columns, child: child),
+        ],
+      );
+    },
+  );
 }

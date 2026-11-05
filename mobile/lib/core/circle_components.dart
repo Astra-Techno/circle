@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'circle_failure.dart';
 import 'design.dart';
+import 'design/circle_icons.dart';
 import 'design/circle_typography.dart';
 
 /// An editorial page opening: a headline and one quiet line, with an
@@ -320,7 +321,7 @@ class CircleHeading extends StatelessWidget {
             Text(
               // Intros are one calm line; manual breaks were for big headlines.
               title.replaceAll('\n', ' '),
-              style: theme.textTheme.titleLarge,
+              style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: Space.sm),
           ],
@@ -612,31 +613,86 @@ class CircleInitialAvatar extends StatelessWidget {
   }
 }
 
+/// Search treatment shared by global search and paginated local lists.
+class CircleSearchField extends StatelessWidget {
+  const CircleSearchField({
+    super.key,
+    required this.controller,
+    required this.label,
+    required this.onChanged,
+    this.onSubmitted,
+    this.autofocus = false,
+  });
+  final TextEditingController controller;
+  final String label;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final bool autofocus;
+
+  @override
+  Widget build(BuildContext context) =>
+      ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, _) => TextField(
+          controller: controller,
+          autofocus: autofocus,
+          textInputAction: TextInputAction.search,
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
+          decoration: InputDecoration(
+            hintText: label,
+            prefixIcon: const Icon(CircleIcons.search),
+            suffixIcon: value.text.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear search',
+                    onPressed: () {
+                      controller.clear();
+                      onChanged('');
+                    },
+                    icon: const Icon(LucideIcons.x),
+                  ),
+          ),
+        ),
+      );
+}
+
 class CircleEmpty extends StatelessWidget {
   const CircleEmpty({
     super.key,
     required this.title,
     required this.message,
     this.action,
+    this.icon = LucideIcons.info,
   });
   final String title, message;
   final Widget? action;
+  final IconData icon;
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(
       padding: const EdgeInsets.all(Space.section),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            LucideIcons.circle,
-            size: 40,
+            icon,
+            size: Space.section,
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: Space.lg),
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          Semantics(
+            header: true,
+            child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+          ),
           const SizedBox(height: Space.sm),
-          Text(message),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: CircleAccents.of(context).caption,
+            ),
+          ),
           if (action != null)
             Padding(
               padding: const EdgeInsets.only(top: Space.lg),

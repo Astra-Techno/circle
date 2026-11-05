@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
@@ -19,6 +20,7 @@ class ServerPushSettingsScreen extends ConsumerWidget {
           const CircleSkeletonPage(label: 'Loading notification choices'),
       error: (_, _) => ReadingPane(
         child: CircleEmpty(
+          icon: LucideIcons.wifi_off,
           title: 'Your choices couldn’t load',
           message: 'Check your connection and try again.',
           action: FilledButton(
@@ -126,13 +128,12 @@ class _Choices extends ConsumerWidget {
           children: [
             const CircleHeading(
               title: 'Notifications',
-              subtitle: 'Choose the updates you want on this phone.',
+              subtitle: 'Your updates and quiet hours.',
             ),
-            const SizedBox(height: Space.section),
             Text(
               preferences.enabled && coordinator.active
                   ? 'Notifications are connected on this phone.'
-                  : 'Choose your updates, then connect this phone.',
+                  : 'Connect this phone to receive your selected updates.',
             ),
             const SizedBox(height: Space.sm),
             if (preferences.enabled &&
@@ -140,9 +141,6 @@ class _Choices extends ConsumerWidget {
               CircleNote(
                 'Quiet hours are active in ${preferences.timezone}. Updates wait until ${_time(context, preferences.quietEnd)} in that time zone. You can change this below.',
               ),
-            const Text(
-              'Your choices apply to this account. Phone permission stays on each device.',
-            ),
             const SizedBox(height: Space.lg),
             if (busy)
               const LinearProgressIndicator(
@@ -175,6 +173,11 @@ class _Choices extends ConsumerWidget {
             ExpansionTile(
               title: const Text('Connection help'),
               children: [
+                const ListTile(
+                  subtitle: Text(
+                    'Your choices apply to this account. Phone permission stays on each device.',
+                  ),
+                ),
                 ListTile(
                   title: const Text('Notification support'),
                   subtitle: Text(
@@ -193,7 +196,7 @@ class _Choices extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: Space.section),
+            const SizedBox(height: Space.md),
             const CircleSectionTitle('Choose updates'),
             category(
               PushCategory.memories,
@@ -262,7 +265,7 @@ class _Choices extends ConsumerWidget {
               child: ListTile(
                 title: const Text('Time zone'),
                 subtitle: Text(preferences.timezone.replaceAll('_', ' ')),
-                trailing: const Icon(LucideIcons.chevron_right),
+                trailing: const Icon(CircleIcons.chevronRight),
                 onTap: busy
                     ? null
                     : () async {
@@ -356,7 +359,7 @@ class _TimezonePickerState extends ConsumerState<_TimezonePicker> {
               autofocus: true,
               decoration: const InputDecoration(
                 labelText: 'Search city or region',
-                prefixIcon: Icon(LucideIcons.search),
+                prefixIcon: Icon(CircleIcons.search),
               ),
               onChanged: (value) => setState(() => _query = value),
             ),

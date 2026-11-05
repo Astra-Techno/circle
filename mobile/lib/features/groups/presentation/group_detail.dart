@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import 'group_photos.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -44,6 +45,7 @@ class CircleGroupDetail extends StatelessWidget {
         if (pending != null) return PendingGroupView(pending: pending);
         return const ReadingPane(
           child: CircleEmpty(
+            icon: LucideIcons.users,
             title: 'This circle is private',
             message:
                 'You need membership in this exact group to see what is shared here.',
@@ -99,71 +101,78 @@ class _GroupTabs extends ConsumerWidget {
       final padding = CircleInsets.page.copyWith(left: side, right: side);
       return DefaultTabController(
         length: tabs.length,
-        child: NestedScrollView(
-          headerSliverBuilder: (context, _) => [
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(side, Space.md, side, 0),
-              sliver: SliverToBoxAdapter(
-                child: _GroupHeader(group: group, workspace: workspace),
+        child: _GroupTabNavigation(
+          group: group.id,
+          tabs: tabs,
+          child: NestedScrollView(
+            headerSliverBuilder: (context, _) => [
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(side, Space.md, side, 0),
+                sliver: SliverToBoxAdapter(
+                  child: _GroupHeader(group: group, workspace: workspace),
+                ),
               ),
-            ),
-            SliverOverlapAbsorber(
-              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-              sliver: SliverAppBar(
-                pinned: true,
-                primary: false,
-                automaticallyImplyLeading: false,
-                toolbarHeight: 0,
-                // Six tabs scroll; the faded edge shows there is more.
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(kTextTabBarHeight),
-                  child: CircleEdgeFade(
-                    child: TabBar(
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.start,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: side - Space.sm,
-                      ),
-                      tabs: [
-                        for (final label in tabs)
-                          Tab(
-                            child: ConstrainedBox(
-                              // With the label padding: a 48px tap target.
-                              constraints: const BoxConstraints(
-                                minWidth: Space.hero,
+              SliverOverlapAbsorber(
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                  context,
+                ),
+                sliver: SliverAppBar(
+                  pinned: true,
+                  primary: false,
+                  automaticallyImplyLeading: false,
+                  toolbarHeight: 0,
+                  // Six tabs scroll; the faded edge shows there is more.
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(kTextTabBarHeight),
+                    child: CircleEdgeFade(
+                      child: TabBar(
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: side - Space.sm,
+                        ),
+                        tabs: [
+                          for (final label in tabs)
+                            Tab(
+                              child: ConstrainedBox(
+                                // With the label padding: a 48px tap target.
+                                constraints: const BoxConstraints(
+                                  minWidth: Space.hero,
+                                ),
+                                child: Text(label, textAlign: TextAlign.center),
                               ),
-                              child: Text(label, textAlign: TextAlign.center),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-          body: TabBarView(
-            children: [
-              for (final label in tabs)
-                Builder(
-                  builder: (context) => CustomScrollView(
-                    key: PageStorageKey('group-${group.id}-$label'),
-                    slivers: [
-                      SliverOverlapInjector(
-                        handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
-                          context,
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: padding,
-                        sliver: SliverList.list(
-                          children: _tab(context, ref, label),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
             ],
+            body: TabBarView(
+              children: [
+                for (final label in tabs)
+                  Builder(
+                    builder: (context) => CustomScrollView(
+                      key: PageStorageKey('group-${group.id}-$label'),
+                      slivers: [
+                        SliverOverlapInjector(
+                          handle:
+                              NestedScrollView.sliverOverlapAbsorberHandleFor(
+                                context,
+                              ),
+                        ),
+                        SliverPadding(
+                          padding: padding,
+                          sliver: SliverList.list(
+                            children: _tab(context, ref, label),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       );
@@ -198,6 +207,7 @@ class _GroupTabs extends ConsumerWidget {
           ScopedMemoryList(
             query: MemoryQuery(groupId: group.id),
             empty: const CircleEmpty(
+              icon: LucideIcons.image,
               title: 'The first Memory is yours to make',
               message: 'Share a little moment with this exact group.',
             ),
@@ -215,6 +225,7 @@ class _GroupTabs extends ConsumerWidget {
             feature: CircleFeature.liveEvents,
             inline: true,
             child: CircleEmpty(
+              icon: LucideIcons.calendar_days,
               title: 'Events for ${group.name}',
               message: 'Make plans with this exact circle.',
               action: FilledButton.icon(
@@ -231,6 +242,7 @@ class _GroupTabs extends ConsumerWidget {
             feature: CircleFeature.liveChat,
             inline: true,
             child: CircleEmpty(
+              icon: LucideIcons.message_circle,
               title: 'Talk with everyone in ${group.name}',
               message: 'Private messages saved for this group.',
               action: FilledButton.icon(
@@ -280,7 +292,7 @@ class _GroupHeader extends ConsumerWidget {
                 for (final (index, ancestor) in lineage.indexed) ...[
                   if (index > 0)
                     const ExcludeSemantics(
-                      child: Icon(LucideIcons.chevron_right),
+                      child: Icon(CircleIcons.chevronRight),
                     ),
                   TextButton(
                     onPressed: ancestor.id == group.id
@@ -527,6 +539,7 @@ class SubgroupsTab extends ConsumerWidget {
       children: [
         if (mine.isEmpty && joinable.isEmpty)
           const CircleEmpty(
+            icon: LucideIcons.users,
             title: 'A smaller circle, when you need one',
             message:
                 'Subgroups have their own members. Access is never inherited.',
@@ -648,4 +661,66 @@ class _JoinableTile extends ConsumerWidget {
                 '${preview.approvalRequired ? 'Ask to join' : 'Join'} ${preview.name}',
           ),
         );
+}
+
+/// Chat and Events open directly, including selection by a swipe. Restore the
+/// previous content tab so Back returns to useful group content.
+class _GroupTabNavigation extends StatefulWidget {
+  const _GroupTabNavigation({
+    required this.group,
+    required this.tabs,
+    required this.child,
+  });
+  final String group;
+  final List<String> tabs;
+  final Widget child;
+  @override
+  State<_GroupTabNavigation> createState() => _GroupTabNavigationState();
+}
+
+class _GroupTabNavigationState extends State<_GroupTabNavigation> {
+  TabController? _controller;
+  int _contentIndex = 0;
+  bool _opening = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final controller = DefaultTabController.of(context);
+    if (controller == _controller) return;
+    _controller?.removeListener(_selected);
+    _controller = controller..addListener(_selected);
+  }
+
+  void _selected() {
+    final controller = _controller!;
+    if (_opening || controller.indexIsChanging) return;
+    final label = widget.tabs[controller.index];
+    if (label != 'Chat' && label != 'Events') {
+      _contentIndex = controller.index;
+      return;
+    }
+    _opening = true;
+    controller.index = _contentIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      try {
+        await context.push<void>(
+          label == 'Chat'
+              ? '/chats/g/${widget.group}'
+              : '/groups/g/${widget.group}/events',
+        );
+      } finally {
+        if (mounted) _opening = false;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller?.removeListener(_selected);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

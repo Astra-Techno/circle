@@ -147,6 +147,7 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
       if (group == null ||
           !MembershipRules.canInvite(group, workspace.viewer).allowed) {
         return const CircleEmpty(
+          icon: LucideIcons.users,
           title: 'Inviting is limited here',
           message: 'Open the group to check your access.',
         );

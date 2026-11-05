@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/circle_experience.dart';
 import 'core/notifications/first_launch_permission.dart';
@@ -9,6 +10,11 @@ import 'features/notifications/application/background_push.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks([
+      'Inter',
+    ], await rootBundle.loadString('assets/fonts/Inter-OFL.txt'));
+  });
   if (const bool.fromEnvironment('CIRCLE_PUSH_ENABLED') &&
       !kIsWeb &&
       defaultTargetPlatform == TargetPlatform.android) {

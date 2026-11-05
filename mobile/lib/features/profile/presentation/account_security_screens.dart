@@ -118,6 +118,7 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
           ),
           if (!_busy && _error == null && _items.isEmpty)
             const CircleEmpty(
+              icon: LucideIcons.user_round,
               title: 'No active sessions',
               message: 'Sign in again to review your devices.',
             ),

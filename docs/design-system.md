@@ -1,5 +1,33 @@
 # CIRCLE design system
 
+## Social 2.0 — consistent social UI, 5 November 2026
+
+Owner approved the all-page audit and requested one professional font family.
+This direction supersedes the older Roboto/Jakarta pairing and duplicate circle
+cards below. Bundle Inter locally (400 regular, 500 medium, 600 semibold); do not
+fetch fonts at runtime. Page titles22/28, section headings18/24, names16/22,
+reading text16/24, metadata13/18, buttons15/20 medium. Keep normal navigation
+labels11/14 and current-user avatar. Reflow navigation into centered rows when
+text scaling needs more width; never truncate labels to preserve a compact bar.
+Keep the existing bounded device clearance so the footer gap does not return.
+
+Use compact white rows for chats/member/settings lists, photo-led cards for
+Memories/events, and CircleEditorLayout for forms. A CircleHeading is a short
+16px introduction, not a second page title. Search fields use CircleSearchField
+with clear controls and explicit scope for loaded-page searches. Semantic icons
+come from CircleIcons (Lucide); do not mix another icon family into the app.
+Empty/error panels shrink to their content and use meaningful icons/actions.
+
+Retain CIRCLE purple, the supplied brand artwork, exact-group access and private
+media safeguards. Filled send controls use onPrimary. Group Chat/Events tabs
+open their scoped destination directly and Back restores the previous content
+tab. Inbox filters and event date grouping operate on loaded pages; complete
+server-side search/filtering remains a separately reviewed API extension.
+
+Current source1.0.32+37, in-app interface marker Social2.0. Validation/release
+status and audit mapping: [implementation record](design-refresh-2026-11-05.md).
+
+
 ## Social 1.1 — headers and forms,4 November2026
 
 Root headers use one title row,32px Home logo,22px outline icons in40px quiet

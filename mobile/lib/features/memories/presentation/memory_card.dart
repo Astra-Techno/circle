@@ -197,7 +197,7 @@ class CircleMemoryCard extends ConsumerWidget {
                   ),
                   PopupMenuButton<_MemoryAction>(
                     tooltip: 'More options for $about',
-                    icon: Icon(LucideIcons.ellipsis, color: accents.caption),
+                    icon: Icon(CircleIcons.more, color: accents.caption),
                     onSelected: onMenu,
                     itemBuilder: (_) => [
                       PopupMenuItem(

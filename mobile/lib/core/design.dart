@@ -22,21 +22,35 @@ abstract final class CirclePhotoMetrics {
 }
 
 abstract final class CircleProfileLayout {
-  static const coverAspectRatio = 2.6;
-  static const minCoverHeight = 112.0, maxCoverHeight = 200.0;
+  static const coverAspectRatio = 3.2;
+  static const minCoverHeight = 88.0, maxCoverHeight = 160.0;
 }
 
 abstract final class CircleLayout {
   static const largeTextThreshold = 1.4;
   static const homeHeaderHeight = 56.0;
-  static double headerHeight(BuildContext context) {
+  static double headerHeight(BuildContext context, {String? title}) {
     final style = CircleTextStyles.pageTitle(
       Theme.of(context).colorScheme.onSurface,
     );
-    final height =
-        MediaQuery.textScalerOf(context).scale(style.fontSize!) *
-            style.height! +
-        Space.sm * 2;
+    final scaler = MediaQuery.textScalerOf(context);
+    final line = scaler.scale(style.fontSize!) * style.height!;
+    var contentHeight = line;
+    if (title != null) {
+      final painter =
+          TextPainter(
+            text: TextSpan(text: title, style: style),
+            textDirection: Directionality.of(context),
+            textScaler: scaler,
+            maxLines: 2,
+          )..layout(
+            maxWidth: (MediaQuery.sizeOf(context).width - Space.large * 2)
+                .clamp(Space.large, double.infinity),
+          );
+      contentHeight = painter.height;
+      painter.dispose();
+    }
+    final height = contentHeight + Space.sm * 2;
     return height > homeHeaderHeight ? height : homeHeaderHeight;
   }
 
@@ -47,6 +61,27 @@ abstract final class CircleLayout {
   static const homeDockHeight = 48.0;
   static double navigationBottomPadding(double deviceInset) =>
       deviceInset.clamp(0.0, Space.md).toDouble();
+  static double navigationItemWidth(BuildContext context) {
+    final painter = TextPainter(
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    );
+    var width = Space.large;
+    for (final label in ['Home', 'Circles', 'Chats', 'Events', 'Profile']) {
+      painter.text = TextSpan(
+        text: label,
+        style: CircleTextStyles.navLabel(
+          Theme.of(context).colorScheme.onSurface,
+        ),
+      );
+      painter.layout();
+      final measured = painter.width + Space.md;
+      if (measured > width) width = measured;
+    }
+    painter.dispose();
+    return width;
+  }
+
   static const homeMosaicAspect = 2.8;
   static const homeGridBreakpoint = 840.0;
   static const homeComposerMaxWidth = 720.0;
@@ -55,6 +90,20 @@ abstract final class CircleLayout {
 
 /// Shared geometry for every standard input and primary form action.
 abstract final class CircleFormMetrics {
+  static double photoActionWidth(BuildContext context) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: 'Add photos',
+        style: Theme.of(context).textTheme.labelMedium,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final measured = painter.width.ceilToDouble() + Space.section;
+    painter.dispose();
+    return measured > 112 ? measured : 112;
+  }
+
   static const minFieldHeight = 56.0;
   static const fieldGap = 16.0;
   static const sectionGap = 24.0;

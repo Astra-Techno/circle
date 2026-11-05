@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import '../../../core/form_exit_guard.dart';
 import 'dart:convert';
 import 'dart:math';
@@ -46,6 +47,7 @@ class _PollState extends ConsumerState<LivePollScreen> {
             children: [
               if (items.isEmpty)
                 const CircleEmpty(
+                  icon: LucideIcons.list_todo,
                   title: 'Ask your circle',
                   message: 'Start with a question and two options.',
                 ),
@@ -57,7 +59,7 @@ class _PollState extends ConsumerState<LivePollScreen> {
                     subtitle: Text(
                       '${poll['group_name'] ?? 'Circle'} · ${poll['closed'] == true ? 'Closed' : 'Open'} · ${poll['anonymous'] == true ? 'Anonymous' : 'Named'} votes',
                     ),
-                    trailing: const Icon(LucideIcons.chevron_right),
+                    trailing: const Icon(CircleIcons.chevronRight),
                     onTap: () => context.push('/polls/p/${poll['id']}'),
                   ),
                 ),
@@ -136,6 +138,7 @@ class _PollState extends ConsumerState<LivePollScreen> {
                 label: 'Loading polls',
               ),
         error: (_, _) => CircleEmpty(
+          icon: LucideIcons.wifi_off,
           title: 'Polls couldn’t load',
           message: 'Check your connection and group access.',
           action: TextButton(
@@ -187,47 +190,115 @@ class _PollState extends ConsumerState<LivePollScreen> {
               ),
               if (p['closes_at'] case final String end)
                 Text('Closes ${DateTime.parse(end).toLocal()}'),
-              TextButton.icon(
-                onPressed: () => refreshPolls(ref),
-                icon: const Icon(LucideIcons.refresh_cw),
-                label: const Text('Refresh poll'),
-              ),
-              for (final option in options)
-                Card(
-                  margin: const EdgeInsets.only(bottom: Space.md),
-                  child: Column(
-                    children: [
-                      CheckboxListTile(
-                        value: chosen.contains(option['id']),
-                        onChanged: locked || _busy
-                            ? null
-                            : (value) => setState(() {
-                                _chosen = multiple ? {...chosen} : <int>{};
-                                if (value == true) {
-                                  _chosen!.add(option['id'] as int);
-                                } else {
-                                  _chosen!.remove(option['id']);
-                                }
-                              }),
-                        title: Text(option['label'] as String),
-                        subtitle: results
-                            ? Text(
-                                '${option['votes']} vote(s) · ${total == 0 ? 0 : ((option['votes'] as int) * 100 / total).round()}%',
-                              )
-                            : null,
-                      ),
-                      if (results)
-                        Padding(
-                          padding: const EdgeInsets.all(Space.md),
-                          child: LinearProgressIndicator(
-                            value: total == 0
-                                ? 0
-                                : (option['votes'] as int) / total,
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: PopupMenuButton<String>(
+                  tooltip: 'Poll options',
+                  enabled: !_busy,
+                  icon: const Icon(CircleIcons.more),
+                  onSelected: (action) async {
+                    if (action == 'refresh') {
+                      refreshPolls(ref);
+                    } else if (action == 'close') {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (dialog) => AlertDialog(
+                          title: const Text('Close this poll?'),
+                          content: const Text(
+                            'Voting will end for everyone in this circle.',
                           ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialog, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(dialog, true),
+                              child: const Text('Close poll'),
+                            ),
+                          ],
                         ),
-                    ],
-                  ),
+                      );
+                      if (confirmed == true && mounted) {
+                        await _run((api) => api.close(id));
+                      }
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: 'refresh',
+                      child: Text('Refresh poll'),
+                    ),
+                    if (!closed && p['can_manage'] == true)
+                      const PopupMenuItem(
+                        value: 'close',
+                        child: Text('Close poll'),
+                      ),
+                  ],
                 ),
+              ),
+              RadioGroup<int>(
+                groupValue: multiple ? null : chosen.firstOrNull,
+                onChanged: (value) {
+                  if (locked || _busy || multiple) return;
+                  setState(() => _chosen = value == null ? <int>{} : {value});
+                },
+                child: Column(
+                  children: [
+                    for (final option in options)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: Space.md),
+                        child: Column(
+                          children: [
+                            if (multiple)
+                              CheckboxListTile(
+                                value: chosen.contains(option['id']),
+                                onChanged: locked || _busy
+                                    ? null
+                                    : (value) => setState(() {
+                                        _chosen = multiple
+                                            ? {...chosen}
+                                            : <int>{};
+                                        if (value == true) {
+                                          _chosen!.add(option['id'] as int);
+                                        } else {
+                                          _chosen!.remove(option['id']);
+                                        }
+                                      }),
+                                title: Text(option['label'] as String),
+                                subtitle: results
+                                    ? Text(
+                                        '${option['votes']} vote(s) · ${total == 0 ? 0 : ((option['votes'] as int) * 100 / total).round()}%',
+                                      )
+                                    : null,
+                              )
+                            else
+                              RadioListTile<int>(
+                                value: option['id'] as int,
+                                enabled: !locked && !_busy,
+                                toggleable: true,
+                                title: Text(option['label'] as String),
+                                subtitle: results
+                                    ? Text(
+                                        '${option['votes']} vote(s) · ${total == 0 ? 0 : ((option['votes'] as int) * 100 / total).round()}%',
+                                      )
+                                    : null,
+                              ),
+                            if (results)
+                              Padding(
+                                padding: const EdgeInsets.all(Space.md),
+                                child: LinearProgressIndicator(
+                                  value: total == 0
+                                      ? 0
+                                      : (option['votes'] as int) / total,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
               if (results)
                 Text(
                   '$total voter(s)${multiple ? ' · people may choose multiple options' : ''}',
@@ -283,11 +354,6 @@ class _PollState extends ConsumerState<LivePollScreen> {
                 TextButton(
                   onPressed: () => context.push('/polls/p/$id/voters'),
                   child: const Text('See who voted'),
-                ),
-              if (!closed && p['can_manage'] == true)
-                TextButton(
-                  onPressed: _busy ? null : () => _run((api) => api.close(id)),
-                  child: const Text('Close poll'),
                 ),
             ],
           );
@@ -427,7 +493,7 @@ class _FormState extends ConsumerState<LivePollForm> {
                               : () => setState(() {
                                   _options.removeAt(i).dispose();
                                 }),
-                          icon: const Icon(LucideIcons.x),
+                          icon: const Icon(CircleIcons.close),
                         ),
                 ),
               ),
@@ -726,6 +792,7 @@ class _VotersState extends ConsumerState<LivePollVoters> {
                 )
               : const Center(child: CircularProgressIndicator()),
           error: (_, _) => const CircleEmpty(
+            icon: LucideIcons.list_todo,
             title: 'Voters are private',
             message: 'Check poll settings and current group access.',
           ),

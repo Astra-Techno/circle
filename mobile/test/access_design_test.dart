@@ -71,7 +71,7 @@ void main() {
     tester,
   ) async {
     await openCircle(tester, entered: false);
-    await tapText(tester, 'Get Started');
+    await tapText(tester, 'Create account');
     await tapText(tester, 'Create account');
     expect(find.text('Enter your mobile number.'), findsOneWidget);
     expect(find.text('Enter your password.'), findsOneWidget);
@@ -94,7 +94,7 @@ void main() {
 
   testWidgets('forms offer password-manager autofill hints', (tester) async {
     await openCircle(tester, entered: false);
-    await tapText(tester, 'Get Started');
+    await tapText(tester, 'Create account');
     expect(find.byType(AutofillGroup), findsOneWidget);
     List<String>? hints(String key) => tester
         .widget<EditableText>(
@@ -144,7 +144,7 @@ void main() {
         keyboard: 260,
       );
       expect(tester.takeException(), isNull);
-      await tapText(tester, 'Get Started');
+      await tapText(tester, 'Create account');
       await reveal(tester, find.text('Create account'));
       expect(tester.takeException(), isNull);
       await tapText(tester, 'Have an account? Log in');
@@ -163,7 +163,7 @@ void main() {
             : Brightness.light,
       );
       if (screen != 'welcome') {
-        await tapText(tester, screen == 'login' ? 'Log in' : 'Get Started');
+        await tapText(tester, screen == 'login' ? 'Log in' : 'Create account');
       }
       // Asset decoding is asynchronous and pumpAndSettle alone may capture
       // an empty image before its first frame, especially on a cold cache.

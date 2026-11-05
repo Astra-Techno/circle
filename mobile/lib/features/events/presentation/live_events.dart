@@ -38,54 +38,133 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
   /// Events from earlier pages; the list grows as it scrolls.
   final _earlier = <Map<String, Object?>>[];
 
-  Widget _eventList(List<Map<String, Object?>> items, {Widget? end}) =>
-      RefreshIndicator(
-        // The header's + plans an event; pull down to refresh.
-        onRefresh: () async {
-          setState(() {
-            _offset = 0;
-            _earlier.clear();
+  String _filter = 'All';
+  bool _loadingMore = false;
+
+  void _more(Map<String, Object?> page) {
+    if (_loadingMore || page['has_more'] != true) return;
+    setState(() {
+      _earlier.addAll(ApiJson.list(page['items']).map(ApiJson.map));
+      _offset += 30;
+      _loadingMore = true;
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant LiveEventsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.group != widget.group || oldWidget.id != widget.id) {
+      _offset = 0;
+      _earlier.clear();
+      _loadingMore = false;
+      _filter = 'All';
+    }
+  }
+
+  Widget _eventList(List<Map<String, Object?>> items, {Widget? end}) {
+    final now = DateTime.now().toUtc();
+    bool upcoming(Map<String, Object?> item) =>
+        DateTime.parse(item['start_at'] as String).isAfter(now);
+    final visible =
+        items
+            .where(
+              (item) =>
+                  _filter == 'All' ||
+                  (_filter == 'Upcoming' ? upcoming(item) : !upcoming(item)),
+            )
+            .toList()
+          ..sort((a, b) {
+            final futureA = upcoming(a), futureB = upcoming(b);
+            if (futureA != futureB) return futureA ? -1 : 1;
+            final compare = DateTime.parse(
+              a['start_at'] as String,
+            ).compareTo(DateTime.parse(b['start_at'] as String));
+            return futureA ? compare : -compare;
           });
-          refreshLiveEvents(ref);
-        },
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            // Collapsing pinned header: large title shrinks to compact bar.
-            const CircleCollapsingHeader(),
-            SliverPadding(
-              padding: CircleInsets.rootPage,
-              sliver: SliverList.list(
-                children: [
-                  if (items.isEmpty)
-                    const CircleEmpty(
-                      title: 'Something to look forward to',
-                      message: 'Plan the first event for one of your circles.',
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() {
+          _offset = 0;
+          _earlier.clear();
+          _loadingMore = false;
+        });
+        refreshLiveEvents(ref);
+      },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          const CircleCollapsingHeader(),
+          SliverPadding(
+            padding: CircleInsets.rootPage,
+            sliver: SliverList.list(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Space.md),
+                  child: Wrap(
+                    spacing: Space.sm,
+                    runSpacing: Space.sm,
+                    children: [
+                      for (final filter in ['All', 'Upcoming', 'Past'])
+                        ChoiceChip(
+                          label: Text(filter),
+                          selected: _filter == filter,
+                          onSelected: (_) => setState(() => _filter = filter),
+                        ),
+                    ],
+                  ),
+                ),
+                if (visible.isEmpty)
+                  CircleEmpty(
+                    icon: LucideIcons.calendar_days,
+                    title: items.isEmpty
+                        ? 'Something to look forward to'
+                        : 'No ${_filter.toLowerCase()} events loaded',
+                    message: items.isEmpty
+                        ? 'Plan the first event for one of your circles.'
+                        : 'Choose All or load more events to keep looking.',
+                    action: items.isEmpty
+                        ? null
+                        : TextButton(
+                            onPressed: () => setState(() => _filter = 'All'),
+                            child: const Text('Show all events'),
+                          ),
+                  ),
+                for (final (i, item) in visible.indexed) ...[
+                  if (i == 0 || upcoming(visible[i - 1]) != upcoming(item))
+                    CircleSectionTitle(
+                      upcoming(item) ? 'Upcoming' : 'Past events',
                     ),
-                  for (final (i, item) in items.indexed)
-                    CircleFadeIn(
-                      delay: CircleMotion.staggerDelay * i.clamp(0, 5),
-                      child: _LiveEventCard(
-                        item: item,
-                        onTap: () => context.go('/events/e/${item['id']}'),
-                      ),
+                  CircleFadeIn(
+                    delay: CircleMotion.staggerDelay * i.clamp(0, 5),
+                    child: _LiveEventCard(
+                      item: item,
+                      onTap: () => context.go('/events/e/${item['id']}'),
                     ),
-                  ?end,
+                  ),
                 ],
-              ),
+                ?end,
+              ],
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(liveEventsApiProvider, (_, _) {
+      _offset = 0;
+      _earlier.clear();
+      _loadingMore = false;
+    });
     final id = widget.id;
     final load = id == null
         ? ref.watch(liveEventsProvider((offset: _offset, group: widget.group)))
         : ref.watch(liveEventProvider(id));
     return ReadingPane(
       child: load.when(
+        skipLoadingOnRefresh: true,
         loading: () => id == null && _earlier.isNotEmpty
             ? _eventList(
                 _earlier,
@@ -103,6 +182,7 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
               ),
         error: (_, _) => CircleStatePanel(
           child: CircleEmpty(
+            icon: LucideIcons.wifi_off,
             title: 'Events couldn’t load',
             message: 'Check your connection and group access.',
             action: TextButton(
@@ -114,15 +194,34 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
         data: (e) {
           if (id == null) {
             final items = ApiJson.list(e['items']).map(ApiJson.map).toList();
+            if (_loadingMore) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() => _loadingMore = false);
+              });
+            }
             return _eventList(
               [..._earlier, ...items],
               end: e['has_more'] == true
-                  ? CircleLoadMore(
-                      key: ValueKey('more-$_offset'),
-                      onLoad: () => setState(() {
-                        _earlier.addAll(items);
-                        _offset += 30;
-                      }),
+                  ? Column(
+                      children: [
+                        const CircleNote(
+                          'Showing loaded events. Load more to include the rest in these date groups.',
+                        ),
+                        if (_filter == 'All')
+                          CircleLoadMore(
+                            key: ValueKey('more-$_offset'),
+                            onLoad: () => _more(e),
+                          )
+                        else
+                          TextButton(
+                            onPressed: _loadingMore ? null : () => _more(e),
+                            child: Text(
+                              _loadingMore
+                                  ? 'Loading events…'
+                                  : 'Load more events',
+                            ),
+                          ),
+                      ],
                     )
                   : null,
             );
@@ -240,7 +339,7 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
             subtitle: subtitle == null ? null : Text(subtitle),
             trailing: onTap == null
                 ? null
-                : const Icon(LucideIcons.chevron_right),
+                : const Icon(CircleIcons.chevronRight),
             onTap: onTap,
           );
           final going = (e['going_count'] as num?)?.toInt() ?? 0;
@@ -460,7 +559,14 @@ class _LiveEventCard extends ConsumerWidget {
     final venue = item['venue'] as String? ?? '';
     final going = (item['going_count'] as num?)?.toInt() ?? 0;
     final maybe = (item['maybe_count'] as num?)?.toInt() ?? 0;
-    final groupName = item['group_name'] as String? ?? '';
+    final groupName =
+        item['group_name'] as String? ??
+        ref
+            .watch(circleWorkspaceProvider)
+            .value
+            ?.group('${item['group_id']}')
+            ?.name ??
+        '';
     // Days until the event.
     final startAt = DateTime.tryParse(item['start_at'] as String? ?? '');
     final daysUntil = startAt?.toLocal().difference(DateTime.now()).inDays;
@@ -670,7 +776,7 @@ class _LiveEventCard extends ConsumerWidget {
                               ),
                             ),
                           ),
-                        Icon(LucideIcons.chevron_right, color: accents.caption),
+                        Icon(CircleIcons.chevronRight, color: accents.caption),
                       ],
                     ),
                   ),
@@ -702,6 +808,7 @@ class LiveEventForm extends ConsumerWidget {
         .when(
           loading: () => const CircleSkeletonPage(label: 'Loading event'),
           error: (_, _) => CircleEmpty(
+            icon: LucideIcons.wifi_off,
             title: 'Event couldn’t load',
             message: 'Refresh and try again.',
             action: TextButton(
@@ -719,6 +826,7 @@ class LiveEventForm extends ConsumerWidget {
                   api: api,
                 )
               : const CircleEmpty(
+                  icon: LucideIcons.lock_keyhole,
                   title: 'Editing unavailable',
                   message:
                       'Only the organizer or current group admins can edit.',
@@ -845,12 +953,12 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
       subtitle: Text(
         value == null
             ? 'Choose date and time · $_zone'
-            : '${value.year}-${value.month}-${value.day} ${value.hour}:${value.minute.toString().padLeft(2, '0')} · $_zone',
+            : '${MaterialLocalizations.of(context).formatMediumDate(value)} · ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(value))} · $_zone',
       ),
       trailing: optional
           ? IconButton(
               onPressed: _busy ? null : () => setState(() => save(null)),
-              icon: const Icon(LucideIcons.x),
+              icon: const Icon(CircleIcons.close),
               tooltip: 'Clear $label',
             )
           : const Icon(LucideIcons.calendar),
@@ -1202,6 +1310,7 @@ class _AttendeesState extends ConsumerState<LiveAttendeesScreen> {
       ),
       if (people.isEmpty)
         const CircleEmpty(
+          icon: LucideIcons.calendar_days,
           title: 'No answers yet',
           message:
               'When people answer Going, Maybe or Can’t go, they show up here.',
@@ -1238,6 +1347,7 @@ class _AttendeesState extends ConsumerState<LiveAttendeesScreen> {
                 )
               : const CircleSkeletonPage(label: 'Loading attendees'),
           error: (_, _) => CircleEmpty(
+            icon: LucideIcons.wifi_off,
             title: 'Attendees couldn’t load',
             message: 'Check your connection and membership.',
             action: TextButton(

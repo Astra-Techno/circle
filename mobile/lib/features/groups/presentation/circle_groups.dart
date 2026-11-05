@@ -37,6 +37,14 @@ class CircleGroups extends ConsumerStatefulWidget {
 class _CircleGroupsState extends ConsumerState<CircleGroups> {
   _CircleFilter _filter = _CircleFilter.all;
   String _query = '';
+  final _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
   final Set<String> _collapsed = {};
 
   @override
@@ -119,11 +127,9 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                     label: const Text('Open an invite link'),
                   ),
                   if (workspace.groups.isNotEmpty)
-                    TextField(
-                      decoration: const InputDecoration(
-                        labelText: 'Search groups',
-                        prefixIcon: Icon(LucideIcons.search),
-                      ),
+                    CircleSearchField(
+                      controller: _search,
+                      label: 'Search groups',
                       onChanged: (value) =>
                           setState(() => _query = value.trim().toLowerCase()),
                     ),
@@ -157,6 +163,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                   if (_filter == _CircleFilter.invited) ...[
                     if (workspace.invitations.isEmpty)
                       CircleEmpty(
+                        icon: LucideIcons.users,
                         title: 'No invitations',
                         message:
                             'Invitations from your circles will appear here.',
@@ -170,7 +177,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                           ),
                           title: Text(inv.groupName),
                           subtitle: Text('${inv.inviterName} invited you'),
-                          trailing: const Icon(LucideIcons.chevron_right),
+                          trailing: const Icon(CircleIcons.chevronRight),
                           onTap: () => context.push(
                             '/groups/g/${inv.invitation.groupId}',
                           ),
@@ -193,74 +200,6 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                               )
                             : null,
                       ),
-                    // Pinned Circles: top groups by most recent activity.
-                    if (entries.isNotEmpty) ...[
-                      if (_query.isEmpty)
-                        () {
-                          // Pick top-level groups with activity, sorted by
-                          // recency, capped at 3.
-                          final pinned =
-                              entries
-                                  .where(
-                                    (e) =>
-                                        e.level == 0 &&
-                                        activityMap.containsKey(e.group.id),
-                                  )
-                                  .toList()
-                                ..sort((a, b) {
-                                  final ta = activityMap[a.group.id]!.time;
-                                  final tb = activityMap[b.group.id]!.time;
-                                  return tb.compareTo(ta);
-                                });
-                          final pinnedEntries = pinned.take(3).toList();
-                          if (pinnedEntries.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-                          return Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  top: Space.sm,
-                                  bottom: Space.sm,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      LucideIcons.pin,
-                                      size: Space.md,
-                                      color: accents.caption,
-                                    ),
-                                    const SizedBox(width: Space.sm),
-                                    Expanded(
-                                      child: Text(
-                                        'PINNED CIRCLES',
-                                        style: CircleTextStyles.label(
-                                          accents.caption,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              for (final entry in pinnedEntries)
-                                _CircleCard(
-                                  group: entry.group,
-                                  workspace: workspace,
-                                  level: 0,
-                                  activity: activityMap[entry.group.id],
-                                  eventCount: eventCounts[entry.group.id] ?? 0,
-                                  notificationCount: _notificationCount(
-                                    workspace,
-                                    entry.group.id,
-                                  ),
-                                  pinned: true,
-                                  expanded: null,
-                                  onToggle: null,
-                                ),
-                            ],
-                          );
-                        }(),
-                    ],
                     // All Circles section header.
                     if (entries.isNotEmpty)
                       Padding(
@@ -269,7 +208,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                           bottom: Space.sm,
                         ),
                         child: Text(
-                          'ALL CIRCLES',
+                          'Your circles',
                           style: CircleTextStyles.label(accents.caption),
                         ),
                       ),
@@ -312,7 +251,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                             ),
                             title: Text(pending.name),
                             subtitle: const Text('Waiting for approval'),
-                            trailing: const Icon(LucideIcons.chevron_right),
+                            trailing: const Icon(CircleIcons.chevronRight),
                             onTap: () =>
                                 context.push('/groups/g/${pending.groupId}'),
                           ),
@@ -341,39 +280,14 @@ class _FilterChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accents = CircleAccents.of(context);
-    return Material(
-      color: selected ? theme.colorScheme.primary : theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(CircleRadius.button),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(CircleRadius.button),
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: Space.large),
-          padding: const EdgeInsets.symmetric(
-            horizontal: Space.sm,
-            vertical: Space.sm,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(CircleRadius.button),
-            border: selected ? null : Border.all(color: accents.hairline),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: CircleTextStyles.label(
-              selected ? theme.colorScheme.onPrimary : accents.caption,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ChoiceChip(
+    label: Text(label),
+    selected: selected,
+    onSelected: (_) => onTap(),
+  );
 }
 
-/// Derive a notification count for a group from unread memories + comments.
+/// Number of loaded Memories in this exact circle.
 int _notificationCount(CircleWorkspace workspace, String groupId) {
   var count = 0;
   for (final memory in workspace.memories) {
@@ -382,7 +296,6 @@ int _notificationCount(CircleWorkspace workspace, String groupId) {
   return count;
 }
 
-/// Latest activity info for a group.
 class _GroupActivity {
   const _GroupActivity({
     required this.icon,
@@ -404,7 +317,6 @@ class _CircleCard extends ConsumerWidget {
     this.activity,
     this.eventCount = 0,
     this.notificationCount = 0,
-    this.pinned = false,
     this.expanded,
     this.onToggle,
   });
@@ -414,7 +326,6 @@ class _CircleCard extends ConsumerWidget {
   final _GroupActivity? activity;
   final int eventCount;
   final int notificationCount;
-  final bool pinned;
   final bool? expanded;
   final VoidCallback? onToggle;
 
@@ -465,14 +376,6 @@ class _CircleCard extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            if (pinned) ...[
-                              const SizedBox(width: Space.xs),
-                              Icon(
-                                LucideIcons.pin,
-                                size: CircleSizes.iconInline,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ],
                           ],
                         ),
                         const SizedBox(height: Space.xs),
@@ -628,7 +531,7 @@ class _CircleCard extends ConsumerWidget {
                             ),
                           const SizedBox(width: Space.xs),
                           Icon(
-                            LucideIcons.chevron_right,
+                            CircleIcons.chevronRight,
                             size: Space.section,
                             color: accents.caption,
                           ),
@@ -837,7 +740,7 @@ class CircleGroupTile extends ConsumerWidget {
                       Padding(
                         padding: const EdgeInsets.all(Space.md),
                         child: Icon(
-                          LucideIcons.chevron_right,
+                          CircleIcons.chevronRight,
                           color: accents.caption,
                         ),
                       )
@@ -929,6 +832,7 @@ class _CircleCreateGroupState extends ConsumerState<CircleCreateGroup> {
               padding: CircleInsets.form,
               children: [
                 CircleEmpty(
+                  icon: LucideIcons.users,
                   title: 'A subgroup can\'t be added here',
                   message: rule.reason!,
                 ),
@@ -942,8 +846,7 @@ class _CircleCreateGroupState extends ConsumerState<CircleCreateGroup> {
         fields: [_name],
         fingerprint: () => '${_name.text}\u0000$_type\u0000$_listed',
         child: ReadingPane(
-          child: ListView(
-            padding: CircleInsets.form,
+          child: CircleEditorLayout(
             children: [
               CircleHeading(
                 title: parent == null

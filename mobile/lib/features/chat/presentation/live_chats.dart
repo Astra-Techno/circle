@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import '../../profile/application/profile_providers.dart'
     show profilePhotoPickerProvider;
 import '../../../core/private_photo.dart';
@@ -15,6 +16,16 @@ import '../../profile/presentation/server_blocking.dart';
 import '../../moderation/presentation/report_sheet.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
+enum _InboxFilter {
+  all('All'),
+  unread('Unread'),
+  groups('Groups'),
+  archived('Archived');
+
+  const _InboxFilter(this.label);
+  final String label;
+}
+
 class LiveChatsScreen extends ConsumerStatefulWidget {
   const LiveChatsScreen({super.key, this.id, this.contacts = false});
   final String? id;
@@ -28,6 +39,8 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
   Timer? _timer;
   bool _visible = false;
   final _text = TextEditingController();
+  final _search = TextEditingController();
+  _InboxFilter _filter = _InboxFilter.all;
   bool _busy = false;
   final _photos = <String>[];
   int _offset = 0;
@@ -113,6 +126,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
     _timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _text.dispose();
+    _search.dispose();
     _thread.dispose();
     super.dispose();
   }
@@ -120,7 +134,13 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
   @override
   void didUpdateWidget(covariant LiveChatsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.id != widget.id) {
+    if (oldWidget.id != widget.id || oldWidget.contacts != widget.contacts) {
+      _search.clear();
+      _filter = _InboxFilter.all;
+      _offset = 0;
+      _earlier.clear();
+      _loadingMore = false;
+      _readMarked = null;
       _text.clear();
       _photos.clear();
       _retryKey = null;
@@ -390,6 +410,23 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
   Widget _inbox(Map<String, Object?> data, List<Map<String, Object?>> items) {
     final me = ref.read(liveChatApiProvider).scope.account;
     final now = DateTime.now();
+    final query = _search.text.trim().toLowerCase();
+    final filtered = query.isNotEmpty || _filter != _InboxFilter.all;
+    final visible = items.where((item) {
+      final archived = item['archived'] == true;
+      final matches = switch (_filter) {
+        _InboxFilter.all => !archived,
+        _InboxFilter.unread =>
+          !archived && ((item['unread'] as num?)?.toInt() ?? 0) > 0,
+        _InboxFilter.groups => !archived && item['kind'] == 'group',
+        _InboxFilter.archived => archived,
+      };
+      return matches &&
+          (query.isEmpty ||
+              '${item['name'] ?? ''} ${_preview(item, me).text}'
+                  .toLowerCase()
+                  .contains(query));
+    }).toList();
     return RefreshIndicator(
       onRefresh: () async {
         setState(() {
@@ -412,15 +449,56 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
             ),
             sliver: SliverList.list(
               children: [
-                if (items.isEmpty)
-                  const Padding(
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                  child: CircleSearchField(
+                    controller: _search,
+                    label: 'Search loaded chats',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(Space.md),
+                  child: Wrap(
+                    spacing: Space.sm,
+                    runSpacing: Space.sm,
+                    children: [
+                      for (final filter in _InboxFilter.values)
+                        ChoiceChip(
+                          label: Text(filter.label),
+                          selected: _filter == filter,
+                          onSelected: (_) => setState(() => _filter = filter),
+                        ),
+                    ],
+                  ),
+                ),
+                if (visible.isEmpty)
+                  Padding(
                     padding: EdgeInsets.symmetric(horizontal: Space.section),
                     child: CircleEmpty(
-                      title: 'Your conversations start here',
-                      message: 'Group conversations follow your memberships.',
+                      icon: LucideIcons.message_circle,
+                      title: filtered
+                          ? 'No matching chats'
+                          : 'Your conversations start here',
+                      message: filtered
+                          ? 'Try another name, message preview or filter.'
+                          : 'Open a circle chat or start a conversation with someone from your groups.',
+                      action: filtered
+                          ? TextButton(
+                              onPressed: () => setState(() {
+                                _search.clear();
+                                _filter = _InboxFilter.all;
+                              }),
+                              child: const Text('Reset filters'),
+                            )
+                          : TextButton.icon(
+                              onPressed: () => context.push('/chats/new'),
+                              icon: const Icon(LucideIcons.plus),
+                              label: const Text('New chat'),
+                            ),
                     ),
                   ),
-                for (final item in items)
+                for (final item in visible)
                   Builder(
                     builder: (context) {
                       final preview = _preview(item, me);
@@ -446,7 +524,27 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                       );
                     },
                   ),
-                _pages(data, items, inbox: true),
+                if (filtered && data['has_more'] == true)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                    child: Column(
+                      children: [
+                        const CircleNote(
+                          'Search and filters apply to chats loaded so far.',
+                        ),
+                        TextButton(
+                          onPressed: _loadingMore
+                              ? null
+                              : () => _loadInboxPage(data),
+                          child: Text(
+                            _loadingMore ? 'Loading chats…' : 'Load more chats',
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  _pages(data, items, inbox: true),
                 Center(
                   child: TextButton(
                     onPressed: () => context.push('/chats/privacy'),
@@ -478,15 +576,38 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
           ),
         ),
       ),
-      if (items.isEmpty)
+      Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Space.md,
+          vertical: Space.sm,
+        ),
+        child: CircleSearchField(
+          controller: _search,
+          label: 'Search loaded people',
+          onChanged: (_) => setState(() {}),
+        ),
+      ),
+      if (items
+          .where(
+            (item) => '${item['display_name']}'.toLowerCase().contains(
+              _search.text.trim().toLowerCase(),
+            ),
+          )
+          .isEmpty)
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: Space.section),
           child: CircleEmpty(
-            title: 'No people to show',
-            message: 'Join a group to message its members.',
+            icon: LucideIcons.users,
+            title: 'No matching people',
+            message:
+                'Try another name, or join a circle to message its members.',
           ),
         ),
-      for (final item in items)
+      for (final item in items.where(
+        (item) => '${item['display_name']}'.toLowerCase().contains(
+          _search.text.trim().toLowerCase(),
+        ),
+      ))
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: Space.lg),
           leading: ChatIdentity(
@@ -508,9 +629,34 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                   }
                 },
         ),
-      _pages(data.cast(), items, inbox: true),
+      if (_search.text.trim().isNotEmpty && data['has_more'] == true)
+        Padding(
+          padding: const EdgeInsets.all(Space.md),
+          child: Column(
+            children: [
+              const CircleNote('Search applies to people loaded so far.'),
+              TextButton(
+                onPressed: _loadingMore
+                    ? null
+                    : () => _loadInboxPage(data.cast()),
+                child: const Text('Load more people'),
+              ),
+            ],
+          ),
+        )
+      else
+        _pages(data.cast(), items, inbox: true),
     ],
   );
+
+  void _loadInboxPage(Map<String, Object?> data) {
+    if (_loadingMore || data['has_more'] != true) return;
+    setState(() {
+      _earlier.addAll(ApiJson.list(data['items']).map(ApiJson.map));
+      _offset += 30;
+      _loadingMore = true;
+    });
+  }
 
   Widget _pages(
     Map<String, Object?> data,
@@ -524,14 +670,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
       if (inbox && (data['has_more'] == true || _loadingMore))
         CircleLoadMore(
           key: ValueKey('more-$_offset'),
-          onLoad: () {
-            if (_loadingMore || data['has_more'] != true) return;
-            setState(() {
-              _earlier.addAll(ApiJson.list(data['items']).map(ApiJson.map));
-              _offset += 30;
-              _loadingMore = true;
-            });
-          },
+          onLoad: () => _loadInboxPage(data),
         ),
       if (!inbox && data['has_more'] == true)
         TextButton(
@@ -849,7 +988,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                 ),
                 IconButton(
                   onPressed: () => setState(() => _reply = null),
-                  icon: const Icon(LucideIcons.x),
+                  icon: const Icon(CircleIcons.close),
                   tooltip: 'Cancel reply',
                 ),
               ],
@@ -915,9 +1054,13 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
         send: IconButton.filled(
           style: IconButton.styleFrom(
             minimumSize: const Size.square(Space.large),
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
           ),
           onPressed: _busy ? null : () => _send(chat),
-          icon: const Icon(LucideIcons.send),
+          icon: Icon(
+            CircleIcons.send,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
           tooltip: _busy ? 'Sending…' : 'Send',
         ),
       ),
@@ -1022,6 +1165,8 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
   Widget build(BuildContext context) {
     ref.listen(liveChatApiProvider, (_, _) {
       _text.clear();
+      _search.clear();
+      _filter = _InboxFilter.all;
       _photos.clear();
       _reply = null;
       _before = null;
@@ -1062,6 +1207,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                   child: BackButton(onPressed: _back),
                 ),
               CircleEmpty(
+                icon: LucideIcons.wifi_off,
                 title: 'Chats couldn’t load',
                 message: 'Check your connection and access.',
                 action: TextButton(
@@ -1101,6 +1247,7 @@ class LiveChatPrivacyScreen extends ConsumerWidget {
           loading: () =>
               const CircleSkeletonPage(label: 'Loading messaging choices'),
           error: (_, _) => CircleEmpty(
+            icon: LucideIcons.wifi_off,
             title: 'Choices couldn’t load',
             message: 'Try again when connected.',
             action: TextButton(

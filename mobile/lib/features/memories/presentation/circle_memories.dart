@@ -458,7 +458,7 @@ class _FirstSteps extends StatelessWidget {
         subtitle: Text(message),
         trailing: done || onTap == null
             ? null
-            : const Icon(LucideIcons.chevron_right),
+            : const Icon(CircleIcons.chevronRight),
         onTap: done ? null : onTap,
       ),
     );
@@ -526,6 +526,7 @@ class CirclePhotos extends ConsumerWidget {
           if (entries.isEmpty)
             const SliverToBoxAdapter(
               child: CircleEmpty(
+                icon: LucideIcons.image,
                 title: 'No photos loaded yet',
                 message: 'Photos shared with you appear here.',
               ),

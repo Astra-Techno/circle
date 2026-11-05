@@ -52,6 +52,7 @@ class _ServerReportsState extends ConsumerState<ServerReportsScreen> {
     if (group?.roleOf(viewer)?.isAdmin != true) {
       return const ReadingPane(
         child: CircleEmpty(
+          icon: LucideIcons.lock_keyhole,
           title: 'Reports are for admins',
           message:
               'Only current admins of this exact group can review reports.',
@@ -73,6 +74,7 @@ class _ServerReportsState extends ConsumerState<ServerReportsScreen> {
           padding: CircleInsets.form,
           children: [
             CircleEmpty(
+              icon: LucideIcons.wifi_off,
               title: 'Reports couldn’t load',
               message: error is CircleFailure
                   ? error.message
@@ -105,6 +107,7 @@ class _ServerReportsState extends ConsumerState<ServerReportsScreen> {
             if (_busy) const LinearProgressIndicator(),
             if (page.items.isEmpty)
               const CircleEmpty(
+                icon: LucideIcons.info,
                 title: 'Nothing to review',
                 message: 'Reports from members of this group appear here.',
               ),

@@ -1,3 +1,4 @@
+import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../core/form_exit_guard.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -166,6 +167,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     if (_accountId == null) {
       return ReadingPane(
         child: CircleEmpty(
+          icon: LucideIcons.wifi_off,
           title: 'Your profile couldn’t load',
           message: _error ?? 'Please try again.',
           action: FilledButton(

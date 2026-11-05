@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -71,6 +72,7 @@ class _ContactInvitationEntryState extends ConsumerState<ContactInvitationEntry>
     final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
     return CircleSurfaceCard(
+      padding: EdgeInsets.zero,
       child: InkWell(
         borderRadius: BorderRadius.circular(CircleRadius.card),
         onTap: () async {
@@ -144,7 +146,7 @@ class _ContactInvitationEntryState extends ConsumerState<ContactInvitationEntry>
                   ],
                 ),
               ),
-              Icon(LucideIcons.chevron_right, color: accents.caption),
+              Icon(CircleIcons.chevronRight, color: accents.caption),
             ],
           ),
         ),

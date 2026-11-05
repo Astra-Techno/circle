@@ -1,3 +1,4 @@
+import 'package:mobile/app/circle_experience.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,7 +29,7 @@ void main() {
     (tester) async {
       await openCircle(tester, entered: false);
       expect(find.text('Explore fictional circles'), findsNothing);
-      expect(find.text('Get Started'), findsOneWidget);
+      expect(find.text('Create account'), findsOneWidget);
       await openCircle(tester);
       // Home opens with the composer and feed (unified redesign).
       expect(find.text('Circle'), findsOneWidget);
@@ -227,7 +228,7 @@ void main() {
     (tester) async {
       final container = await openCircle(tester, entered: false);
       await go(tester, container, '/groups/g/private-plans');
-      expect(find.text('Good to have\nyou back.'), findsOneWidget);
+      expect(find.text('Good to have you back.'), findsOneWidget);
       expect(
         currentUri(container).queryParameters['next'],
         '/groups/g/private-plans',
@@ -581,6 +582,11 @@ void main() {
       ]) {
         await openTab(tester, tab);
         expect(tester.takeException(), isNull, reason: tab);
+        if (tab == 'Chat' || tab == 'Events') {
+          expect(container.read(circleRouterProvider).canPop(), isTrue);
+          container.read(circleRouterProvider).pop();
+          await tester.pumpAndSettle();
+        }
       }
       await go(tester, container, '/groups/g/family');
       await openTab(tester, 'Members');

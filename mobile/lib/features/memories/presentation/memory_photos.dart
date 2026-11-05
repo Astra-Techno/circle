@@ -146,6 +146,7 @@ class MemoryPhotoViewer extends StatelessWidget {
           child: Padding(
             padding: CircleInsets.form,
             child: CircleEmpty(
+              icon: LucideIcons.lock_keyhole,
               title: 'Photos unavailable',
               message: 'These photos are not shared with your current groups.',
             ),
@@ -206,6 +207,7 @@ class _PhotoPagerState extends State<PhotoPager> {
         child: Padding(
           padding: CircleInsets.form,
           child: CircleEmpty(
+            icon: LucideIcons.image,
             title: 'No photos here',
             message: 'There\u2019s nothing left to show.',
           ),
@@ -233,7 +235,7 @@ class _PhotoPagerState extends State<PhotoPager> {
                     tooltip: 'Close',
                     onPressed: () => Navigator.of(context).maybePop(),
                     icon: const Icon(
-                      LucideIcons.x,
+                      CircleIcons.close,
                       color: CircleOverlay.foreground,
                     ),
                   ),
@@ -300,7 +302,7 @@ class _PhotoPagerState extends State<PhotoPager> {
                             )
                           : null,
                       icon: const Icon(
-                        LucideIcons.chevron_right,
+                        CircleIcons.chevronRight,
                         color: CircleOverlay.foreground,
                       ),
                     ),

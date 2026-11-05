@@ -111,6 +111,7 @@ class _BlockingState extends ConsumerState<ServerBlockingScreen> {
           label: 'Loading blocked people',
         ),
         error: (_, _) => CircleEmpty(
+          icon: LucideIcons.wifi_off,
           title: 'Blocked people couldn’t load',
           message: 'Check your connection and try again.',
           action: OutlinedButton(
@@ -138,6 +139,7 @@ class _BlockingState extends ConsumerState<ServerBlockingScreen> {
             if (_busy) const LinearProgressIndicator(),
             if (page.items.isEmpty)
               const CircleEmpty(
+                icon: LucideIcons.user_round,
                 title: 'No blocked people here',
                 message:
                     'Use a member’s profile or an invitation to block someone.',

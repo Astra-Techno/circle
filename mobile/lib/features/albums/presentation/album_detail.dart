@@ -21,6 +21,7 @@ class _AlbumUnavailable extends StatelessWidget {
       padding: CircleInsets.form,
       children: [
         CircleEmpty(
+          icon: LucideIcons.lock_keyhole,
           title: 'This album is unavailable',
           message:
               message ??
@@ -192,6 +193,7 @@ class AlbumDetailScreen extends ConsumerWidget {
           const SizedBox(height: Space.lg),
           if (album.photos.isEmpty)
             const CircleEmpty(
+              icon: LucideIcons.info,
               title: 'No photos yet',
               message:
                   'Add the first few. Everyone in this group can add more.',

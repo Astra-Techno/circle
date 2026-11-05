@@ -35,15 +35,13 @@ class AccessWelcome extends StatelessWidget {
 
         // ── Headline ──
         Text(
-          'Your People.\nYour Moments.\nYour Circle.',
+          'Your people.\nShared memories.',
           textAlign: TextAlign.center,
           style: theme.textTheme.headlineLarge,
         ),
         const SizedBox(height: Space.md),
         Text(
-          'A private place to stay close, share memories, and '
-          'celebrate life together without algorithms, ads, or '
-          'public noise.',
+          'Share memories, chat and plan events with your private circles.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge?.copyWith(color: muted),
         ),
@@ -63,7 +61,7 @@ class AccessWelcome extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Flexible(
-                  child: Text('Get Started', textAlign: TextAlign.center),
+                  child: Text('Create account', textAlign: TextAlign.center),
                 ),
                 SizedBox(width: Space.sm),
                 Icon(LucideIcons.arrow_right),
@@ -615,14 +613,15 @@ class _AccessFormState extends ConsumerState<AccessForm> {
   @override
   Widget build(BuildContext context) => _AccessPage(
     back: true,
+    title: widget.registering ? 'Sign up' : 'Sign in',
     children: [
       const _Brand(),
       const SizedBox(height: Space.lg),
       Text(
         widget.registering
-            ? 'Make room for\nyour people.'
-            : 'Good to have\nyou back.',
-        style: Theme.of(context).textTheme.headlineLarge,
+            ? 'Your circle starts here.'
+            : 'Good to have you back.',
+        style: Theme.of(context).textTheme.titleLarge,
       ),
       const SizedBox(height: Space.md),
       Text(
@@ -631,13 +630,13 @@ class _AccessFormState extends ConsumerState<AccessForm> {
             : 'Log in with your mobile number and password. Your circles stay private.',
         style: Theme.of(context).textTheme.bodyLarge,
       ),
-      const SizedBox(height: Space.section),
+      const SizedBox(height: Space.md),
       _PreviewNote(connectedTo: widget.connectedTo),
       if (widget.notice != null) ...[
         const SizedBox(height: Space.md),
         CircleNote(widget.notice!),
       ],
-      const SizedBox(height: Space.section),
+      const SizedBox(height: Space.md),
       AutofillGroup(
         child: Form(
           key: _form,
@@ -829,9 +828,14 @@ class _AccessFormState extends ConsumerState<AccessForm> {
 }
 
 class _AccessPage extends StatelessWidget {
-  const _AccessPage({required this.children, this.back = false});
+  const _AccessPage({
+    required this.children,
+    this.back = false,
+    this.title = '',
+  });
   final List<Widget> children;
   final bool back;
+  final String title;
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: back
@@ -840,7 +844,7 @@ class _AccessPage extends StatelessWidget {
             leading: CircleHeaderAction(
               child: BackButton(onPressed: () => context.go('/')),
             ),
-            title: const Text('Account'),
+            title: Text(title),
           )
         : null,
     body: SafeArea(

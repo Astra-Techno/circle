@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -204,7 +205,7 @@ class _MemberTile extends ConsumerWidget {
         trailing: actions.any
             ? IconButton(
                 tooltip: 'Manage $name',
-                icon: const Icon(LucideIcons.ellipsis),
+                icon: const Icon(CircleIcons.more),
                 onPressed: () => _manage(context, ref, name, actions),
               )
             : null,

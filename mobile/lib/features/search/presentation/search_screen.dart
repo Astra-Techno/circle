@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import '../../groups/presentation/group_photos.dart';
 import '../../profile/presentation/person_avatar.dart';
 import 'dart:async';
@@ -71,27 +72,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       child: ListView(
         padding: CircleInsets.form,
         children: [
-          TextField(
+          CircleSearchField(
             key: const ValueKey('search-field'),
             controller: _field,
+            label: 'Search your circles',
             autofocus: true,
-            textInputAction: TextInputAction.search,
             onChanged: _changed,
             onSubmitted: (value) {
               _set(value);
               ref.read(recentSearchesProvider.notifier).remember(value);
             },
-            decoration: InputDecoration(
-              hintText: 'Search your circles',
-              prefixIcon: const Icon(LucideIcons.search),
-              suffixIcon: _query.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: 'Clear search',
-                      icon: const Icon(LucideIcons.x),
-                      onPressed: () => _set(''),
-                    ),
-            ),
           ),
           const SizedBox(height: Space.sm),
           const CircleNote(
@@ -127,6 +117,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ],
           ] else if (corpus.hasError || workspaceFailed)
             CircleEmpty(
+              icon: LucideIcons.wifi_off,
               title: 'Groups and people couldn’t load',
               message:
                   'Your search is kept. Retry this section when connected.',
@@ -142,6 +133,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const CircleSkeleton(count: 3, label: 'Searching')
           else if (results.isEmpty && !server)
             CircleEmpty(
+              icon: LucideIcons.info,
               title: 'No results',
               message:
                   'Nothing in your circles matches “${_query.trim()}”. Search '
@@ -159,6 +151,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ScopedMemoryList(
                 query: MemoryQuery(text: _serverQuery),
                 empty: const CircleEmpty(
+                  icon: LucideIcons.info,
                   title: 'No matching Memories',
                   message: 'Try another word from the Memory or its place.',
                 ),
@@ -281,6 +274,6 @@ class SearchButton extends StatelessWidget {
   Widget build(BuildContext context) => IconButton(
     tooltip: 'Search',
     onPressed: () => context.push('/search'),
-    icon: const Icon(LucideIcons.search),
+    icon: const Icon(CircleIcons.search),
   );
 }

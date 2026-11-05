@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/local_settings.dart';
@@ -261,6 +262,7 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
       if (workspace.groups.isEmpty) {
         return ReadingPane(
           child: CircleEmpty(
+            icon: LucideIcons.image,
             title: 'Choose your people first',
             message: 'Create a group before sharing a Memory.',
             action: FilledButton(
@@ -416,7 +418,7 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
               ),
             ),
           _ActionRow(
-            icon: LucideIcons.ellipsis,
+            icon: CircleIcons.more,
             label: 'More options',
             onTap: () => _showMoreOptions(context),
           ),
@@ -830,7 +832,7 @@ class _CompactPhotoRow extends StatelessWidget {
                             backgroundColor: theme.colorScheme.surface
                                 .withValues(alpha: 0.8),
                           ),
-                          icon: const Icon(LucideIcons.x),
+                          icon: const Icon(CircleIcons.close),
                         ),
                       ),
                     ),
@@ -852,16 +854,32 @@ class _CompactPhotoRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(CircleRadius.card),
                   onTap: onAdd,
                   child: Container(
-                    width: _thumbSize,
+                    width: CircleFormMetrics.photoActionWidth(context),
                     height: _thumbSize,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(CircleRadius.card),
                       border: Border.all(color: accents.hairline),
                     ),
-                    child: Icon(
-                      LucideIcons.plus,
-                      size: Space.hero,
-                      color: theme.colorScheme.primary,
+                    child: Padding(
+                      padding: const EdgeInsets.all(Space.sm),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.image_plus,
+                            size: Space.section,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(height: Space.xs),
+                          Text(
+                            'Add photos',
+                            maxLines: 1,
+                            softWrap: false,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.labelMedium,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -897,7 +915,7 @@ class _ActionRow extends StatelessWidget {
                 const SizedBox(width: Space.md),
                 Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
                 Icon(
-                  LucideIcons.chevron_right,
+                  CircleIcons.chevronRight,
                   size: 20,
                   color: accents.caption,
                 ),
@@ -987,7 +1005,7 @@ class _UploadTile extends StatelessWidget {
               style: IconButton.styleFrom(
                 backgroundColor: colors.surface.withValues(alpha: 0.8),
               ),
-              icon: const Icon(LucideIcons.x),
+              icon: const Icon(CircleIcons.close),
             ),
           ),
         ],

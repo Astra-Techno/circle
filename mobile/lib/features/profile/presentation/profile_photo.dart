@@ -32,13 +32,7 @@ class ProfilePhotoSurface extends ConsumerWidget {
           )
         : DecoratedBox(
             decoration: CircleDepth.profilePanel(context),
-            child: Center(
-              child: Icon(
-                LucideIcons.mountain,
-                size: Space.large,
-                color: CircleAccents.of(context).calmText,
-              ),
-            ),
+            child: const SizedBox.expand(),
           );
     final revision = version;
     Widget content = fallback;
@@ -118,9 +112,7 @@ class SharedProfilePhotoSurface extends ConsumerWidget {
           )
         : DecoratedBox(
             decoration: CircleDepth.profilePanel(context),
-            child: const Center(
-              child: Icon(LucideIcons.mountain, size: Space.large),
-            ),
+            child: const SizedBox.expand(),
           );
     final query = (person: person, kind: kind);
     final content = ref

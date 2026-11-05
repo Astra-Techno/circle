@@ -46,12 +46,14 @@ class AlbumsTab extends ConsumerWidget {
           )
         else if (albums == null)
           CircleEmpty(
+            icon: LucideIcons.lock_keyhole,
             title: 'Albums unavailable',
             message:
                 load.value?.unavailable ?? 'Albums couldn’t load. Try again.',
           )
         else if (albums.isEmpty)
           CircleEmpty(
+            icon: LucideIcons.info,
             title: 'A home for your shared photos',
             message:
                 'Start an album for ${group.name}. Only members of this exact group will see it.',

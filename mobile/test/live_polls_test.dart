@@ -150,7 +150,12 @@ void main() {
       expect(find.text('Park'), findsOneWidget);
       c.read(circleRouterProvider).go('/polls/p/81');
       await settle(tester);
-      await tapPoll(tester, find.text('Close poll'));
+      await tester.tap(find.byTooltip('Poll options'));
+      await settle(tester);
+      await tester.tap(find.text('Close poll'));
+      await settle(tester);
+      await tester.tap(find.text('Close poll').last);
+      await settle(tester);
       expect(f.closed, isTrue);
       expect(find.text('Submit vote'), findsNothing);
       expect(tester.takeException(), isNull);
@@ -179,7 +184,12 @@ void main() {
       await tapPoll(tester, find.text('Park'));
       await tapPoll(tester, find.text('Submit vote'));
       expect(find.textContaining('voter(s)'), findsNothing);
-      await tapPoll(tester, find.text('Close poll'));
+      await tester.tap(find.byTooltip('Poll options'));
+      await settle(tester);
+      await tester.tap(find.text('Close poll'));
+      await settle(tester);
+      await tester.tap(find.text('Close poll').last);
+      await settle(tester);
       expect(find.text('1 voter(s)'), findsOneWidget);
       expect(find.text('See who voted'), findsNothing);
       expect(tester.takeException(), isNull);

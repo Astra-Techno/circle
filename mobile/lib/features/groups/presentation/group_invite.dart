@@ -53,6 +53,7 @@ class GroupInviteScreen extends ConsumerWidget {
             padding: CircleInsets.form,
             children: [
               CircleEmpty(
+                icon: LucideIcons.users,
                 title: 'Inviting is limited here',
                 message: rule.reason!,
               ),

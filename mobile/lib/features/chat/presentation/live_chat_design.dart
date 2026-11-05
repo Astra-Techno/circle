@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -152,72 +153,80 @@ class ChatInboxRow extends StatelessWidget {
         ),
       ],
     );
-    return CircleSurfaceCard(
-      margin: const EdgeInsets.symmetric(
-        horizontal: Space.md,
-        vertical: Space.xs,
-      ),
-      padding: const EdgeInsets.all(Space.sm + Space.xs),
-      onTap: onTap,
-      child: Row(
-        children: [
-          ChatIdentity(
-            name: name,
-            group: group,
-            groupId: groupId,
-            person: person,
-            size: CircleAvatarSize.medium,
+    return Material(
+      color: theme.colorScheme.surface,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.md,
+            vertical: Space.sm + Space.xs,
           ),
-          const SizedBox(width: Space.sm + Space.xs),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: stacked ? null : 2,
-                  overflow: stacked
-                      ? TextOverflow.visible
-                      : TextOverflow.ellipsis,
-                  style: CircleTextStyles.homeAuthor(
-                    theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: Space.xs),
-                Row(
+          child: Row(
+            children: [
+              ChatIdentity(
+                name: name,
+                group: group,
+                groupId: groupId,
+                person: person,
+                size: CircleAvatarSize.medium,
+              ),
+              const SizedBox(width: Space.sm + Space.xs),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (previewIcon != null) ...[
-                      Icon(previewIcon, size: Space.md, color: accents.caption),
-                      const SizedBox(width: Space.xs),
-                    ],
-                    Expanded(
-                      child: Text(
-                        preview,
-                        maxLines: stacked ? null : 2,
-                        overflow: stacked
-                            ? TextOverflow.visible
-                            : TextOverflow.ellipsis,
-                        style: CircleTextStyles.metadata(
-                          highlight
-                              ? theme.colorScheme.primary
-                              : accents.caption,
-                        ),
+                    Text(
+                      name,
+                      maxLines: stacked ? null : 2,
+                      overflow: stacked
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
+                      style: CircleTextStyles.homeAuthor(
+                        theme.colorScheme.onSurface,
                       ),
                     ),
+                    const SizedBox(height: Space.xs),
+                    Row(
+                      children: [
+                        if (previewIcon != null) ...[
+                          Icon(
+                            previewIcon,
+                            size: Space.md,
+                            color: accents.caption,
+                          ),
+                          const SizedBox(width: Space.xs),
+                        ],
+                        Expanded(
+                          child: Text(
+                            preview,
+                            maxLines: stacked ? null : 2,
+                            overflow: stacked
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
+                            style: CircleTextStyles.metadata(
+                              highlight
+                                  ? theme.colorScheme.primary
+                                  : accents.caption,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (stacked) ...[const SizedBox(height: Space.sm), status],
                   ],
                 ),
-                if (stacked) ...[const SizedBox(height: Space.sm), status],
+              ),
+              if (!stacked) ...[
+                const SizedBox(width: Space.sm),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: Space.large * 2),
+                  child: status,
+                ),
               ],
-            ),
+            ],
           ),
-          if (!stacked) ...[
-            const SizedBox(width: Space.sm),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: Space.large * 2),
-              child: status,
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -290,7 +299,7 @@ class ChatTopBar extends StatelessWidget {
                 child: IconButton(
                   tooltip: 'Conversation options',
                   onPressed: onOptions,
-                  icon: const Icon(LucideIcons.ellipsis),
+                  icon: const Icon(CircleIcons.more),
                 ),
               ),
             ],

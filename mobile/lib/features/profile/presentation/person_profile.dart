@@ -1,3 +1,4 @@
+import '../../../core/design/circle_icons.dart';
 import '../application/profile_providers.dart';
 import '../../groups/presentation/group_photos.dart';
 import 'profile_photo.dart';
@@ -41,6 +42,7 @@ class PersonProfileScreen extends ConsumerWidget {
             padding: CircleInsets.form,
             children: [
               CircleEmpty(
+                icon: LucideIcons.user_round,
                 title: 'This is you',
                 message: 'Your own settings live in You.',
                 action: FilledButton(
@@ -57,6 +59,7 @@ class PersonProfileScreen extends ConsumerWidget {
           child: Padding(
             padding: CircleInsets.form,
             child: CircleEmpty(
+              icon: LucideIcons.lock_keyhole,
               title: 'This profile isn’t available',
               message: 'You can only see people who share a group with you.',
             ),
@@ -184,7 +187,7 @@ class PersonProfileScreen extends ConsumerWidget {
                     CircleRole.admin => const Text('Admin'),
                     _ => null,
                   },
-                  trailing: const Icon(LucideIcons.chevron_right),
+                  trailing: const Icon(CircleIcons.chevronRight),
                   onTap: () => context.push('/groups/g/${group.id}'),
                 ),
               ),
