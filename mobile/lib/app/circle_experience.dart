@@ -440,6 +440,13 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                     path: 'c/:id',
                     builder: (_, state) => _idRoute(state, _chatsPane),
                   ),
+                  GoRoute(
+                    path: 'g/:id',
+                    builder: (_, state) => _idRoute(
+                      state,
+                      (id) => _chatsPane('g-$id'),
+                    ),
+                  ),
                 ],
               ),
             ],

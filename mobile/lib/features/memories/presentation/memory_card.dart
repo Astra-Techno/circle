@@ -341,9 +341,9 @@ class CircleMemoryCard extends ConsumerWidget {
                   ),
                   Expanded(
                     child: _ActionButton(
-                      icon: LucideIcons.share,
-                      label: 'Share',
-                      tooltip: 'Share $about',
+                      icon: LucideIcons.bookmark,
+                      label: 'Save',
+                      tooltip: 'Save $about',
                       onTap: () =>
                           runCalmly(context, () => controller.save(memory.id)),
                     ),

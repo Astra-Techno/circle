@@ -143,7 +143,7 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
               child: Text(choice.value, maxLines: 1, softWrap: false),
             );
             return chosen == choice.key
-                ? FilledButton(onPressed: () {}, child: label)
+                ? FilledButton(onPressed: null, child: label)
                 : OutlinedButton(
                     onPressed: _busy
                         ? null
