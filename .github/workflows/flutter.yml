@@ -21,6 +21,8 @@ jobs:
           flutter-version: '3.44.8'
           channel: stable
           cache: true
+      - name: Verify bundled font identities
+        run: python -m unittest discover -s ../scripts/fonts -p "test_*.py"
       - run: flutter pub get --enforce-lockfile
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze

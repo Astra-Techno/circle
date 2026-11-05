@@ -1,5 +1,31 @@
 # CIRCLE design system
 
+## Social 2.1 — native typography correction, 5 November 2026
+
+Owner's installed-app screenshot rejected Social2.0 typography as too heavy.
+Use Flutter's native `CupertinoSystemText` alias on iOS/macOS, with regular400
+reading text and medium500 controls. Android/web keep bundled Inter, now exported
+with distinct PostScript identities (`Inter-Regular`, `Inter-Medium`,
+`Inter-SemiBold`). The previous export gave all three files the same internal
+`Inter-Regular` identity; this is a CoreText collision risk, not something the
+Windows screenshots or presence-only IPA checks could rule out.
+
+Keep body text16/24; page titles21/28, names15/20 semibold, metadata12/16,
+control labels13/18 medium and buttons15/20 medium. Native accessibility bold
+text/scaling preferences remain respected. Header artwork28, outline icons20,
+quiet action paint36 within unchanged48px hit targets. Photo mosaic corners4;
+card corners12. Failed previews use compact recovery affordances with the full
+accessible failure description, not a sentence repeated across each tile.
+
+A signed-image403 triggers one authenticated link renewal per resource path;
+a second403 or other failures require explicit retry. Missing files/network
+failures are not claimed fixed without live evidence. Preserve access checks,
+no off-screen fetches, decode budgets and the normal footer clearance.
+
+Current source1.0.33+38/interface Social2.1. Font identity checks run in Windows
+CI and both iOS release paths. [Correction record](native-typography-2026-11-05.md).
+
+
 ## Social 2.0 — consistent social UI, 5 November 2026
 
 Owner approved the all-page audit and requested one professional font family.

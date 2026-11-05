@@ -42,11 +42,12 @@ jobs:
         run: |
           xcodebuild -version
           python3 -m unittest discover -s ../scripts/ios -p 'test_*.py'
+          python3 -m unittest discover -s ../scripts/fonts -p 'test_*.py'
           flutter pub get --enforce-lockfile
       - name: Analyze and check platform-independent push guards
         run: |
           flutter analyze
-          flutter test test/design_system_guard_test.dart test/push_session_test.dart
+          flutter test test/design_system_guard_test.dart test/push_session_test.dart test/native_typography_photo_test.dart
       - name: Compile release for iPhone (not installable)
         run: |
           # Xcode release builds require a team even with --no-codesign.
@@ -108,10 +109,11 @@ jobs:
         run: |
           xcodebuild -version
           python3 -m unittest discover -s ../scripts/ios -p 'test_*.py'
+          python3 -m unittest discover -s ../scripts/fonts -p 'test_*.py'
           flutter pub get --enforce-lockfile
           dart format --output=none --set-exit-if-changed lib test
           flutter analyze
-          flutter test test/design_system_guard_test.dart test/push_session_test.dart
+          flutter test test/design_system_guard_test.dart test/push_session_test.dart test/native_typography_photo_test.dart
       - name: Build signed App Store IPA
         run: |
           # Dedicated iOS sequence, with an increasing suffix for reruns.

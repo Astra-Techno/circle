@@ -54,8 +54,8 @@ abstract final class CircleLayout {
     return height > homeHeaderHeight ? height : homeHeaderHeight;
   }
 
-  static const homeLogoSize = 32.0;
-  static const headerActionPaintSize = 40.0;
+  static const homeLogoSize = 28.0;
+  static const headerActionPaintSize = 36.0;
   static const homeActionMinHeight = 48.0;
   // Minimum interactive row, not an extra block above the device inset.
   static const homeDockHeight = 48.0;
@@ -295,8 +295,6 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
       other is CircleAccents && t >= 0.5 ? other : this;
 }
 
-const _font = CircleTextStyles.fontFamily;
-
 /// Theme-based and explicitly styled screens resolve to exactly the same roles.
 TextTheme _textTheme({required Color title, required Color body}) => TextTheme(
   displaySmall: CircleTextStyles.brand(title),
@@ -360,7 +358,7 @@ ThemeData circleTheme(Brightness brightness) {
         side: side ?? BorderSide.none,
       );
   return ThemeData(
-    fontFamily: _font,
+    fontFamily: CircleTextStyles.fontFamily,
     useMaterial3: true,
     colorScheme: colors,
     textTheme: text,
@@ -719,7 +717,7 @@ abstract final class CircleRadius {
   static const button = 10.0;
 
   /// Photo mosaics and image tiles.
-  static const photo = 12.0;
+  static const photo = 4.0;
 
   /// Tiles, inner panels, cards, menus and floating buttons.
   static const tile = 12.0, inner = 12.0, card = 12.0;

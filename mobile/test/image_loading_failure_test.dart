@@ -65,7 +65,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(media.calls, 1);
-      expect(find.text('Photo unavailable. Tap to retry'), findsOneWidget);
+      expect(find.text('Retry photo'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -96,7 +96,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
       expect(media.calls, 1);
-      final retry = find.text('Photo unavailable. Tap to retry');
+      final retry = find.text('Retry photo');
       expect(retry, findsOneWidget);
       await tester.tap(retry);
       for (var i = 0; i < 6; i++) {

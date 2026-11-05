@@ -542,8 +542,10 @@ class _LoadedMemoryPhotoTile extends ConsumerWidget {
             onTap: retry,
             more: null,
             large: large,
-            child: const CirclePhotoPlaceholder(
-              message: 'Photo unavailable. Tap to retry',
+            child: CirclePhotoPlaceholder(
+              message: 'Retry photo',
+              compact: !large,
+              retryable: true,
             ),
           ),
         );

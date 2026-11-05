@@ -44,6 +44,7 @@ class CircleSignedImage extends StatefulWidget {
 class _CircleSignedImageState extends State<CircleSignedImage> {
   bool _failed = false;
   int _attempt = 0;
+  String? _renewedPath;
   @override
   void didUpdateWidget(covariant CircleSignedImage oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -82,16 +83,30 @@ class _CircleSignedImageState extends State<CircleSignedImage> {
       loadingBuilder: (context, child, progress) => progress == null
           ? child
           : const CirclePhotoPlaceholder(loading: true),
-      errorBuilder: (context, _, _) {
+      errorBuilder: (context, error, _) {
+        // A mounted tile can outlive its five-minute signed link. Renew once
+        // through the authenticated repository; it rechecks current access.
+        // Keep the same path marked after renewal to prevent a 403 retry loop.
+        if (error is NetworkImageLoadException &&
+            error.statusCode == 403 &&
+            widget.onRetry != null &&
+            _renewedPath != widget.url.uri.path) {
+          final failedUrl = widget.url;
+          _renewedPath = failedUrl.uri.path;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && widget.url == failedUrl) widget.onRetry?.call();
+          });
+          return const CirclePhotoPlaceholder(loading: true);
+        }
         if (!_failed) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && !_failed) setState(() => _failed = true);
           });
         }
         return CirclePhotoPlaceholder(
-          message: widget.onRetry == null
-              ? 'Photo unavailable'
-              : 'Photo unavailable. Tap to retry',
+          message: widget.onRetry == null ? 'Photo unavailable' : 'Retry photo',
+          compact: !widget.large,
+          retryable: widget.onRetry != null,
         );
       },
     ),
@@ -169,9 +184,16 @@ class CirclePhotoFrame extends StatelessWidget {
 
 /// Shown while a photo loads, or instead of one that can't be shown.
 class CirclePhotoPlaceholder extends StatelessWidget {
-  const CirclePhotoPlaceholder({super.key, this.loading = false, this.message});
+  const CirclePhotoPlaceholder({
+    super.key,
+    this.loading = false,
+    this.message,
+    this.compact = false,
+    this.retryable = false,
+  });
   final bool loading;
   final String? message;
+  final bool compact, retryable;
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -186,27 +208,33 @@ class CirclePhotoPlaceholder extends StatelessWidget {
                   color: colors.secondary,
                 ),
               )
-            : FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Padding(
-                  padding: const EdgeInsets.all(Space.sm),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.image_off,
-                        size: Space.lg,
-                        color: colors.onSurfaceVariant,
-                      ),
-                      if (message != null) ...[
-                        const SizedBox(height: Space.xs),
-                        Text(
-                          message!,
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(color: colors.onSurfaceVariant),
+            : LayoutBuilder(
+                builder: (context, constraints) => FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Padding(
+                    padding: const EdgeInsets.all(Space.sm),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          retryable
+                              ? LucideIcons.refresh_cw
+                              : LucideIcons.image_off,
+                          size: Space.lg,
+                          color: colors.onSurfaceVariant,
                         ),
+                        if (message != null &&
+                            (!compact ||
+                                constraints.maxWidth >= Space.large * 4)) ...[
+                          const SizedBox(height: Space.xs),
+                          Text(
+                            message!,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colors.onSurfaceVariant),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
