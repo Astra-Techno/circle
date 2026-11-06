@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
+import '../../../core/api/api_providers.dart';
 import '../../../core/design.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../../core/design/circle_icons.dart';
@@ -42,8 +43,7 @@ class CircleMemoryCard extends ConsumerWidget {
     final workspace = ref.watch(circleWorkspaceProvider).value;
     final hidden = workspace?.isHidden(ReportKind.memory, memory.id) ?? false;
     final reported = workspace?.reported(ReportKind.memory, memory.id) ?? false;
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    final colors = Theme.of(context).colorScheme;
     final about = 'Memory from ${memory.author} in ${group.name}';
     final features = ref.watch(circleFeaturesProvider);
     final comments = memory.commentTotal;
@@ -51,15 +51,26 @@ class CircleMemoryCard extends ConsumerWidget {
     final reactions = memory.reactions;
     final accents = CircleAccents.of(context);
     final caption = detail
-        ? theme.textTheme.bodySmall?.copyWith(color: accents.caption)
+        ? Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: accents.caption)
         : CircleTextStyles.metadata(accents.caption);
     final taken = memory.takenLabel;
 
     Future<void> react(String emoji) =>
         runCalmly(context, () => controller.react(memory.id, emoji));
     Future<void> pickReaction() async {
+      final api = ref.read(apiClientProvider);
+      final session = api?.sessionRevision;
+      final repository = ref.read(circleRepositoryProvider);
       final emoji = await showReactionPicker(context, reactions);
-      if (emoji != null && context.mounted) await react(emoji);
+      if (!context.mounted ||
+          !identical(ref.read(apiClientProvider), api) ||
+          api?.sessionRevision != session ||
+          !identical(ref.read(circleRepositoryProvider), repository)) {
+        return;
+      }
+      if (emoji != null) await react(emoji);
     }
 
     Future<void> onMenu(_MemoryAction action) async {
@@ -113,29 +124,27 @@ class CircleMemoryCard extends ConsumerWidget {
     final hasPhotos = memory.photos.isNotEmpty;
     final hasText = memory.text.isNotEmpty;
     final text = Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: detail ? Space.md : Space.md - Space.xs,
-      ),
-      child: Text(
-        memory.text,
-        style: detail
-            ? CircleTextStyles.body(colors.onSurface)
-            : CircleTextStyles.homeBody(colors.onSurface),
+      padding: const EdgeInsets.symmetric(horizontal: Space.md),
+      child: _MemoryCaption(
+        key: ValueKey('caption-${memory.id}'),
+        text: memory.text,
+        expanded: detail,
       ),
     );
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: detail ? 0 : Space.sm,
-        vertical: detail ? 0 : Space.xs,
-      ),
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: detail ? Space.sm : Space.xs),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          border: detail ? null : Border.all(color: accents.hairline),
-          borderRadius: BorderRadius.circular(CircleRadius.card),
+    return DecoratedBox(
+      key: ValueKey('memory-surface-${memory.id}'),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: accents.hairline,
+            width: CircleMemoryLayout.dividerThickness,
+          ),
         ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: Space.xs),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -157,11 +166,11 @@ class CircleMemoryCard extends ConsumerWidget {
                 ),
               ),
             Padding(
-              padding: EdgeInsetsDirectional.fromSTEB(
-                detail ? Space.md : Space.md - Space.xs,
-                0,
+              padding: const EdgeInsetsDirectional.fromSTEB(
+                Space.md,
+                Space.xs,
                 Space.sm,
-                detail ? Space.sm : 0,
+                Space.xs,
               ),
               child: Row(
                 children: [
@@ -178,20 +187,30 @@ class CircleMemoryCard extends ConsumerWidget {
                       children: [
                         Text(
                           memory.author,
-                          style: detail
-                              ? theme.textTheme.titleMedium
-                              : CircleTextStyles.homeAuthor(colors.onSurface),
+                          style: CircleTextStyles.homeAuthor(colors.onSurface),
                         ),
-                        Text(
-                          [
-                            audience ?? group.name,
-                            memoryTimeLabel(
-                              memory.createdAt,
-                              ref.watch(circleClockProvider)(),
+                        Row(
+                          children: [
+                            Icon(
+                              LucideIcons.lock_keyhole,
+                              size: CircleSizes.iconInline,
+                              color: accents.caption,
                             ),
-                            if (memory.edited) 'Edited',
-                          ].join(' · '),
-                          style: caption,
+                            const SizedBox(width: Space.xs),
+                            Expanded(
+                              child: Text(
+                                [
+                                  audience ?? group.name,
+                                  memoryTimeLabel(
+                                    memory.createdAt,
+                                    ref.watch(circleClockProvider)(),
+                                  ),
+                                  if (memory.edited) 'Edited',
+                                ].join(' · '),
+                                style: caption,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -233,21 +252,8 @@ class CircleMemoryCard extends ConsumerWidget {
                 ],
               ),
             ),
-            if (hasText && hasPhotos) ...[
-              text,
-              SizedBox(height: detail ? Space.sm : Space.xs),
-            ],
-            if (hasPhotos)
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: detail ? Space.md : Space.md - Space.xs,
-                ),
-                child: MemoryPhotoGrid(
-                  memory: memory,
-                  mosaicAspect: detail ? null : CircleLayout.homeMosaicAspect,
-                ),
-              ),
-            if (hasText && !hasPhotos) text,
+            if (hasText) ...[text, const SizedBox(height: Space.sm)],
+            if (hasPhotos) MemoryPhotoGrid(memory: memory),
             if (!hasText && memory.poll != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Space.md),
@@ -276,102 +282,76 @@ class CircleMemoryCard extends ConsumerWidget {
                   ],
                 ),
               ),
-            if (reactions.total > 0 || comments > 0)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  Space.section,
-                  Space.sm,
-                  Space.section,
-                  0,
-                ),
-                child: Row(
-                  children: [
-                    if (reactions.total > 0)
-                      Expanded(
-                        child: Tooltip(
-                          message: 'Show reactions for $about',
-                          child: InkWell(
-                            onTap: () =>
-                                showReactionSummary(context, reactions),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minHeight: CircleSizes.minTouchTarget,
-                              ),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: _ReactionSummaryRow(
-                                  reactions: reactions,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (reactions.total == 0) const Spacer(),
-                    if (comments > 0)
-                      Tooltip(
-                        message: 'View $comments comments',
-                        child: InkWell(
-                          onTap: openDetail,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              minHeight: CircleSizes.minTouchTarget,
-                            ),
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: Text('$comments comments', style: caption),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            Divider(
-              height: detail ? Space.md : Space.xs,
-              indent: Space.md,
-              endIndent: Space.md,
-            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Space.sm),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final columns = CircleLayout.memoryActionColumns(
-                    context,
-                    constraints.maxWidth,
-                  );
-                  final actions = [
-                    _ActionButton(
-                      icon: LucideIcons.face_slightly_smiling,
-                      label: 'React',
-                      tooltip: 'Choose a reaction for $about',
-                      onTap: pickReaction,
-                    ),
-                    _ActionButton(
-                      icon: LucideIcons.message_square,
-                      label: 'Comment',
-                      tooltip: 'Comment on $about',
-                      onTap: openDetail,
-                    ),
-                    _ActionButton(
-                      icon: LucideIcons.bookmark,
-                      label: 'Save',
-                      tooltip: 'Save $about',
-                      onTap: () =>
-                          runCalmly(context, () => controller.save(memory.id)),
-                    ),
-                  ];
-                  return Wrap(
-                    alignment: WrapAlignment.center,
-                    children: [
-                      for (final action in actions)
-                        SizedBox(
-                          width: constraints.maxWidth / columns,
-                          child: action,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _ActionButton(
+                          icon: CircleIcons.react,
+                          tooltip: 'Choose a reaction for $about',
+                          selected: reactions.mine != null,
+                          reaction: reactions.mine,
+                          onTap: pickReaction,
                         ),
-                    ],
-                  );
-                },
+                        if (reactions.total > 0)
+                          Tooltip(
+                            message: 'Show reactions for $about',
+                            child: TextButton(
+                              onPressed: () =>
+                                  showReactionSummary(context, reactions),
+                              style: TextButton.styleFrom(
+                                foregroundColor: accents.caption,
+                                minimumSize: const Size(
+                                  CircleSizes.minTouchTarget,
+                                  CircleSizes.minTouchTarget,
+                                ),
+                              ),
+                              child: Text(
+                                CircleMemoryLayout.countLabel(reactions.total),
+                                semanticsLabel: reactions.describe(),
+                              ),
+                            ),
+                          ),
+                        _ActionButton(
+                          icon: CircleIcons.comment,
+                          tooltip: 'Comment on $about',
+                          onTap: openDetail,
+                        ),
+                        if (comments > 0)
+                          Tooltip(
+                            message: 'View $comments comments',
+                            child: TextButton(
+                              onPressed: openDetail,
+                              style: TextButton.styleFrom(
+                                foregroundColor: accents.caption,
+                                minimumSize: const Size(
+                                  CircleSizes.minTouchTarget,
+                                  CircleSizes.minTouchTarget,
+                                ),
+                              ),
+                              child: Text(
+                                CircleMemoryLayout.countLabel(comments),
+                                semanticsLabel: '$comments comments',
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  _ActionButton(
+                    icon: memory.saved
+                        ? CircleIcons.saved
+                        : CircleIcons.bookmark,
+                    selected: memory.saved,
+                    tooltip: '${memory.saved ? 'Unsave' : 'Save'} $about',
+                    onTap: () =>
+                        runCalmly(context, () => controller.save(memory.id)),
+                  ),
+                ],
               ),
             ),
           ],
@@ -381,48 +361,46 @@ class CircleMemoryCard extends ConsumerWidget {
   }
 }
 
-/// Action button with icon + label (React, Comment, Share).
+/// Labeled,48px controls with restrained ink and explicit selected state.
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.icon,
-    required this.label,
     required this.tooltip,
     required this.onTap,
+    this.reaction,
+    this.selected = false,
   });
   final IconData icon;
-  final String label, tooltip;
+  final String? reaction;
+  final String tooltip;
   final VoidCallback onTap;
+  final bool selected;
   @override
   Widget build(BuildContext context) {
-    final accents = CircleAccents.of(context);
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(CircleRadius.button),
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: CircleSizes.minTouchTarget,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Space.sm),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: CircleSizes.iconAction,
-                  color: accents.caption,
-                ),
-                const SizedBox(width: Space.xs),
-                Flexible(
-                  child: Text(
-                    label,
-                    style: CircleTextStyles.label(accents.caption),
-                  ),
-                ),
-              ],
+    final ink = selected
+        ? Theme.of(context).colorScheme.primary
+        : CircleAccents.of(context).caption;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(CircleRadius.button),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: CircleSizes.minTouchTarget,
+              minWidth: CircleSizes.minTouchTarget,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Space.sm),
+              child: reaction == null
+                  ? Icon(icon, size: CircleMemoryLayout.actionIcon, color: ink)
+                  : Text(
+                      reaction!,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
             ),
           ),
         ),
@@ -431,45 +409,59 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-/// Compact inline reaction summary: top emoji icons + total count.
-class _ReactionSummaryRow extends StatelessWidget {
-  const _ReactionSummaryRow({required this.reactions});
-  final MemoryReactions reactions;
+/// Long captions expand in place without leaving the timeline or clipping
+/// accessible text. Full Memory detail always starts expanded.
+class _MemoryCaption extends StatefulWidget {
+  const _MemoryCaption({super.key, required this.text, required this.expanded});
+  final String text;
+  final bool expanded;
   @override
-  Widget build(BuildContext context) {
-    final caption = Theme.of(
-      context,
-    ).textTheme.bodySmall?.copyWith(color: CircleAccents.of(context).caption);
-    // Show up to 3 distinct emoji, sorted by count descending.
-    final sorted = reactions.others.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final topEmoji = sorted.take(3).map((e) => e.key).toList();
-    if (reactions.mine != null && !topEmoji.contains(reactions.mine)) {
-      if (topEmoji.length >= 3) topEmoji.removeLast();
-      topEmoji.insert(0, reactions.mine!);
-    }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final emoji in topEmoji)
-          Padding(
-            padding: const EdgeInsets.only(right: Space.xs),
-            child: Text(emoji, style: Theme.of(context).textTheme.bodyLarge),
-          ),
-        Flexible(
-          child: Text(
-            '${reactions.total} ${reactions.total == 1 ? 'reaction' : 'reactions'}',
-            style: caption,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
+  State<_MemoryCaption> createState() => _MemoryCaptionState();
 }
 
-/// Author-only text edit. Text may be cleared when photos or a poll keep
-/// the Memory meaningful; the domain rules decide.
+class _MemoryCaptionState extends State<_MemoryCaption> {
+  bool _expanded = false;
+  @override
+  void didUpdateWidget(covariant _MemoryCaption oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.text != oldWidget.text) _expanded = false;
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final style = CircleTextStyles.postBody(
+        Theme.of(context).colorScheme.onSurface,
+      );
+      final painter = TextPainter(
+        text: TextSpan(text: widget.text, style: style),
+        maxLines: CircleMemoryLayout.collapsedLines,
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout(maxWidth: constraints.maxWidth);
+      final more = painter.didExceedMaxLines;
+      painter.dispose();
+      final expanded = widget.expanded || _expanded;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.text,
+            style: style,
+            maxLines: expanded ? null : CircleMemoryLayout.collapsedLines,
+            overflow: expanded ? TextOverflow.clip : TextOverflow.ellipsis,
+          ),
+          if (more && !expanded)
+            TextButton(
+              onPressed: () => setState(() => _expanded = true),
+              child: const Text('See more'),
+            ),
+        ],
+      );
+    },
+  );
+}
+
 class _EditMemorySheet extends ConsumerStatefulWidget {
   const _EditMemorySheet({required this.memory});
   final CircleMemory memory;

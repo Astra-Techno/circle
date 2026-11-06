@@ -161,11 +161,9 @@ void main() {
           .first;
       expect(tester.getSize(tile).height, greaterThanOrEqualTo(48));
       if (size.width >= 840) {
-        expect(
-          tester.getTopLeft(cards.at(0)).dy,
-          tester.getTopLeft(cards.at(1)).dy,
-        );
-        expect(tester.getTopLeft(cards.at(1)).dx, greaterThan(size.width / 3));
+        final first = tester.getRect(cards.first);
+        expect(first.width, closeTo(720, 0.01));
+        expect(first.left, closeTo((size.width - 720) / 2, 0.01));
       }
       final phase = Platform.environment['CIRCLE_REVIEW_CAPTURE'];
       if (phase != null) {

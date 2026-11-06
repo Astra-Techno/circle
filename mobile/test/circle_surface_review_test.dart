@@ -117,7 +117,9 @@ void main() {
       await settle(tester);
       expect(find.text('A saved moment from a friend.'), findsOneWidget);
       expect(find.byType(CircleMemoryCard), findsOneWidget);
-      final comment = find.text('Comment');
+      final comment = find.byTooltip(
+        'Comment on Memory from Fictional Member in Fictional live circle',
+      );
       await reveal(tester, comment);
       await tester.tap(comment);
       await settle(tester);

@@ -25,6 +25,8 @@ abstract final class CircleIcons {
   static const poll = LucideIcons.list_todo;
 
   // Post actions
+  static const react = LucideIcons.thumbs_up;
+  static const saved = LucideIcons.bookmark_check;
   static const like = LucideIcons.heart;
   static const comment = LucideIcons.message_circle;
   static const share = LucideIcons.share_2;

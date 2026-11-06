@@ -52,7 +52,13 @@ class MemoryPhotoGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) => PhotoGrid(
     photos: memory.photos,
-    mosaicAspect: mosaicAspect,
+    mosaicAspect: mosaicAspect ?? CircleMemoryLayout.collageAspect,
+    singleAspect: memory.photos.isEmpty
+        ? 1
+        : CircleMemoryLayout.photoAspect(
+            memory.photos.first.width,
+            memory.photos.first.height,
+          ),
     onOpen: (index) => context.push(photoViewerLocation(memory.id, index)),
   );
 }
@@ -66,7 +72,9 @@ class PhotoGrid extends StatelessWidget {
     required this.photos,
     required this.onOpen,
     this.mosaicAspect,
+    this.singleAspect = 16 / 10,
   });
+  final double singleAspect;
   final List<MemoryPhoto> photos;
   final double? mosaicAspect;
   final void Function(int index) onOpen;
@@ -89,7 +97,7 @@ class PhotoGrid extends StatelessWidget {
     const gap = SizedBox.square(dimension: Space.xs);
     return switch (count) {
       0 => const SizedBox.shrink(),
-      1 => AspectRatio(aspectRatio: 16 / 10, child: tile(0)),
+      1 => AspectRatio(aspectRatio: singleAspect, child: tile(0)),
       2 => AspectRatio(
         aspectRatio: 16 / 10,
         child: Row(

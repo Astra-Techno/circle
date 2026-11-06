@@ -39,7 +39,7 @@ class CircleHome extends ConsumerWidget {
       return ColoredBox(
         color: Theme.of(context).colorScheme.surface,
         child: ReadingPane(
-          maxWidth: double.infinity,
+          maxWidth: CircleLayout.homeComposerMaxWidth,
           child: RefreshIndicator(
             onRefresh: () => runCalmly(
               context,
@@ -50,68 +50,32 @@ class CircleHome extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 const CircleFloatingHeader(),
-                SliverLayoutBuilder(
-                  builder: (context, constraints) {
-                    final columns =
-                        constraints.crossAxisExtent >=
-                            CircleLayout.homeGridBreakpoint
-                        ? 2
-                        : 1;
-                    final rows = (memories.length + columns - 1) ~/ columns;
-                    return SliverList.builder(
-                      itemCount: rows + 1 + (more ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == rows + 1) {
-                          return const _LoadOlderMemories();
-                        }
-                        if (index == 0) {
-                          return _HomeHeader(
-                            workspace: workspace,
-                            groupId: groupId,
-                            hasMemories: memories.isNotEmpty,
-                            features: features,
-                          );
-                        }
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (var column = 0; column < columns; column++)
-                              Expanded(
-                                child:
-                                    (index - 1) * columns + column >=
-                                        memories.length
-                                    ? const SizedBox.shrink()
-                                    : Builder(
-                                        builder: (context) {
-                                          final memory =
-                                              memories[(index - 1) * columns +
-                                                  column];
-                                          final group = workspace.group(
-                                            memory.groupId,
-                                          )!;
-                                          return CircleFadeIn(
-                                            key: ValueKey('fade-${memory.id}'),
-                                            delay:
-                                                CircleMotion.staggerDelay *
-                                                (((index - 1) * columns +
-                                                        column)
-                                                    .clamp(0, 5)),
-                                            child: CircleMemoryCard(
-                                              key: ValueKey(memory.id),
-                                              memory: memory,
-                                              group: group,
-                                              audience: audiencePath(
-                                                group,
-                                                workspace.groupsById,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                              ),
-                          ],
-                        );
-                      },
+                SliverList.builder(
+                  itemCount: memories.length + 1 + (more ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == memories.length + 1) {
+                      return const _LoadOlderMemories();
+                    }
+                    if (index == 0) {
+                      return _HomeHeader(
+                        workspace: workspace,
+                        groupId: groupId,
+                        hasMemories: memories.isNotEmpty,
+                        features: features,
+                      );
+                    }
+                    final memory = memories[index - 1];
+                    final group = workspace.group(memory.groupId)!;
+                    return CircleFadeIn(
+                      key: ValueKey('fade-${memory.id}'),
+                      delay:
+                          CircleMotion.staggerDelay * ((index - 1).clamp(0, 5)),
+                      child: CircleMemoryCard(
+                        key: ValueKey(memory.id),
+                        memory: memory,
+                        group: group,
+                        audience: audiencePath(group, workspace.groupsById),
+                      ),
                     );
                   },
                 ),
@@ -261,6 +225,12 @@ class _HomeHeader extends ConsumerWidget {
                   ),
                 ),
               ],
+              if (hasMemories)
+                Divider(
+                  height: CircleMemoryLayout.dividerThickness,
+                  thickness: CircleMemoryLayout.dividerThickness,
+                  color: accents.hairline,
+                ),
               if (!hasMemories)
                 Padding(
                   padding: const EdgeInsets.symmetric(

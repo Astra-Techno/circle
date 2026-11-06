@@ -1,5 +1,31 @@
 # CIRCLE design system
 
+## Social 2.4 — reference-inspired Memories timeline, 6 November 2026
+
+The owner's Facebook post screenshot defines the current Memory layout. This
+section supersedes earlier inset/rounded Memory cards, shallow media collages
+and two-column Home layouts. Other controls, capability and privacy rules remain.
+
+Use one white timeline column, capped at720px on wide screens. Shared
+CircleMemoryCard owns Home, Circle detail, Your Memories, Saved, other profiles
+and detail. Posts have square edges and a2px bottom divider,40px author avatar,
+15/20 semibold name,12/16 private audience/time,15/22 regular caption. Captions
+collapse to3 lines with an accessible See more; detail starts fully expanded.
+Media extends to both post edges. Use known photo proportions within4:5–1.91:1,
+a square fallback and4:3 collages; the full viewer preserves the original image.
+CircleRadius.photo is0; avatars and immersive viewers retain their own shapes.
+
+Footer:24px Lucide thumbs-up/selected reaction, real reaction count/summary,
+comment/count and bookmark/check. Every action keeps a48px target and descriptive
+label; long counts abbreviate visually while accessible text retains real totals.
+Keep white light canvases, native Apple/corrected Inter, existing purple branding,
+48px controls and200% text scaling. Private media/loading budgets, query scope,
+pagination, saved state, moderation and session guards stay intact. No ad,
+friend-request, public-audience or unsupported Share controls are implied.
+
+[Implementation and rendered evidence](memory-reference-design-2026-11-06.md).
+
+
 ## Social 2.3 — interaction and screen audit fixes, 6 November 2026
 
 Retain Social2.2 white canvases, native SF/corrected Inter, Lucide and shared

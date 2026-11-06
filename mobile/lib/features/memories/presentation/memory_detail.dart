@@ -167,67 +167,79 @@ class _CircleMemoryDetailState extends ConsumerState<CircleMemoryDetail> {
 
       return ReadingPane(
         child: ListView(
-          padding: CircleInsets.form,
-          children: [
-            CircleMemoryCard(
-              memory: memory,
-              group: group,
-              audience: audiencePath(group, workspace.groupsById),
-              detail: true,
-            ),
-            CircleSectionTitle(
-              memory.comments.isEmpty
-                  ? 'Start the conversation'
-                  : 'Comments (${memory.comments.length})',
-            ),
-            for (final thread in threads) ...[
-              tile(thread.comment),
-              for (final reply in thread.replies)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(start: Space.hero),
-                  child: tile(reply),
-                ),
-            ],
-            const Divider(height: Space.section),
-            if (replyTo != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: Space.sm),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Replying to ${replyTo.authorName}',
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
+          padding: CircleInsets.form.copyWith(left: 0, right: 0, top: 0),
+          children:
+              <Widget>[
+                    CircleMemoryCard(
+                      memory: memory,
+                      group: group,
+                      audience: audiencePath(group, workspace.groupsById),
+                      detail: true,
                     ),
-                    TextButton(
-                      onPressed: () => setState(() => _replyTo = null),
-                      child: Text(
-                        'Cancel',
-                        semanticsLabel: 'Cancel reply to ${replyTo.authorName}',
-                      ),
+                    CircleSectionTitle(
+                      memory.comments.isEmpty
+                          ? 'Start the conversation'
+                          : 'Comments (${memory.comments.length})',
                     ),
-                  ],
-                ),
-              ),
-            _InlineCommentInput(
-              focusNode: _focus,
-              viewerId: workspace.viewer,
-              hint: replyTo == null ? 'Write a comment...' : 'Write a reply...',
-              mentionMembers: members,
-              submit: (text, mentions) async {
-                await ref
-                    .read(circleWorkspaceProvider.notifier)
-                    .comment(
-                      memory.id,
-                      text,
-                      replyTo: replyTo?.id,
-                      mentions: mentions,
-                    );
-                if (mounted) setState(() => _replyTo = null);
-              },
-            ),
-          ],
+                    for (final thread in threads) ...[
+                      tile(thread.comment),
+                      for (final reply in thread.replies)
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(
+                            start: Space.hero,
+                          ),
+                          child: tile(reply),
+                        ),
+                    ],
+                    const Divider(height: Space.section),
+                    if (replyTo != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Space.sm),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Replying to ${replyTo.authorName}',
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => setState(() => _replyTo = null),
+                              child: Text(
+                                'Cancel',
+                                semanticsLabel:
+                                    'Cancel reply to ${replyTo.authorName}',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    _InlineCommentInput(
+                      focusNode: _focus,
+                      viewerId: workspace.viewer,
+                      hint: replyTo == null
+                          ? 'Write a comment...'
+                          : 'Write a reply...',
+                      mentionMembers: members,
+                      submit: (text, mentions) async {
+                        await ref
+                            .read(circleWorkspaceProvider.notifier)
+                            .comment(
+                              memory.id,
+                              text,
+                              replyTo: replyTo?.id,
+                              mentions: mentions,
+                            );
+                        if (mounted) setState(() => _replyTo = null);
+                      },
+                    ),
+                  ]
+                  .map(
+                    (child) => child is CircleMemoryCard
+                        ? child
+                        : Padding(padding: CircleInsets.content, child: child),
+                  )
+                  .toList(),
         ),
       );
     },

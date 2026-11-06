@@ -107,7 +107,7 @@ void main() {
       await tester.tap(find.widgetWithText(ChoiceChip, '😂'));
       await tester.pumpAndSettle();
       expect(memoryOf(container, 'table').reactions.mine, '😂');
-      // The emoji appears in the reaction summary row.
+      // The selected reaction is visible on the action control.
       expect(find.text('😂'), findsWidgets);
 
       // Remove by picking the same emoji again.
@@ -162,7 +162,7 @@ void main() {
 
     testWidgets('comment count opens the Memory comments', (tester) async {
       final container = await openCircle(tester);
-      await tapText(tester, '2 comments');
+      await tapTooltip(tester, 'View 2 comments');
       expect(currentUri(container).path, '/home/memory/table');
       expect(find.text('Comments (2)'), findsOneWidget);
       expect(find.byType(CommentBubble), findsWidgets);

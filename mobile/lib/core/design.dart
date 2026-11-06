@@ -21,6 +21,23 @@ abstract final class CirclePhotoMetrics {
       );
 }
 
+/// Shared geometry for the continuous, photo-first Memories timeline.
+abstract final class CircleMemoryLayout {
+  static const dividerThickness = Space.xs / 2;
+  static const collageAspect = 4 / 3;
+  static const actionIcon = 24.0;
+  static const collapsedLines = 3;
+  static String countLabel(int count) => count < 1000
+      ? '$count'
+      : count < 1000000
+      ? '${(count / 1000).toStringAsFixed(count < 10000 ? 1 : 0)}K'
+      : '${(count / 1000000).toStringAsFixed(count < 10000000 ? 1 : 0)}M';
+  static double photoAspect(int? width, int? height) =>
+      width != null && height != null && width > 0 && height > 0
+      ? (width / height).clamp(4 / 5, 1.91).toDouble()
+      : 1.0;
+}
+
 abstract final class CircleProfileLayout {
   static const coverAspectRatio = 3.2;
   static const minCoverHeight = 88.0, maxCoverHeight = 160.0;
@@ -42,21 +59,6 @@ abstract final class CircleLayout {
         .toDouble();
     painter.dispose();
     return width;
-  }
-
-  static int memoryActionColumns(BuildContext context, double width) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: 'Comment',
-        style: CircleTextStyles.label(Theme.of(context).colorScheme.onSurface),
-      ),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-    )..layout();
-    final minimum =
-        painter.width + CircleSizes.iconAction + Space.xs + Space.sm * 2;
-    painter.dispose();
-    return (width / minimum).floor().clamp(1, 3);
   }
 
   static const largeTextThreshold = 1.4;
@@ -120,8 +122,6 @@ abstract final class CircleLayout {
     return width;
   }
 
-  static const homeMosaicAspect = 2.8;
-  static const homeGridBreakpoint = 840.0;
   static const homeComposerMaxWidth = 720.0;
   static const homeDockMaxWidth = 640.0;
 }
@@ -770,7 +770,7 @@ abstract final class CircleRadius {
   static const button = 10.0;
 
   /// Photo mosaics and image tiles.
-  static const photo = 4.0;
+  static const photo = 0.0;
 
   /// Tiles, inner panels, cards, menus and floating buttons.
   static const tile = 12.0, inner = 12.0, card = 12.0;

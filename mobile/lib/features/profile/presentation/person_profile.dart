@@ -86,154 +86,172 @@ class PersonProfileScreen extends ConsumerWidget {
 
       return ReadingPane(
         child: ListView(
-          padding: CircleInsets.form,
-          children: [
-            ...[
-              if (hasCover)
-                AspectRatio(
-                  aspectRatio: CircleProfileLayout.coverAspectRatio,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(CircleRadius.card),
-                    child: SharedProfilePhotoSurface(
-                      person: person,
-                      kind: ProfilePhotoKind.cover,
-                      name: name,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: Space.md),
-              Center(
-                child: SharedProfilePhotoSurface(
-                  person: person,
-                  kind: ProfilePhotoKind.avatar,
-                  name: name,
-                ),
-              ),
-            ],
-            const SizedBox(height: Space.md),
-            Semantics(
-              header: true,
-              child: Text(
-                name,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall,
-              ),
-            ),
-            const SizedBox(height: Space.xs),
-            Text(
-              'Details stay private by default',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: Space.lg),
-            if (features.has(CircleFeature.liveChat))
-              FilledButton.icon(
-                onPressed: () async {
-                  final api = ref.read(liveChatApiProvider);
-                  final id = await runCalmly(context, () => api.direct(person));
-                  if (context.mounted && id != null) context.go('/chats/c/$id');
-                },
-                icon: const Icon(LucideIcons.message_circle),
-                label: Text('Message $name'),
-              ),
-            ExpansionTile(
-              title: const Text('Photo options'),
-              children: [
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () {
-                      ref.read(personPhotoCacheProvider).clear();
-                      ref.invalidate(
-                        sharedProfilePhotoBytesProvider((
+          padding: CircleInsets.form.copyWith(left: 0, right: 0, top: 0),
+          children:
+              <Widget>[
+                    ...[
+                      if (hasCover)
+                        AspectRatio(
+                          aspectRatio: CircleProfileLayout.coverAspectRatio,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              CircleRadius.card,
+                            ),
+                            child: SharedProfilePhotoSurface(
+                              person: person,
+                              kind: ProfilePhotoKind.cover,
+                              name: name,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: Space.md),
+                      Center(
+                        child: SharedProfilePhotoSurface(
                           person: person,
                           kind: ProfilePhotoKind.avatar,
-                        )),
-                      );
-                      ref.invalidate(
-                        sharedProfilePhotoBytesProvider((
-                          person: person,
-                          kind: ProfilePhotoKind.cover,
-                        )),
-                      );
-                    },
-                    icon: const Icon(LucideIcons.refresh_cw),
-                    label: const Text('Refresh photos'),
-                  ),
-                ),
-              ],
-            ),
-            const CircleSectionTitle('Recent Memories'),
-            for (final memory in workspace.memories.where(
-              (memory) => memory.authorId == person,
-            ))
-              if (workspace.group(memory.groupId) case final group?)
-                CircleMemoryCard(
-                  key: ValueKey('person-${memory.id}'),
-                  memory: memory,
-                  group: group,
-                  audience: audiencePath(group, workspace.groupsById),
-                ),
-            if (!workspace.memories.any((memory) => memory.authorId == person))
-              CircleEmpty(
-                title: 'No Memories to show',
-                message: workspace.hasMoreMemories
-                    ? 'No Memories from $name in the items loaded so far.'
-                    : 'No Memories from $name are currently shared with you.',
-              ),
-            if (workspace.hasMoreMemories)
-              TextButton.icon(
-                onPressed: () => runCalmly(
-                  context,
-                  () => ref
-                      .read(circleWorkspaceProvider.notifier)
-                      .loadMoreMemories(),
-                ),
-                icon: const Icon(LucideIcons.chevron_down),
-                label: const Text('Load older Memories'),
-              ),
-            CircleSectionTitle('Groups in common (${shared.length})'),
-            for (final group in shared)
-              CircleRow(
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: GroupAvatar(
-                    groupId: group.id,
-                    type: group.type,
-                    size: CircleAvatarSize.small,
-                  ),
-                  title: Text(group.name),
-                  subtitle: switch (group.roles[person]) {
-                    CircleRole.owner => const Text('Owner'),
-                    CircleRole.admin => const Text('Admin'),
-                    _ => null,
-                  },
-                  trailing: const Icon(CircleIcons.chevronRight),
-                  onTap: () => context.push('/groups/g/${group.id}'),
-                ),
-              ),
-            const SizedBox(height: Space.lg),
-            if (features.has(CircleFeature.blocking))
-              ServerBlockButton(person: person, name: name),
-            if (features.has(CircleFeature.moderation) &&
-                !workspace.reported(ReportKind.member, person))
-              CircleRow(
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(LucideIcons.flag),
-                  title: Text('Report $name'),
-                  subtitle: Text('To the admins of ${reportGroup.name}'),
-                  onTap: () => reportToAdmins(
-                    context,
-                    ref,
-                    target: ReportTarget.member(
-                      person,
-                      groupId: reportGroup.id,
+                          name: name,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: Space.md),
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineSmall,
+                      ),
                     ),
-                    what: name,
-                  ),
-                ),
-              ),
-          ],
+                    const SizedBox(height: Space.xs),
+                    Text(
+                      'Details stay private by default',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: Space.lg),
+                    if (features.has(CircleFeature.liveChat))
+                      FilledButton.icon(
+                        onPressed: () async {
+                          final api = ref.read(liveChatApiProvider);
+                          final id = await runCalmly(
+                            context,
+                            () => api.direct(person),
+                          );
+                          if (context.mounted && id != null) {
+                            context.go('/chats/c/$id');
+                          }
+                        },
+                        icon: const Icon(LucideIcons.message_circle),
+                        label: Text('Message $name'),
+                      ),
+                    ExpansionTile(
+                      title: const Text('Photo options'),
+                      children: [
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () {
+                              ref.read(personPhotoCacheProvider).clear();
+                              ref.invalidate(
+                                sharedProfilePhotoBytesProvider((
+                                  person: person,
+                                  kind: ProfilePhotoKind.avatar,
+                                )),
+                              );
+                              ref.invalidate(
+                                sharedProfilePhotoBytesProvider((
+                                  person: person,
+                                  kind: ProfilePhotoKind.cover,
+                                )),
+                              );
+                            },
+                            icon: const Icon(LucideIcons.refresh_cw),
+                            label: const Text('Refresh photos'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const CircleSectionTitle('Recent Memories'),
+                    for (final memory in workspace.memories.where(
+                      (memory) => memory.authorId == person,
+                    ))
+                      if (workspace.group(memory.groupId) case final group?)
+                        CircleMemoryCard(
+                          key: ValueKey('person-${memory.id}'),
+                          memory: memory,
+                          group: group,
+                          audience: audiencePath(group, workspace.groupsById),
+                        ),
+                    if (!workspace.memories.any(
+                      (memory) => memory.authorId == person,
+                    ))
+                      CircleEmpty(
+                        title: 'No Memories to show',
+                        message: workspace.hasMoreMemories
+                            ? 'No Memories from $name in the items loaded so far.'
+                            : 'No Memories from $name are currently shared with you.',
+                      ),
+                    if (workspace.hasMoreMemories)
+                      TextButton.icon(
+                        onPressed: () => runCalmly(
+                          context,
+                          () => ref
+                              .read(circleWorkspaceProvider.notifier)
+                              .loadMoreMemories(),
+                        ),
+                        icon: const Icon(LucideIcons.chevron_down),
+                        label: const Text('Load older Memories'),
+                      ),
+                    CircleSectionTitle('Groups in common (${shared.length})'),
+                    for (final group in shared)
+                      CircleRow(
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: GroupAvatar(
+                            groupId: group.id,
+                            type: group.type,
+                            size: CircleAvatarSize.small,
+                          ),
+                          title: Text(group.name),
+                          subtitle: switch (group.roles[person]) {
+                            CircleRole.owner => const Text('Owner'),
+                            CircleRole.admin => const Text('Admin'),
+                            _ => null,
+                          },
+                          trailing: const Icon(CircleIcons.chevronRight),
+                          onTap: () => context.push('/groups/g/${group.id}'),
+                        ),
+                      ),
+                    const SizedBox(height: Space.lg),
+                    if (features.has(CircleFeature.blocking))
+                      ServerBlockButton(person: person, name: name),
+                    if (features.has(CircleFeature.moderation) &&
+                        !workspace.reported(ReportKind.member, person))
+                      CircleRow(
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(LucideIcons.flag),
+                          title: Text('Report $name'),
+                          subtitle: Text(
+                            'To the admins of ${reportGroup.name}',
+                          ),
+                          onTap: () => reportToAdmins(
+                            context,
+                            ref,
+                            target: ReportTarget.member(
+                              person,
+                              groupId: reportGroup.id,
+                            ),
+                            what: name,
+                          ),
+                        ),
+                      ),
+                  ]
+                  .map(
+                    (child) => child is CircleMemoryCard
+                        ? child
+                        : Padding(padding: CircleInsets.content, child: child),
+                  )
+                  .toList(),
         ),
       );
     },
