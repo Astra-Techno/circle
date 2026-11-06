@@ -115,7 +115,8 @@ String circleDetailTitle(String path, String fallback) {
   if (path.endsWith('/invite/link')) return 'Invite link';
   if (path.endsWith('/invite')) return 'Invite people';
   if (path.endsWith('/reports')) return 'Circle reports';
-  if (RegExp(r'^/groups/g/[^/]+/events$').hasMatch(path)) return 'Circle events';
+  if (RegExp(r'^/groups/g/[^/]+/events$').hasMatch(path))
+    return 'Circle events';
   if (path == '/events/new') return 'New event';
   if (path.startsWith('/events/') && path.endsWith('/edit')) {
     return 'Edit event';

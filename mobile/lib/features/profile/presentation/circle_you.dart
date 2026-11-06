@@ -113,7 +113,10 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                     initialIndex: _memoryTab,
                     child: TabBar(
                       onTap: (index) => setState(() => _memoryTab = index),
-                      tabs: const [Tab(text: 'Your Memories'), Tab(text: 'Saved')],
+                      tabs: const [
+                        Tab(text: 'Your Memories'),
+                        Tab(text: 'Saved'),
+                      ],
                     ),
                   ),
                   if (_memoryTab == 0) ...[
@@ -161,7 +164,8 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           trailing: const Icon(CircleIcons.chevronRight),
-                          onTap: () => context.push('/home/memory/${memory.id}'),
+                          onTap: () =>
+                              context.push('/home/memory/${memory.id}'),
                         ),
                       ),
                     ),
@@ -231,7 +235,9 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                             TextButton.icon(
                               onPressed: _refreshProfile,
                               icon: const Icon(LucideIcons.refresh_cw),
-                              label: const Text('Retry loading profile details'),
+                              label: const Text(
+                                'Retry loading profile details',
+                              ),
                             ),
                           const CircleSectionTitle('Personal details'),
                           const CirclePill('Only you', icon: LucideIcons.lock),
@@ -246,7 +252,11 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                               'Add your city, hometown, work and education in Edit profile.',
                             ),
                           for (final detail in [
-                            (LucideIcons.building, 'Lives in', account.currentCity),
+                            (
+                              LucideIcons.building,
+                              'Lives in',
+                              account.currentCity,
+                            ),
                             (LucideIcons.house, 'From', account.hometown),
                             (LucideIcons.briefcase, 'Work', account.work),
                             (

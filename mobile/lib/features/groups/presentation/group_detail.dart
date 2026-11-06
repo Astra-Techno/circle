@@ -360,7 +360,8 @@ class _GroupHeader extends ConsumerWidget {
                 parent: group,
               ).allowed)
                 OutlinedButton.icon(
-                  onPressed: () => _showCreateSubgroupSheet(context, ref, group),
+                  onPressed: () =>
+                      _showCreateSubgroupSheet(context, ref, group),
                   icon: const Icon(LucideIcons.plus),
                   label: const Text('Create Circle'),
                 ),
@@ -556,8 +557,7 @@ class SubgroupsTab extends ConsumerWidget {
           const CircleEmpty(
             icon: LucideIcons.users,
             title: 'A smaller circle, when you need one',
-            message:
-                'Each InCircle has its own members.',
+            message: 'Each InCircle has its own members.',
           ),
         for (final entry in mine) CircleGroupTile(group: entry.group),
         if (joinable.isNotEmpty) ...[

@@ -222,7 +222,9 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
                 tooltip: group.avatarVersion == null
                     ? 'Add group picture'
                     : 'Change group picture',
-                onPressed: _busy ? null : () => _change(ProfilePhotoKind.avatar),
+                onPressed: _busy
+                    ? null
+                    : () => _change(ProfilePhotoKind.avatar),
                 icon: const Icon(LucideIcons.camera),
               ),
             ),

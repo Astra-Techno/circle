@@ -364,7 +364,9 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                 children: [
                   Text(
                     name,
-                    style: CircleTextStyles.pageTitle(theme.colorScheme.onSurface),
+                    style: CircleTextStyles.pageTitle(
+                      theme.colorScheme.onSurface,
+                    ),
                   ),
                   OutlinedButton(
                     onPressed: _busy ? null : () => context.push('/you/edit'),
