@@ -1026,5 +1026,14 @@
   "draftIdentityFixVisualChecks": {
     "mainPassed": 5,
     "extraAndReferencePassed": 13
+  },
+  "delivery": {
+    "sourceCommit": "6ba65b97b6e50104e26bc70bd85928a3a2321602",
+    "androidBuild": 42,
+    "androidPublicDownloadVerified": true,
+    "iosBuild": "1058.1",
+    "iosRun": 42213961079,
+    "appleUploadAccepted": true,
+    "nativeDeviceAcceptance": false
   }
 }
