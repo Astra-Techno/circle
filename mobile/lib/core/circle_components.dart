@@ -1112,6 +1112,7 @@ class CircleTabHeaderData extends InheritedWidget {
       title != oldWidget.title ||
       titleStyle != oldWidget.titleStyle ||
       logo != oldWidget.logo ||
+      actions != oldWidget.actions ||
       fab != oldWidget.fab;
 }
 
@@ -1129,17 +1130,24 @@ class CircleFloatingHeader extends StatelessWidget {
       pinned: false,
       automaticallyImplyLeading: false,
       toolbarHeight: CircleLayout.headerHeight(context),
-      titleSpacing: Space.md,
+      titleSpacing: data.logo == null ? Space.contentInset : Space.md,
+      shape: data.logo == null ? circleHeaderDivider(context) : null,
       title: _headerTitle(context, data),
       actions: [
         for (final action in data.actions)
-          CircleHeaderAction(tonal: data.logo == null, child: action),
+          CircleHeaderAction(tonal: false, child: action),
         if (data.fab != null && data.title != 'Circle')
           CircleHeaderAction(
+            tonal: false,
             child: IconButton(
+              color: Theme.of(context).colorScheme.primary,
               tooltip: data.fab!.label,
               onPressed: () => GoRouter.of(context).push(data.fab!.location),
-              icon: const Icon(LucideIcons.plus),
+              icon: Icon(
+                data.fab!.label == 'New chat'
+                    ? LucideIcons.pencil
+                    : LucideIcons.plus,
+              ),
             ),
           ),
         const SizedBox(width: Space.sm),
@@ -1155,6 +1163,10 @@ class CircleCollapsingHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const CircleFloatingHeader();
 }
+
+Border circleHeaderDivider(BuildContext context) => Border(
+  bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+);
 
 /// Optional tonal backing inside an unchanged 48px interactive target.
 /// Wrapping the existing control preserves its tooltip, badge and action.

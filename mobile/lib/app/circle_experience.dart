@@ -106,7 +106,8 @@ String circleDetailTitle(String path, String fallback) {
   if (path.endsWith('/sessions')) return 'Your devices';
   if (path.endsWith('/password')) return 'Change password';
   if (path.endsWith('/account')) return 'Account';
-  if (path.contains('/invitations')) return 'Invitations';
+  if (path == '/you/invitations') return 'Circle Invitations';
+  if (path.startsWith('/home/memory/')) return 'Memory';
   if (path == '/chats/privacy') return 'Messaging privacy';
   if (path == '/you/privacy') return 'Privacy and blocking';
   if (path == '/chats/new') return 'New chat';
@@ -133,12 +134,20 @@ String circleDetailTitle(String path, String fallback) {
 
 /// A full-screen page outside the tabs (search, activity, a profile), with
 /// Back to wherever the person came from.
-Widget _page(BuildContext context, String title, Widget child) => Scaffold(
+Widget _page(
+  BuildContext context,
+  String title,
+  Widget child, {
+  List<Widget>? actions,
+}) => Scaffold(
   appBar: AppBar(
     toolbarHeight: CircleLayout.headerHeight(context, title: title),
     titleSpacing: 0,
     title: Semantics(header: true, child: Text(title, maxLines: 2)),
+    shape: circleHeaderDivider(context),
+    actions: actions,
     leading: CircleHeaderAction(
+      tonal: false,
       child: BackButton(
         onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
       ),
@@ -148,6 +157,23 @@ Widget _page(BuildContext context, String title, Widget child) => Scaffold(
     child: CirclePageTitle(title: title, child: child),
   ),
 );
+
+class _NotificationSettingsAction extends ConsumerWidget {
+  const _NotificationSettingsAction();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final features = ref.watch(circleFeaturesProvider);
+    if (!features.has(CircleFeature.notificationSettings)) {
+      return const SizedBox.shrink();
+    }
+    return IconButton(
+      tooltip: 'Notification settings',
+      onPressed: () => context.push('/you/notifications'),
+      icon: const Icon(LucideIcons.settings),
+    );
+  }
+}
 
 /// Shows [child] only where the server offers [feature] (see
 /// [CircleFeatureGate]).
@@ -363,8 +389,9 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
         path: '/activity',
         builder: (context, _) => _page(
           context,
-          'Activity',
+          'Notifications',
           _gate(CircleFeature.activity, const ActivityScreen()),
+          actions: const [_NotificationSettingsAction()],
         ),
       ),
       GoRoute(
@@ -957,6 +984,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
             title: circleDetailTitle(path, titles[index]),
           ),
           titleSpacing: 0,
+          shape: circleHeaderDivider(context),
           title: Semantics(
             header: true,
             child: Text(
@@ -982,6 +1010,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   ),
           ],
           leading: CircleHeaderAction(
+            tonal: false,
             child: BackButton(
               onPressed: () => context.canPop()
                   ? context.pop()
@@ -1050,14 +1079,8 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   : CircleTextStyles.pageTitle(theme.colorScheme.onSurface),
               logo: logo,
               actions: [
-                const SearchButton(),
+                if (index == 0 || index == 2) const SearchButton(),
                 if (index == 0) const ActivityBell(),
-                if (index == 4)
-                  IconButton(
-                    tooltip: 'Account settings',
-                    onPressed: () => context.push('/you/account'),
-                    icon: const Icon(LucideIcons.settings),
-                  ),
               ],
               fab: fab,
               child: shell,
