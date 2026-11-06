@@ -12,6 +12,7 @@ use Circle\Core\Response;
 /**
  * Fixed-window (60 s) limits stored in MySQL, keyed by client IP and bucket.
  * Buckets: `general` (RATE_LIMIT_PER_MINUTE), `auth` (RATE_LIMIT_AUTH_PER_MINUTE),
+ * independent photo-read buckets (`profile_photo`, `media_read`),
  * per-mobile failed logins (LOGIN_MAX_FAILURES_PER_MOBILE per 15 minutes) and
  * per-user hourly buckets such as `media_ticket` (MEDIA_UPLOADS_PER_HOUR).
  */
@@ -30,6 +31,13 @@ final class RateLimitMiddleware
     public static function profilePhotoHandle(Request $request, callable $next): void
     {
         self::hit($request->ip(), 'profile_photo', Env::int('RATE_LIMIT_PROFILE_PHOTOS_PER_MINUTE', 240), self::WINDOW_SECONDS);
+        $next($request);
+    }
+
+    /** Photo links and bytes must not starve chat/list requests. */
+    public static function mediaReadHandle(Request $request, callable $next): void
+    {
+        self::hit($request->ip(), 'media_read', Env::int('RATE_LIMIT_MEDIA_READS_PER_MINUTE', 240), self::WINDOW_SECONDS);
         $next($request);
     }
 

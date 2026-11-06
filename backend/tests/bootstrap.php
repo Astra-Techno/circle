@@ -48,6 +48,7 @@ $settings = [
     'CORS_ORIGIN' => 'https://allowed.example',
     'RATE_LIMIT_PER_MINUTE' => '100000',
     'RATE_LIMIT_AUTH_PER_MINUTE' => '100000',
+    'RATE_LIMIT_MEDIA_READS_PER_MINUTE' => '100000',
     'LOGIN_MAX_FAILURES_PER_MOBILE' => '100000',
     // Media: separate test-only signing secret and a throwaway storage folder.
     'MEDIA_SIGNING_SECRET' => bin2hex(random_bytes(32)),

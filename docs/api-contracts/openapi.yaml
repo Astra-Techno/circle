@@ -33,7 +33,8 @@ info:
     ## Rate limits (per client IP, fixed 60-second window)
     - `/auth/register`, `/auth/login`, `/auth/refresh`: `RATE_LIMIT_AUTH_PER_MINUTE` (default 10).
     - Authenticated profile/group photo reads use a separate per-IP bucket `RATE_LIMIT_PROFILE_PHOTOS_PER_MINUTE` (default 240/minute), still requiring profile ownership/shared exact membership or exact group membership. They do not exhaust general mutation/list quota.
-    - Every other endpoint except profile/group photo reads and `/health`, including `/invites/{token}` preview and
+    - Memory photo links/bytes (`GET /media/{mediaId}`, `GET /media/files/{mediaId}/{size}`), Chat photo reads and Event cover reads use an independent per-IP `RATE_LIMIT_MEDIA_READS_PER_MINUTE` budget (default 240/minute). Bearer authentication or signed-link verification and exact-access checks remain required. Uploads, deletes and other mutations retain the general budget.
+    - Every other endpoint except these photo reads and `/health`, including `/invites/{token}` preview and
       `/auth/logout`: `RATE_LIMIT_PER_MINUTE` (default 60).
     - Login and authenticated change-password share a per-mobile-number limit on failed credential attempts:
       `LOGIN_MAX_FAILURES_PER_MOBILE` (default 10) per 15 minutes, across all IPs.

@@ -50,6 +50,7 @@ final class App
         $router->registerMiddleware('auth', AuthMiddleware::handle(...));
         $router->registerMiddleware('rate', RateLimitMiddleware::handle(...));
         $router->registerMiddleware('rate:profile_photo', RateLimitMiddleware::profilePhotoHandle(...));
+        $router->registerMiddleware('rate:media', RateLimitMiddleware::mediaReadHandle(...));
         $router->registerMiddleware('rate:auth', RateLimitMiddleware::authHandle(...));
 
         $router->get('/api/v1/health', static function (): void {
@@ -131,7 +132,12 @@ final class App
         $router->get('/api/v1/me/photos/{kind}', ProfilePhotoController::show(...), ['auth', 'rate:profile_photo']);
         $router->get('/api/v1/profiles/{userId}/photos/{kind}', ProfilePhotoController::show(...), ['auth', 'rate:profile_photo']);
         // Media bytes: the HMAC-signed link is the credential (no bearer).
-        $router->get('/api/v1/media/files/{mediaId}/{size}', MediaController::file(...), ['rate']);
+        $router->get('/api/v1/media/files/{mediaId}/{size}', MediaController::file(...), ['rate:media']);
+
+        // Read-only media has its own bounded quota; private access is unchanged.
+        $router->get('/api/v1/media/{mediaId}', MediaController::link(...), ['auth', 'rate:media']);
+        $router->get('/api/v1/chats/{id}/media/{mediaId}', \Circle\Controllers\FeatureMediaController::chatPhoto(...), ['auth', 'rate:media']);
+        $router->get('/api/v1/events/{eventId}/cover', \Circle\Controllers\FeatureMediaController::cover(...), ['auth', 'rate:media']);
 
         // ── Protected API ────────────────────────────────────────
         $router->group('/api/v1', ['rate', 'auth'], static function (Router $r): void {
@@ -150,10 +156,8 @@ final class App
             $r->patch('/chats/{id}/messages/{messageId}', ChatController::changeMessage(...));
             $r->put('/chats/{id}/messages/{messageId}/reaction', ChatController::react(...));
             $r->put('/chats/{id}/uploads/{mediaId}', \Circle\Controllers\FeatureMediaController::uploadChat(...));
-            $r->get('/chats/{id}/media/{mediaId}', \Circle\Controllers\FeatureMediaController::chatPhoto(...));
             $r->put('/events/{eventId}/cover', \Circle\Controllers\FeatureMediaController::putCover(...));
             $r->delete('/events/{eventId}/cover', \Circle\Controllers\FeatureMediaController::deleteCover(...));
-            $r->get('/events/{eventId}/cover', \Circle\Controllers\FeatureMediaController::cover(...));
             $r->get('/polls', \Circle\Controllers\PollController::index(...));
             $r->post('/groups/{id}/polls', \Circle\Controllers\PollController::create(...));
             $r->get('/polls/{pollId}', \Circle\Controllers\PollController::show(...));
@@ -236,7 +240,6 @@ final class App
             // Private media (ADR 0007)
             $r->post('/groups/{id}/media/uploads', MediaController::createUpload(...));
             $r->put('/media/uploads/{uploadId}/content', MediaController::uploadContent(...));
-            $r->get('/media/{mediaId}', MediaController::link(...));
             $r->delete('/media/{mediaId}', MediaController::discard(...));
 
             // Device tokens (FCM push notifications)

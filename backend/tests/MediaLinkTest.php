@@ -225,18 +225,62 @@ final class MediaLinkTest extends MediaTestCase
         }
     }
 
+    public function testPhotoTrafficCannotExhaustChatAndPageBudget(): void
+    {
+        $s = $this->sharedPhoto();
+        $general = Env::get('RATE_LIMIT_PER_MINUTE');
+        $media = Env::get('RATE_LIMIT_MEDIA_READS_PER_MINUTE', '240');
+        Env::set('RATE_LIMIT_PER_MINUTE', '1');
+        Env::set('RATE_LIMIT_MEDIA_READS_PER_MINUTE', '4');
+        try {
+            Database::execute('DELETE FROM rate_limits');
+            for ($i = 0; $i < 2; $i++) {
+                $link = $this->link($s['owner'], $s['media']);
+                self::assertSame(200, $link->status(), 'Photo link must not consume page quota');
+                self::assertSame(200, $this->download($link->data()['url'])->status());
+            }
+            $limited = $this->link($s['owner'], $s['media']);
+            self::assertSame(429, $limited->status());
+            self::assertSame('60', $limited->header('Retry-After'));
+            self::assertSame(200, $this->request('GET', '/api/v1/chats', [], $s['owner']['token'])->status());
+            self::assertSame(429, $this->request('GET', '/api/v1/me', [], $s['owner']['token'])->status());
+            self::assertSame(401, $this->request('GET', '/api/v1/media/' . $s['media'])->status());
+        } finally {
+            Env::set('RATE_LIMIT_PER_MINUTE', $general);
+            Env::set('RATE_LIMIT_MEDIA_READS_PER_MINUTE', $media);
+        }
+    }
+
+    public function testPageBudgetCannotBlockAuthorizedPhotoReads(): void
+    {
+        $s = $this->sharedPhoto();
+        $previous = Env::get('RATE_LIMIT_PER_MINUTE');
+        Env::set('RATE_LIMIT_PER_MINUTE', '1');
+        try {
+            Database::execute('DELETE FROM rate_limits');
+            self::assertSame(200, $this->request('GET', '/api/v1/me', [], $s['owner']['token'])->status());
+            self::assertSame(429, $this->request('GET', '/api/v1/chats', [], $s['owner']['token'])->status());
+            $link = $this->link($s['owner'], $s['media']);
+            self::assertSame(200, $link->status());
+            self::assertSame(200, $this->download($link->data()['url'])->status());
+            self::assertSame(403, $this->download(preg_replace('/sig=[0-9a-f]+/', 'sig=' . str_repeat('0', 64), $link->data()['url']) ?? '')->status());
+        } finally {
+            Env::set('RATE_LIMIT_PER_MINUTE', $previous);
+        }
+    }
+
     public function testDownloadIsRateLimitedPerIp(): void
     {
         $s = $this->sharedPhoto();
         $url = $this->link($s['owner'], $s['media'])->data()['url'];
-        $prev = Env::get('RATE_LIMIT_PER_MINUTE');
-        Env::set('RATE_LIMIT_PER_MINUTE', '1');
+        $prev = Env::get('RATE_LIMIT_MEDIA_READS_PER_MINUTE', '240');
+        Env::set('RATE_LIMIT_MEDIA_READS_PER_MINUTE', '1');
         try {
             Database::execute('DELETE FROM rate_limits');
             self::assertSame(200, $this->download($url)->status());
             self::assertSame(429, $this->download($url)->status());
         } finally {
-            Env::set('RATE_LIMIT_PER_MINUTE', $prev);
+            Env::set('RATE_LIMIT_MEDIA_READS_PER_MINUTE', $prev);
         }
     }
 }
