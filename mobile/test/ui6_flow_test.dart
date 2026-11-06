@@ -54,16 +54,20 @@ void main() {
     expect(workspaceOf(container).reportedByMe, contains('memory:table'));
   });
 
-  testWidgets('You lists only what the server offers', (tester) async {
+  testWidgets('Profile settings list only what the server offers', (
+    tester,
+  ) async {
     final container = await openCircle(tester, now: fixed);
     await go(tester, container, '/you');
-    for (final entry in ['Privacy and blocking', 'Invitations', 'Account']) {
+    expect(find.text('Privacy and blocking'), findsNothing);
+    await tester.tap(find.byTooltip('Account settings'));
+    await tester.pumpAndSettle();
+    for (final entry in ['Privacy and blocking', 'Invitations']) {
       await reveal(tester, find.text(entry));
       expect(find.text(entry), findsOneWidget, reason: entry);
     }
     // Activity isn't on the server yet, so it is hidden, not a placeholder.
     expect(find.text('Activity'), findsNothing);
-    await tapText(tester, 'Account');
     expect(find.text('Comes before launch'), findsNothing);
     await reveal(tester, find.text('Log out'));
     expect(find.text('Log out'), findsOneWidget);

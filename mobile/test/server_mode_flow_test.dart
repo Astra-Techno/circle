@@ -107,15 +107,15 @@ void main() {
     await tap(tester, find.widgetWithText(FilledButton, 'Create a group'));
     await enter(
       tester,
-      find.widgetWithText(TextField, 'Group name'),
+      find.widgetWithText(TextField, 'Circle name'),
       'Sharma Family',
     );
-    await tap(tester, find.text('Create private group'));
+    await tap(tester, find.text('Create Circle'));
     final group = server.groups.values.single;
     expect(group['name'], 'Sharma Family');
     expect(currentUri(container).path, '/groups/g/${group['id']}');
 
-    await tap(tester, find.text('Create'));
+    await tap(tester, find.text('Memory'));
     await enter(
       tester,
       find.widgetWithText(TextField, 'Share a memory with your Circle...'),

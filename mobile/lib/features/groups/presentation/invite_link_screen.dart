@@ -181,7 +181,7 @@ class _InviteLinkScreenState extends ConsumerState<InviteLinkScreen> {
               action ??
               OutlinedButton(
                 onPressed: () => context.go('/groups'),
-                child: const Text('Back to groups'),
+                child: const Text('Back to Circles'),
               ),
         );
     switch (preview.status) {

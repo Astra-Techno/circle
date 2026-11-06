@@ -35,13 +35,13 @@ class AccessWelcome extends StatelessWidget {
 
         // ── Headline ──
         Text(
-          'Your people.\nShared memories.',
+          'Keep your people close.',
           textAlign: TextAlign.center,
           style: theme.textTheme.headlineLarge,
         ),
         const SizedBox(height: Space.md),
         Text(
-          'Share memories, chat and plan events with your private circles.',
+          'Share Memories, chat and make plans in private Circles.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge?.copyWith(color: muted),
         ),
@@ -626,8 +626,8 @@ class _AccessFormState extends ConsumerState<AccessForm> {
       const SizedBox(height: Space.md),
       Text(
         widget.registering
-            ? 'Anyone can join CIRCLE. Create a private group or join people you know.'
-            : 'Log in with your mobile number and password. Your circles stay private.',
+            ? 'Create a private Circle or join people you know.'
+            : 'Your mobile number and password.',
         style: Theme.of(context).textTheme.bodyLarge,
       ),
       const SizedBox(height: Space.md),
@@ -653,94 +653,117 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                   textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.name],
+                  buildCounter: CircleFormMetrics.counter,
                   maxLength: 80,
                   enableSuggestions: false,
                 ),
                 const SizedBox(height: Space.lg),
               ],
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Country code dropdown
-                  SizedBox(
-                    width: 108,
-                    child: DropdownButtonFormField<DialCode>(
-                      key: ValueKey(_dialCode.region),
-                      initialValue: _dialCode,
-                      decoration: const InputDecoration(
-                        labelText: 'Code',
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: Space.md,
-                          vertical: Space.lg,
-                        ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stacked = CircleLayout.stackDetails(
+                    context,
+                    constraints.maxWidth,
+                  );
+                  final country = DropdownButtonFormField<DialCode>(
+                    key: ValueKey(_dialCode.region),
+                    initialValue: _dialCode,
+                    decoration: const InputDecoration(
+                      labelText: 'Code',
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: Space.md,
+                        vertical: Space.lg,
                       ),
-                      isExpanded: true,
-                      items: dialCodes
-                          .map(
-                            (d) => DropdownMenuItem(
-                              value: d,
-                              child: Text(
-                                '${d.flag} ${d.code}',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          setState(() {
-                            _dialCode = v;
-                            _countryRevision++;
-                            _countryNotice = null;
-                          });
-                        }
-                      },
-                      selectedItemBuilder: (context) => dialCodes
-                          .map(
-                            (d) => Text(
+                    ),
+                    isExpanded: true,
+                    itemHeight: null,
+                    items: dialCodes
+                        .map(
+                          (d) => DropdownMenuItem(
+                            value: d,
+                            child: Text(
                               '${d.flag} ${d.code}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodyMedium,
                             ),
-                          )
-                          .toList(),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() {
+                          _dialCode = v;
+                          _countryRevision++;
+                          _countryNotice = null;
+                        });
+                      }
+                    },
+                    selectedItemBuilder: (context) => dialCodes
+                        .map(
+                          (d) => Text(
+                            '${d.flag} ${d.code}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        )
+                        .toList(),
+                  );
+                  final phone = TextFormField(
+                    controller: _mobile,
+                    key: const ValueKey('access-mobile'),
+                    decoration: const InputDecoration(
+                      labelText: 'Mobile number',
+                      hintText: 'Phone number',
+                      errorMaxLines: 3,
+                      prefixIcon: Icon(LucideIcons.smartphone),
                     ),
-                  ),
-                  const SizedBox(width: Space.sm),
-                  // Phone number field
-                  Expanded(
-                    child: TextFormField(
-                      controller: _mobile,
-                      key: const ValueKey('access-mobile'),
-                      decoration: const InputDecoration(
-                        labelText: 'Mobile number',
-                        hintText: 'Phone number',
-                        errorMaxLines: 3,
-                        prefixIcon: Icon(LucideIcons.smartphone),
-                      ),
-                      keyboardType: TextInputType.phone,
-                      textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.telephoneNumber],
-                      autocorrect: false,
-                      enableSuggestions: false,
-                      validator: AccessValidation.phoneNumber,
-                    ),
-                  ),
-                ],
+                    keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.telephoneNumber],
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    validator: AccessValidation.phoneNumber,
+                  );
+                  return stacked
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            country,
+                            const SizedBox(height: CircleFormMetrics.fieldGap),
+                            phone,
+                          ],
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: CircleSizes.minTouchTarget * 2 + Space.md,
+                              child: country,
+                            ),
+                            const SizedBox(width: Space.sm),
+                            Expanded(child: phone),
+                          ],
+                        );
+                },
               ),
               const SizedBox(height: Space.lg),
-              TextButton.icon(
-                onPressed: _locating || _busy ? null : _detectCountry,
-                icon: const Icon(LucideIcons.locate),
-                label: Text(
-                  _locating
-                      ? 'Finding your country…'
-                      : 'Use my location for country code',
-                ),
-              ),
-              Text(
-                'Optional: your phone’s location service finds the country. CIRCLE does not store your location.',
-                style: Theme.of(context).textTheme.bodySmall,
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: const Text('Country code help'),
+                children: [
+                  TextButton.icon(
+                    onPressed: _locating || _busy ? null : _detectCountry,
+                    icon: const Icon(LucideIcons.locate),
+                    label: Text(
+                      _locating
+                          ? 'Finding your country…'
+                          : 'Use my location for country code',
+                    ),
+                  ),
+                  Text(
+                    'Optional: your phone’s location service finds the country. CIRCLE does not store your location.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
               ),
               if (_countryNotice != null)
                 Semantics(liveRegion: true, child: Text(_countryNotice!)),
@@ -815,14 +838,6 @@ class _AccessFormState extends ConsumerState<AccessForm> {
               : 'New here? Create account',
         ),
       ),
-      if (!widget.registering)
-        const Padding(
-          padding: EdgeInsets.only(top: Space.md),
-          child: Text(
-            'Password recovery will be available with the secure API. OTP is planned for a later release.',
-            textAlign: TextAlign.center,
-          ),
-        ),
     ],
   );
 }

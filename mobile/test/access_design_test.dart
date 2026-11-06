@@ -87,8 +87,9 @@ void main() {
   testWidgets('login never requires an invitation or OTP', (tester) async {
     await openCircle(tester, entered: false);
     await tapText(tester, 'Log in');
-    await reveal(tester, find.textContaining('OTP'));
-    expect(find.textContaining('OTP'), findsOneWidget);
+    expect(find.textContaining('OTP'), findsNothing);
+    expect(find.byKey(const ValueKey('access-mobile')), findsOneWidget);
+    expect(find.byKey(const ValueKey('access-password')), findsOneWidget);
     expect(find.text('Explore fictional circles'), findsNothing);
   });
 

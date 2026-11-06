@@ -134,6 +134,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           key: ValueKey('profile-${key.replaceAll('_', '-')}'),
           controller: _fields[key],
           enabled: !_saving,
+          buildCounter: CircleFormMetrics.counter,
           maxLength: max,
           minLines: lines,
           maxLines: lines,
@@ -188,10 +189,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
               child: ListView(
                 padding: CircleInsets.form,
                 children: [
-                  const CircleHeading(
-                    title: 'Edit profile',
-                    subtitle: 'Make this little space feel like you.',
-                  ),
+                  const Text('Choose how people in your Circles see you.'),
                   Form(
                     key: _form,
                     child: Column(

@@ -75,13 +75,13 @@ void main() {
       expect(find.byType(TabBar), findsNothing);
       expect(find.text('Share a Memory here'), findsNothing);
       expect(find.text('Polls'), findsOneWidget);
-      for (final action in ['Events', 'Create', 'InCircles']) {
+      for (final action in ['Events', 'Memory', 'InCircles']) {
         await openTab(tester, action);
         await settle(tester);
         final uri = currentUri(container);
         expect(uri.toString(), switch (action) {
           'Events' => '/groups/g/${fixture.group}/events',
-          'Create' => '/compose?group=${fixture.group}',
+          'Memory' => '/compose?group=${fixture.group}',
           _ => '/groups/g/${fixture.group}/incircles',
         });
         expect(router.canPop(), isTrue);

@@ -59,6 +59,9 @@ void main() {
           .initialValue;
       expect(selected()?.region, 'IN');
       expect(locator.calls, 0);
+      await reveal(tester, find.text('Country code help'));
+      await tester.tap(find.text('Country code help'));
+      await tester.pumpAndSettle();
       final locate = find.text('Use my location for country code');
       await reveal(tester, locate);
       await tester.tap(locate);

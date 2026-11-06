@@ -433,29 +433,20 @@ class ChatMessageBubble extends StatelessWidget {
                 child: photo,
               ),
             ),
-          // The time sits after the text; a hidden copy reserves its space
-          // so the two never overlap (WhatsApp's layout).
-          Stack(
+          // Keep the message outside a WidgetSpan: embedding already-scaled
+          // text in another paragraph applies accessibility scaling twice.
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: Space.xs),
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      WidgetSpan(child: child),
-                      TextSpan(
-                        text: '  $stamp',
-                        style: stampStyle?.copyWith(color: Colors.transparent),
-                      ),
-                    ],
+              child,
+              if (stamp.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: Space.xs),
+                  child: ExcludeSemantics(
+                    child: Text(stamp, style: stampStyle),
                   ),
                 ),
-              ),
-              PositionedDirectional(
-                end: 0,
-                bottom: 0,
-                child: ExcludeSemantics(child: Text(stamp, style: stampStyle)),
-              ),
             ],
           ),
         ],

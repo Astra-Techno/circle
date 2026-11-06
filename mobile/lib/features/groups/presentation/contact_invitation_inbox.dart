@@ -11,7 +11,7 @@ import '../../workspace/application/workspace_providers.dart';
 import '../application/contact_invitations.dart';
 
 /// Tab filter for the invitation inbox.
-enum _InviteTab { received, sent, expired }
+enum _InviteTab { received, accepted, expired }
 
 class ContactInvitationInbox extends ConsumerStatefulWidget {
   const ContactInvitationInbox({super.key, this.invitationId});
@@ -132,7 +132,7 @@ class _ContactInvitationInboxState
       setState(() {
         _items.removeWhere((item) => item.id == invitation.id);
         _message = status == 'pending_approval'
-            ? 'Request sent. A group admin will review it.'
+            ? 'Request sent. A Circle admin will review it.'
             : status == 'joined'
             ? 'You joined the circle.'
             : status == 'declined'
@@ -155,7 +155,7 @@ class _ContactInvitationInboxState
     switch (_tab) {
       case _InviteTab.received:
         return _items.where((i) => i.status == 'pending').toList();
-      case _InviteTab.sent:
+      case _InviteTab.accepted:
         return _items.where((i) => i.status == 'accepted').toList();
       case _InviteTab.expired:
         return _items
@@ -179,7 +179,7 @@ class _ContactInvitationInboxState
     });
     final accents = CircleAccents.of(context);
     final received = _items.where((i) => i.status == 'pending').length;
-    final sent = _items.where((i) => i.status == 'accepted').length;
+    final accepted = _items.where((i) => i.status == 'accepted').length;
     final filtered = _filtered;
 
     return ReadingPane(
@@ -204,10 +204,10 @@ class _ContactInvitationInboxState
                   onTap: () => setState(() => _tab = _InviteTab.received),
                 ),
                 _InviteTabChip(
-                  icon: CircleIcons.send,
-                  label: 'Sent${sent > 0 ? ' ($sent)' : ''}',
-                  selected: _tab == _InviteTab.sent,
-                  onTap: () => setState(() => _tab = _InviteTab.sent),
+                  icon: LucideIcons.check,
+                  label: 'Accepted${accepted > 0 ? ' ($accepted)' : ''}',
+                  selected: _tab == _InviteTab.accepted,
+                  onTap: () => setState(() => _tab = _InviteTab.accepted),
                 ),
                 _InviteTabChip(
                   icon: LucideIcons.clock,
@@ -216,6 +216,14 @@ class _ContactInvitationInboxState
                   onTap: () => setState(() => _tab = _InviteTab.expired),
                 ),
               ],
+            ),
+          ),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: () => openInviteLinkDialog(context, ref),
+              icon: const Icon(LucideIcons.link),
+              label: const Text('Open an invite link'),
             ),
           ),
           if (_busy && _items.isEmpty) const LinearProgressIndicator(),
@@ -244,24 +252,17 @@ class _ContactInvitationInboxState
             CircleEmpty(
               title: switch (_tab) {
                 _InviteTab.received => 'No invitations waiting',
-                _InviteTab.sent => 'No sent invitations',
+                _InviteTab.accepted => 'No accepted invitations',
                 _InviteTab.expired => 'No expired invitations',
               },
               message: switch (_tab) {
                 _InviteTab.received =>
                   'Invitations from people you know will appear here.',
-                _InviteTab.sent =>
+                _InviteTab.accepted =>
                   'Invitations you have accepted will appear here.',
                 _InviteTab.expired =>
                   'Expired and declined invitations will appear here.',
               },
-              action: _tab == _InviteTab.received
-                  ? TextButton.icon(
-                      onPressed: () => openInviteLinkDialog(context, ref),
-                      icon: const Icon(LucideIcons.link),
-                      label: const Text('Open an invite link'),
-                    )
-                  : null,
             ),
           for (final item in filtered)
             Padding(

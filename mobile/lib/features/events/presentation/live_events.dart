@@ -597,10 +597,11 @@ class _LiveEventCard extends ConsumerWidget {
                         ),
                         label: 'Event cover',
                       ),
-                      // Group name chip overlay.
+                      // Circle name chip overlay.
                       if (groupName.isNotEmpty)
                         Positioned(
                           left: Space.sm,
+                          right: Space.sm,
                           top: Space.sm,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -622,10 +623,14 @@ class _LiveEventCard extends ConsumerWidget {
                                   color: CircleOverlay.foreground,
                                 ),
                                 const SizedBox(width: Space.xs),
-                                Text(
-                                  groupName,
-                                  style: CircleTextStyles.caption(
-                                    CircleOverlay.foreground,
+                                Flexible(
+                                  child: Text(
+                                    groupName,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: CircleTextStyles.caption(
+                                      CircleOverlay.foreground,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -636,152 +641,184 @@ class _LiveEventCard extends ConsumerWidget {
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.all(Space.md),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Cover photo thumbnail when no cover image.
-                  if (item['cover_id'] == null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: Space.md),
-                      child: EventDateBlock(
-                        wall: liveEventWall(
-                          item['start_at'] as String,
-                          item['timezone'] as String,
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title'] as String,
-                          style: CircleTextStyles.homeAuthor(
-                            theme.colorScheme.onSurface,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final stacked = CircleLayout.stackDetails(
+                  context,
+                  constraints.maxWidth,
+                );
+                final status = ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (daysUntil != null && daysUntil >= 0 && !cancelled)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Space.sm,
+                            vertical: Space.xs,
+                          ),
+                          margin: const EdgeInsets.only(bottom: Space.xs),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(
+                              CircleRadius.button,
+                            ),
+                          ),
+                          child: Text(
+                            daysUntil == 0
+                                ? 'Today'
+                                : daysUntil == 1
+                                ? 'Tomorrow'
+                                : 'In $daysUntil days',
+                            style: CircleTextStyles.caption(
+                              theme.colorScheme.primary,
+                            ),
                           ),
                         ),
-                        if (groupName.isNotEmpty && item['cover_id'] == null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: Space.xs),
-                            child: Row(
+                      Icon(CircleIcons.chevronRight, color: accents.caption),
+                    ],
+                  ),
+                );
+                return Padding(
+                  padding: const EdgeInsets.all(Space.md),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Cover photo thumbnail when no cover image.
+                      if (!stacked && item['cover_id'] == null)
+                        Padding(
+                          padding: const EdgeInsets.only(right: Space.md),
+                          child: EventDateBlock(
+                            wall: liveEventWall(
+                              item['start_at'] as String,
+                              item['timezone'] as String,
+                            ),
+                          ),
+                        ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (stacked)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: Space.sm,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    if (item['cover_id'] == null)
+                                      EventDateBlock(
+                                        wall: liveEventWall(
+                                          item['start_at'] as String,
+                                          item['timezone'] as String,
+                                        ),
+                                      ),
+                                    status,
+                                  ],
+                                ),
+                              ),
+                            Text(
+                              item['title'] as String,
+                              style: CircleTextStyles.homeAuthor(
+                                theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            if (groupName.isNotEmpty &&
+                                item['cover_id'] == null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: Space.xs),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      LucideIcons.users_round,
+                                      size: CircleSizes.iconInline,
+                                      color: accents.caption,
+                                    ),
+                                    const SizedBox(width: Space.xs),
+                                    Expanded(
+                                      child: Text(groupName, style: caption),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: Space.xs),
+                            Row(
                               children: [
                                 Icon(
-                                  LucideIcons.users_round,
+                                  LucideIcons.calendar,
                                   size: CircleSizes.iconInline,
                                   color: accents.caption,
                                 ),
                                 const SizedBox(width: Space.xs),
                                 Expanded(
-                                  child: Text(groupName, style: caption),
+                                  child: Text(
+                                    liveEventLabel(item),
+                                    style: caption,
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                        const SizedBox(height: Space.xs),
-                        Row(
-                          children: [
-                            Icon(
-                              LucideIcons.calendar,
-                              size: CircleSizes.iconInline,
-                              color: accents.caption,
-                            ),
-                            const SizedBox(width: Space.xs),
-                            Expanded(
-                              child: Text(liveEventLabel(item), style: caption),
-                            ),
+                            if (going > 0 || maybe > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: Space.xs),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      LucideIcons.users,
+                                      size: CircleSizes.iconInline,
+                                      color: accents.caption,
+                                    ),
+                                    const SizedBox(width: Space.xs),
+                                    Expanded(
+                                      child: Text(
+                                        [
+                                          if (going > 0) '$going going',
+                                          if (maybe > 0) '$maybe maybe',
+                                        ].join(' \u00b7 '),
+                                        style: caption,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (cancelled || venue.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: Space.xs),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      cancelled
+                                          ? LucideIcons.circle_x
+                                          : LucideIcons.map_pin,
+                                      size: CircleSizes.iconInline,
+                                      color: cancelled
+                                          ? accents.heart
+                                          : accents.caption,
+                                    ),
+                                    const SizedBox(width: Space.xs),
+                                    Expanded(
+                                      child: Text(
+                                        cancelled ? 'Cancelled' : venue,
+                                        style: caption,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
-                        if (going > 0 || maybe > 0)
-                          Padding(
-                            padding: const EdgeInsets.only(top: Space.xs),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  LucideIcons.users,
-                                  size: CircleSizes.iconInline,
-                                  color: accents.caption,
-                                ),
-                                const SizedBox(width: Space.xs),
-                                Expanded(
-                                  child: Text(
-                                    [
-                                      if (going > 0) '$going going',
-                                      if (maybe > 0) '$maybe maybe',
-                                    ].join(' \u00b7 '),
-                                    style: caption,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (cancelled || venue.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: Space.xs),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  cancelled
-                                      ? LucideIcons.circle_x
-                                      : LucideIcons.map_pin,
-                                  size: CircleSizes.iconInline,
-                                  color: cancelled
-                                      ? accents.heart
-                                      : accents.caption,
-                                ),
-                                const SizedBox(width: Space.xs),
-                                Expanded(
-                                  child: Text(
-                                    cancelled ? 'Cancelled' : venue,
-                                    style: caption,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
+                      ),
+                      if (!stacked) status,
+                    ],
                   ),
-                  // Days badge + chevron.
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 100),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (daysUntil != null && daysUntil >= 0 && !cancelled)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: Space.sm,
-                              vertical: Space.xs,
-                            ),
-                            margin: const EdgeInsets.only(bottom: Space.xs),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withValues(
-                                alpha: 0.1,
-                              ),
-                              borderRadius: BorderRadius.circular(
-                                CircleRadius.button,
-                              ),
-                            ),
-                            child: Text(
-                              daysUntil == 0
-                                  ? 'Today'
-                                  : daysUntil == 1
-                                  ? 'Tomorrow'
-                                  : 'In $daysUntil days',
-                              style: CircleTextStyles.caption(
-                                theme.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        Icon(CircleIcons.chevronRight, color: accents.caption),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ],
         ),
@@ -988,10 +1025,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
       child: ReadingPane(
         child: CircleEditorLayout(
           children: [
-            CircleHeading(
-              title: widget.id == null ? 'Plan an event' : 'Edit event',
-              subtitle: 'A place and time for your circle.',
-            ),
+            const Text('Choose a place and time for your Circle.'),
             if (widget.id == null)
               DropdownButtonFormField<String>(
                 initialValue: selected,
@@ -999,9 +1033,9 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
                 itemHeight: null,
                 key: _requiredFields,
                 decoration: InputDecoration(
-                  labelText: 'Group',
+                  labelText: 'Circle',
                   errorText: _submitted && selected == null
-                      ? 'Choose a group.'
+                      ? 'Choose a Circle.'
                       : null,
                 ),
                 items: [
@@ -1017,6 +1051,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
                 if (_submitted) setState(() {});
               },
               enabled: !_busy,
+              buildCounter: CircleFormMetrics.counter,
               maxLength: 200,
               decoration: InputDecoration(
                 labelText: 'Event title',
@@ -1028,6 +1063,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
             TextField(
               controller: _venue,
               enabled: !_busy,
+              buildCounter: CircleFormMetrics.counter,
               maxLength: 500,
               decoration: const InputDecoration(labelText: 'Place'),
             ),
@@ -1040,6 +1076,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
                 TextField(
                   controller: _description,
                   enabled: !_busy,
+                  buildCounter: CircleFormMetrics.counter,
                   maxLength: 10000,
                   minLines: 2,
                   maxLines: 5,
@@ -1048,6 +1085,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
                 TextField(
                   controller: _link,
                   enabled: !_busy,
+                  buildCounter: CircleFormMetrics.counter,
                   maxLength: 1000,
                   decoration: const InputDecoration(
                     labelText: 'Meeting link',
@@ -1251,6 +1289,7 @@ class _RsvpState extends ConsumerState<_RsvpSheet> {
         TextField(
           controller: _note,
           enabled: !_busy,
+          buildCounter: CircleFormMetrics.counter,
           maxLength: 500,
           minLines: 1,
           maxLines: 4,

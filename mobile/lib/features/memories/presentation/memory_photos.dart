@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/viewport_load.dart';
+import '../../../core/api/api_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
@@ -11,6 +12,7 @@ import '../application/media_providers.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'memory_reactions_sheet.dart';
 
 /// The icon drawn for each fictional scene.
 IconData memorySceneIcon(MemoryScene? scene) => switch (scene) {
@@ -126,7 +128,7 @@ class PhotoGrid extends StatelessWidget {
 }
 
 /// G3-style viewer for a Memory's photos (see [PhotoPager]).
-class MemoryPhotoViewer extends StatelessWidget {
+class MemoryPhotoViewer extends ConsumerWidget {
   const MemoryPhotoViewer({
     super.key,
     required this.memoryId,
@@ -136,7 +138,7 @@ class MemoryPhotoViewer extends StatelessWidget {
   final int initialIndex;
 
   @override
-  Widget build(BuildContext context) => WorkspaceView(
+  Widget build(BuildContext context, WidgetRef ref) => WorkspaceView(
     builder: (workspace) {
       final memory = workspace.memories
           .where((memory) => memory.id == memoryId)
@@ -159,6 +161,27 @@ class MemoryPhotoViewer extends StatelessWidget {
         caption: memory.text,
         authorName: memory.author,
         createdAt: memory.createdAt,
+        onReact: () async {
+          final api = ref.read(apiClientProvider);
+          final session = api?.sessionRevision;
+          final repository = ref.read(circleRepositoryProvider);
+          final emoji = await showReactionPicker(context, memory.reactions);
+          if (!context.mounted ||
+              !identical(ref.read(apiClientProvider), api) ||
+              api?.sessionRevision != session ||
+              !identical(ref.read(circleRepositoryProvider), repository)) {
+            return;
+          }
+          if (emoji != null) {
+            await runCalmly(
+              context,
+              () => ref
+                  .read(circleWorkspaceProvider.notifier)
+                  .react(memory.id, emoji),
+            );
+          }
+        },
+        onComment: () => context.push('/home/memory/${memory.id}?comment=true'),
       );
     },
   );
@@ -176,12 +199,15 @@ class PhotoPager extends StatefulWidget {
     this.caption,
     this.authorName,
     this.createdAt,
+    this.onReact,
+    this.onComment,
   });
   final List<MemoryPhoto> photos;
   final int initialIndex;
   final Widget? Function(BuildContext context, MemoryPhoto photo)? footer;
   final String? caption, authorName;
   final DateTime? createdAt;
+  final VoidCallback? onReact, onComment;
   @override
   State<PhotoPager> createState() => _PhotoPagerState();
 }
@@ -355,42 +381,33 @@ class _PhotoPagerState extends State<PhotoPager> {
                 ],
               ),
             ),
-            // Action bar.
-            Divider(
-              height: 1,
-              color: CircleOverlay.divider,
-              indent: Space.md,
-              endIndent: Space.md,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Space.md,
-                vertical: Space.sm,
+            if (widget.onReact != null || widget.onComment != null) ...[
+              Divider(height: 1, color: CircleOverlay.divider),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Space.md,
+                  vertical: Space.sm,
+                ),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceEvenly,
+                  spacing: Space.md,
+                  children: [
+                    if (widget.onReact != null)
+                      _PhotoAction(
+                        icon: LucideIcons.face_slightly_smiling,
+                        label: 'React',
+                        onPressed: widget.onReact!,
+                      ),
+                    if (widget.onComment != null)
+                      _PhotoAction(
+                        icon: LucideIcons.message_square,
+                        label: 'Comment',
+                        onPressed: widget.onComment!,
+                      ),
+                  ],
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: const [
-                  Expanded(
-                    child: _PhotoAction(
-                      icon: LucideIcons.face_slightly_smiling,
-                      label: 'React',
-                    ),
-                  ),
-                  Expanded(
-                    child: _PhotoAction(
-                      icon: LucideIcons.message_square,
-                      label: 'Comment',
-                    ),
-                  ),
-                  Expanded(
-                    child: _PhotoAction(
-                      icon: LucideIcons.share,
-                      label: 'Share',
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
             ?footer,
           ],
         ),
@@ -401,24 +418,20 @@ class _PhotoPagerState extends State<PhotoPager> {
 
 /// Action button for the photo viewer (white on dark).
 class _PhotoAction extends StatelessWidget {
-  const _PhotoAction({required this.icon, required this.label});
+  const _PhotoAction({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
   final IconData icon;
   final String label;
+  final VoidCallback onPressed;
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: CircleSizes.iconPhoto, color: CircleOverlay.foreground),
-      const SizedBox(width: Space.xs),
-      Flexible(
-        child: Text(
-          label,
-          overflow: TextOverflow.ellipsis,
-          style: CircleTextStyles.label(CircleOverlay.foreground),
-        ),
-      ),
-    ],
+  Widget build(BuildContext context) => TextButton.icon(
+    onPressed: onPressed,
+    style: TextButton.styleFrom(foregroundColor: CircleOverlay.foreground),
+    icon: Icon(icon, size: CircleSizes.iconPhoto),
+    label: Text(label),
   );
 }
 

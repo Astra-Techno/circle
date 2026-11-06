@@ -50,7 +50,7 @@ void main() {
       expect(workspaceOf(container).invitations, isEmpty);
       await tapText(tester, 'Create a group');
       await tester.enterText(find.byType(TextField), 'Our weekend circle');
-      await tapText(tester, 'Create private group');
+      await tapText(tester, 'Create Circle');
       expect(workspaceOf(container).groups.single.name, 'Our weekend circle');
       await tester.tap(find.text('Home'));
       await tester.pumpAndSettle();
@@ -99,7 +99,7 @@ void main() {
     ) async {
       final container = await openCircle(tester);
       await go(tester, container, '/groups/g/cse');
-      await tapText(tester, 'Create');
+      await tapText(tester, 'Memory');
       expect(currentUri(container).toString(), '/compose?group=cse');
       expect(find.text('Computer science'), findsWidgets);
     });
@@ -217,7 +217,8 @@ void main() {
       await reveal(tester, find.textContaining('Same table'));
       expect(find.textContaining('Same table'), findsOneWidget);
       // Logging out lives under You › Account (H5).
-      await tapText(tester, 'Account');
+      await tester.tap(find.byTooltip('Account settings'));
+      await tester.pumpAndSettle();
       await reveal(tester, find.text('Log out'));
       expect(find.text('Log out'), findsOneWidget);
       expect(find.text('End preview and clear local changes'), findsNothing);
@@ -470,7 +471,7 @@ void main() {
         find.text('Only admins can change these settings.'),
         findsOneWidget,
       );
-      expect(find.widgetWithText(TextField, 'Group name'), findsNothing);
+      expect(find.widgetWithText(TextField, 'Circle name'), findsNothing);
       final toggle = tester.widget<SwitchListTile>(find.byType(SwitchListTile));
       expect(toggle.onChanged, isNull);
     });

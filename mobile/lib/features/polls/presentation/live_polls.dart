@@ -428,16 +428,13 @@ class _FormState extends ConsumerState<LivePollForm> {
       child: ReadingPane(
         child: CircleEditorLayout(
           children: [
-            const CircleHeading(
-              title: 'Create a poll',
-              subtitle: 'A question, a few choices, your circle.',
-            ),
+            const Text('Ask your Circle a question.'),
             DropdownButtonFormField<String>(
               initialValue: selected,
               decoration: InputDecoration(
                 labelText: 'Share with',
                 errorText: _submitted && selected == null
-                    ? 'Choose a group.'
+                    ? 'Choose a Circle.'
                     : null,
               ),
               isExpanded: true,
@@ -456,6 +453,7 @@ class _FormState extends ConsumerState<LivePollForm> {
                 if (_submitted) setState(() {});
               },
               enabled: !_busy,
+              buildCounter: CircleFormMetrics.counter,
               maxLength: 500,
               decoration: InputDecoration(
                 labelText: 'Question',
@@ -468,6 +466,7 @@ class _FormState extends ConsumerState<LivePollForm> {
               TextField(
                 controller: c,
                 enabled: !_busy,
+                buildCounter: CircleFormMetrics.counter,
                 maxLength: 200,
                 decoration: InputDecoration(
                   labelText: 'Option ${i + 1}',
@@ -730,6 +729,7 @@ class _OptionState extends State<_OptionDialog> {
     title: const Text('Add an option'),
     content: TextField(
       controller: _text,
+      buildCounter: CircleFormMetrics.counter,
       maxLength: 200,
       decoration: const InputDecoration(labelText: 'Option'),
     ),

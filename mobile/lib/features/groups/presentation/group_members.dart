@@ -13,7 +13,7 @@ import '../domain/membership_rules.dart';
 
 String _requestSource(JoinRequestSource source) => switch (source) {
   JoinRequestSource.link => 'Used the invite link',
-  JoinRequestSource.listed => 'Asked from the subgroup list',
+  JoinRequestSource.listed => 'Asked from the InCircles list',
   JoinRequestSource.invitation => 'Accepted a member’s invitation',
 };
 
@@ -362,12 +362,12 @@ Future<bool> confirmRemoveMember(
     context,
     title: 'Remove $name?',
     message: impact.isEmpty
-        ? '$name will lose access to ${group.name} and any of its subgroups they belong to.'
+        ? '$name will lose access to ${group.name} and any of its InCircles they belong to.'
         : '$name will lose access to ${group.name} and also leave:',
     details: [
       ...impact,
       if (impact.isNotEmpty)
-        'Any other subgroups of ${group.name} they belong to',
+        'Any other InCircles of ${group.name} they belong to',
     ],
     confirm: 'Remove',
   );

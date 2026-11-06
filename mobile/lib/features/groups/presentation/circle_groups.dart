@@ -2,7 +2,6 @@ import '../../../core/form_exit_guard.dart';
 import 'group_photos.dart';
 import 'contact_invitation_entry.dart';
 import '../application/group_photos.dart';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,7 +21,6 @@ import '../domain/membership_rules.dart';
 
 /// Indentation steps stop growing after this many levels; deeper levels
 /// stay distinguishable through the "Level n · in Parent" hint.
-const _indentStep = Space.section, _indentLevels = 4;
 
 /// Tight overlapping avatar stack dimensions.
 const _avatarDiameter = 28.0, _avatarOverlap = 20.0;
@@ -334,218 +332,227 @@ class _CircleCard extends ConsumerWidget {
   final VoidCallback? onToggle;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final accents = CircleAccents.of(context);
-    final indent = math.min(level, _indentLevels) * _indentStep;
-    final memberCount = group.roles.length;
-    final memberIds = group.roles.keys.toList();
-    final visibleAvatars = memberIds.take(3).toList();
-    final remaining = memberCount - visibleAvatars.length;
+  Widget build(BuildContext context, WidgetRef ref) => LayoutBuilder(
+    builder: (context, constraints) {
+      final theme = Theme.of(context);
+      final accents = CircleAccents.of(context);
+      final compact = CircleLayout.stackDetails(context, constraints.maxWidth);
+      final indent = CircleLayout.treeIndent(
+        context,
+        constraints.maxWidth,
+        level,
+      );
+      final memberCount = group.roles.length;
+      final memberIds = group.roles.keys.toList();
+      final visibleAvatars = memberIds.take(3).toList();
+      final remaining = memberCount - visibleAvatars.length;
 
-    // Inline stats: "12 members · 2 events"
-    final stats = StringBuffer(
-      '$memberCount ${memberCount == 1 ? 'member' : 'members'}',
-    );
-    if (eventCount > 0) {
-      stats.write(' · $eventCount ${eventCount == 1 ? 'event' : 'events'}');
-    }
+      // Inline stats: "12 members · 2 events"
+      final stats = StringBuffer(
+        '$memberCount ${memberCount == 1 ? 'member' : 'members'}',
+      );
+      if (eventCount > 0) {
+        stats.write(' · $eventCount ${eventCount == 1 ? 'event' : 'events'}');
+      }
 
-    return Padding(
-      padding: EdgeInsetsDirectional.only(start: indent),
-      child: Semantics(
-        button: true,
-        label: group.name,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: accents.hairline, width: 0.5),
-            ),
-          ),
-          child: InkWell(
-            onTap: () {
-              if (!CirclePaneScope.select(context, 'groups', group.id)) {
-                context.push('/groups/g/${group.id}');
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Space.sm,
-                vertical: Space.md,
+      return Padding(
+        padding: EdgeInsetsDirectional.only(start: indent),
+        child: Semantics(
+          button: true,
+          label: group.name,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: accents.hairline, width: 0.5),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Cover photo — 48px rounded square.
-                  _GroupCoverPhoto(groupId: group.id, type: group.type),
-                  const SizedBox(width: Space.md),
-                  // Info column.
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Name + notification dot.
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                group.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: CircleTextStyles.cardTitle(
-                                  theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                            if (notificationCount > 0) ...[
-                              const SizedBox(width: Space.sm),
-                              Container(
-                                width: Space.sm,
-                                height: Space.sm,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        // Member count + event count inline.
-                        Text(
-                          stats.toString(),
-                          style: CircleTextStyles.metadata(accents.caption),
-                        ),
-                        const SizedBox(height: Space.xs),
-                        // Avatar stack row.
-                        Row(
-                          children: [
-                            SizedBox(
-                              width:
-                                  visibleAvatars.length * _avatarOverlap +
-                                  (_avatarDiameter - _avatarOverlap),
-                              height: _avatarDiameter,
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  for (
-                                    var i = 0;
-                                    i < visibleAvatars.length;
-                                    i++
-                                  )
-                                    Positioned(
-                                      left: i * _avatarOverlap,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: theme.colorScheme.surface,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: PersonAvatar(
-                                          person: visibleAvatars[i],
-                                          name: workspace.nameOf(
-                                            visibleAvatars[i],
-                                          ),
-                                          size: CircleAvatarSize.small,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            if (remaining > 0) ...[
-                              const SizedBox(width: Space.xs),
-                              Container(
-                                width: _avatarDiameter,
-                                height: _avatarDiameter,
-                                decoration: BoxDecoration(
-                                  color: accents.recessed,
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '+$remaining',
-                                  style: CircleTextStyles.caption(
-                                    accents.caption,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        // Activity line: "text · 2h ago"
-                        if (activity != null) ...[
-                          const SizedBox(height: Space.xs),
+            ),
+            child: InkWell(
+              onTap: () {
+                if (!CirclePaneScope.select(context, 'groups', group.id)) {
+                  context.push('/groups/g/${group.id}');
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Space.sm,
+                  vertical: Space.md,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Cover photo — 48px rounded square.
+                    if (!compact) ...[
+                      _GroupCoverPhoto(groupId: group.id, type: group.type),
+                      const SizedBox(width: Space.md),
+                    ],
+                    // Info column.
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Name + notification dot.
                           Row(
                             children: [
-                              Icon(
-                                activity!.icon,
-                                size: CircleSizes.iconInline,
-                                color: accents.caption,
-                              ),
-                              const SizedBox(width: Space.xs),
-                              Expanded(
+                              Flexible(
                                 child: Text(
-                                  '${activity!.text} · ${circleTimeAgo(activity!.time)}',
-                                  maxLines: 1,
+                                  group.name,
+                                  maxLines: compact ? null : 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: CircleTextStyles.metadata(
-                                    accents.caption,
+                                  style: CircleTextStyles.cardTitle(
+                                    theme.colorScheme.onSurface,
                                   ),
                                 ),
                               ),
+                              if (notificationCount > 0) ...[
+                                const SizedBox(width: Space.sm),
+                                Container(
+                                  width: Space.sm,
+                                  height: Space.sm,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
+                          const SizedBox(height: 2),
+                          // Member count + event count inline.
+                          Text(
+                            stats.toString(),
+                            style: CircleTextStyles.metadata(accents.caption),
+                          ),
+                          const SizedBox(height: Space.xs),
+                          // Avatar stack row.
+                          Row(
+                            children: [
+                              SizedBox(
+                                width:
+                                    visibleAvatars.length * _avatarOverlap +
+                                    (_avatarDiameter - _avatarOverlap),
+                                height: _avatarDiameter,
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    for (
+                                      var i = 0;
+                                      i < visibleAvatars.length;
+                                      i++
+                                    )
+                                      Positioned(
+                                        left: i * _avatarOverlap,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: theme.colorScheme.surface,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: PersonAvatar(
+                                            person: visibleAvatars[i],
+                                            name: workspace.nameOf(
+                                              visibleAvatars[i],
+                                            ),
+                                            size: CircleAvatarSize.small,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (remaining > 0) ...[
+                                const SizedBox(width: Space.xs),
+                                Container(
+                                  width: _avatarDiameter,
+                                  height: _avatarDiameter,
+                                  decoration: BoxDecoration(
+                                    color: accents.recessed,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '+$remaining',
+                                    style: CircleTextStyles.caption(
+                                      accents.caption,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          // Activity line: "text · 2h ago"
+                          if (activity != null) ...[
+                            const SizedBox(height: Space.xs),
+                            Row(
+                              children: [
+                                Icon(
+                                  activity!.icon,
+                                  size: CircleSizes.iconInline,
+                                  color: accents.caption,
+                                ),
+                                const SizedBox(width: Space.xs),
+                                Expanded(
+                                  child: Text(
+                                    '${activity!.text} · ${circleTimeAgo(activity!.time)}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: CircleTextStyles.metadata(
+                                      accents.caption,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: Space.sm),
-                  // Right side: collapse/expand or nav chevron.
-                  if (expanded != null)
-                    Tooltip(
-                      message:
-                          '${expanded! ? 'Collapse' : 'Expand'} ${group.name}',
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(
-                          CircleSizes.minTouchTarget / 2,
-                        ),
-                        onTap: onToggle,
-                        child: SizedBox(
-                          width: CircleSizes.minTouchTarget,
-                          height: CircleSizes.minTouchTarget,
-                          child: Center(
-                            child: AnimatedRotation(
-                              turns: expanded! ? 0.5 : 0,
-                              duration: CircleMotion.micro,
-                              curve: CircleMotion.enterCurve,
-                              child: Icon(
-                                LucideIcons.chevron_down,
-                                size: Space.section,
-                                color: accents.caption,
+                    const SizedBox(width: Space.sm),
+                    // Right side: collapse/expand or nav chevron.
+                    if (expanded != null)
+                      Tooltip(
+                        message:
+                            '${expanded! ? 'Collapse' : 'Expand'} ${group.name}',
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(
+                            CircleSizes.minTouchTarget / 2,
+                          ),
+                          onTap: onToggle,
+                          child: SizedBox(
+                            width: CircleSizes.minTouchTarget,
+                            height: CircleSizes.minTouchTarget,
+                            child: Center(
+                              child: AnimatedRotation(
+                                turns: expanded! ? 0.5 : 0,
+                                duration: CircleMotion.micro,
+                                curve: CircleMotion.enterCurve,
+                                child: Icon(
+                                  LucideIcons.chevron_down,
+                                  size: Space.section,
+                                  color: accents.caption,
+                                ),
                               ),
                             ),
                           ),
                         ),
+                      )
+                    else
+                      Icon(
+                        CircleIcons.chevronRight,
+                        size: Space.section,
+                        color: accents.caption,
                       ),
-                    )
-                  else
-                    Icon(
-                      CircleIcons.chevronRight,
-                      size: Space.section,
-                      color: accents.caption,
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
 }
 
 /// Rounded rectangle cover photo for a group.
@@ -630,106 +637,115 @@ class CircleGroupTile extends ConsumerWidget {
   final VoidCallback? onToggle;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final viewer = ref.watch(circleViewerProvider);
-    final role = group.roles[viewer];
-    final indent = math.min(level, _indentLevels) * _indentStep;
-    final nested = level > 0;
-    final avatar = nested ? CircleAvatarSize.small : CircleAvatarSize.medium;
-    final accents = CircleAccents.of(context);
-    final details = [
-      '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
-      if (role != null) circleRoleLabel(role),
-      // Nested rows sit under their parent, so the place is already clear.
-      if (where != null && !nested) 'in $where',
-    ].join(' · ');
-    final selected = CirclePaneScope.isSelected(context, 'groups', group.id);
-    // One clean list: subgroups indent under their parent with a smaller
-    // avatar; the divider starts where the names start.
-    return Material(
-      color: selected
-          ? accents.calmContainer
-          : Theme.of(context).colorScheme.surface,
-      child: InkWell(
-        onTap: () {
-          if (!CirclePaneScope.select(context, 'groups', group.id)) {
-            context.push('/groups/g/${group.id}');
-          }
-        },
-        child: Padding(
-          padding: EdgeInsetsDirectional.only(start: indent),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: Space.sm),
-                child: Row(
-                  children: [
-                    GroupAvatar(
-                      groupId: group.id,
-                      type: group.type,
-                      size: avatar,
-                    ),
-                    const SizedBox(width: Space.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            group.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          Text(
-                            details,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: accents.caption),
-                          ),
-                          if (requests > 0)
-                            Padding(
-                              padding: const EdgeInsets.only(top: Space.xs),
-                              child: CircleBadge(
-                                requests == 1
-                                    ? '1 request to review'
-                                    : '$requests requests to review',
-                                strong: true,
-                              ),
+  Widget build(BuildContext context, WidgetRef ref) => LayoutBuilder(
+    builder: (context, constraints) {
+      final viewer = ref.watch(circleViewerProvider);
+      final role = group.roles[viewer];
+      final compact = CircleLayout.stackDetails(context, constraints.maxWidth);
+      final indent = CircleLayout.treeIndent(
+        context,
+        constraints.maxWidth,
+        level,
+      );
+      final nested = level > 0;
+      final avatar = nested ? CircleAvatarSize.small : CircleAvatarSize.medium;
+      final accents = CircleAccents.of(context);
+      final details = [
+        '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
+        if (role != null) circleRoleLabel(role),
+        // Nested rows sit under their parent, so the place is already clear.
+        if (where != null && !nested) 'in $where',
+      ].join(' · ');
+      final selected = CirclePaneScope.isSelected(context, 'groups', group.id);
+      // One clean list: subgroups indent under their parent with a smaller
+      // avatar; the divider starts where the names start.
+      return Material(
+        color: selected
+            ? accents.calmContainer
+            : Theme.of(context).colorScheme.surface,
+        child: InkWell(
+          onTap: () {
+            if (!CirclePaneScope.select(context, 'groups', group.id)) {
+              context.push('/groups/g/${group.id}');
+            }
+          },
+          child: Padding(
+            padding: EdgeInsetsDirectional.only(start: indent),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: Space.sm),
+                  child: Row(
+                    children: [
+                      if (!compact) ...[
+                        GroupAvatar(
+                          groupId: group.id,
+                          type: group.type,
+                          size: avatar,
+                        ),
+                        const SizedBox(width: Space.md),
+                      ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              group.name,
+                              maxLines: compact ? null : 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleMedium,
                             ),
-                        ],
-                      ),
-                    ),
-                    if (expanded == null)
-                      Padding(
-                        padding: const EdgeInsets.all(Space.md),
-                        child: Icon(
-                          CircleIcons.chevronRight,
-                          color: accents.caption,
+                            Text(
+                              details,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: accents.caption),
+                            ),
+                            if (requests > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: Space.xs),
+                                child: CircleBadge(
+                                  requests == 1
+                                      ? '1 request to review'
+                                      : '$requests requests to review',
+                                  strong: true,
+                                ),
+                              ),
+                          ],
                         ),
-                      )
-                    else
-                      IconButton(
-                        tooltip: expanded!
-                            ? 'Collapse ${group.name}'
-                            : 'Expand ${group.name}',
-                        icon: Icon(
-                          expanded!
-                              ? LucideIcons.chevron_up
-                              : LucideIcons.chevron_down,
-                          color: accents.caption,
-                        ),
-                        onPressed: onToggle,
                       ),
-                  ],
+                      if (expanded == null)
+                        Padding(
+                          padding: const EdgeInsets.all(Space.md),
+                          child: Icon(
+                            CircleIcons.chevronRight,
+                            color: accents.caption,
+                          ),
+                        )
+                      else
+                        IconButton(
+                          tooltip: expanded!
+                              ? 'Collapse ${group.name}'
+                              : 'Expand ${group.name}',
+                          icon: Icon(
+                            expanded!
+                                ? LucideIcons.chevron_up
+                                : LucideIcons.chevron_down,
+                            color: accents.caption,
+                          ),
+                          onPressed: onToggle,
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              Divider(height: 1, indent: avatar.diameter + Space.md),
-            ],
+                Divider(height: 1, indent: avatar.diameter + Space.md),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
 }
 
 class CircleCreateGroup extends ConsumerStatefulWidget {
@@ -816,24 +832,25 @@ class _CircleCreateGroupState extends ConsumerState<CircleCreateGroup> {
                     ? 'Bring your\npeople together.'
                     : 'Make a little\nroom within.',
                 subtitle: parent == null
-                    ? 'A private group, with you as its owner.'
-                    : 'A subgroup of ${parent.name}, with you as its owner. Only members of ${parent.name} can join it.',
+                    ? 'A private Circle, with you as its owner.'
+                    : 'A private InCircle within ${parent.name}. Only its members can join.',
               ),
               TextField(
                 controller: _name,
                 decoration: InputDecoration(
-                  labelText: 'Group name',
+                  labelText: 'Circle name',
                   hintText: 'Something your people will recognise',
                   errorText: _error,
                   errorMaxLines: 4,
                 ),
+                buildCounter: CircleFormMetrics.counter,
                 maxLength: 60,
                 textCapitalization: TextCapitalization.words,
               ),
               const SizedBox(height: Space.section),
               DropdownButtonFormField<CircleType>(
                 initialValue: _type,
-                decoration: const InputDecoration(labelText: 'Kind of group'),
+                decoration: const InputDecoration(labelText: 'Circle type'),
                 items: [
                   for (final type in CircleType.values)
                     DropdownMenuItem(
@@ -874,8 +891,8 @@ class _CircleCreateGroupState extends ConsumerState<CircleCreateGroup> {
                   _busy
                       ? 'Creating\u2026'
                       : parent == null
-                      ? 'Create private group'
-                      : 'Create subgroup',
+                      ? 'Create Circle'
+                      : 'Create InCircle',
                 ),
               ),
             ],

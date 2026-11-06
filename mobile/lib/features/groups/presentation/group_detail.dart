@@ -109,7 +109,7 @@ class _GroupMemories extends ConsumerWidget {
               empty: const CircleEmpty(
                 icon: LucideIcons.image,
                 title: 'The first Memory is yours to make',
-                message: 'Use Create to share a moment with this Circle.',
+                message: 'Use Memory to share a moment with this Circle.',
               ),
               itemBuilder: (_, memory) => CircleMemoryCard(
                 key: ValueKey(memory.id),
@@ -301,7 +301,7 @@ class _GroupHeader extends ConsumerWidget {
                 ),
               _QuickAction(
                 icon: LucideIcons.plus,
-                label: 'Create',
+                label: 'Memory',
                 onTap: () => context.push(composeLocation(group.id)),
               ),
               if (features.has(CircleFeature.albums))
@@ -523,7 +523,7 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Create Circle in ${widget.parent.name}',
+              'New InCircle in ${widget.parent.name}',
               style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: Space.xs),
@@ -537,6 +537,7 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
             TextField(
               controller: _name,
               autofocus: true,
+              buildCounter: CircleFormMetrics.counter,
               maxLength: 100,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
@@ -582,7 +583,7 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(LucideIcons.plus),
-              label: Text(_busy ? 'Creating\u2026' : 'Create Circle'),
+              label: Text(_busy ? 'Creating\u2026' : 'Create InCircle'),
             ),
           ],
         ),
@@ -640,7 +641,7 @@ class SubgroupsTab extends ConsumerWidget {
             child: OutlinedButton.icon(
               onPressed: () => _showCreateSubgroupSheet(context, ref, group),
               icon: const Icon(LucideIcons.plus),
-              label: const Text('Create Circle'),
+              label: const Text('Create InCircle'),
             ),
           )
         else

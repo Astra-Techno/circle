@@ -1272,7 +1272,7 @@ class LiveChatPrivacyScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     for (final entry in {
-                      'all': 'People in my groups',
+                      'all': 'People in my Circles',
                       'existing': 'Accepted conversations only',
                       'none': 'Nobody',
                     }.entries)
@@ -1284,7 +1284,7 @@ class LiveChatPrivacyScreen extends ConsumerWidget {
                 ),
               ),
               const Text(
-                'First contact waits in message requests. Blocks stop direct contact in both directions. Shared-group conversations remain visible.',
+                'First contact waits in message requests. Blocks stop direct contact in both directions. Shared Circle conversations remain visible.',
               ),
             ],
           ),

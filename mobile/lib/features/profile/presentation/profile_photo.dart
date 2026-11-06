@@ -278,6 +278,62 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                       CircleProfileLayout.maxCoverHeight,
                     );
             final avatar = CircleAvatarSize.profile.diameter;
+            if (account.coverVersion == null) {
+              return Padding(
+                padding: CircleInsets.content,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox.square(
+                      dimension: avatar + Space.sm,
+                      child: Stack(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(Space.xs),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: theme.colorScheme.surface,
+                            ),
+                            child: ProfilePhotoSurface(
+                              kind: ProfilePhotoKind.avatar,
+                              version: account.avatarVersion,
+                              name: name,
+                              size: CircleAvatarSize.profile,
+                            ),
+                          ),
+                          PositionedDirectional(
+                            end: 0,
+                            bottom: 0,
+                            child: IconButton.filledTonal(
+                              tooltip: account.avatarVersion == null
+                                  ? 'Add profile photo'
+                                  : 'Change profile photo',
+                              onPressed: _busy
+                                  ? null
+                                  : () => _photo(ProfilePhotoKind.avatar),
+                              icon: const Icon(LucideIcons.camera),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: Space.md),
+                    Expanded(
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: TextButton.icon(
+                          onPressed: _busy
+                              ? null
+                              : () => _photo(ProfilePhotoKind.cover),
+                          icon: const Icon(LucideIcons.camera),
+                          label: const Text('Add cover'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
             return SizedBox(
               height: coverHeight + avatar / 2,
               child: Stack(

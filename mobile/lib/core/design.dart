@@ -60,6 +60,12 @@ abstract final class CircleLayout {
   }
 
   static const largeTextThreshold = 1.4;
+  static bool stackDetails(BuildContext context, double width) =>
+      width < 360 ||
+      MediaQuery.textScalerOf(context).scale(1) >= largeTextThreshold;
+  static double treeIndent(BuildContext context, double width, int level) =>
+      level.clamp(0, stackDetails(context, width) ? 2 : 4) *
+      (stackDetails(context, width) ? Space.sm : Space.section);
   static const homeHeaderHeight = 56.0;
   static double headerHeight(BuildContext context, {String? title}) {
     final style = CircleTextStyles.pageTitle(
@@ -135,6 +141,20 @@ abstract final class CircleFormMetrics {
     painter.dispose();
     return measured > 112 ? measured : 112;
   }
+
+  /// Show a limit when editing or approaching it, without filling empty forms
+  /// with rows of zero counters. The field still enforces its maxLength.
+  static Widget? counter(
+    BuildContext context, {
+    required int currentLength,
+    required int? maxLength,
+    required bool isFocused,
+  }) => maxLength != null && (isFocused || currentLength >= maxLength * 0.8)
+      ? Text(
+          '$currentLength/$maxLength',
+          style: Theme.of(context).textTheme.bodySmall,
+        )
+      : null;
 
   static const minFieldHeight = 56.0;
   static const fieldGap = 16.0;
@@ -289,7 +309,7 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     caption: Color(0xFF65676B),
     activeDot: Color(0xFF3F7A68),
     chatWallpaper: Colors.white,
-    chatIncoming: Color(0xFFFFFFFF),
+    chatIncoming: Color(0xFFF0F2F5),
     chatOutgoing: Color(0xFFE4DEFA),
   );
 

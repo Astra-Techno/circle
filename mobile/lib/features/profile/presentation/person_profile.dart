@@ -67,6 +67,16 @@ class PersonProfileScreen extends ConsumerWidget {
           ),
         );
       }
+      final hasCover =
+          ref
+              .watch(
+                sharedProfilePhotoBytesProvider((
+                  person: person,
+                  kind: ProfilePhotoKind.cover,
+                )),
+              )
+              .value !=
+          null;
       final name = workspace.nameOf(person);
       final theme = Theme.of(context);
       final features = ref.watch(circleFeaturesProvider);
@@ -79,17 +89,18 @@ class PersonProfileScreen extends ConsumerWidget {
           padding: CircleInsets.form,
           children: [
             ...[
-              AspectRatio(
-                aspectRatio: CircleProfileLayout.coverAspectRatio,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(CircleRadius.card),
-                  child: SharedProfilePhotoSurface(
-                    person: person,
-                    kind: ProfilePhotoKind.cover,
-                    name: name,
+              if (hasCover)
+                AspectRatio(
+                  aspectRatio: CircleProfileLayout.coverAspectRatio,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(CircleRadius.card),
+                    child: SharedProfilePhotoSurface(
+                      person: person,
+                      kind: ProfilePhotoKind.cover,
+                      name: name,
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(height: Space.md),
               Center(
                 child: SharedProfilePhotoSurface(
@@ -164,7 +175,7 @@ class PersonProfileScreen extends ConsumerWidget {
                 ),
             if (!workspace.memories.any((memory) => memory.authorId == person))
               CircleEmpty(
-                title: 'Recent Memories',
+                title: 'No Memories to show',
                 message: workspace.hasMoreMemories
                     ? 'No Memories from $name in the items loaded so far.'
                     : 'No Memories from $name are currently shared with you.',

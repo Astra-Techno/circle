@@ -152,7 +152,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final off = find.text('Turn off notifications');
+      final off = find.widgetWithText(SwitchListTile, 'Allow notifications');
       await tester.scrollUntilVisible(off, 200);
       await tester.tap(off);
       await tester.pumpAndSettle();
@@ -271,7 +271,7 @@ void main() {
         }
         final groupChoice = find.byKey(const ValueKey('push-groups'));
         await tester.scrollUntilVisible(groupChoice, 300);
-        expect(find.text('Groups and safety'), findsOneWidget);
+        expect(find.text('Circles and safety'), findsOneWidget);
         await Scrollable.ensureVisible(
           tester.element(groupChoice),
           alignment: 0.5,
@@ -287,7 +287,10 @@ void main() {
           isTrue,
         );
         expect(choices.permissions, 0);
-        final enable = find.text('Enable notifications');
+        final enable = find.widgetWithText(
+          SwitchListTile,
+          'Allow notifications',
+        );
         await tester.scrollUntilVisible(enable, -300);
         await tester.ensureVisible(enable);
         await tester.pumpAndSettle();
@@ -306,7 +309,10 @@ void main() {
         await tester.tap(find.text('Continue'));
         await tester.pumpAndSettle();
         expect(choices.permissions, 1);
-        expect(find.text('Turn off notifications'), findsOneWidget);
+        expect(
+          find.widgetWithText(SwitchListTile, 'Allow notifications'),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
       });
     }

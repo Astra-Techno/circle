@@ -1,5 +1,23 @@
 # CIRCLE design system
 
+## Social 2.3 — interaction and screen audit fixes, 6 November 2026
+
+Retain Social2.2 white canvases, native SF/corrected Inter, Lucide and shared
+Memory cards. Apply text scaling once in chat; incoming bubbles use the neutral
+recessed surface. Photo viewers own one immersive toolbar and expose only wired
+Memory reactions/comments (no unsupported Share). Circle's plus action is named
+Memory; nested creation is Create InCircle. Accepted invitations are labelled
+Accepted and link entry stays visible with populated data.
+
+Use CircleLayout.stackDetails/treeIndent with actual pane constraints. At narrow
+widths or large text, stack Event metadata and keep Circle names readable instead
+of reserving fixed side columns. Country-code/mobile fields stack as needed.
+CircleFormMetrics.counter reveals limits while editing or near the limit; keep
+maxLength enforcement and 48px targets. No text-scale caps. Empty-cover profiles
+are compact; gear/Account owns settings, private details and technical device data
+use disclosures. Keep capability, permission, session and private-media guards.
+
+
 ## Social 2.2 — white canvases and shared Memory cards, 6 November 2026
 
 Owner requests white backgrounds across light-mode pages. Use the shared surface

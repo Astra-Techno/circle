@@ -18,8 +18,13 @@ import 'mention_text.dart';
 /// B2: the full Memory, then comments in order with replies indented
 /// under their parent, then the composer.
 class CircleMemoryDetail extends ConsumerStatefulWidget {
-  const CircleMemoryDetail({super.key, required this.id});
+  const CircleMemoryDetail({
+    super.key,
+    required this.id,
+    this.focusComment = false,
+  });
   final String id;
+  final bool focusComment;
   @override
   ConsumerState<CircleMemoryDetail> createState() => _CircleMemoryDetailState();
 }
@@ -31,6 +36,11 @@ class _CircleMemoryDetailState extends ConsumerState<CircleMemoryDetail> {
   @override
   void initState() {
     super.initState();
+    if (widget.focusComment) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focus.requestFocus();
+      });
+    }
     // On a server, opening a Memory loads its comments and every reaction.
     // Offline, the card keeps what the list already showed.
     unawaited(

@@ -126,10 +126,7 @@ class _Choices extends ConsumerWidget {
         child: ListView(
           padding: CircleInsets.form,
           children: [
-            const CircleHeading(
-              title: 'Notifications',
-              subtitle: 'Your updates and quiet hours.',
-            ),
+            const CircleSectionTitle('This phone'),
             Text(
               preferences.enabled && coordinator.active
                   ? 'Notifications are connected on this phone.'
@@ -146,29 +143,30 @@ class _Choices extends ConsumerWidget {
               const LinearProgressIndicator(
                 semanticsLabel: 'Saving notification choices',
               ),
-            FilledButton.icon(
-              onPressed: busy || coordinator.active
-                  ? null
-                  : () => _enable(context, ref),
-              icon: const Icon(LucideIcons.bell),
-              label: Text(
-                coordinator.active
-                    ? 'Connected on this phone'
-                    : preferences.enabled
-                    ? 'Connect this phone'
-                    : 'Enable notifications',
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Allow notifications'),
+              subtitle: Text(
+                preferences.enabled
+                    ? 'Your selected updates are enabled'
+                    : 'All updates are off',
               ),
+              value: preferences.enabled,
+              onChanged: busy
+                  ? null
+                  : (enabled) => enabled
+                        ? _enable(context, ref)
+                        : runCalmly(
+                            context,
+                            () => controller.change(enabled: false),
+                            success: 'Notifications turned off.',
+                          ),
             ),
-            if (preferences.enabled)
-              TextButton(
-                onPressed: busy
-                    ? null
-                    : () => runCalmly(
-                        context,
-                        () => controller.change(enabled: false),
-                        success: 'Notifications turned off.',
-                      ),
-                child: const Text('Turn off notifications'),
+            if (preferences.enabled && !coordinator.active)
+              FilledButton.icon(
+                onPressed: busy ? null : () => _enable(context, ref),
+                icon: const Icon(LucideIcons.bell),
+                label: const Text('Connect this phone'),
               ),
             ExpansionTile(
               title: const Text('Connection help'),
@@ -201,7 +199,7 @@ class _Choices extends ConsumerWidget {
             category(
               PushCategory.memories,
               'New Memories',
-              'When someone shares in one of your groups',
+              'When someone shares in one of your Circles',
             ),
             category(
               PushCategory.repliesReactions,
@@ -210,14 +208,14 @@ class _Choices extends ConsumerWidget {
             ),
             category(
               PushCategory.groups,
-              'Groups and safety',
-              'Group invitations and reports for group admins',
+              'Circles and safety',
+              'Invitations and reports for Circle admins',
             ),
             const SizedBox(height: Space.section),
             category(
               PushCategory.chats,
               'Messages',
-              'Unmuted group messages and eligible direct requests',
+              'Unmuted Circle messages and direct requests',
             ),
             category(
               PushCategory.events,

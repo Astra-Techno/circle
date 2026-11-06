@@ -285,6 +285,8 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await settle(tester);
       expect(device.calls, 1);
+      await tester.tap(find.text('Device details').first);
+      await settle(tester);
       expect(find.textContaining('Fictional Updated City'), findsOneWidget);
     },
   );

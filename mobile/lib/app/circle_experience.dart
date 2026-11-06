@@ -402,8 +402,14 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'memory/:id',
-                    builder: (_, state) =>
-                        _idRoute(state, (id) => CircleMemoryDetail(id: id)),
+                    builder: (_, state) => _idRoute(
+                      state,
+                      (id) => CircleMemoryDetail(
+                        id: id,
+                        focusComment:
+                            state.uri.queryParameters['comment'] == 'true',
+                      ),
+                    ),
                     routes: [
                       GoRoute(
                         path: 'photos',
@@ -932,6 +938,11 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
             )
           : const SizedBox(width: double.infinity, height: 0),
     );
+
+    // The immersive viewer owns its close/counter toolbar and safe areas.
+    if (path.endsWith('/photos')) {
+      return Scaffold(backgroundColor: CircleOverlay.background, body: shell);
+    }
 
     // Detail pages keep a traditional AppBar with Back.
     if (detail) {

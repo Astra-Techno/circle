@@ -102,10 +102,7 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
       child: ListView(
         padding: CircleInsets.page,
         children: [
-          const CircleHeading(
-            title: 'Your devices',
-            subtitle: 'Where you’re signed in.',
-          ),
+          const Text('Where you’re signed in.'),
           const SizedBox(height: Space.lg),
           const Text('Location sharing is optional. No background tracking.'),
           if (_busy) const LinearProgressIndicator(),
@@ -133,21 +130,52 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
                       session.device,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    if (session.current) const Text('This device'),
-                    if (session.os.isNotEmpty) Text(session.os),
-                    if (session.app.isNotEmpty) Text('CIRCLE ${session.app}'),
-                    Text('Signed in: ${_date(session.created)}'),
-                    Text('Last active: ${_date(session.seen)}'),
-                    Text(
-                      'Network: ${session.ip.isEmpty ? 'Unavailable' : session.ip}',
-                    ),
-                    Text(
-                      'Shared approximate location: ${session.location ?? 'Not shared'}',
-                    ),
-                    if (session.locationUpdated != null)
-                      Text(
-                        'Location updated: ${_date(session.locationUpdated)}',
+                    if (session.current)
+                      const CirclePill(
+                        'This device',
+                        icon: LucideIcons.smartphone,
                       ),
+                    const SizedBox(height: Space.sm),
+                    Text(
+                      'Last active: ${_date(session.seen)}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    if (session.os.isNotEmpty)
+                      Text(
+                        session.os,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ExpansionTile(
+                      key: PageStorageKey('device-details-${session.id}'),
+                      tilePadding: EdgeInsets.zero,
+                      title: const Text('Device details'),
+                      children: [
+                        if (session.app.isNotEmpty)
+                          ListTile(
+                            title: const Text('App version'),
+                            subtitle: Text('CIRCLE ${session.app}'),
+                          ),
+                        ListTile(
+                          title: const Text('Signed in'),
+                          subtitle: Text(_date(session.created)),
+                        ),
+                        ListTile(
+                          title: const Text('Network'),
+                          subtitle: Text(
+                            session.ip.isEmpty ? 'Unavailable' : session.ip,
+                          ),
+                        ),
+                        ListTile(
+                          title: const Text('Shared approximate location'),
+                          subtitle: Text(session.location ?? 'Not shared'),
+                        ),
+                        if (session.locationUpdated != null)
+                          ListTile(
+                            title: const Text('Location updated'),
+                            subtitle: Text(_date(session.locationUpdated)),
+                          ),
+                      ],
+                    ),
                     if (session.current)
                       Wrap(
                         spacing: Space.sm,

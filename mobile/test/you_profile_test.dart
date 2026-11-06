@@ -33,8 +33,7 @@ void main() {
     expect(currentUri(container).path, '/home');
     await tester.tap(find.text('Profile'));
     await settle(tester);
-    await reveal(tester, find.text('Account'));
-    await tester.tap(find.text('Account'));
+    await tester.tap(find.byTooltip('Account settings'));
     await settle(tester);
     await reveal(tester, find.text('Connection details'));
     await tester.tap(find.text('Connection details'));

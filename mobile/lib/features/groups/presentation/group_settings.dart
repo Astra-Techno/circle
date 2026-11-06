@@ -124,7 +124,7 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
       title: 'Leave ${group.name}?',
       message: also.isEmpty
           ? 'You’ll lose access to its Memories, events and chat. To come back, you’ll need a new invitation.'
-          : 'You’ll lose access to ${group.name} and also leave these subgroups:',
+          : 'You’ll lose access to ${group.name} and also leave these InCircles:',
       details: [for (final item in also) item.name],
       confirm: 'Leave',
     );
@@ -161,18 +161,19 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
           padding: CircleInsets.form,
           children: [
             CircleHeading(
-              title: 'Group settings',
+              title: 'Circle settings',
               subtitle: admin
-                  ? 'Changes apply to ${group.name} only. Subgroups keep their own settings.'
+                  ? 'Changes apply to ${group.name} only. InCircles keep their own settings.'
                   : 'Only admins can change these settings.',
             ),
             if (admin) ...[
               TextField(
                 controller: _name,
+                buildCounter: CircleFormMetrics.counter,
                 maxLength: 60,
                 textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(
-                  labelText: 'Group name',
+                  labelText: 'Circle name',
                   errorText: _nameError,
                   errorMaxLines: 3,
                 ),
@@ -254,7 +255,7 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
                 decoration: const InputDecoration(
                   labelText: 'Who can create events',
                   helperText:
-                      'Everyone in the group can always see and answer.',
+                      'Everyone in the Circle can always see and answer.',
                   helperMaxLines: 3,
                 ),
                 items: const [
@@ -330,7 +331,7 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
                 leading: const Icon(LucideIcons.flag),
                 title: const Text('Reports and admin actions'),
                 subtitle: const Text(
-                  'Review reports privately with this group’s admins.',
+                  'Review reports privately with this Circle’s admins.',
                 ),
                 trailing: const Icon(CircleIcons.chevronRight),
                 onTap: () => context.push('/groups/g/${group.id}/reports'),
@@ -342,19 +343,19 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(LucideIcons.crown),
                 title: const Text('Transfer ownership'),
-                subtitle: const Text('Choose a member to own this group.'),
+                subtitle: const Text('Choose a member to own this Circle.'),
                 trailing: const Icon(CircleIcons.chevronRight),
                 enabled: group.roles.length > 1,
                 onTap: _transfer,
               ),
             ],
             const Divider(height: Space.hero * 2),
-            Text('Leave group', style: theme.textTheme.titleMedium),
+            Text('Leave Circle', style: theme.textTheme.titleMedium),
             const SizedBox(height: Space.sm),
             if (leave.allowed) ...[
               Text(
                 cascade.length > 1
-                    ? 'Leaving also removes you from ${cascade.length - 1} ${cascade.length == 2 ? 'subgroup' : 'subgroups'} inside it.'
+                    ? 'Leaving also removes you from ${cascade.length - 1} ${cascade.length == 2 ? 'InCircle' : 'InCircles'} inside it.'
                     : 'You can come back only with a new invitation.',
               ),
               const SizedBox(height: Space.md),
