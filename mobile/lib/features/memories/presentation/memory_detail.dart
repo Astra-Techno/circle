@@ -237,7 +237,13 @@ class _CircleMemoryDetailState extends ConsumerState<CircleMemoryDetail> {
                   .map(
                     (child) => child is CircleMemoryCard
                         ? child
-                        : Padding(padding: CircleInsets.content, child: child),
+                        : Padding(
+                            key: child is _InlineCommentInput
+                                ? ValueKey('memory-comment-input-${widget.id}')
+                                : child.key,
+                            padding: CircleInsets.content,
+                            child: child,
+                          ),
                   )
                   .toList(),
         ),

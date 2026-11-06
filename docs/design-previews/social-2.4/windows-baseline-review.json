@@ -1,0 +1,178 @@
+[
+  {
+    "file": "access_login.png",
+    "changed": false,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "access_register.png",
+    "changed": false,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "access_register_dark.png",
+    "changed": false,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "access_welcome.png",
+    "changed": false,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_chats.png",
+    "changed": false,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_compose.png",
+    "changed": false,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_events.png",
+    "changed": false,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_groups.png",
+    "changed": false,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_groups_g_friends.png",
+    "changed": true,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_groups_new.png",
+    "changed": false,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_home.png",
+    "changed": true,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_home_dark.png",
+    "changed": true,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_you.png",
+    "changed": false,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "home_feed_393x852.png",
+    "changed": true,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "home_feed_dark_393x852.png",
+    "changed": true,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "responsive_home_1024x768.png",
+    "changed": true,
+    "size": [
+      1024,
+      768
+    ]
+  },
+  {
+    "file": "responsive_home_1280x800.png",
+    "changed": true,
+    "size": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "responsive_home_360x800.png",
+    "changed": true,
+    "size": [
+      360,
+      800
+    ]
+  },
+  {
+    "file": "responsive_home_393x852.png",
+    "changed": true,
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "responsive_home_430x932.png",
+    "changed": true,
+    "size": [
+      430,
+      932
+    ]
+  },
+  {
+    "file": "responsive_home_600x960.png",
+    "changed": true,
+    "size": [
+      600,
+      960
+    ]
+  },
+  {
+    "file": "responsive_home_800x1280.png",
+    "changed": true,
+    "size": [
+      800,
+      1280
+    ]
+  }
+]

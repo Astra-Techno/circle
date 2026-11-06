@@ -1,6 +1,6 @@
 # Reference-inspired Memories — Social 2.4
 
-Version **1.0.36+41** implements the owner's attached Facebook post reference in the existing Flutter app. The target is the post's content hierarchy: compact author identity, quiet metadata, full-width photography, clean white sections and icon/count actions. Circle keeps its private audience, purple accent and supported operations.
+Version **1.0.36+42** implements the owner's attached Facebook post reference in the existing Flutter app. The target is the post's content hierarchy: compact author identity, quiet metadata, full-width photography, clean white sections and icon/count actions. Circle keeps its private audience, purple accent and supported operations.
 
 ## What changed
 
@@ -34,6 +34,21 @@ Used the installed Product Design screenshot guidance and Hugeicons consistency 
 - Final extended/reference capture run13 passed and main route matrix5 passed. Prior focused Memory/shared-card run22 passed after correcting icon-row expectations; previous image-loading budgets and prior audit regressions passed apart from the one stale comment-text locator subsequently corrected.
 - Broad local run760 passed/1 skipped/9 image mismatches. Nine existing Home image comparisons require the new Windows baselines;13 other Windows golden cases were excluded by name. No functional failures. The broad run preceded the last spacing-only refinement, which is covered by the final render matrices. Windows full verification remains the integration gate.
 
+## Draft preservation and integration follow-up
+
+A final additional regression reproduced unsent comment loss when Reply inserted
+its banner: the new generic inset wrappers needed stable identity for the inline
+composer. The wrapper now has a Memory-scoped key. Reply/Cancel retains both text
+and composer state; the focused Memory/reference/prior-audit run passes37 tests.
+Android candidate41 was never published and iOS42212335842 was cancelled before
+upload. The corrected release uses Android42 and a new signed iOS run.
+
+Windows full refresh42212332065 passed782 tests/1skip, format/analyzer clean.
+All22 baselines reviewed:12 expected Memory/Home changes,10 unchanged. The
+identity fix does not alter default pixels. [Review sheet](design-previews/social-2.4/windows-baseline-review.jpg).
+The next normal Windows run verifies the corrected source, including the new
+draft regression, against these reviewed baselines.
+
 ## Delivery
 
-Windows full refresh/review, normal comparison and signed Android/TestFlight delivery are pending at the source commit. Installed apps require this new release to show the design. No native-device or live-hosting deployment acceptance is inferred from source publication.
+Reviewed Windows baselines are included with the draft-identity correction. Normal comparison and corrected Android42/TestFlight delivery are pending. Installed apps require this new release to show the design. No native-device or live-hosting deployment acceptance is inferred from source publication.

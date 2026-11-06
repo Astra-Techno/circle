@@ -130,6 +130,35 @@ void main() {
   });
 
   group('comments', () {
+    testWidgets('changing reply target keeps an unsent comment draft', (
+      tester,
+    ) async {
+      final c = await openCircle(tester);
+      await go(tester, c, '/home/memory/table');
+      await enterField(
+        tester,
+        'Write a comment...',
+        'A fictional unsent draft',
+      );
+      await tapText(tester, 'Reply');
+      final input = find.widgetWithText(TextField, 'Write a reply...');
+      expect(
+        tester.widget<TextField>(input).controller!.text,
+        'A fictional unsent draft',
+      );
+      await tapText(tester, 'Cancel');
+      expect(
+        tester
+            .widget<TextField>(
+              find.widgetWithText(TextField, 'Write a comment...'),
+            )
+            .controller!
+            .text,
+        'A fictional unsent draft',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('reply to a comment; replies indent; delete with undo', (
       tester,
     ) async {

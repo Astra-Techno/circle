@@ -1,5 +1,5 @@
 {
-  "version": "1.0.36+41",
+  "version": "1.0.36+42",
   "interface": "Social 2.4",
   "baseCommit": "2d27fa8",
   "method": "Real Flutter widgets with fictional fixtures, desktop Inter; physical-device appearance unverified",
@@ -1004,5 +1004,13 @@
       "file": "main-900-2.0-light.jpg",
       "sha256": "04bd33958fd9f3e6109202d5e7935fdbf57577c6d8453edbe521b98a8ff14f1a"
     }
-  ]
+  ],
+  "windowsReview": {
+    "run": 42212332065,
+    "testsPassed": 782,
+    "testsSkipped": 1,
+    "baselineCount": 22,
+    "changed": 12,
+    "unchanged": 10
+  }
 }
