@@ -52,12 +52,16 @@ class GroupPhotoHeader extends ConsumerStatefulWidget {
 
 class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
   bool _busy = false;
-  Future<void> _change(ProfilePhotoKind kind) async {
+  Future<void> _change(
+    ProfilePhotoKind kind, {
+    GroupPhotoScope? expectedScope,
+  }) async {
     if (_busy) return;
     final actions = ref.read(groupPhotoActionsProvider);
     late final GroupPhotoScope scope;
     try {
-      scope = actions.capture(widget.group.id);
+      scope = expectedScope ?? actions.capture(widget.group.id);
+      actions.check(scope);
     } catch (error) {
       if (mounted) showCircleMessage(context, error.toString());
       return;
@@ -107,35 +111,40 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
     }
   }
 
-  Future<void> _refresh() async {
+  Future<void> _editPhotos() async {
     if (_busy) return;
-    setState(() => _busy = true);
+    late final GroupPhotoScope scope;
     try {
-      await ref.read(circleWorkspaceProvider.notifier).refresh();
-      if (!mounted) return;
-      final group = ref
-          .read(circleWorkspaceProvider)
-          .value
-          ?.group(widget.group.id);
-      for (final kind in ProfilePhotoKind.values) {
-        final version = kind == ProfilePhotoKind.avatar
-            ? group?.avatarVersion
-            : group?.coverVersion;
-        if (version != null) {
-          ref.invalidate(
-            groupPhotoBytesProvider((
-              group: widget.group.id,
-              kind: kind,
-              version: version,
-            )),
-          );
-        }
-      }
+      scope = ref.read(groupPhotoActionsProvider).capture(widget.group.id);
     } catch (error) {
       if (mounted) showCircleMessage(context, error.toString());
-    } finally {
-      if (mounted) setState(() => _busy = false);
+      return;
     }
+    final kind = await showModalBottomSheet<ProfilePhotoKind>(
+      context: context,
+      useSafeArea: true,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(LucideIcons.user),
+            title: const Text('Circle photo'),
+            onTap: () => Navigator.pop(context, ProfilePhotoKind.avatar),
+          ),
+          ListTile(
+            leading: const Icon(LucideIcons.image),
+            title: const Text('Cover photo'),
+            onTap: () => Navigator.pop(context, ProfilePhotoKind.cover),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || kind == null || widget.group.id != scope.group) return;
+    await _change(kind, expectedScope: scope);
   }
 
   @override
@@ -161,33 +170,47 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
         kind: ProfilePhotoKind.cover,
         version: version,
       );
+      final coverFailure = Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(decoration: CircleDepth.profilePanel(context)),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Cover photo couldn’t load',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                Tooltip(
+                  message: 'Retry group banner',
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        ref.invalidate(groupPhotoBytesProvider(query)),
+                    icon: const Icon(LucideIcons.refresh_cw),
+                    label: const Text('Retry'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
       cover = ref
           .watch(groupPhotoBytesProvider(query))
           .when(
+            skipLoadingOnRefresh: false,
             data: (bytes) => Image.memory(
               bytes,
               key: ValueKey('group-cover-${group.id}'),
-              errorBuilder: (_, _, _) => fallback,
+              errorBuilder: (_, _, _) => coverFailure,
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
               semanticLabel: 'Banner for ${group.name}',
             ),
             loading: () => fallback,
-            error: (_, _) => Stack(
-              fit: StackFit.expand,
-              children: [
-                fallback,
-                Center(
-                  child: IconButton.filledTonal(
-                    tooltip: 'Retry group banner',
-                    onPressed: () =>
-                        ref.invalidate(groupPhotoBytesProvider(query)),
-                    icon: const Icon(LucideIcons.refresh_cw),
-                  ),
-                ),
-              ],
-            ),
+            error: (_, _) => coverFailure,
           );
     }
     // The banner steps aside at large text sizes so the tabs stay within
@@ -214,20 +237,6 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
               ),
             ),
           ),
-          if (admin)
-            PositionedDirectional(
-              end: 0,
-              bottom: 0,
-              child: IconButton.filledTonal(
-                tooltip: group.avatarVersion == null
-                    ? 'Add group picture'
-                    : 'Change group picture',
-                onPressed: _busy
-                    ? null
-                    : () => _change(ProfilePhotoKind.avatar),
-                icon: const Icon(LucideIcons.camera),
-              ),
-            ),
         ],
       ),
     );
@@ -249,29 +258,13 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
                         alignment: Alignment.bottomRight,
                         child: Padding(
                           padding: const EdgeInsets.all(Space.sm),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton.filledTonal(
-                                tooltip: 'Refresh group photos',
-                                onPressed: _busy ? null : _refresh,
-                                icon: const Icon(LucideIcons.refresh_cw),
-                              ),
-                              // Admins change the banner from a camera on it.
-                              if (admin) ...[
-                                const SizedBox(width: Space.sm),
-                                IconButton.filledTonal(
-                                  tooltip: group.coverVersion == null
-                                      ? 'Add banner'
-                                      : 'Change banner',
-                                  onPressed: _busy
-                                      ? null
-                                      : () => _change(ProfilePhotoKind.cover),
+                          child: admin
+                              ? IconButton.filledTonal(
+                                  tooltip: 'Edit Circle photos',
+                                  onPressed: _busy ? null : _editPhotos,
                                   icon: const Icon(LucideIcons.camera),
-                                ),
-                              ],
-                            ],
-                          ),
+                                )
+                              : const SizedBox.shrink(),
                         ),
                       ),
                     ],
@@ -304,27 +297,17 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
             ),
           ),
         ),
-        // With the banner hidden at large text, its controls move here.
-        if (largeText)
-          Wrap(
-            spacing: Space.sm,
-            children: [
-              IconButton.filledTonal(
-                tooltip: 'Refresh group photos',
-                onPressed: _busy ? null : _refresh,
-                icon: const Icon(LucideIcons.refresh_cw),
+        if (largeText && admin)
+          Padding(
+            padding: CircleInsets.content,
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: IconButton.filledTonal(
+                tooltip: 'Edit Circle photos',
+                onPressed: _busy ? null : _editPhotos,
+                icon: const Icon(LucideIcons.camera),
               ),
-              if (admin)
-                IconButton.filledTonal(
-                  tooltip: group.coverVersion == null
-                      ? 'Add banner'
-                      : 'Change banner',
-                  onPressed: _busy
-                      ? null
-                      : () => _change(ProfilePhotoKind.cover),
-                  icon: const Icon(LucideIcons.image),
-                ),
-            ],
+            ),
           ),
         if (_busy) const LinearProgressIndicator(),
       ],

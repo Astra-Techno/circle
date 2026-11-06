@@ -55,6 +55,7 @@ final circleSessionActiveProvider = Provider<bool>(
 final circleWorkspaceProvider =
     AsyncNotifierProvider<CircleWorkspaceController, CircleWorkspace>(
       CircleWorkspaceController.new,
+      retry: (_, _) => null,
     );
 
 /// Runs repository mutations for the current viewer, then reloads the
@@ -287,7 +288,10 @@ class CircleWorkspaceController extends AsyncNotifier<CircleWorkspace> {
 /// Independently paginated group, saved and search views. Mutations refresh the
 /// current scope; merely browsing Home cannot decide whether these are empty.
 final memoryTimelineProvider = AsyncNotifierProvider.autoDispose
-    .family<MemoryTimeline, MemoryPage, MemoryQuery>(MemoryTimeline.new);
+    .family<MemoryTimeline, MemoryPage, MemoryQuery>(
+      MemoryTimeline.new,
+      retry: (_, _) => null,
+    );
 
 class MemoryTimeline extends AsyncNotifier<MemoryPage> {
   MemoryTimeline(this.query);

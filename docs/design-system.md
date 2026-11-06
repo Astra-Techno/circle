@@ -1,5 +1,9 @@
 # CIRCLE design system
 
+## Circle actions and recovery, 7 November 2026
+
+Circle detail shortcuts use a balanced adaptive grid capped at3columns, measuring the14px label with actual Bold Text and text scaling. Keep whole-word labels,48px targets and existing scoped routes. Use one admin photo-edit menu for Circle/cover choices, one labeled retry for cover failures, and explicit safe failure messages for Memories. Stop automatic workspace/timeline retry loops; preserve session checks and explicit refresh. See docs/circle-detail-recovery-2026-11-07.md.
+
 ## Approved icon-only floating navigation, 6 November 2026
 
 The owner-approved refined third concept supersedes persistent dock labels, the active underline and the edge-to-edge footer. Use a56px outlined/shadowed capsule,12px side insets,8px top gap, bottom max(8px, device inset) exactly once, capped640px wide. Five evenly spaced24px icons/profile avatar remain centered in one row at normal phone widths, independent of text scale. Use a40×36 lavender active highlight and purple profile-photo selection ring. Preserve48px hit targets, tooltips, explicit screen-reader names/selection/actions, actual session avatar and all existing routes/visibility rules. Reserve layout space so content is not covered. Do not add fake profile images or manually draw system chrome. See docs/icon-navigation-selected-2026-11-06.md.

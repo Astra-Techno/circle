@@ -60,7 +60,7 @@ void main() {
         expect(
           tester
               .widgetList<CircleHeaderAction>(find.byType(CircleHeaderAction))
-              .every((a) => a.tonal),
+              .every((a) => !a.tonal),
           isTrue,
         );
         expect(tester.takeException(), isNull);

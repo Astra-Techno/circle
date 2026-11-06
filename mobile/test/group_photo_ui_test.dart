@@ -170,10 +170,16 @@ void main() {
     await settle(tester);
     Future<void> choose(String button, String action) async {
       await Scrollable.ensureVisible(
-        tester.element(find.byTooltip(button)),
+        tester.element(find.byTooltip('Edit Circle photos')),
         alignment: 0.5,
       );
-      await tester.tap(find.byTooltip(button));
+      await tester.tap(find.byTooltip('Edit Circle photos'));
+      await settle(tester);
+      await tester.tap(
+        find.text(
+          button.contains('group picture') ? 'Circle photo' : 'Cover photo',
+        ),
+      );
       await settle(tester);
       await tester.tap(find.text(action));
       await settle(tester);
@@ -243,7 +249,10 @@ void main() {
       expect(find.byTooltip('Change banner'), findsNothing);
       expect(find.byKey(ValueKey('group-cover-$id')), findsOneWidget);
       server.groups[id]!['cover_version'] = 'fictional-replacement';
-      await tester.tap(find.byTooltip('Refresh group photos'));
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, 300),
+      );
       await settle(tester);
       expect(
         c.read(circleWorkspaceProvider).value!.group('$id')!.coverVersion,
@@ -330,8 +339,13 @@ void main() {
         await settle(tester);
         // At 200% text the banner steps aside; its controls stay.
         expect(find.byKey(ValueKey('group-cover-$id')), findsNothing);
-        expect(find.byTooltip('Change banner'), findsOneWidget);
-        expect(find.byTooltip('Change group picture'), findsOneWidget);
+        expect(find.byTooltip('Edit Circle photos'), findsOneWidget);
+        await tester.tap(find.byTooltip('Edit Circle photos'));
+        await settle(tester);
+        expect(find.text('Circle photo'), findsOneWidget);
+        expect(find.text('Cover photo'), findsOneWidget);
+        await tester.tap(find.text('Cancel'));
+        await settle(tester);
         expect(tester.takeException(), isNull);
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 100)),

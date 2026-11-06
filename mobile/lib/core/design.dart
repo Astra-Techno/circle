@@ -49,15 +49,18 @@ abstract final class CircleProfileLayout {
 abstract final class CircleLayout {
   static const double quickActionPaint = 40;
   static double quickActionWidth(BuildContext context, String label) {
-    final style = CircleTextStyles.metadata(
+    final base = CircleTextStyles.homeShortcut(
       Theme.of(context).colorScheme.onSurface,
     );
+    final style = MediaQuery.boldTextOf(context)
+        ? base.copyWith(fontWeight: FontWeight.bold)
+        : base;
     final painter = TextPainter(
       text: TextSpan(text: label, style: style),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
     )..layout();
-    final width = painter.width
+    final width = (painter.width.ceilToDouble() + Space.xs)
         .clamp(CircleSizes.minTouchTarget, double.infinity)
         .toDouble();
     painter.dispose();

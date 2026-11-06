@@ -271,9 +271,7 @@ class _GroupHeader extends ConsumerWidget {
         // Quick action icon buttons.
         Padding(
           padding: CircleInsets.content,
-          child: Wrap(
-            spacing: Space.xs,
-            runSpacing: Space.sm,
+          child: _GroupActionGrid(
             children: [
               if (features.has(CircleFeature.liveChat))
                 _QuickAction(
@@ -322,6 +320,37 @@ class _GroupHeader extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Balanced rows; measure the effective bold/scaled label before choosing columns.
+class _GroupActionGrid extends StatelessWidget {
+  const _GroupActionGrid({required this.children});
+  final List<_QuickAction> children;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final minimum = children.fold<double>(CircleSizes.minTouchTarget, (
+        width,
+        child,
+      ) {
+        final needed =
+            CircleLayout.quickActionWidth(context, child.label) + Space.sm;
+        return needed > width ? needed : width;
+      });
+      final columns = ((constraints.maxWidth + Space.sm) / (minimum + Space.sm))
+          .floor()
+          .clamp(1, 3);
+      final width = (constraints.maxWidth - Space.sm * (columns - 1)) / columns;
+      return Wrap(
+        spacing: Space.sm,
+        runSpacing: Space.sm,
+        children: [
+          for (final child in children) SizedBox(width: width, child: child),
+        ],
+      );
+    },
+  );
 }
 
 /// Small pill showing a stat: icon + label on a recessed background.
@@ -425,7 +454,10 @@ class _QuickAction extends StatelessWidget {
                 Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: CircleTextStyles.metadata(accents.caption),
+                  style: CircleTextStyles.homeShortcut(accents.caption),
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

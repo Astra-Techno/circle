@@ -93,9 +93,11 @@ class _ScopedMemoryListState extends ConsumerState<ScopedMemoryList> {
         ),
         loading: () =>
             const CircleSkeleton(count: 2, label: 'Loading Memories'),
-        error: (_, _) => CircleEmpty(
+        error: (error, _) => CircleEmpty(
           title: "Memories couldn't load",
-          message: 'Check your connection and try again.',
+          message: error is CircleFailure
+              ? error.message
+              : 'Please try again in a moment.',
           action: FilledButton(
             onPressed: () =>
                 ref.invalidate(memoryTimelineProvider(widget.query)),

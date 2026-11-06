@@ -20,7 +20,68 @@ class PendingPageRepository extends MockCircleRepository
   }
 }
 
+class FailedPageRepository extends MockCircleRepository
+    implements MemoryQueryReader {
+  int requests = 0;
+  @override
+  Future<MemoryPage> queryMemories(
+    String viewer,
+    MemoryQuery query, {
+    String? cursor,
+  }) async {
+    requests++;
+    throw const CircleFailure('The server is busy. Try again later.');
+  }
+}
+
+class FailedWorkspaceRepository extends MockCircleRepository {
+  int requests = 0;
+  @override
+  Future<CircleWorkspace> load(String viewer) async {
+    requests++;
+    throw const CircleFailure('The server is busy. Try again later.');
+  }
+}
+
 void main() {
+  test('failed timeline stays in error until an explicit retry', () async {
+    final repository = FailedPageRepository();
+    final c = ProviderContainer(
+      overrides: [circleRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(c.dispose);
+    final provider = memoryTimelineProvider(const MemoryQuery(saved: true));
+    final sub = c.listen(provider, (_, _) {});
+    addTearDown(sub.close);
+    await expectLater(c.read(provider.future), throwsA(isA<CircleFailure>()));
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    expect(c.read(provider).hasError, isTrue);
+    expect(repository.requests, 1);
+    c.invalidate(provider);
+    await expectLater(c.read(provider.future), throwsA(isA<CircleFailure>()));
+    expect(repository.requests, 2);
+  });
+
+  test(
+    'failed workspace does not enter automatic retry loading loops',
+    () async {
+      final repository = FailedWorkspaceRepository();
+      final c = ProviderContainer(
+        overrides: [circleRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(c.dispose);
+      final sub = c.listen(circleWorkspaceProvider, (_, _) {});
+      addTearDown(sub.close);
+      await expectLater(
+        c.read(circleWorkspaceProvider.future),
+        throwsA(isA<CircleFailure>()),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(c.read(circleWorkspaceProvider).hasError, isTrue);
+      expect(repository.requests, 1);
+    },
+  );
+
   test(
     'a refreshed timeline rejects an older in-flight pagination result',
     () async {
