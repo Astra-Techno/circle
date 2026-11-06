@@ -1,0 +1,84 @@
+{
+  "sourceCommit": "05a2444dba7aa566b984ac9fe9bc3d4906a39a12",
+  "localTestsPassed": 35,
+  "captures": [
+    {
+      "file": "aligned-footer-320-2.0.png",
+      "size": [
+        320,
+        1000
+      ],
+      "sha256": "8b8e2ffe9d7ec06d6e1f2806400de8b812b3366ee9f59970a04a9a04c3b1ea5c"
+    },
+    {
+      "file": "aligned-footer-393-1.0.png",
+      "size": [
+        393,
+        1000
+      ],
+      "sha256": "f5fe5968bcefce77efd2af6710a9954145b560e4214ba62c8a1793f2aaed803a"
+    },
+    {
+      "file": "aligned-footer-900-2.0.png",
+      "size": [
+        900,
+        1000
+      ],
+      "sha256": "8881f1e2b3c41172bd3eee660452653a2b3dee00ade7c95d5d6879f8dd4a9f0c"
+    },
+    {
+      "file": "reference-single-photo-320-2.0-dark.png",
+      "size": [
+        320,
+        1000
+      ],
+      "sha256": "2c491a6caebbcbfc7a60492baa033ca67280bcb7cb88066cb0f4d632e6afd054"
+    },
+    {
+      "file": "reference-single-photo-393-1.0-dark.png",
+      "size": [
+        393,
+        852
+      ],
+      "sha256": "89d7e799a3338ff1992ebd72dfec10c990513108bbbb2905e24b455d0c0b630a"
+    },
+    {
+      "file": "reference-single-photo-393-1.0-light.png",
+      "size": [
+        393,
+        852
+      ],
+      "sha256": "507602f0b7850ab148d02986dc421732ce55b3698727512f88d16060fd4df63d"
+    },
+    {
+      "file": "reference-single-photo-900-2.0-light.png",
+      "size": [
+        900,
+        1100
+      ],
+      "sha256": "b0a451fc674d8e5150cd5092a424e7e8f8cc54bbdc1b142cf4f3bc97a623b6ca"
+    },
+    {
+      "file": "reference-text-detail-393-1.0-light.png",
+      "size": [
+        393,
+        852
+      ],
+      "sha256": "b8eadd5f75b3cbb4e8f3b8971b9938fc41100cb97953bfb9c19ba738a7c323b4"
+    }
+  ],
+  "nativeDeviceVerified": false,
+  "installedBuildChanged": false,
+  "windows": {
+    "run": 42235321730,
+    "job": 127951291507,
+    "sourceCommit": "05a2444dba7aa566b984ac9fe9bc3d4906a39a12",
+    "testsPassed": 787,
+    "testsSkipped": 1,
+    "baselineMode": "refresh then visual review",
+    "artifactId": 13511801498,
+    "baselinesReviewed": 22,
+    "expectedChanges": 12,
+    "unchanged": 10
+  }
+}

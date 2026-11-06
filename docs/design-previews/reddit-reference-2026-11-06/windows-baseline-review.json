@@ -1,0 +1,200 @@
+[
+  {
+    "file": "access_login.png",
+    "pixelChanged": false,
+    "sha256": "0927973f6ee455c2b98cc0aeb750c1818e728ce3097f9c319c1c19ebafda01f9",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "access_register.png",
+    "pixelChanged": false,
+    "sha256": "26eff42192b291276983bcd1d74f30e33f52115e6d5207172f898b1848fc148b",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "access_register_dark.png",
+    "pixelChanged": false,
+    "sha256": "db98f26e8228c416eb5027b83f250c2046edbee05e1f03f35203ee3e65125807",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "access_welcome.png",
+    "pixelChanged": false,
+    "sha256": "98893ebb9475f0409511a137c5100a03309328e4afedc5c05359145f640ef759",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_chats.png",
+    "pixelChanged": false,
+    "sha256": "5cb03408b72fb21a2e08b292ce1be9626b575c1df799ca9ab32ae75124dfcd68",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_compose.png",
+    "pixelChanged": false,
+    "sha256": "948787fbb8ea9028de7eebac9b45a64b505494d08665be24dac6d694e2164cbc",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_events.png",
+    "pixelChanged": false,
+    "sha256": "80dd6ebbbbde0f5b147e368202134ab129c810d48894e398fc222538a1f5d6bc",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_groups.png",
+    "pixelChanged": false,
+    "sha256": "bdc9c2216fa53c7e59b78c236e6a187aea5626d17f1596538ba4cfe52b33fe61",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_groups_g_friends.png",
+    "pixelChanged": true,
+    "sha256": "e3764cb175405171a47821d991ef78003a832138bafd4f5c880e6f241f959c4b",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_groups_new.png",
+    "pixelChanged": false,
+    "sha256": "d3abe861cd6c26f6a1187dceb98bd22aa54b98627b0e111fec8657cdf5c199d5",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_home.png",
+    "pixelChanged": true,
+    "sha256": "aa6fe2a91180f9d2aba5758cc129c41823dbfc2c5a686852ee23560361f61a71",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_home_dark.png",
+    "pixelChanged": true,
+    "sha256": "db15fb794a99497cc407506e38be5eff94d121f2e59975020c7efbf55b752f8d",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "circle_you.png",
+    "pixelChanged": false,
+    "sha256": "c224ef5704fe4b3cfc6bbfd4adb32854efafa0f3fcbca46077092eac3d8c080b",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "home_feed_393x852.png",
+    "pixelChanged": true,
+    "sha256": "c1ce2d8314ff8e5f91f8c33e819c287c2d9f0f546c3c5b8bf547ea9b916ac649",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "home_feed_dark_393x852.png",
+    "pixelChanged": true,
+    "sha256": "db15fb794a99497cc407506e38be5eff94d121f2e59975020c7efbf55b752f8d",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "responsive_home_1024x768.png",
+    "pixelChanged": true,
+    "sha256": "4d14c0a092f42cb86b80f6cef01a0048e2594cc249fcb3c2eeb332bb50300e22",
+    "size": [
+      1024,
+      768
+    ]
+  },
+  {
+    "file": "responsive_home_1280x800.png",
+    "pixelChanged": true,
+    "sha256": "b01bfedcdcf93a282e323e58714ecef5551ba103a345805644c2ceb3be14749b",
+    "size": [
+      1280,
+      800
+    ]
+  },
+  {
+    "file": "responsive_home_360x800.png",
+    "pixelChanged": true,
+    "sha256": "98cbe84c57bc35bb98f3efea43d2bba1e2d50d6c53a04580fa8ff3f3e7c2928a",
+    "size": [
+      360,
+      800
+    ]
+  },
+  {
+    "file": "responsive_home_393x852.png",
+    "pixelChanged": true,
+    "sha256": "aa6fe2a91180f9d2aba5758cc129c41823dbfc2c5a686852ee23560361f61a71",
+    "size": [
+      393,
+      852
+    ]
+  },
+  {
+    "file": "responsive_home_430x932.png",
+    "pixelChanged": true,
+    "sha256": "3abdc6315cf9a2a6a72313d7da66e18788dde28918bd9f2230673713329460a6",
+    "size": [
+      430,
+      932
+    ]
+  },
+  {
+    "file": "responsive_home_600x960.png",
+    "pixelChanged": true,
+    "sha256": "e5490f44c103f19f175678a9ebfd9b953b2b26a611c8d128bdf84bef26cf3dd8",
+    "size": [
+      600,
+      960
+    ]
+  },
+  {
+    "file": "responsive_home_800x1280.png",
+    "pixelChanged": true,
+    "sha256": "8f0f4ba5fc47db46a8ed54767f1abe3bbb8ad61d89ffe7374ff7dda1de76fda8",
+    "size": [
+      800,
+      1280
+    ]
+  }
+]
