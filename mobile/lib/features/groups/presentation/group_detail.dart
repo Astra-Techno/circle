@@ -1,4 +1,5 @@
 import '../../../core/design/circle_icons.dart';
+import '../../../core/design/circle_typography.dart';
 import 'group_photos.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -18,7 +19,6 @@ import '../domain/group_tree.dart';
 import '../domain/membership_rules.dart';
 import 'circle_groups.dart';
 import 'group_members.dart';
-import 'group_reports.dart';
 
 /// The group's tabs, most used first. Albums appear only when the server
 /// offers them, so five tabs fit a phone without scrolling.
@@ -284,9 +284,16 @@ class _GroupHeader extends ConsumerWidget {
         .length;
     final canInvite = MembershipRules.canInvite(group, viewer).allowed;
     final reports = workspace.openReports[group.id] ?? 0;
+    final features = ref.watch(circleFeaturesProvider);
+    final canCreate = MembershipRules.canCreateGroup(
+      person: viewer,
+      parent: group,
+    ).allowed;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Breadcrumb lineage.
         if (lineage.length > 1)
           Padding(
             padding: CircleInsets.content,
@@ -312,69 +319,190 @@ class _GroupHeader extends ConsumerWidget {
               ),
             ),
           ),
+        // Cover photo.
         GroupPhotoHeader(group: group),
-        const SizedBox(height: Space.sm),
-        Padding(
-          padding: CircleInsets.content,
-          child: Text(
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: CircleAccents.of(context).caption,
-            ),
-            [
-              '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
-              'You: ${circleRoleLabel(role)}',
-              if (group.isSubgroup)
-                group.hidden ? 'Hidden InCircle' : 'Listed InCircle',
-            ].join(' · '),
-          ),
-        ),
-        const SizedBox(height: Space.sm),
+        const SizedBox(height: Space.md),
+
+        // Compact stat pills row.
         Padding(
           padding: CircleInsets.content,
           child: Wrap(
             spacing: Space.sm,
             runSpacing: Space.sm,
-            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              if (canInvite)
-                OutlinedButton.icon(
-                  onPressed: () => context.push('/groups/g/${group.id}/invite'),
-                  icon: const Icon(LucideIcons.user_plus),
-                  label: const Text('Invite people'),
+              _StatPill(
+                icon: LucideIcons.users,
+                label:
+                    '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
+              ),
+              if (role != CircleRole.member)
+                _StatPill(
+                  icon: role == CircleRole.owner
+                      ? LucideIcons.crown
+                      : LucideIcons.shield,
+                  label: circleRoleLabel(role),
+                ),
+              if (group.isSubgroup)
+                _StatPill(
+                  icon: group.hidden ? LucideIcons.lock : LucideIcons.link,
+                  label: group.hidden ? 'Hidden' : 'Listed',
                 ),
               if (requests > 0)
-                OutlinedButton.icon(
-                  onPressed: () => DefaultTabController.of(context).animateTo(
-                    groupTabsFor(
-                      ref.read(circleFeaturesProvider),
-                    ).indexOf('Members'),
-                  ),
-                  icon: const Icon(LucideIcons.user_check),
-                  label: Text(
-                    requests == 1 ? '1 request' : '$requests requests',
-                  ),
+                _StatPill(
+                  icon: LucideIcons.user_check,
+                  label: '$requests ${requests == 1 ? 'request' : 'requests'}',
+                  highlight: true,
+                  onTap: () => DefaultTabController.of(
+                    context,
+                  ).animateTo(groupTabsFor(features).indexOf('Members')),
                 ),
-              if (reports > 0) GroupReportsButton(group: group, count: reports),
-              if (MembershipRules.canCreateGroup(
-                person: viewer,
-                parent: group,
-              ).allowed)
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      _showCreateSubgroupSheet(context, ref, group),
-                  icon: const Icon(LucideIcons.plus),
-                  label: const Text('Create Circle'),
+              if (reports > 0)
+                _StatPill(
+                  icon: LucideIcons.flag,
+                  label: '$reports ${reports == 1 ? 'report' : 'reports'}',
+                  highlight: true,
+                  onTap: () => context.push('/groups/g/${group.id}/reports'),
                 ),
-              TextButton.icon(
-                onPressed: () => context.push('/groups/g/${group.id}/settings'),
-                icon: const Icon(LucideIcons.settings),
-                label: const Text('Settings'),
+            ],
+          ),
+        ),
+        const SizedBox(height: Space.md),
+
+        // Quick action icon buttons.
+        Padding(
+          padding: CircleInsets.content,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _QuickAction(
+                icon: LucideIcons.messages_square,
+                label: 'Chat',
+                onTap: () => context.go('/chats/g/${group.id}'),
+              ),
+              if (canInvite)
+                _QuickAction(
+                  icon: LucideIcons.user_plus,
+                  label: 'Invite',
+                  onTap: () => context.push('/groups/g/${group.id}/invite'),
+                ),
+              _QuickAction(
+                icon: LucideIcons.calendar,
+                label: 'Events',
+                onTap: () => context.push('/groups/g/${group.id}/events'),
+              ),
+              if (features.has(CircleFeature.livePolls))
+                _QuickAction(
+                  icon: LucideIcons.chart_bar,
+                  label: 'Polls',
+                  onTap: () => context.push('/polls?group=${group.id}'),
+                ),
+              if (canCreate)
+                _QuickAction(
+                  icon: LucideIcons.plus,
+                  label: 'Create',
+                  onTap: () => _showCreateSubgroupSheet(context, ref, group),
+                ),
+              _QuickAction(
+                icon: LucideIcons.settings,
+                label: 'Settings',
+                onTap: () => context.push('/groups/g/${group.id}/settings'),
               ),
             ],
           ),
         ),
         const SizedBox(height: Space.md),
       ],
+    );
+  }
+}
+
+/// Small pill showing a stat: icon + label on a recessed background.
+class _StatPill extends StatelessWidget {
+  const _StatPill({
+    required this.icon,
+    required this.label,
+    this.highlight = false,
+    this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final bool highlight;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accents = CircleAccents.of(context);
+    final color = highlight ? accents.heart : accents.caption;
+    final bg = highlight ? accents.heartContainer : accents.recessed;
+    final pill = Container(
+      constraints: const BoxConstraints(minHeight: CircleSizes.minTouchTarget),
+      padding: const EdgeInsets.symmetric(horizontal: Space.sm),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(CircleRadius.button),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: CircleSizes.iconInline, color: color),
+          const SizedBox(width: Space.xs),
+          Text(label, style: CircleTextStyles.metadata(color)),
+        ],
+      ),
+    );
+    if (onTap != null) {
+      return InkWell(
+        borderRadius: BorderRadius.circular(CircleRadius.button),
+        onTap: onTap,
+        child: pill,
+      );
+    }
+    return pill;
+  }
+}
+
+/// Circular icon button with label underneath for the quick-action row.
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accents = CircleAccents.of(context);
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.sm,
+            vertical: Space.xs,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: accents.recessed,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 20, color: accents.caption),
+              ),
+              const SizedBox(height: Space.xs),
+              Text(label, style: CircleTextStyles.metadata(accents.caption)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

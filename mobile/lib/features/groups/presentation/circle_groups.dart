@@ -24,6 +24,9 @@ import '../domain/membership_rules.dart';
 /// stay distinguishable through the "Level n · in Parent" hint.
 const _indentStep = Space.section, _indentLevels = 4;
 
+/// Tight overlapping avatar stack dimensions.
+const _avatarDiameter = 28.0, _avatarOverlap = 20.0;
+
 /// Filter for the Circles list.
 enum _CircleFilter { all, joined, invited }
 
@@ -49,7 +52,6 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
   @override
   Widget build(BuildContext context) => WorkspaceView(
     builder: (workspace) {
-      final theme = Theme.of(context);
       final accents = CircleAccents.of(context);
       Widget filterChip(_CircleFilter filter) => _FilterChip(
         label: switch (filter) {
@@ -207,35 +209,38 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                           bottom: Space.sm,
                         ),
                         child: Text(
-                          'Your circles',
+                          '${entries.length} ${entries.length == 1 ? 'Circle' : 'Circles'}',
                           style: CircleTextStyles.label(accents.caption),
                         ),
                       ),
-                    for (final (i, entry) in entries.indexed) ...[
+                    for (final entry in entries) ...[
                       if (_query.isNotEmpty && entry.path.isNotEmpty)
-                        Text(
-                          entry.path.join(' › '),
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      CircleFadeIn(
-                        delay: CircleMotion.staggerDelay * i,
-                        child: _CircleCard(
-                          group: entry.group,
-                          workspace: workspace,
-                          level: entry.level,
-                          activity: activityMap[entry.group.id],
-                          eventCount: eventCounts[entry.group.id] ?? 0,
-                          notificationCount: _notificationCount(
-                            workspace,
-                            entry.group.id,
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: Space.xs,
+                            left: Space.sm,
                           ),
-                          expanded: !entry.hasChildren ? null : entry.expanded,
-                          onToggle: () => setState(() {
-                            if (!_collapsed.remove(entry.group.id)) {
-                              _collapsed.add(entry.group.id);
-                            }
-                          }),
+                          child: Text(
+                            entry.path.join(' › '),
+                            style: CircleTextStyles.metadata(accents.caption),
+                          ),
                         ),
+                      _CircleCard(
+                        group: entry.group,
+                        workspace: workspace,
+                        level: entry.level,
+                        activity: activityMap[entry.group.id],
+                        eventCount: eventCounts[entry.group.id] ?? 0,
+                        notificationCount: _notificationCount(
+                          workspace,
+                          entry.group.id,
+                        ),
+                        expanded: !entry.hasChildren ? null : entry.expanded,
+                        onToggle: () => setState(() {
+                          if (!_collapsed.remove(entry.group.id)) {
+                            _collapsed.add(entry.group.id);
+                          }
+                        }),
                       ),
                     ],
                     if (workspace.pending.isNotEmpty) ...[
@@ -306,8 +311,8 @@ class _GroupActivity {
   final DateTime time;
 }
 
-/// A circle card matching the design: cover photo, name, member count,
-/// avatar stack, activity preview, event badge, chevron.
+/// Compact circle row: cover photo, info column with inline stats + activity,
+/// and a right-side chevron or collapse/expand control.
 class _CircleCard extends ConsumerWidget {
   const _CircleCard({
     required this.group,
@@ -338,31 +343,49 @@ class _CircleCard extends ConsumerWidget {
     final visibleAvatars = memberIds.take(3).toList();
     final remaining = memberCount - visibleAvatars.length;
 
+    // Inline stats: "12 members · 2 events"
+    final stats = StringBuffer(
+      '$memberCount ${memberCount == 1 ? 'member' : 'members'}',
+    );
+    if (eventCount > 0) {
+      stats.write(' · $eventCount ${eventCount == 1 ? 'event' : 'events'}');
+    }
+
     return Padding(
       padding: EdgeInsetsDirectional.only(start: indent),
-      child: CircleSurfaceCard(
-        onTap: () {
-          if (!CirclePaneScope.select(context, 'groups', group.id)) {
-            context.push('/groups/g/${group.id}');
-          }
-        },
-        padding: const EdgeInsets.symmetric(horizontal: Space.sm),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Space.md),
+      child: Semantics(
+        button: true,
+        label: group.name,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: accents.hairline, width: 0.5),
+            ),
+          ),
+          child: InkWell(
+            onTap: () {
+              if (!CirclePaneScope.select(context, 'groups', group.id)) {
+                context.push('/groups/g/${group.id}');
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Space.sm,
+                vertical: Space.md,
+              ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Cover photo.
+                  // Cover photo — 48px rounded square.
                   _GroupCoverPhoto(groupId: group.id, type: group.type),
                   const SizedBox(width: Space.md),
                   // Info column.
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Name row with optional pin icon.
+                        // Name + notification dot.
                         Row(
                           children: [
                             Flexible(
@@ -370,29 +393,39 @@ class _CircleCard extends ConsumerWidget {
                                 group.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: CircleTextStyles.homeAuthor(
+                                style: CircleTextStyles.cardTitle(
                                   theme.colorScheme.onSurface,
                                 ),
                               ),
                             ),
+                            if (notificationCount > 0) ...[
+                              const SizedBox(width: Space.sm),
+                              Container(
+                                width: Space.sm,
+                                height: Space.sm,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
-                        const SizedBox(height: Space.xs),
-                        // Member count.
+                        const SizedBox(height: 2),
+                        // Member count + event count inline.
                         Text(
-                          '$memberCount ${memberCount == 1 ? 'member' : 'members'}',
+                          stats.toString(),
                           style: CircleTextStyles.metadata(accents.caption),
                         ),
                         const SizedBox(height: Space.xs),
-                        // Avatar stack + remaining count.
-                        Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                        // Avatar stack row.
+                        Row(
                           children: [
                             SizedBox(
                               width:
-                                  visibleAvatars.length * Space.section +
-                                  Space.sm,
-                              height: CircleAvatarSize.small.diameter,
+                                  visibleAvatars.length * _avatarOverlap +
+                                  (_avatarDiameter - _avatarOverlap),
+                              height: _avatarDiameter,
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 children: [
@@ -402,13 +435,13 @@ class _CircleCard extends ConsumerWidget {
                                     i++
                                   )
                                     Positioned(
-                                      left: i * Space.section,
+                                      left: i * _avatarOverlap,
                                       child: Container(
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           border: Border.all(
                                             color: theme.colorScheme.surface,
-                                            width: Space.xs / 2,
+                                            width: 2,
                                           ),
                                         ),
                                         child: PersonAvatar(
@@ -423,18 +456,16 @@ class _CircleCard extends ConsumerWidget {
                                 ],
                               ),
                             ),
-                            if (remaining > 0)
+                            if (remaining > 0) ...[
+                              const SizedBox(width: Space.xs),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: Space.sm,
-                                  vertical: Space.xs,
-                                ),
+                                width: _avatarDiameter,
+                                height: _avatarDiameter,
                                 decoration: BoxDecoration(
                                   color: accents.recessed,
-                                  borderRadius: BorderRadius.circular(
-                                    CircleRadius.button,
-                                  ),
+                                  shape: BoxShape.circle,
                                 ),
+                                alignment: Alignment.center,
                                 child: Text(
                                   '+$remaining',
                                   style: CircleTextStyles.caption(
@@ -442,22 +473,23 @@ class _CircleCard extends ConsumerWidget {
                                   ),
                                 ),
                               ),
+                            ],
                           ],
                         ),
-                        // Activity line.
+                        // Activity line: "text · 2h ago"
                         if (activity != null) ...[
                           const SizedBox(height: Space.xs),
                           Row(
                             children: [
                               Icon(
                                 activity!.icon,
-                                size: Space.md,
+                                size: CircleSizes.iconInline,
                                 color: accents.caption,
                               ),
                               const SizedBox(width: Space.xs),
                               Expanded(
                                 child: Text(
-                                  activity!.text,
+                                  '${activity!.text} · ${circleTimeAgo(activity!.time)}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: CircleTextStyles.metadata(
@@ -467,117 +499,49 @@ class _CircleCard extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          Text(
-                            circleTimeAgo(activity!.time),
-                            style: CircleTextStyles.caption(accents.caption),
-                          ),
                         ],
                       ],
                     ),
                   ),
-                  // Right side: event badge, notification count, chevron.
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (eventCount > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: Space.sm,
-                            vertical: Space.xs,
-                          ),
-                          margin: const EdgeInsets.only(bottom: Space.xs),
-                          decoration: BoxDecoration(
-                            color: accents.heartContainer,
-                            borderRadius: BorderRadius.circular(
-                              CircleRadius.button,
+                  const SizedBox(width: Space.sm),
+                  // Right side: collapse/expand or nav chevron.
+                  if (expanded != null)
+                    Tooltip(
+                      message:
+                          '${expanded! ? 'Collapse' : 'Expand'} ${group.name}',
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          CircleSizes.minTouchTarget / 2,
+                        ),
+                        onTap: onToggle,
+                        child: SizedBox(
+                          width: CircleSizes.minTouchTarget,
+                          height: CircleSizes.minTouchTarget,
+                          child: Center(
+                            child: AnimatedRotation(
+                              turns: expanded! ? 0.5 : 0,
+                              duration: CircleMotion.micro,
+                              curve: CircleMotion.enterCurve,
+                              child: Icon(
+                                LucideIcons.chevron_down,
+                                size: Space.section,
+                                color: accents.caption,
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                LucideIcons.calendar,
-                                size: CircleSizes.iconInline,
-                                color: accents.heart,
-                              ),
-                              const SizedBox(width: Space.xs),
-                              Text(
-                                '$eventCount ${eventCount == 1 ? 'event' : 'events'}',
-                                style: CircleTextStyles.caption(accents.heart),
-                              ),
-                            ],
                           ),
                         ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (notificationCount > 0)
-                            Container(
-                              width: Space.section,
-                              height: Space.section,
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                '$notificationCount',
-                                style: CircleTextStyles.caption(
-                                  theme.colorScheme.onPrimary,
-                                ),
-                              ),
-                            ),
-                          const SizedBox(width: Space.xs),
-                          Icon(
-                            CircleIcons.chevronRight,
-                            size: Space.section,
-                            color: accents.caption,
-                          ),
-                        ],
                       ),
-                    ],
-                  ),
+                    )
+                  else
+                    Icon(
+                      CircleIcons.chevronRight,
+                      size: Space.section,
+                      color: accents.caption,
+                    ),
                 ],
               ),
             ),
-            if (expanded != null)
-              Tooltip(
-                message: '${expanded! ? 'Collapse' : 'Expand'} ${group.name}',
-                child: InkWell(
-                  onTap: onToggle,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: CircleSizes.minTouchTarget,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: Space.sm,
-                        horizontal: Space.sm,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            expanded! ? 'Hide subgroups' : 'Show subgroups',
-                            style: CircleTextStyles.caption(accents.caption),
-                          ),
-                          const SizedBox(width: Space.xs),
-                          Icon(
-                            expanded!
-                                ? LucideIcons.chevron_up
-                                : LucideIcons.chevron_down,
-                            size: CircleSizes.iconInline,
-                            color: accents.caption,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -615,10 +579,10 @@ class _GroupCoverPhoto extends ConsumerWidget {
 
     final accents = CircleAccents.of(context);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(CircleRadius.small),
+      borderRadius: BorderRadius.circular(CircleRadius.card),
       child: SizedBox(
-        width: Space.large * 2 + Space.md,
-        height: Space.large * 2,
+        width: CircleSizes.minTouchTarget,
+        height: CircleSizes.minTouchTarget,
         child: image != null
             ? Semantics(
                 label: 'Cover photo',
@@ -630,7 +594,7 @@ class _GroupCoverPhoto extends ConsumerWidget {
                 child: GroupAvatar(
                   groupId: groupId,
                   type: type,
-                  size: CircleAvatarSize.large,
+                  size: CircleAvatarSize.medium,
                 ),
               ),
       ),
