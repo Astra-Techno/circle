@@ -25,6 +25,7 @@ class CircleYou extends ConsumerStatefulWidget {
 
 class _CircleYouState extends ConsumerState<CircleYou> {
   String? _loadError;
+  int _memoryTab = 0;
   @override
   void initState() {
     super.initState();
@@ -79,18 +80,17 @@ class _CircleYouState extends ConsumerState<CircleYou> {
         child: CustomScrollView(
           slivers: [
             const CircleFloatingHeader(),
+            if (account != null)
+              SliverToBoxAdapter(
+                child: ProfileHeader(
+                  key: const ValueKey('you-profile-card'),
+                  account: account,
+                ),
+              ),
             SliverPadding(
-              padding: CircleInsets.rootPage,
+              padding: CircleInsets.rootPage.copyWith(left: 0, right: 0),
               sliver: SliverList.list(
                 children: [
-                  if (account != null)
-                    CircleSurfaceCard(
-                      child: ProfileHeader(
-                        key: const ValueKey('you-profile-card'),
-                        account: account,
-                      ),
-                    ),
-                  const SizedBox(height: Space.md),
                   if (waiting > 0)
                     CircleSurfaceCard(
                       padding: EdgeInsets.zero,
@@ -103,31 +103,67 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                               ? '1 invitation waiting'
                               : '$waiting invitations waiting',
                         ),
-                        subtitle: const Text('Review them in Groups.'),
+                        subtitle: const Text('Review them in Circles.'),
                         trailing: const Icon(CircleIcons.chevronRight),
                         onTap: () => context.go('/groups'),
                       ),
                     ),
-                  const CircleSectionTitle('Your Memories'),
-                  MemoryGrid(
-                    memories: [
-                      for (final memory in workspace.memories)
-                        if (memory.authorId == workspace.viewer) memory,
-                    ],
-                    empty: workspace.hasMoreMemories
-                        ? 'Your Memories may be in older items. Load more below.'
-                        : 'Memories you share appear here.',
+                  DefaultTabController(
+                    length: 2,
+                    initialIndex: _memoryTab,
+                    child: TabBar(
+                      onTap: (index) => setState(() => _memoryTab = index),
+                      tabs: const [Tab(text: 'Your Memories'), Tab(text: 'Saved')],
+                    ),
                   ),
-                  if (workspace.hasMoreMemories)
-                    TextButton.icon(
-                      onPressed: () => runCalmly(
-                        context,
-                        () => ref
-                            .read(circleWorkspaceProvider.notifier)
-                            .loadMoreMemories(),
+                  if (_memoryTab == 0) ...[
+                    MemoryGrid(
+                      memories: [
+                        for (final memory in workspace.memories)
+                          if (memory.authorId == workspace.viewer) memory,
+                      ],
+                      empty: workspace.hasMoreMemories
+                          ? 'Your Memories may be in older items. Load more below.'
+                          : 'Memories you share appear here.',
+                    ),
+                    if (workspace.hasMoreMemories)
+                      TextButton.icon(
+                        onPressed: () => runCalmly(
+                          context,
+                          () => ref
+                              .read(circleWorkspaceProvider.notifier)
+                              .loadMoreMemories(),
+                        ),
+                        icon: const Icon(LucideIcons.chevron_down),
+                        label: const Text('Load older Memories'),
                       ),
-                      icon: const Icon(LucideIcons.chevron_down),
-                      label: const Text('Load older Memories'),
+                  ],
+                  if (_memoryTab == 1)
+                    ScopedMemoryList(
+                      query: const MemoryQuery(saved: true),
+                      empty: CircleEmpty(
+                        icon: LucideIcons.bookmark,
+                        title: 'Keep a Memory close',
+                        message:
+                            'Save a Memory to find it here later. Only you see your saved list.',
+                        action: TextButton.icon(
+                          onPressed: () => context.go('/home'),
+                          icon: const Icon(CircleIcons.home),
+                          label: const Text('Browse Memories'),
+                        ),
+                      ),
+                      itemBuilder: (_, memory) => CircleSurfaceCard(
+                        padding: EdgeInsets.zero,
+                        child: ListTile(
+                          title: Text(
+                            memory.summary,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: const Icon(CircleIcons.chevronRight),
+                          onTap: () => context.push('/home/memory/${memory.id}'),
+                        ),
+                      ),
                     ),
                   const SizedBox(height: Space.md),
                   CircleSurfaceCard(
@@ -185,73 +221,53 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                     ),
                   ),
                   const SizedBox(height: Space.md),
-                  if (account != null) ...[
-                    if (_loadError != null)
-                      TextButton.icon(
-                        onPressed: _refreshProfile,
-                        icon: const Icon(LucideIcons.refresh_cw),
-                        label: const Text('Retry loading profile details'),
-                      ),
-                    const CircleSectionTitle('Personal details'),
-                    const CirclePill('Only you', icon: LucideIcons.lock),
-                    const SizedBox(height: Space.sm),
-                    if ([
-                      account.currentCity,
-                      account.hometown,
-                      account.work,
-                      account.education,
-                    ].every((value) => value.isEmpty))
-                      const Text(
-                        'Add your city, hometown, work and education in Edit profile.',
-                      ),
-                    for (final detail in [
-                      (LucideIcons.building, 'Lives in', account.currentCity),
-                      (LucideIcons.house, 'From', account.hometown),
-                      (LucideIcons.briefcase, 'Work', account.work),
-                      (
-                        LucideIcons.graduation_cap,
-                        'Education',
-                        account.education,
-                      ),
-                    ])
-                      if (detail.$3.isNotEmpty)
-                        CircleSurfaceCard(
-                          padding: EdgeInsets.zero,
-                          child: ListTile(
-                            leading: Icon(detail.$1),
-                            title: Text(detail.$2),
-                            subtitle: Text(detail.$3),
-                          ),
-                        ),
-                    const SizedBox(height: Space.section),
-                  ],
-                  const CircleSectionTitle('Saved Memories'),
-                  ScopedMemoryList(
-                    query: const MemoryQuery(saved: true),
-                    empty: CircleEmpty(
-                      icon: LucideIcons.bookmark,
-                      title: 'Keep a Memory close',
-                      message:
-                          'Save a Memory to find it here later. Only you see your saved list.',
-                      action: TextButton.icon(
-                        onPressed: () => context.go('/home'),
-                        icon: const Icon(CircleIcons.home),
-                        label: const Text('Browse Memories'),
+                  if (account != null)
+                    Padding(
+                      padding: CircleInsets.content,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_loadError != null)
+                            TextButton.icon(
+                              onPressed: _refreshProfile,
+                              icon: const Icon(LucideIcons.refresh_cw),
+                              label: const Text('Retry loading profile details'),
+                            ),
+                          const CircleSectionTitle('Personal details'),
+                          const CirclePill('Only you', icon: LucideIcons.lock),
+                          const SizedBox(height: Space.sm),
+                          if ([
+                            account.currentCity,
+                            account.hometown,
+                            account.work,
+                            account.education,
+                          ].every((value) => value.isEmpty))
+                            const Text(
+                              'Add your city, hometown, work and education in Edit profile.',
+                            ),
+                          for (final detail in [
+                            (LucideIcons.building, 'Lives in', account.currentCity),
+                            (LucideIcons.house, 'From', account.hometown),
+                            (LucideIcons.briefcase, 'Work', account.work),
+                            (
+                              LucideIcons.graduation_cap,
+                              'Education',
+                              account.education,
+                            ),
+                          ])
+                            if (detail.$3.isNotEmpty)
+                              CircleSurfaceCard(
+                                padding: EdgeInsets.zero,
+                                child: ListTile(
+                                  leading: Icon(detail.$1),
+                                  title: Text(detail.$2),
+                                  subtitle: Text(detail.$3),
+                                ),
+                              ),
+                          const SizedBox(height: Space.section),
+                        ],
                       ),
                     ),
-                    itemBuilder: (_, memory) => CircleSurfaceCard(
-                      padding: EdgeInsets.zero,
-                      child: ListTile(
-                        title: Text(
-                          memory.summary,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: const Icon(CircleIcons.chevronRight),
-                        onTap: () => context.push('/home/memory/${memory.id}'),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),

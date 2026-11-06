@@ -1,6 +1,5 @@
 import '../../../core/form_exit_guard.dart';
 import 'group_photos.dart';
-import 'invite_link_screen.dart';
 import 'contact_invitation_entry.dart';
 import '../application/group_photos.dart';
 import 'dart:math' as math;
@@ -116,20 +115,20 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
         child: CustomScrollView(
           slivers: [
             const CircleCollapsingHeader(),
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: Space.sm),
+                child: ContactInvitationEntry(),
+              ),
+            ),
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.md),
+              padding: CircleInsets.content,
               sliver: SliverList.list(
                 children: [
-                  const ContactInvitationEntry(),
-                  TextButton.icon(
-                    onPressed: () => openInviteLinkDialog(context, ref),
-                    icon: const Icon(LucideIcons.link),
-                    label: const Text('Open an invite link'),
-                  ),
                   if (workspace.groups.isNotEmpty)
                     CircleSearchField(
                       controller: _search,
-                      label: 'Search groups',
+                      label: 'Search Circles',
                       onChanged: (value) =>
                           setState(() => _query = value.trim().toLowerCase()),
                     ),
@@ -189,14 +188,14 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                       CircleEmpty(
                         title: workspace.groups.isEmpty
                             ? 'Start with someone you know'
-                            : 'No groups found',
+                            : 'No Circles found',
                         message: workspace.groups.isEmpty
-                            ? 'Create your first private group, or open an invite link someone shared with you.'
-                            : 'Try a different group name.',
+                            ? 'Create your first Circle, or use an invitation someone shared with you.'
+                            : 'Try a different Circle name.',
                         action: workspace.groups.isEmpty
                             ? FilledButton(
                                 onPressed: () => context.push('/groups/new'),
-                                child: const Text('Create a group'),
+                                child: const Text('Create a Circle'),
                               )
                             : null,
                       ),

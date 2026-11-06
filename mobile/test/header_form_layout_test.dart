@@ -17,7 +17,7 @@ void main() {
       container.read(circleRouterProvider).go('/groups');
       await tester.pumpAndSettle();
       expect(find.text('Circles'), findsWidgets);
-      expect(find.byTooltip('New group'), findsOneWidget);
+      expect(find.byTooltip('New Circle'), findsOneWidget);
       expect(find.text('My Circle. Billion Memories.'), findsNothing);
     },
   );

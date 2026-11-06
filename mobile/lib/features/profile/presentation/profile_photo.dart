@@ -265,8 +265,7 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
     final account = widget.account;
     final name = account.displayName.isEmpty ? 'You' : account.displayName;
     final theme = Theme.of(context);
-    // Editorial: no panel; a rounded cover, the avatar overlapping it and
-    // the name as a headline on the page itself.
+    // The avatar overlaps the full-width cover.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -288,13 +287,10 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                     left: 0,
                     right: 0,
                     height: coverHeight,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(CircleRadius.card),
-                      child: ProfilePhotoSurface(
-                        kind: ProfilePhotoKind.cover,
-                        version: account.coverVersion,
-                        name: name,
-                      ),
+                    child: ProfilePhotoSurface(
+                      kind: ProfilePhotoKind.cover,
+                      version: account.coverVersion,
+                      name: name,
                     ),
                   ),
                   // A round camera in the cover's corner, like the group
@@ -313,7 +309,7 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                     ),
                   ),
                   PositionedDirectional(
-                    start: Space.lg,
+                    start: Space.contentInset,
                     bottom: 0,
                     child: SizedBox.square(
                       dimension: avatar + Space.sm,
@@ -355,13 +351,26 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
           },
         ),
         Padding(
-          padding: const EdgeInsets.only(top: Space.lg),
+          padding: CircleInsets.content.add(
+            const EdgeInsets.only(top: Space.sm, bottom: Space.sm),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                name,
-                style: CircleTextStyles.pageTitle(theme.colorScheme.onSurface),
+              Wrap(
+                spacing: Space.sm,
+                runSpacing: Space.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    name,
+                    style: CircleTextStyles.pageTitle(theme.colorScheme.onSurface),
+                  ),
+                  OutlinedButton(
+                    onPressed: _busy ? null : () => context.push('/you/edit'),
+                    child: const Text('Edit profile'),
+                  ),
+                ],
               ),
               if (account.about.isNotEmpty) ...[
                 const SizedBox(height: Space.sm),
@@ -376,33 +385,6 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                   semanticsLabel: 'Updating profile photo',
                 ),
               ],
-              const SizedBox(height: Space.lg),
-              Wrap(
-                spacing: Space.sm,
-                runSpacing: Space.sm,
-                children: [
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      textStyle: CircleTextStyles.button(
-                        theme.colorScheme.onPrimary,
-                      ),
-                    ),
-                    onPressed: _busy ? null : () => context.push('/you/edit'),
-                    icon: const Icon(LucideIcons.pencil),
-                    label: const Text('Edit profile'),
-                  ),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      textStyle: CircleTextStyles.button(
-                        theme.colorScheme.primary,
-                      ),
-                    ),
-                    onPressed: () => context.go('/groups'),
-                    icon: const Icon(LucideIcons.users),
-                    label: const Text('Your groups'),
-                  ),
-                ],
-              ),
             ],
           ),
         ),

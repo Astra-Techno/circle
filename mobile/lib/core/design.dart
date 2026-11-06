@@ -124,6 +124,7 @@ abstract final class CircleFormMetrics {
 abstract final class Space {
   static const double xs = 4,
       sm = 8,
+      contentInset = 12,
       md = 16,
       lg = 16,
       xl = 24,
@@ -732,25 +733,27 @@ abstract final class CircleRadius {
 /// Standard page padding: 24px editorial margins, with room at the bottom
 /// so the floating dock and action button never cover the last item.
 abstract final class CircleInsets {
+  static const content = EdgeInsets.symmetric(horizontal: Space.contentInset);
+
   /// Root lists share Home's compact side inset and clear the floating dock.
   static const rootPage = EdgeInsets.fromLTRB(
-    Space.md,
+    Space.contentInset,
     Space.sm,
-    Space.md,
+    Space.contentInset,
     Space.hero * 3,
   );
   static const page = EdgeInsets.fromLTRB(
-    Space.section,
+    Space.contentInset,
     Space.sm,
-    Space.section,
+    Space.contentInset,
     Space.hero * 3,
   );
 
   /// Pages without a floating action button (details, forms, settings).
   static const form = EdgeInsets.fromLTRB(
+    Space.contentInset,
     Space.md,
-    Space.md,
-    Space.md,
+    Space.contentInset,
     Space.hero,
   );
 }

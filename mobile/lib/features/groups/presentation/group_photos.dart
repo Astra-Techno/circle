@@ -164,17 +164,14 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
       cover = ref
           .watch(groupPhotoBytesProvider(query))
           .when(
-            data: (bytes) => ClipRRect(
-              borderRadius: BorderRadius.circular(CircleRadius.card),
-              child: Image.memory(
-                bytes,
-                key: ValueKey('group-cover-${group.id}'),
-                errorBuilder: (_, _, _) => fallback,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                semanticLabel: 'Banner for ${group.name}',
-              ),
+            data: (bytes) => Image.memory(
+              bytes,
+              key: ValueKey('group-cover-${group.id}'),
+              errorBuilder: (_, _, _) => fallback,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              semanticLabel: 'Banner for ${group.name}',
             ),
             loading: () => fallback,
             error: (_, _) => Stack(
@@ -198,92 +195,116 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
     final largeText =
         MediaQuery.textScalerOf(context).scale(1) >
         CircleLayout.largeTextThreshold;
+    final avatar = SizedBox.square(
+      dimension: CircleAvatarSize.hero.diameter + Space.lg,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              shape: BoxShape.circle,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(Space.xs),
+              child: GroupAvatar(
+                groupId: group.id,
+                type: group.type,
+                size: CircleAvatarSize.hero,
+              ),
+            ),
+          ),
+          if (admin)
+            PositionedDirectional(
+              end: 0,
+              bottom: 0,
+              child: IconButton.filledTonal(
+                tooltip: group.avatarVersion == null
+                    ? 'Add group picture'
+                    : 'Change group picture',
+                onPressed: _busy ? null : () => _change(ProfilePhotoKind.avatar),
+                icon: const Icon(LucideIcons.camera),
+              ),
+            ),
+        ],
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (!largeText)
-          AspectRatio(
-            aspectRatio: CircleProfileLayout.coverAspectRatio,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                cover,
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: Padding(
-                    padding: const EdgeInsets.all(Space.sm),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton.filledTonal(
-                          tooltip: 'Refresh group photos',
-                          onPressed: _busy ? null : _refresh,
-                          icon: const Icon(LucideIcons.refresh_cw),
-                        ),
-                        // Admins change the banner from a camera on it.
-                        if (admin) ...[
-                          const SizedBox(width: Space.sm),
-                          IconButton.filledTonal(
-                            tooltip: group.coverVersion == null
-                                ? 'Add banner'
-                                : 'Change banner',
-                            onPressed: _busy
-                                ? null
-                                : () => _change(ProfilePhotoKind.cover),
-                            icon: const Icon(LucideIcons.camera),
+          Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: Space.hero),
+                child: AspectRatio(
+                  aspectRatio: CircleProfileLayout.coverAspectRatio,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      cover,
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: Padding(
+                          padding: const EdgeInsets.all(Space.sm),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton.filledTonal(
+                                tooltip: 'Refresh group photos',
+                                onPressed: _busy ? null : _refresh,
+                                icon: const Icon(LucideIcons.refresh_cw),
+                              ),
+                              // Admins change the banner from a camera on it.
+                              if (admin) ...[
+                                const SizedBox(width: Space.sm),
+                                IconButton.filledTonal(
+                                  tooltip: group.coverVersion == null
+                                      ? 'Add banner'
+                                      : 'Change banner',
+                                  onPressed: _busy
+                                      ? null
+                                      : () => _change(ProfilePhotoKind.cover),
+                                  icon: const Icon(LucideIcons.camera),
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                      ],
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
+              PositionedDirectional(
+                start: Space.contentInset,
+                bottom: 0,
+                child: avatar,
+              ),
+            ],
+          )
+        else
+          Padding(
+            padding: CircleInsets.content,
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: avatar,
             ),
           ),
-        const SizedBox(height: Space.md),
-        Center(
-          child: SizedBox.square(
-            dimension: CircleAvatarSize.hero.diameter + Space.lg,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                GroupAvatar(
-                  groupId: group.id,
-                  type: group.type,
-                  size: CircleAvatarSize.hero,
-                ),
-                // Like the profile photo: a small camera for admins.
-                if (admin)
-                  PositionedDirectional(
-                    end: 0,
-                    bottom: 0,
-                    child: IconButton.filledTonal(
-                      tooltip: group.avatarVersion == null
-                          ? 'Add group picture'
-                          : 'Change group picture',
-                      onPressed: _busy
-                          ? null
-                          : () => _change(ProfilePhotoKind.avatar),
-                      icon: const Icon(LucideIcons.camera),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
         const SizedBox(height: Space.sm),
         Semantics(
           header: true,
-          child: Text(
-            group.name,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineMedium,
+          child: Padding(
+            padding: CircleInsets.content,
+            child: Text(
+              group.name,
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
           ),
         ),
         // With the banner hidden at large text, its controls move here.
         if (largeText)
           Wrap(
-            alignment: WrapAlignment.center,
             spacing: Space.sm,
             children: [
               IconButton.filledTonal(

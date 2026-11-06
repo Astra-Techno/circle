@@ -27,7 +27,7 @@ List<String> groupTabsFor(CircleFeatures features) => [
   'Chat',
   'Events',
   'Members',
-  'Subgroups',
+  'InCircles',
   if (features.has(CircleFeature.albums)) 'Albums',
 ];
 
@@ -48,7 +48,7 @@ class CircleGroupDetail extends StatelessWidget {
             icon: LucideIcons.users,
             title: 'This circle is private',
             message:
-                'You need membership in this exact group to see what is shared here.',
+                'You need membership in this exact Circle to see what is shared here.',
           ),
         );
       }
@@ -97,7 +97,10 @@ class _GroupTabs extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) => LayoutBuilder(
     builder: (context, constraints) {
       final tabs = groupTabsFor(ref.watch(circleFeaturesProvider));
-      final side = math.max(Space.lg, (constraints.maxWidth - 640) / 2);
+      final side = math.max(
+        Space.contentInset,
+        (constraints.maxWidth - 640) / 2,
+      );
       final padding = CircleInsets.page.copyWith(left: side, right: side);
       return DefaultTabController(
         length: tabs.length,
@@ -107,7 +110,9 @@ class _GroupTabs extends ConsumerWidget {
           child: NestedScrollView(
             headerSliverBuilder: (context, _) => [
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(side, Space.md, side, 0),
+                padding: EdgeInsets.symmetric(
+                  horizontal: side - Space.contentInset,
+                ),
                 sliver: SliverToBoxAdapter(
                   child: _GroupHeader(group: group, workspace: workspace),
                 ),
@@ -209,13 +214,13 @@ class _GroupTabs extends ConsumerWidget {
             empty: const CircleEmpty(
               icon: LucideIcons.image,
               title: 'The first Memory is yours to make',
-              message: 'Share a little moment with this exact group.',
+              message: 'Share a little moment with this exact Circle.',
             ),
             itemBuilder: (_, memory) =>
                 CircleMemoryCard(memory: memory, group: group),
           ),
         ];
-      case 'Subgroups':
+      case 'InCircles':
         return [SubgroupsTab(group: group, workspace: workspace)];
       case 'Members':
         return [GroupMembersTab(group: group, workspace: workspace)];
@@ -231,7 +236,7 @@ class _GroupTabs extends ConsumerWidget {
               action: FilledButton.icon(
                 onPressed: () => context.go('/events?group=${group.id}'),
                 icon: const Icon(LucideIcons.calendar),
-                label: const Text('Open group events'),
+                label: const Text('Open Circle events'),
               ),
             ),
           ),
@@ -248,7 +253,7 @@ class _GroupTabs extends ConsumerWidget {
               action: FilledButton.icon(
                 onPressed: () => context.go('/chats/g/${group.id}'),
                 icon: const Icon(LucideIcons.messages_square),
-                label: const Text('Open group chat'),
+                label: const Text('Open Circle chat'),
               ),
             ),
           ),
@@ -283,79 +288,89 @@ class _GroupHeader extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (lineage.length > 1)
-          Semantics(
-            label: 'Where this group sits',
-            container: true,
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                for (final (index, ancestor) in lineage.indexed) ...[
-                  if (index > 0)
-                    const ExcludeSemantics(
-                      child: Icon(CircleIcons.chevronRight),
+          Padding(
+            padding: CircleInsets.content,
+            child: Semantics(
+              label: 'Where this Circle sits',
+              container: true,
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  for (final (index, ancestor) in lineage.indexed) ...[
+                    if (index > 0)
+                      const ExcludeSemantics(
+                        child: Icon(CircleIcons.chevronRight),
+                      ),
+                    TextButton(
+                      onPressed: ancestor.id == group.id
+                          ? null
+                          : () => context.push('/groups/g/${ancestor.id}'),
+                      child: Text(ancestor.name),
                     ),
-                  TextButton(
-                    onPressed: ancestor.id == group.id
-                        ? null
-                        : () => context.push('/groups/g/${ancestor.id}'),
-                    child: Text(ancestor.name),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         GroupPhotoHeader(group: group),
         const SizedBox(height: Space.sm),
-        Text(
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: CircleAccents.of(context).caption,
-          ),
-          [
-            '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
-            'You: ${circleRoleLabel(role)}',
-            group.isSubgroup
-                ? (group.hidden ? 'Hidden subgroup' : 'Listed subgroup')
-                : 'Private group',
-          ].join(' · '),
-        ),
-        const SizedBox(height: Space.lg),
-        Wrap(
-          spacing: Space.sm,
-          runSpacing: Space.sm,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            if (canInvite)
-              FilledButton.icon(
-                onPressed: () => context.push('/groups/g/${group.id}/invite'),
-                icon: const Icon(LucideIcons.user_plus),
-                label: const Text('Invite people'),
-              ),
-            if (requests > 0)
-              OutlinedButton.icon(
-                onPressed: () => DefaultTabController.of(context).animateTo(
-                  groupTabsFor(
-                    ref.read(circleFeaturesProvider),
-                  ).indexOf('Members'),
-                ),
-                icon: const Icon(LucideIcons.user_check),
-                label: Text(requests == 1 ? '1 request' : '$requests requests'),
-              ),
-            if (reports > 0) GroupReportsButton(group: group, count: reports),
-            if (MembershipRules.canCreateGroup(
-              person: viewer,
-              parent: group,
-            ).allowed)
-              OutlinedButton.icon(
-                onPressed: () => _showCreateSubgroupSheet(context, ref, group),
-                icon: const Icon(LucideIcons.plus),
-                label: const Text('Create subgroup'),
-              ),
-            TextButton.icon(
-              onPressed: () => context.push('/groups/g/${group.id}/settings'),
-              icon: const Icon(LucideIcons.settings),
-              label: const Text('Settings'),
+        Padding(
+          padding: CircleInsets.content,
+          child: Text(
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: CircleAccents.of(context).caption,
             ),
-          ],
+            [
+              '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
+              'You: ${circleRoleLabel(role)}',
+              if (group.isSubgroup)
+                group.hidden ? 'Hidden InCircle' : 'Listed InCircle',
+            ].join(' · '),
+          ),
+        ),
+        const SizedBox(height: Space.sm),
+        Padding(
+          padding: CircleInsets.content,
+          child: Wrap(
+            spacing: Space.sm,
+            runSpacing: Space.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (canInvite)
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/groups/g/${group.id}/invite'),
+                  icon: const Icon(LucideIcons.user_plus),
+                  label: const Text('Invite people'),
+                ),
+              if (requests > 0)
+                OutlinedButton.icon(
+                  onPressed: () => DefaultTabController.of(context).animateTo(
+                    groupTabsFor(
+                      ref.read(circleFeaturesProvider),
+                    ).indexOf('Members'),
+                  ),
+                  icon: const Icon(LucideIcons.user_check),
+                  label: Text(
+                    requests == 1 ? '1 request' : '$requests requests',
+                  ),
+                ),
+              if (reports > 0) GroupReportsButton(group: group, count: reports),
+              if (MembershipRules.canCreateGroup(
+                person: viewer,
+                parent: group,
+              ).allowed)
+                OutlinedButton.icon(
+                  onPressed: () => _showCreateSubgroupSheet(context, ref, group),
+                  icon: const Icon(LucideIcons.plus),
+                  label: const Text('Create Circle'),
+                ),
+              TextButton.icon(
+                onPressed: () => context.push('/groups/g/${group.id}/settings'),
+                icon: const Icon(LucideIcons.settings),
+                label: const Text('Settings'),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: Space.md),
       ],
@@ -405,7 +420,7 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
   Future<void> _create() async {
     final trimmed = _name.text.trim();
     if (trimmed.isEmpty) {
-      setState(() => _error = 'Enter a name for the subgroup.');
+      setState(() => _error = 'Enter a name for the Circle.');
       return;
     }
     if (trimmed.length > 100) {
@@ -450,7 +465,7 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Create subgroup in ${widget.parent.name}',
+              'Create Circle in ${widget.parent.name}',
               style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: Space.xs),
@@ -467,7 +482,7 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
               maxLength: 100,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
-                labelText: 'Subgroup name',
+                labelText: 'Circle name',
                 errorText: _error,
                 errorMaxLines: 3,
               ),
@@ -476,7 +491,7 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
             const SizedBox(height: Space.md),
             DropdownButtonFormField<CircleType>(
               initialValue: _type,
-              decoration: const InputDecoration(labelText: 'Kind of group'),
+              decoration: const InputDecoration(labelText: 'Kind of Circle'),
               items: [
                 for (final type in CircleType.values)
                   DropdownMenuItem(
@@ -509,7 +524,7 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(LucideIcons.plus),
-              label: Text(_busy ? 'Creating\u2026' : 'Create subgroup'),
+              label: Text(_busy ? 'Creating\u2026' : 'Create Circle'),
             ),
           ],
         ),
@@ -542,7 +557,7 @@ class SubgroupsTab extends ConsumerWidget {
             icon: LucideIcons.users,
             title: 'A smaller circle, when you need one',
             message:
-                'Subgroups have their own members. Access is never inherited.',
+                'Each InCircle has its own members.',
           ),
         for (final entry in mine) CircleGroupTile(group: entry.group),
         if (joinable.isNotEmpty) ...[
@@ -568,14 +583,14 @@ class SubgroupsTab extends ConsumerWidget {
             child: OutlinedButton.icon(
               onPressed: () => context.push('/groups/new?parent=${group.id}'),
               icon: const Icon(LucideIcons.plus),
-              label: const Text('Create subgroup'),
+              label: const Text('Create Circle'),
             ),
           )
         else
           Text(canCreate.reason!),
         const SizedBox(height: Space.md),
         Text(
-          'Hidden subgroups are shown only to their members.',
+          'Hidden Circles are shown only to their members.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],

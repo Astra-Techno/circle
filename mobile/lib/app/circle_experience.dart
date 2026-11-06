@@ -110,19 +110,19 @@ String circleDetailTitle(String path, String fallback) {
   if (path == '/chats/privacy') return 'Messaging privacy';
   if (path == '/you/privacy') return 'Privacy and blocking';
   if (path == '/chats/new') return 'New chat';
-  if (path == '/groups/new') return 'New group';
-  if (path.endsWith('/settings')) return 'Group settings';
+  if (path == '/groups/new') return 'New Circle';
+  if (path.endsWith('/settings')) return 'Circle settings';
   if (path.endsWith('/invite/link')) return 'Invite link';
   if (path.endsWith('/invite')) return 'Invite people';
-  if (path.endsWith('/reports')) return 'Group reports';
-  if (RegExp(r'^/groups/g/[^/]+/events$').hasMatch(path)) return 'Group events';
+  if (path.endsWith('/reports')) return 'Circle reports';
+  if (RegExp(r'^/groups/g/[^/]+/events$').hasMatch(path)) return 'Circle events';
   if (path == '/events/new') return 'New event';
   if (path.startsWith('/events/') && path.endsWith('/edit')) {
     return 'Edit event';
   }
   if (path.endsWith('/attendees')) return 'Attendees';
   if (path.startsWith('/events/e/')) return 'Event';
-  if (path.startsWith('/groups/g/')) return 'Group';
+  if (path.startsWith('/groups/g/')) return 'Circle';
   return fallback;
 }
 
@@ -158,8 +158,8 @@ Widget _groupsPane([String? id]) => CircleAdaptivePane(
   list: const CircleGroups(),
   detail: (id) => CircleGroupDetail(key: ValueKey(id), id: id),
   placeholder: const CirclePanePlaceholder(
-    title: 'Choose a group',
-    message: 'Pick a group on the left to open its space here.',
+    title: 'Choose a Circle',
+    message: 'Pick a Circle on the left to open its space here.',
   ),
 );
 
@@ -822,7 +822,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
               label: 'New chat',
               location: '/chats/new',
             ),
-            2 => (label: 'New group', location: '/groups/new'),
+            2 => (label: 'New Circle', location: '/groups/new'),
             3 when canCreateEvent => (
               label: 'New event',
               location: eventCreateLocation(eventsFilter),

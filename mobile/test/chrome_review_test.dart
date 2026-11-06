@@ -38,15 +38,15 @@ void main() {
       container.read(circleRouterProvider).go('/groups/g/friends');
       await tester.pumpAndSettle();
       final create = find
-          .widgetWithText(OutlinedButton, 'Create subgroup')
+          .widgetWithText(OutlinedButton, 'Create Circle')
           .first;
       await reveal(tester, create);
       await tester.tap(create);
       await tester.pumpAndSettle();
       tester.view.viewInsets = const FakeViewPadding(bottom: 250);
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(TextField, 'Subgroup name'), findsOneWidget);
-      final submit = find.widgetWithText(FilledButton, 'Create subgroup');
+      expect(find.widgetWithText(TextField, 'Circle name'), findsOneWidget);
+      final submit = find.widgetWithText(FilledButton, 'Create Circle');
       await tester.ensureVisible(submit);
       await tester.pumpAndSettle();
       expect(submit.hitTestable(), findsOneWidget);

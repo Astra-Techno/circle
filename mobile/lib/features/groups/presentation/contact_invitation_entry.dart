@@ -6,7 +6,6 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import '../application/contact_invitations.dart';
 import '../../../core/design.dart';
 import '../../../core/design/circle_typography.dart';
-import '../../../core/circle_components.dart';
 
 /// Inbox discovery remains available when OS notifications are disabled.
 class ContactInvitationEntry extends ConsumerStatefulWidget {
@@ -71,17 +70,16 @@ class _ContactInvitationEntryState extends ConsumerState<ContactInvitationEntry>
     });
     final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
-    return CircleSurfaceCard(
-      padding: EdgeInsets.zero,
+    return Material(
+      color: theme.colorScheme.surface,
       child: InkWell(
-        borderRadius: BorderRadius.circular(CircleRadius.card),
         onTap: () async {
           await context.push('/you/invitations');
           if (mounted) _load();
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: Space.md,
+            horizontal: Space.contentInset,
             vertical: Space.md,
           ),
           child: Row(
@@ -90,10 +88,19 @@ class _ContactInvitationEntryState extends ConsumerState<ContactInvitationEntry>
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Icon(
-                    LucideIcons.mail,
-                    size: Space.section,
-                    color: theme.colorScheme.primary,
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: accents.calmContainer,
+                      borderRadius: BorderRadius.circular(CircleRadius.card),
+                    ),
+                    child: SizedBox.square(
+                      dimension: Space.hero,
+                      child: Icon(
+                        LucideIcons.mail,
+                        size: Space.section,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
                   ),
                   if (_count != null && _count! > 0)
                     Positioned(

@@ -355,15 +355,7 @@ void main() {
       tester,
     ) async {
       final container = await openCircle(tester);
-      await tester.tap(find.text('Circles'));
-      await tester.pumpAndSettle();
-      await tapText(tester, 'Open an invite link');
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Invite link or code'),
-        'circle://invite/chapter-verse-preview',
-      );
-      await tester.tap(find.widgetWithText(FilledButton, 'Open'));
-      await tester.pumpAndSettle();
+      await go(tester, container, '/invite/chapter-verse-preview');
       expect(find.text('Chapter & verse'), findsOneWidget);
       expect(find.text('Club · 2 members'), findsOneWidget);
       expect(find.text('Link shared by Noor'), findsOneWidget);
@@ -375,19 +367,11 @@ void main() {
       expect(workspaceOf(container).pending.map((p) => p.groupId), ['meetup']);
     });
 
-    testWidgets('pasted links join directly when approval is off', (
+    testWidgets('invite links join directly when approval is off', (
       tester,
     ) async {
       final container = await openCircle(tester);
-      await tester.tap(find.text('Circles'));
-      await tester.pumpAndSettle();
-      await tapText(tester, 'Open an invite link');
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Invite link or code'),
-        ' circle://invite/garden-plot-preview ',
-      );
-      await tester.tap(find.widgetWithText(FilledButton, 'Open'));
-      await tester.pumpAndSettle();
+      await go(tester, container, '/invite/garden-plot-preview');
       await tapText(tester, 'Join group');
       expect(workspaceOf(container).group('garden'), isNotNull);
       expect(find.text('Welcome to Garden plot 14.'), findsOneWidget);
@@ -413,7 +397,7 @@ void main() {
     ) async {
       final container = await openCircle(tester);
       await go(tester, container, '/groups/g/college');
-      await openTab(tester, 'Subgroups');
+      await openTab(tester, 'InCircles');
       expect(find.text('More in Northbank 2009'), findsOneWidget);
       expect(find.text('Organising committee'), findsNothing);
       expect(find.text('Meetup helpers'), findsOneWidget);
@@ -578,7 +562,7 @@ void main() {
         'Chat',
         'Events',
         'Members',
-        'Subgroups',
+        'InCircles',
       ]) {
         await openTab(tester, tab);
         expect(tester.takeException(), isNull, reason: tab);
