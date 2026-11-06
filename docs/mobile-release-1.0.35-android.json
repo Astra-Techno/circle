@@ -27,5 +27,12 @@
   "deviceInstallationVerified": false,
   "windowsRefreshRun": 42188148877,
   "windowsTestsPassed": 773,
-  "windowsTestsSkipped": 1
+  "windowsTestsSkipped": 1,
+  "publicRepositoryDownload": {
+    "url": "https://raw.githubusercontent.com/Astra-Techno/circle/2785a2ab2f42cb6b730b1c24dc858fbe9ebccec1/downloads/circle-1.0.35-40.apk",
+    "httpStatus": 200,
+    "bytes": 65108193,
+    "sha256": "726913aef9d0455a0ffb8f9444f7abeea7b843ceba4635460d769994cf75dbec"
+  },
+  "windowsVerificationRun": 42189622241
 }

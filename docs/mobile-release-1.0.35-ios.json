@@ -1,0 +1,53 @@
+{
+  "run": 42188155025,
+  "sourceCommit": "6b15a72d41da19964ddf2c7d6fc7fd551b892aaa",
+  "bundle": "com.circlecommunity.mobile",
+  "version": "1.0.35",
+  "build": "1056.1",
+  "minimumIOS": "13.0",
+  "bytes": 25807857,
+  "sha256": "af7c099afc8bb8ba2bca66040251d1e6ccdb4b1efa402c18cdc9520e1f7fc597",
+  "interfaceMarker": "Social 2.3",
+  "appleNativeFontAliasPresentInAot": true,
+  "obsoleteRecoveryRoadmapAbsent": true,
+  "productionApiPresentInAot": true,
+  "interAssets": [
+    {
+      "asset": "Inter-Regular.ttf",
+      "bytes": 341396,
+      "sha256": "24d565799a415e4e7d13bb21564fe4b68bb6e95672903558e463e1321a435c3a",
+      "postScriptName": "Inter-Regular",
+      "weight": 400
+    },
+    {
+      "asset": "Inter-Medium.ttf",
+      "bytes": 342004,
+      "sha256": "14a04ae30884bc99e6a94e24090d9972d3ab224284c84c26a44dcf75e93f4b63",
+      "postScriptName": "Inter-Medium",
+      "weight": 500
+    },
+    {
+      "asset": "Inter-SemiBold.ttf",
+      "bytes": 342688,
+      "sha256": "cb90ee5c8a946a49ed964398e193d15ccdb8f89bcb381002cd1a9208e0089b11",
+      "postScriptName": "Inter-SemiBold",
+      "weight": 600
+    }
+  ],
+  "interAssetsMatchSource": true,
+  "checksumManifestMatches": true,
+  "zipIntegrityVerified": true,
+  "signatureAndInstallationMetadataVerifiedByWorkflow": true,
+  "uploadAccepted": true,
+  "jobDurationSeconds": 958,
+  "artifactId": 13488594817,
+  "windowsRefreshRun": 42188148877,
+  "windowsTestsPassed": 773,
+  "windowsTestsSkipped": 1,
+  "uploadWarning": {
+    "code": 90068,
+    "description": "Upload accepted. The existing iOS13 deployment target must become at least15 before April2027 uploads."
+  },
+  "nativeDeviceAcceptance": "Not performed. Binary and widget checks do not establish native visual acceptance. Apple processing and tester availability are separate.",
+  "windowsVerificationRun": 42189622241
+}

@@ -2,6 +2,8 @@
 
 Audit only: no app UI, backend, signing or release changes. Source reviewed: `3a26a30`; runtime remains 1.0.34+39 / Social 2.2.
 
+Implementation follow-up: the actionable findings were addressed in **Social2.3 /1.0.35**; see [fixes, screenshots and verified releases](screen-audit-fixes-2026-11-06.md). The findings below remain the historical audit evidence.
+
 ## Verdict
 
 White light-mode canvases, shared Memory cards and the existing SF/Inter typography now provide a coherent base. Circle still feels less finished than the reference social apps because some controls do not work, text scaling breaks the intended hierarchy, several labels misdescribe their destinations, and forms/settings expose too much detail at once. Another font or icon-library replacement would not address those problems.
