@@ -290,55 +290,67 @@ class CircleMemoryCard extends ConsumerWidget {
                     child: Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _ActionButton(
-                          icon: CircleIcons.react,
-                          tooltip: 'Choose a reaction for $about',
-                          selected: reactions.mine != null,
-                          reaction: reactions.mine,
-                          onTap: pickReaction,
-                        ),
-                        if (reactions.total > 0)
-                          Tooltip(
-                            message: 'Show reactions for $about',
-                            child: TextButton(
-                              onPressed: () =>
-                                  showReactionSummary(context, reactions),
-                              style: TextButton.styleFrom(
-                                foregroundColor: accents.caption,
-                                minimumSize: const Size(
-                                  CircleSizes.minTouchTarget,
-                                  CircleSizes.minTouchTarget,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _ActionButton(
+                              icon: CircleIcons.react,
+                              tooltip: 'Choose a reaction for $about',
+                              selected: reactions.mine != null,
+                              reaction: reactions.mine,
+                              onTap: pickReaction,
+                            ),
+                            if (reactions.total > 0)
+                              Tooltip(
+                                message: 'Show reactions for $about',
+                                child: TextButton(
+                                  onPressed: () =>
+                                      showReactionSummary(context, reactions),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: accents.caption,
+                                    minimumSize: const Size(
+                                      CircleSizes.minTouchTarget,
+                                      CircleSizes.minTouchTarget,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    CircleMemoryLayout.countLabel(
+                                      reactions.total,
+                                    ),
+                                    semanticsLabel: reactions.describe(),
+                                  ),
                                 ),
                               ),
-                              child: Text(
-                                CircleMemoryLayout.countLabel(reactions.total),
-                                semanticsLabel: reactions.describe(),
-                              ),
-                            ),
-                          ),
-                        _ActionButton(
-                          icon: CircleIcons.comment,
-                          tooltip: 'Comment on $about',
-                          onTap: openDetail,
+                          ],
                         ),
-                        if (comments > 0)
-                          Tooltip(
-                            message: 'View $comments comments',
-                            child: TextButton(
-                              onPressed: openDetail,
-                              style: TextButton.styleFrom(
-                                foregroundColor: accents.caption,
-                                minimumSize: const Size(
-                                  CircleSizes.minTouchTarget,
-                                  CircleSizes.minTouchTarget,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _ActionButton(
+                              icon: CircleIcons.comment,
+                              tooltip: 'Comment on $about',
+                              onTap: openDetail,
+                            ),
+                            if (comments > 0)
+                              Tooltip(
+                                message: 'View $comments comments',
+                                child: TextButton(
+                                  onPressed: openDetail,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: accents.caption,
+                                    minimumSize: const Size(
+                                      CircleSizes.minTouchTarget,
+                                      CircleSizes.minTouchTarget,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    CircleMemoryLayout.countLabel(comments),
+                                    semanticsLabel: '$comments comments',
+                                  ),
                                 ),
                               ),
-                              child: Text(
-                                CircleMemoryLayout.countLabel(comments),
-                                semanticsLabel: '$comments comments',
-                              ),
-                            ),
-                          ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -395,12 +407,26 @@ class _ActionButton extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: Space.sm),
-              child: reaction == null
-                  ? Icon(icon, size: CircleMemoryLayout.actionIcon, color: ink)
-                  : Text(
-                      reaction!,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
+              child: Center(
+                widthFactor: 1,
+                heightFactor: 1,
+                child: reaction == null
+                    ? Icon(
+                        icon,
+                        size: CircleMemoryLayout.actionIcon,
+                        color: ink,
+                      )
+                    : SizedBox.square(
+                        dimension: CircleMemoryLayout.actionIcon,
+                        child: FittedBox(
+                          child: Text(
+                            reaction!,
+                            textScaler: TextScaler.noScaling,
+                            style: CircleTextStyles.reactionGlyph(ink),
+                          ),
+                        ),
+                      ),
+              ),
             ),
           ),
         ),

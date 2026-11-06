@@ -52,6 +52,8 @@ abstract final class CircleTextStyles {
   static TextStyle input(Color ink) => body(ink);
 
   // Compatibility roles keep all existing screens on the same hierarchy.
+  /// Emoji reactions occupy the same visual box as action icons.
+  static TextStyle reactionGlyph(Color ink) => _style(ink, 24, 24);
   static TextStyle postBody(Color ink) => _style(ink, 15, 22);
   static TextStyle homeBody(Color ink) => body(ink);
   static TextStyle homeAuthor(Color ink) => cardTitle(ink);

@@ -127,6 +127,48 @@ void main() {
     );
   }
 
+  for (final layout in [
+    (393.0, 1.0, Brightness.light),
+    (320.0, 2.0, Brightness.dark),
+    (900.0, 2.0, Brightness.light),
+  ]) {
+    testWidgets('selected reaction aligns with footer icons ${layout.$1}', (
+      tester,
+    ) async {
+      await openCircle(
+        tester,
+        size: Size(layout.$1, 1000),
+        scale: layout.$2,
+        brightness: layout.$3,
+      );
+      await tapTooltip(tester, 'Choose a reaction for $about');
+      await tester.tap(find.widgetWithText(ChoiceChip, '❤️'));
+      await tester.pumpAndSettle();
+      final action = find.byTooltip('Choose a reaction for $about');
+      final emoji = find.descendant(of: action, matching: find.text('❤️'));
+      final comment = find.descendant(
+        of: find.byTooltip('Comment on $about'),
+        matching: find.byIcon(CircleIcons.comment),
+      );
+      expect(
+        tester.getCenter(emoji).dy,
+        closeTo(tester.getCenter(comment).dy, 0.01),
+      );
+      expect(
+        tester.getSize(emoji).height,
+        lessThanOrEqualTo(CircleMemoryLayout.actionIcon),
+      );
+      expect(tester.getSize(action).height, greaterThanOrEqualTo(48));
+      expect(tester.getSize(action).width, greaterThanOrEqualTo(48));
+      await capture(
+        tester,
+        'aligned-footer',
+        '${layout.$1.toInt()}-${layout.$2}',
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('icon actions persist real reactions and saved state', (
     tester,
   ) async {
