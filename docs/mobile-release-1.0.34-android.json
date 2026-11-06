@@ -24,5 +24,11 @@
   "signatureV2": true,
   "requiresReinstallFromEarlierBuilds": true,
   "compatibleSigningSinceBuild": 39,
-  "deviceInstallationVerified": false
+  "deviceInstallationVerified": false,
+  "publicRepositoryDownload": {
+    "url": "https://raw.githubusercontent.com/Astra-Techno/circle/e1d54a7/downloads/circle-1.0.34-39.apk",
+    "bytes": 65010241,
+    "sha256": "ba84d1a6ca24a4a4ce4c6e3e27a7c4c7b5259c7d7673ba14a506eadb33366ac2",
+    "httpStatus": 200
+  }
 }

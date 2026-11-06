@@ -25,3 +25,5 @@ Private key and properties are under `/workspace/toolchain/signing/`; ignored `m
 ## Publication and limits
 
 The APK, release.json, downloads page and website Android button are updated together; earlier immutable APKs are preserved. Both pages disclose the new-key reinstall requirement. Repository publication and live hosting deployment are separate; the live domain remains unavailable under this environment network policy. Run the existing authorized hosting deployment process to update website metadata/pages; missing current binaries use the existing checked repository fallback. Physical installation, Android push receipt, production authentication and native design acceptance remain unverified.
+
+The full public repository APK download at commit `e1d54a7` returned HTTP200 and exactly65,010,241 bytes; its SHA256 matched the verified release. Direct download: https://raw.githubusercontent.com/Astra-Techno/circle/e1d54a7/downloads/circle-1.0.34-39.apk. This verifies repository availability, not the live hosting domain.
