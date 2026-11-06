@@ -1003,6 +1003,14 @@
     {
       "file": "main-900-2.0-light.jpg",
       "sha256": "04bd33958fd9f3e6109202d5e7935fdbf57577c6d8453edbe521b98a8ff14f1a"
+    },
+    {
+      "file": "windows-baseline-review.jpg",
+      "sha256": "09d9929c7fe594f35880933baaa39dc3199a87701383307f17a7a1098a01d981"
+    },
+    {
+      "file": "windows-baseline-review.json",
+      "sha256": "29fce02b7032102f717cc8894128703c26af3bf4f8f9536edbd63e7eb939aa2e"
     }
   ],
   "windowsReview": {
@@ -1011,6 +1019,12 @@
     "testsSkipped": 1,
     "baselineCount": 22,
     "changed": 12,
-    "unchanged": 10
+    "unchanged": 10,
+    "normalComparisonRun": 42213906765,
+    "normalTestsPassed": 783
+  },
+  "draftIdentityFixVisualChecks": {
+    "mainPassed": 5,
+    "extraAndReferencePassed": 13
   }
 }

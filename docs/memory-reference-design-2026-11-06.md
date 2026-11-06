@@ -46,9 +46,8 @@ upload. The corrected release uses Android42 and a new signed iOS run.
 Windows full refresh42212332065 passed782 tests/1skip, format/analyzer clean.
 All22 baselines reviewed:12 expected Memory/Home changes,10 unchanged. The
 identity fix does not alter default pixels. [Review sheet](design-previews/social-2.4/windows-baseline-review.jpg).
-The next normal Windows run verifies the corrected source, including the new
-draft regression, against these reviewed baselines.
+Normal Windows comparison42213906765 passed **783 tests/1skip**, with format/analyzer clean, on corrected source6ba65b9. This includes the new draft regression and all reviewed image comparisons.
 
 ## Delivery
 
-Reviewed Windows baselines are included with the draft-identity correction. Normal comparison and corrected Android42/TestFlight delivery are pending. Installed apps require this new release to show the design. No native-device or live-hosting deployment acceptance is inferred from source publication.
+Reviewed Windows baselines are included with the draft-identity correction. Corrected Android42 has been built and verified (158.3s, same signing identity, Social2.4 and Memory-scoped composer key in every AOT library). APK/download publication and corrected TestFlight delivery are completing; [Android receipt](mobile-release-1.0.36-android.json). Installed apps require this new release to show the design. No native-device or live-hosting deployment acceptance is inferred from source publication.
