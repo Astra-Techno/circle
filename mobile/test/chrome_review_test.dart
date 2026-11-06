@@ -37,6 +37,7 @@ void main() {
       );
       container.read(circleRouterProvider).go('/groups/g/friends');
       await tester.pumpAndSettle();
+      await openTab(tester, 'InCircles');
       final create = find.widgetWithText(OutlinedButton, 'Create Circle').first;
       await reveal(tester, create);
       await tester.tap(create);

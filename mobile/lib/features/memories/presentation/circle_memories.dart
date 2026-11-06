@@ -37,7 +37,7 @@ class CircleHome extends ConsumerWidget {
 
       final more = workspace.hasMoreMemories;
       return ColoredBox(
-        color: CircleAccents.of(context).recessed,
+        color: Theme.of(context).colorScheme.surface,
         child: ReadingPane(
           maxWidth: double.infinity,
           child: RefreshIndicator(

@@ -5,7 +5,8 @@ import 'profile_photo.dart';
 import 'server_blocking.dart';
 import '../../chat/application/live_chat.dart';
 import 'package:flutter/material.dart';
-import '../../memories/presentation/memory_grid.dart';
+import '../../memories/presentation/memory_card.dart';
+import '../../groups/domain/group_tree.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
@@ -151,15 +152,23 @@ class PersonProfileScreen extends ConsumerWidget {
               ],
             ),
             const CircleSectionTitle('Recent Memories'),
-            MemoryGrid(
-              memories: [
-                for (final memory in workspace.memories)
-                  if (memory.authorId == person) memory,
-              ],
-              empty: workspace.hasMoreMemories
-                  ? 'No Memories from $name in the items loaded so far.'
-                  : 'No Memories from $name are currently shared with you.',
-            ),
+            for (final memory in workspace.memories.where(
+              (memory) => memory.authorId == person,
+            ))
+              if (workspace.group(memory.groupId) case final group?)
+                CircleMemoryCard(
+                  key: ValueKey('person-${memory.id}'),
+                  memory: memory,
+                  group: group,
+                  audience: audiencePath(group, workspace.groupsById),
+                ),
+            if (!workspace.memories.any((memory) => memory.authorId == person))
+              CircleEmpty(
+                title: 'Recent Memories',
+                message: workspace.hasMoreMemories
+                    ? 'No Memories from $name in the items loaded so far.'
+                    : 'No Memories from $name are currently shared with you.',
+              ),
             if (workspace.hasMoreMemories)
               TextButton.icon(
                 onPressed: () => runCalmly(

@@ -1,5 +1,23 @@
 # CIRCLE design system
 
+## Social 2.2 — white canvases and shared Memory cards, 6 November 2026
+
+Owner requests white backgrounds across light-mode pages. Use the shared surface
+for all page canvases, including root shell, Home and chat wallpaper. Keep dark
+mode dark and retain distinct form fills/image placeholders/action surfaces.
+Home, Circle detail, Profile's Your Memories/Saved and other member profiles use
+CircleMemoryCard with a quiet hairline boundary. Reading typography remains the
+native Apple/corrected Inter system from Social2.1.
+
+Circle detail is one continuous overview and Memories list. Keep the existing
+Lucide action icons; remove the tab strip and duplicate Share/Polls row. Create
+opens the exact-Circle Memory composer. Members and InCircles open from header
+metadata links; child-Circle creation stays inside InCircles. Reflow icon/card
+actions at large text; retain48px hit targets, capability gates, exact-group
+access, private media and scoped pagination. Profile's two-view switch remains.
+[Audit and verification](circle-design-refinement-2026-11-06.md).
+
+
 ## Social 2.1 — native typography correction, 5 November 2026
 
 Owner's installed-app screenshot rejected Social2.0 typography as too heavy.

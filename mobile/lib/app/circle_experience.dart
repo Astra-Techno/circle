@@ -86,7 +86,7 @@ String? circleReturnDestination(String? input) {
       RegExp(r'^/groups/g/[A-Za-z0-9_-]+/invite/link$').hasMatch(path) ||
       RegExp(r'^/events/e/[A-Za-z0-9_-]+/(attendees|edit)$').hasMatch(path) ||
       RegExp(
-        r'^/groups/g/[A-Za-z0-9_-]+/(settings|invite|reports|events)$',
+        r'^/groups/g/[A-Za-z0-9_-]+/(settings|invite|reports|events|members|incircles|albums)$',
       ).hasMatch(path) ||
       RegExp(
         r'^/groups/g/[A-Za-z0-9_-]+/albums/[A-Za-z0-9_-]+(/photos)?$',
@@ -111,6 +111,9 @@ String circleDetailTitle(String path, String fallback) {
   if (path == '/you/privacy') return 'Privacy and blocking';
   if (path == '/chats/new') return 'New chat';
   if (path == '/groups/new') return 'New Circle';
+  if (path.endsWith('/members')) return 'Members';
+  if (path.endsWith('/incircles')) return 'InCircles';
+  if (path.endsWith('/albums')) return 'Albums';
   if (path.endsWith('/settings')) return 'Circle settings';
   if (path.endsWith('/invite/link')) return 'Invite link';
   if (path.endsWith('/invite')) return 'Invite people';
@@ -479,6 +482,15 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                     path: 'g/:id',
                     builder: (_, state) => _idRoute(state, _groupsPane),
                     routes: [
+                      for (final section in ['members', 'incircles', 'albums'])
+                        GoRoute(
+                          path: section,
+                          builder: (_, state) => _idRoute(
+                            state,
+                            (id) =>
+                                CircleGroupSection(id: id, section: section),
+                          ),
+                        ),
                       GoRoute(
                         path: 'events',
                         builder: (_, state) => _idRoute(
@@ -994,7 +1006,7 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
           )
         : null;
     return Scaffold(
-      backgroundColor: CircleAccents.of(context).recessed,
+      backgroundColor: theme.colorScheme.surface,
       body: Listener(
         onPointerMove: (event) {
           // Restore navigation even if a refresh replaces the scroller with

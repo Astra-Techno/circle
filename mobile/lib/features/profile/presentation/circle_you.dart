@@ -1,7 +1,8 @@
 import '../../../core/design/circle_icons.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../memories/presentation/memory_grid.dart';
+import '../../memories/presentation/memory_card.dart';
+import '../../groups/domain/group_tree.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
@@ -112,6 +113,8 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                     length: 2,
                     initialIndex: _memoryTab,
                     child: TabBar(
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
                       onTap: (index) => setState(() => _memoryTab = index),
                       tabs: const [
                         Tab(text: 'Your Memories'),
@@ -120,15 +123,30 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                     ),
                   ),
                   if (_memoryTab == 0) ...[
-                    MemoryGrid(
-                      memories: [
-                        for (final memory in workspace.memories)
-                          if (memory.authorId == workspace.viewer) memory,
-                      ],
-                      empty: workspace.hasMoreMemories
-                          ? 'Your Memories may be in older items. Load more below.'
-                          : 'Memories you share appear here.',
-                    ),
+                    for (final memory in workspace.memories.where(
+                      (memory) => memory.authorId == workspace.viewer,
+                    ))
+                      if (workspace.group(memory.groupId) case final group?)
+                        CircleMemoryCard(
+                          key: ValueKey('profile-${memory.id}'),
+                          memory: memory,
+                          group: group,
+                          audience: audiencePath(group, workspace.groupsById),
+                        ),
+                    if (!workspace.memories.any(
+                      (memory) => memory.authorId == workspace.viewer,
+                    ))
+                      CircleEmpty(
+                        title: 'Your Memories',
+                        message: workspace.hasMoreMemories
+                            ? 'Your Memories may be in older items. Load more below.'
+                            : 'Memories you share appear here.',
+                        action: TextButton.icon(
+                          onPressed: () => context.go('/home'),
+                          icon: const Icon(CircleIcons.home),
+                          label: const Text('Browse Memories'),
+                        ),
+                      ),
                     if (workspace.hasMoreMemories)
                       TextButton.icon(
                         onPressed: () => runCalmly(
@@ -155,19 +173,16 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                           label: const Text('Browse Memories'),
                         ),
                       ),
-                      itemBuilder: (_, memory) => CircleSurfaceCard(
-                        padding: EdgeInsets.zero,
-                        child: ListTile(
-                          title: Text(
-                            memory.summary,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: const Icon(CircleIcons.chevronRight),
-                          onTap: () =>
-                              context.push('/home/memory/${memory.id}'),
-                        ),
-                      ),
+                      itemBuilder: (_, memory) {
+                        final group = workspace.group(memory.groupId);
+                        if (group == null) return const SizedBox.shrink();
+                        return CircleMemoryCard(
+                          key: ValueKey('saved-${memory.id}'),
+                          memory: memory,
+                          group: group,
+                          audience: audiencePath(group, workspace.groupsById),
+                        );
+                      },
                     ),
                   const SizedBox(height: Space.md),
                   CircleSurfaceCard(

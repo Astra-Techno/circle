@@ -99,7 +99,7 @@ void main() {
     ) async {
       final container = await openCircle(tester);
       await go(tester, container, '/groups/g/cse');
-      await tapText(tester, 'Share a Memory here');
+      await tapText(tester, 'Create');
       expect(currentUri(container).toString(), '/compose?group=cse');
       expect(find.text('Computer science'), findsWidgets);
     });
@@ -213,6 +213,7 @@ void main() {
       expect(comment.authorName, 'You');
       await tester.tap(find.text('Profile'));
       await tester.pumpAndSettle();
+      await tapText(tester, 'Saved');
       await reveal(tester, find.textContaining('Same table'));
       expect(find.textContaining('Same table'), findsOneWidget);
       // Logging out lives under You › Account (H5).
@@ -566,7 +567,7 @@ void main() {
       ]) {
         await openTab(tester, tab);
         expect(tester.takeException(), isNull, reason: tab);
-        if (tab == 'Chat' || tab == 'Events') {
+        if (tab != 'Memories') {
           expect(container.read(circleRouterProvider).canPop(), isTrue);
           container.read(circleRouterProvider).pop();
           await tester.pumpAndSettle();

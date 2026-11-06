@@ -1,7 +1,6 @@
 import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import 'group_photos.dart';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,17 +18,6 @@ import '../domain/group_tree.dart';
 import '../domain/membership_rules.dart';
 import 'circle_groups.dart';
 import 'group_members.dart';
-
-/// The group's tabs, most used first. Albums appear only when the server
-/// offers them, so five tabs fit a phone without scrolling.
-List<String> groupTabsFor(CircleFeatures features) => [
-  'Memories',
-  'Chat',
-  'Events',
-  'Members',
-  'InCircles',
-  if (features.has(CircleFeature.albums)) 'Albums',
-];
 
 class CircleGroupDetail extends StatelessWidget {
   const CircleGroupDetail({super.key, required this.id});
@@ -52,7 +40,7 @@ class CircleGroupDetail extends StatelessWidget {
           ),
         );
       }
-      return _GroupTabs(group: group, workspace: workspace);
+      return _GroupMemories(group: group, workspace: workspace);
     },
   );
 }
@@ -88,186 +76,98 @@ class PendingGroupView extends ConsumerWidget {
   );
 }
 
-class _GroupTabs extends ConsumerWidget {
-  const _GroupTabs({required this.group, required this.workspace});
+/// One continuous page; secondary destinations stay in the header actions.
+class _GroupMemories extends ConsumerWidget {
+  const _GroupMemories({required this.group, required this.workspace});
   final CircleGroup group;
   final CircleWorkspace workspace;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => LayoutBuilder(
-    builder: (context, constraints) {
-      final tabs = groupTabsFor(ref.watch(circleFeaturesProvider));
-      final side = math.max(
-        Space.contentInset,
-        (constraints.maxWidth - 640) / 2,
-      );
-      final padding = CircleInsets.page.copyWith(left: side, right: side);
-      return DefaultTabController(
-        length: tabs.length,
-        child: _GroupTabNavigation(
-          group: group.id,
-          tabs: tabs,
-          child: NestedScrollView(
-            headerSliverBuilder: (context, _) => [
-              SliverPadding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: side - Space.contentInset,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: _GroupHeader(group: group, workspace: workspace),
-                ),
+  Widget build(BuildContext context, WidgetRef ref) => ReadingPane(
+    child: RefreshIndicator(
+      onRefresh: () async {
+        await runCalmly(
+          context,
+          () => ref.read(circleWorkspaceProvider.notifier).refresh(),
+        );
+        if (context.mounted) {
+          ref.invalidate(
+            memoryTimelineProvider(MemoryQuery(groupId: group.id)),
+          );
+        }
+      },
+      child: CustomScrollView(
+        key: PageStorageKey('circle-memories-${group.id}'),
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: _GroupHeader(group: group, workspace: workspace),
+          ),
+          SliverToBoxAdapter(
+            child: ScopedMemoryList(
+              query: MemoryQuery(groupId: group.id),
+              empty: const CircleEmpty(
+                icon: LucideIcons.image,
+                title: 'The first Memory is yours to make',
+                message: 'Use Create to share a moment with this Circle.',
               ),
-              SliverOverlapAbsorber(
-                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
-                  context,
-                ),
-                sliver: SliverAppBar(
-                  pinned: true,
-                  primary: false,
-                  automaticallyImplyLeading: false,
-                  toolbarHeight: 0,
-                  // Six tabs scroll; the faded edge shows there is more.
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(kTextTabBarHeight),
-                    child: CircleEdgeFade(
-                      child: TabBar(
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.start,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: side - Space.sm,
-                        ),
-                        tabs: [
-                          for (final label in tabs)
-                            Tab(
-                              child: ConstrainedBox(
-                                // With the label padding: a 48px tap target.
-                                constraints: const BoxConstraints(
-                                  minWidth: Space.hero,
-                                ),
-                                child: Text(label, textAlign: TextAlign.center),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+              itemBuilder: (_, memory) => CircleMemoryCard(
+                key: ValueKey(memory.id),
+                memory: memory,
+                group: group,
+                audience: audiencePath(group, workspace.groupsById),
               ),
-            ],
-            body: TabBarView(
-              children: [
-                for (final label in tabs)
-                  Builder(
-                    builder: (context) => CustomScrollView(
-                      key: PageStorageKey('group-${group.id}-$label'),
-                      slivers: [
-                        SliverOverlapInjector(
-                          handle:
-                              NestedScrollView.sliverOverlapAbsorberHandleFor(
-                                context,
-                              ),
-                        ),
-                        SliverPadding(
-                          padding: padding,
-                          sliver: SliverList.list(
-                            children: _tab(context, ref, label),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: Space.hero)),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Members and InCircles keep exact-group access and a normal Back destination.
+class CircleGroupSection extends StatelessWidget {
+  const CircleGroupSection({
+    super.key,
+    required this.id,
+    required this.section,
+  });
+  final String id;
+  final String section;
+  @override
+  Widget build(BuildContext context) => WorkspaceView(
+    builder: (workspace) {
+      final group = workspace.group(id);
+      if (group == null) {
+        return const ReadingPane(
+          child: CircleEmpty(
+            title: 'This circle is private',
+            message:
+                'You need membership in this exact Circle to see this page.',
+          ),
+        );
+      }
+      return ReadingPane(
+        child: ListView(
+          padding: CircleInsets.form,
+          children: [
+            CircleHeading(title: group.name, subtitle: ''),
+            if (section == 'members')
+              GroupMembersTab(group: group, workspace: workspace),
+            if (section == 'incircles')
+              SubgroupsTab(group: group, workspace: workspace),
+            if (section == 'albums')
+              CircleFeatureGate(
+                feature: CircleFeature.albums,
+                inline: true,
+                child: AlbumsTab(group: group),
+              ),
+          ],
         ),
       );
     },
   );
-
-  List<Widget> _tab(BuildContext context, WidgetRef ref, String tab) {
-    switch (tab) {
-      case 'Memories':
-        return [
-          // Both actions share one row and wrap only when space runs out.
-          Wrap(
-            spacing: Space.sm,
-            runSpacing: Space.sm,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => context.push(composeLocation(group.id)),
-                icon: const Icon(LucideIcons.pencil),
-                label: const Text('Share a Memory here'),
-              ),
-              if (ref
-                  .watch(circleFeaturesProvider)
-                  .has(CircleFeature.livePolls))
-                OutlinedButton.icon(
-                  onPressed: () => context.push('/polls?group=${group.id}'),
-                  icon: const Icon(LucideIcons.chart_bar),
-                  label: const Text('Polls'),
-                ),
-            ],
-          ),
-          const SizedBox(height: Space.lg),
-          ScopedMemoryList(
-            query: MemoryQuery(groupId: group.id),
-            empty: const CircleEmpty(
-              icon: LucideIcons.image,
-              title: 'The first Memory is yours to make',
-              message: 'Share a little moment with this exact Circle.',
-            ),
-            itemBuilder: (_, memory) =>
-                CircleMemoryCard(memory: memory, group: group),
-          ),
-        ];
-      case 'InCircles':
-        return [SubgroupsTab(group: group, workspace: workspace)];
-      case 'Members':
-        return [GroupMembersTab(group: group, workspace: workspace)];
-      case 'Events':
-        return [
-          CircleFeatureGate(
-            feature: CircleFeature.liveEvents,
-            inline: true,
-            child: CircleEmpty(
-              icon: LucideIcons.calendar_days,
-              title: 'Events for ${group.name}',
-              message: 'Make plans with this exact circle.',
-              action: FilledButton.icon(
-                onPressed: () => context.go('/events?group=${group.id}'),
-                icon: const Icon(LucideIcons.calendar),
-                label: const Text('Open Circle events'),
-              ),
-            ),
-          ),
-        ];
-      case 'Chat':
-        return [
-          CircleFeatureGate(
-            feature: CircleFeature.liveChat,
-            inline: true,
-            child: CircleEmpty(
-              icon: LucideIcons.message_circle,
-              title: 'Talk with everyone in ${group.name}',
-              message: 'Private messages saved for this group.',
-              action: FilledButton.icon(
-                onPressed: () => context.go('/chats/g/${group.id}'),
-                icon: const Icon(LucideIcons.messages_square),
-                label: const Text('Open Circle chat'),
-              ),
-            ),
-          ),
-        ];
-      default:
-        return [
-          CircleFeatureGate(
-            feature: CircleFeature.albums,
-            inline: true,
-            child: AlbumsTab(group: group),
-          ),
-        ];
-    }
-  }
 }
 
 class _GroupHeader extends ConsumerWidget {
@@ -285,10 +185,6 @@ class _GroupHeader extends ConsumerWidget {
     final canInvite = MembershipRules.canInvite(group, viewer).allowed;
     final reports = workspace.openReports[group.id] ?? 0;
     final features = ref.watch(circleFeaturesProvider);
-    final canCreate = MembershipRules.canCreateGroup(
-      person: viewer,
-      parent: group,
-    ).allowed;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -334,6 +230,12 @@ class _GroupHeader extends ConsumerWidget {
                 icon: LucideIcons.users,
                 label:
                     '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
+                onTap: () => context.push('/groups/g/${group.id}/members'),
+              ),
+              _StatPill(
+                icon: LucideIcons.layers,
+                label: 'InCircles',
+                onTap: () => context.push('/groups/g/${group.id}/incircles'),
               ),
               if (role != CircleRole.member)
                 _StatPill(
@@ -352,9 +254,7 @@ class _GroupHeader extends ConsumerWidget {
                   icon: LucideIcons.user_check,
                   label: '$requests ${requests == 1 ? 'request' : 'requests'}',
                   highlight: true,
-                  onTap: () => DefaultTabController.of(
-                    context,
-                  ).animateTo(groupTabsFor(features).indexOf('Members')),
+                  onTap: () => context.push('/groups/g/${group.id}/members'),
                 ),
               if (reports > 0)
                 _StatPill(
@@ -371,36 +271,44 @@ class _GroupHeader extends ConsumerWidget {
         // Quick action icon buttons.
         Padding(
           padding: CircleInsets.content,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          child: Wrap(
+            spacing: Space.xs,
+            runSpacing: Space.sm,
             children: [
-              _QuickAction(
-                icon: LucideIcons.messages_square,
-                label: 'Chat',
-                onTap: () => context.go('/chats/g/${group.id}'),
-              ),
+              if (features.has(CircleFeature.liveChat))
+                _QuickAction(
+                  icon: LucideIcons.messages_square,
+                  label: 'Chat',
+                  onTap: () => context.push('/chats/g/${group.id}'),
+                ),
               if (canInvite)
                 _QuickAction(
                   icon: LucideIcons.user_plus,
                   label: 'Invite',
                   onTap: () => context.push('/groups/g/${group.id}/invite'),
                 ),
-              _QuickAction(
-                icon: LucideIcons.calendar,
-                label: 'Events',
-                onTap: () => context.push('/groups/g/${group.id}/events'),
-              ),
+              if (features.has(CircleFeature.liveEvents))
+                _QuickAction(
+                  icon: LucideIcons.calendar,
+                  label: 'Events',
+                  onTap: () => context.push('/groups/g/${group.id}/events'),
+                ),
               if (features.has(CircleFeature.livePolls))
                 _QuickAction(
                   icon: LucideIcons.chart_bar,
                   label: 'Polls',
                   onTap: () => context.push('/polls?group=${group.id}'),
                 ),
-              if (canCreate)
+              _QuickAction(
+                icon: LucideIcons.plus,
+                label: 'Create',
+                onTap: () => context.push(composeLocation(group.id)),
+              ),
+              if (features.has(CircleFeature.albums))
                 _QuickAction(
-                  icon: LucideIcons.plus,
-                  label: 'Create',
-                  onTap: () => _showCreateSubgroupSheet(context, ref, group),
+                  icon: LucideIcons.images,
+                  label: 'Albums',
+                  onTap: () => context.push('/groups/g/${group.id}/albums'),
                 ),
               _QuickAction(
                 icon: LucideIcons.settings,
@@ -433,7 +341,9 @@ class _StatPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final accents = CircleAccents.of(context);
     final color = highlight ? accents.heart : accents.caption;
-    final bg = highlight ? accents.heartContainer : accents.recessed;
+    final bg = highlight
+        ? accents.heartContainer
+        : Theme.of(context).colorScheme.surface;
     final pill = Container(
       constraints: const BoxConstraints(minHeight: CircleSizes.minTouchTarget),
       padding: const EdgeInsets.symmetric(horizontal: Space.sm),
@@ -447,6 +357,14 @@ class _StatPill extends StatelessWidget {
           Icon(icon, size: CircleSizes.iconInline, color: color),
           const SizedBox(width: Space.xs),
           Text(label, style: CircleTextStyles.metadata(color)),
+          if (onTap != null) ...[
+            const SizedBox(width: Space.xs),
+            Icon(
+              CircleIcons.chevronRight,
+              size: CircleSizes.iconInline,
+              color: color,
+            ),
+          ],
         ],
       ),
     );
@@ -482,24 +400,35 @@ class _QuickAction extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: Space.sm,
+            horizontal: Space.xs,
             vertical: Space.xs,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: accents.recessed,
-                  shape: BoxShape.circle,
+          child: SizedBox(
+            width: CircleLayout.quickActionWidth(context, label),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: CircleLayout.quickActionPaint,
+                  height: CircleLayout.quickActionPaint,
+                  decoration: BoxDecoration(
+                    color: accents.recessed,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: CircleSizes.iconAction,
+                    color: accents.caption,
+                  ),
                 ),
-                child: Icon(icon, size: 20, color: accents.caption),
-              ),
-              const SizedBox(height: Space.xs),
-              Text(label, style: CircleTextStyles.metadata(accents.caption)),
-            ],
+                const SizedBox(height: Space.xs),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: CircleTextStyles.metadata(accents.caption),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -709,7 +638,7 @@ class SubgroupsTab extends ConsumerWidget {
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: OutlinedButton.icon(
-              onPressed: () => context.push('/groups/new?parent=${group.id}'),
+              onPressed: () => _showCreateSubgroupSheet(context, ref, group),
               icon: const Icon(LucideIcons.plus),
               label: const Text('Create Circle'),
             ),
@@ -804,66 +733,4 @@ class _JoinableTile extends ConsumerWidget {
                 '${preview.approvalRequired ? 'Ask to join' : 'Join'} ${preview.name}',
           ),
         );
-}
-
-/// Chat and Events open directly, including selection by a swipe. Restore the
-/// previous content tab so Back returns to useful group content.
-class _GroupTabNavigation extends StatefulWidget {
-  const _GroupTabNavigation({
-    required this.group,
-    required this.tabs,
-    required this.child,
-  });
-  final String group;
-  final List<String> tabs;
-  final Widget child;
-  @override
-  State<_GroupTabNavigation> createState() => _GroupTabNavigationState();
-}
-
-class _GroupTabNavigationState extends State<_GroupTabNavigation> {
-  TabController? _controller;
-  int _contentIndex = 0;
-  bool _opening = false;
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final controller = DefaultTabController.of(context);
-    if (controller == _controller) return;
-    _controller?.removeListener(_selected);
-    _controller = controller..addListener(_selected);
-  }
-
-  void _selected() {
-    final controller = _controller!;
-    if (_opening || controller.indexIsChanging) return;
-    final label = widget.tabs[controller.index];
-    if (label != 'Chat' && label != 'Events') {
-      _contentIndex = controller.index;
-      return;
-    }
-    _opening = true;
-    controller.index = _contentIndex;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      try {
-        await context.push<void>(
-          label == 'Chat'
-              ? '/chats/g/${widget.group}'
-              : '/groups/g/${widget.group}/events',
-        );
-      } finally {
-        if (mounted) _opening = false;
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller?.removeListener(_selected);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.child;
 }

@@ -97,7 +97,7 @@ void main() {
         await tester.tap(find.text('Studio North'));
         await tester.pumpAndSettle();
         expect(currentUri(container).path, '/groups');
-        expect(find.byType(TabBar), findsOneWidget);
+        expect(find.byType(TabBar), findsNothing);
         // The list stays beside the detail: the name shows in both.
         expect(find.text('Studio North'), findsAtLeast(2));
         expect(tester.takeException(), isNull);

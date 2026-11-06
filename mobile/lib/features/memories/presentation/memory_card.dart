@@ -133,6 +133,7 @@ class CircleMemoryCard extends ConsumerWidget {
         padding: EdgeInsets.symmetric(vertical: detail ? Space.sm : Space.xs),
         decoration: BoxDecoration(
           color: colors.surface,
+          border: detail ? null : Border.all(color: accents.hairline),
           borderRadius: BorderRadius.circular(CircleRadius.card),
         ),
         child: Column(
@@ -247,6 +248,14 @@ class CircleMemoryCard extends ConsumerWidget {
                 ),
               ),
             if (hasText && !hasPhotos) text,
+            if (!hasText && memory.poll != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                child: Text(
+                  memory.summary,
+                  style: CircleTextStyles.body(colors.onSurface),
+                ),
+              ),
             if (taken != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -325,34 +334,44 @@ class CircleMemoryCard extends ConsumerWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Space.sm),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _ActionButton(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = CircleLayout.memoryActionColumns(
+                    context,
+                    constraints.maxWidth,
+                  );
+                  final actions = [
+                    _ActionButton(
                       icon: LucideIcons.face_slightly_smiling,
                       label: 'React',
                       tooltip: 'Choose a reaction for $about',
                       onTap: pickReaction,
                     ),
-                  ),
-                  Expanded(
-                    child: _ActionButton(
+                    _ActionButton(
                       icon: LucideIcons.message_square,
                       label: 'Comment',
                       tooltip: 'Comment on $about',
                       onTap: openDetail,
                     ),
-                  ),
-                  Expanded(
-                    child: _ActionButton(
+                    _ActionButton(
                       icon: LucideIcons.bookmark,
                       label: 'Save',
                       tooltip: 'Save $about',
                       onTap: () =>
                           runCalmly(context, () => controller.save(memory.id)),
                     ),
-                  ),
-                ],
+                  ];
+                  return Wrap(
+                    alignment: WrapAlignment.center,
+                    children: [
+                      for (final action in actions)
+                        SizedBox(
+                          width: constraints.maxWidth / columns,
+                          child: action,
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -401,7 +420,6 @@ class _ActionButton extends StatelessWidget {
                   child: Text(
                     label,
                     style: CircleTextStyles.label(accents.caption),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

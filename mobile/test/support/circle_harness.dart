@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import 'package:mobile/app/circle_experience.dart';
+import 'package:mobile/features/groups/presentation/group_detail.dart';
 import 'package:mobile/core/api/api_providers.dart';
 import 'package:mobile/core/theme_controller.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
@@ -147,19 +148,17 @@ Uri currentUri(ProviderContainer container) {
   return last is ImperativeRouteMatch ? last.matches.uri : config.uri;
 }
 
-/// Scrolls the tab bar to [label] if needed and selects it.
+/// Opens a Circle destination through the visible header control.
 Future<void> openTab(WidgetTester tester, String label) async {
-  final tab = find.widgetWithText(Tab, label);
-  // At large text the tabs can sit below a tall header: scroll to them.
-  if (tab.evaluate().isEmpty) {
-    await tester.scrollUntilVisible(
-      tab,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-  }
-  await tester.ensureVisible(tab);
-  await tester.pumpAndSettle();
-  await tester.tap(tab);
+  if (label == 'Memories') return;
+  final target = label == 'Members'
+      ? find.textContaining(RegExp(r'^\d+ members?$'))
+      : find.text(label);
+  final control = find.descendant(
+    of: find.byType(CircleGroupDetail),
+    matching: target,
+  );
+  await reveal(tester, control);
+  await tester.tap(control.first);
   await tester.pumpAndSettle();
 }

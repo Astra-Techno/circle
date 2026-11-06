@@ -286,6 +286,7 @@ void main() {
     final container = await openCircle(tester);
     await container.read(circleWorkspaceProvider.notifier).save('route-poll');
     await go(tester, container, '/you');
+    await tapText(tester, 'Saved');
     await reveal(
       tester,
       find.text('Poll: Which route for the season’s last ride?'),

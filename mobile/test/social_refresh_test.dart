@@ -3,7 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/circle_experience.dart';
 import 'package:mobile/core/design.dart';
-import 'support/circle_harness.dart' show currentUri;
+import 'support/circle_harness.dart' show currentUri, openTab;
 import 'live_polls_test.dart' show PollFixture;
 import 'support/fake_api.dart';
 import 'support/root_style_fixture.dart';
@@ -153,7 +153,7 @@ void main() {
   });
 
   testWidgets(
-    'group tabs open scoped destinations and Back restores the group',
+    'group actions open scoped destinations and Back restores the group',
     (tester) async {
       final f = RootStyleFixture();
       final c = await openServerCircle(
@@ -165,12 +165,7 @@ void main() {
       router.go('/groups/g/${f.group}');
       await settle(tester);
       for (final label in ['Chat', 'Events']) {
-        final tab = find.descendant(
-          of: find.byType(TabBar),
-          matching: find.text(label),
-        );
-        await tester.ensureVisible(tab);
-        await tester.tap(tab);
+        await openTab(tester, label);
         await settle(tester);
         final uri = currentUri(c);
         if (label == 'Chat') {

@@ -300,7 +300,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
             padding: CircleInsets.content,
             child: Text(
               group.name,
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
         ),

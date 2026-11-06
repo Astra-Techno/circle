@@ -115,7 +115,7 @@ void main() {
     expect(group['name'], 'Sharma Family');
     expect(currentUri(container).path, '/groups/g/${group['id']}');
 
-    await tap(tester, find.text('Share a Memory here'));
+    await tap(tester, find.text('Create'));
     await enter(
       tester,
       find.widgetWithText(TextField, 'Share a memory with your Circle...'),

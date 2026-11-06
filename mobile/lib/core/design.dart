@@ -27,6 +27,38 @@ abstract final class CircleProfileLayout {
 }
 
 abstract final class CircleLayout {
+  static const double quickActionPaint = 40;
+  static double quickActionWidth(BuildContext context, String label) {
+    final style = CircleTextStyles.metadata(
+      Theme.of(context).colorScheme.onSurface,
+    );
+    final painter = TextPainter(
+      text: TextSpan(text: label, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final width = painter.width
+        .clamp(CircleSizes.minTouchTarget, double.infinity)
+        .toDouble();
+    painter.dispose();
+    return width;
+  }
+
+  static int memoryActionColumns(BuildContext context, double width) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: 'Comment',
+        style: CircleTextStyles.label(Theme.of(context).colorScheme.onSurface),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final minimum =
+        painter.width + CircleSizes.iconAction + Space.xs + Space.sm * 2;
+    painter.dispose();
+    return (width / minimum).floor().clamp(1, 3);
+  }
+
   static const largeTextThreshold = 1.4;
   static const homeHeaderHeight = 56.0;
   static double headerHeight(BuildContext context, {String? title}) {
@@ -256,7 +288,7 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     title: Color(0xFF1C1E21),
     caption: Color(0xFF65676B),
     activeDot: Color(0xFF3F7A68),
-    chatWallpaper: Color(0xFFF0F2F5),
+    chatWallpaper: Colors.white,
     chatIncoming: Color(0xFFFFFFFF),
     chatOutgoing: Color(0xFFE4DEFA),
   );
