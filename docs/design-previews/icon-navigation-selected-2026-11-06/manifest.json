@@ -1,0 +1,50 @@
+{
+  "sourceCommit": "b04bb69f86f781f661536d8e0c04d1c53bf5d53d",
+  "selectedImage": "selected-reference.png",
+  "localRuns": [
+    {
+      "passed": 63,
+      "excluded": "9 original circle Windows golden cases"
+    },
+    {
+      "passed": 15,
+      "includes": "new5 dock checks,5 shared guards,5 Home review checks"
+    }
+  ],
+  "captures": [
+    {
+      "file": "icon-navigation-320-2.0-dark.png",
+      "sha256": "f21563cca539d59fefdf9230445c34b16e140577e24d0552ff3d15c40d1e7121"
+    },
+    {
+      "file": "icon-navigation-393-1.0-dark.png",
+      "sha256": "aedb55e50e0b52de0400c17d15aa26c882b73b58c83684d26ad477ca4ba200b8"
+    },
+    {
+      "file": "icon-navigation-393-1.0-light.png",
+      "sha256": "1391fbd700c7c75132670fa5e4d60f510520bed438a717a1b609f44ae1b2ffa5"
+    },
+    {
+      "file": "icon-navigation-900-2.0-light.png",
+      "sha256": "9194c4232cf3422c2519583c7aa7b9ff983b626706f441e41aec7987a31a464e"
+    },
+    {
+      "file": "selected-reference.png",
+      "sha256": "2c7a650cf90bdd35727d901d54c85376fb9067104a4577a64701bbca37c78bb6"
+    }
+  ],
+  "nativeDeviceVerified": false,
+  "installedBuildChanged": false,
+  "windows": {
+    "run": 42253358395,
+    "job": 128013978606,
+    "sourceCommit": "b04bb69f86f781f661536d8e0c04d1c53bf5d53d",
+    "testsPassed": 797,
+    "testsSkipped": 1,
+    "baselineMode": "refresh then visual review",
+    "artifactId": 13521374505,
+    "baselinesReviewed": 22,
+    "expectedDockChanges": 16,
+    "unchanged": 6
+  }
+}
