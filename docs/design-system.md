@@ -1,5 +1,9 @@
 # CIRCLE design system
 
+## Selected Home header — Quiet Wordmark, 6 November 2026
+
+Use the owner-selected first generated option: original32px logo,24px brand wordmark, plain search/bell within48px hit areas, neutral avatar composer and slim Photo/Event/Poll row with14px regular labels and20px icons.16px side margins;8px composer vertical spacing. Allow two-line composer prompt at large text. Preserve floating scroll behavior, actual badges/avatar and capability-scoped navigation. Other headers retain their existing tonal controls. See docs/home-header-selected-2026-11-06.md for the exact reference and Flutter captures.
+
 ## Latest owner reference — Reddit-style Memories, 6 November 2026
 
 This later screenshot supersedes the square edge-to-edge media and bare action row below. Keep the centered720px white timeline and compact private author metadata. Shared Memory media is inset16px, clipped to16px outer corners, with original aspect/collage rules retained. Use1px post dividers,16/24 regular caption text and18/24 semibold opening text for short text-only posts or an explicit first paragraph of at most160characters. Do not invent separate title data. Detail preserves all paragraphs.

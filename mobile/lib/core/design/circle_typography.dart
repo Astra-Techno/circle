@@ -57,6 +57,7 @@ abstract final class CircleTextStyles {
   static TextStyle postHeading(Color ink) =>
       _style(ink, 18, 24, emphasis: true);
   static TextStyle postBody(Color ink) => _style(ink, 16, 24);
+  static TextStyle homeShortcut(Color ink) => _style(ink, 14, 20);
   static TextStyle homeBody(Color ink) => body(ink);
   static TextStyle homeAuthor(Color ink) => cardTitle(ink);
 }

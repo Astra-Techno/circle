@@ -1132,7 +1132,8 @@ class CircleFloatingHeader extends StatelessWidget {
       titleSpacing: Space.md,
       title: _headerTitle(context, data),
       actions: [
-        for (final action in data.actions) CircleHeaderAction(child: action),
+        for (final action in data.actions)
+          CircleHeaderAction(tonal: data.logo == null, child: action),
         if (data.fab != null && data.title != 'Circle')
           CircleHeaderAction(
             child: IconButton(
@@ -1155,27 +1156,29 @@ class CircleCollapsingHeader extends StatelessWidget {
   Widget build(BuildContext context) => const CircleFloatingHeader();
 }
 
-/// A quiet 40px circle inside an unchanged 48px interactive target.
+/// Optional tonal backing inside an unchanged 48px interactive target.
 /// Wrapping the existing control preserves its tooltip, badge and action.
 class CircleHeaderAction extends StatelessWidget {
-  const CircleHeaderAction({super.key, required this.child});
+  const CircleHeaderAction({super.key, required this.child, this.tonal = true});
   final Widget child;
+  final bool tonal;
   @override
   Widget build(BuildContext context) => SizedBox.square(
     dimension: Space.large,
     child: Stack(
       alignment: Alignment.center,
       children: [
-        IgnorePointer(
-          child: Container(
-            width: CircleLayout.headerActionPaintSize,
-            height: CircleLayout.headerActionPaintSize,
-            decoration: BoxDecoration(
-              color: CircleAccents.of(context).recessed,
-              shape: BoxShape.circle,
+        if (tonal)
+          IgnorePointer(
+            child: Container(
+              width: CircleLayout.headerActionPaintSize,
+              height: CircleLayout.headerActionPaintSize,
+              decoration: BoxDecoration(
+                color: CircleAccents.of(context).recessed,
+                shape: BoxShape.circle,
+              ),
             ),
           ),
-        ),
         child,
       ],
     ),

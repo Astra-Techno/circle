@@ -4,6 +4,9 @@ import 'package:mobile/core/circle_components.dart';
 import 'package:mobile/core/design.dart';
 import 'package:mobile/app/circle_experience.dart';
 import 'support/circle_harness.dart';
+import 'support/root_style_fixture.dart';
+import 'support/server_harness.dart';
+import 'screen_audit_visual_review_test.dart' show capture;
 
 void main() {
   testWidgets(
@@ -21,6 +24,75 @@ void main() {
       expect(find.text('My Circle. Billion Memories.'), findsNothing);
     },
   );
+
+  for (final layout in [
+    (393.0, 844.0, 1.0, Brightness.light),
+    (393.0, 844.0, 1.0, Brightness.dark),
+    (320.0, 1000.0, 2.0, Brightness.dark),
+    (900.0, 1100.0, 2.0, Brightness.light),
+  ]) {
+    testWidgets(
+      'selected Home concept ${layout.$1} ${layout.$3} ${layout.$4.name}',
+      (tester) async {
+        final c = await openCircle(
+          tester,
+          size: Size(layout.$1, layout.$2),
+          scale: layout.$3,
+          brightness: layout.$4,
+        );
+        final actions = tester.widgetList<CircleHeaderAction>(
+          find.byType(CircleHeaderAction),
+        );
+        expect(actions.length, 2);
+        expect(actions.every((a) => !a.tonal), isTrue);
+        for (final label in ['Search', 'Activity']) {
+          final rect = tester.getRect(find.byTooltip(label));
+          expect(rect.height, greaterThanOrEqualTo(48));
+          expect(rect.width, greaterThanOrEqualTo(48));
+        }
+        expect(tester.widget<Text>(find.text('Circle')).style!.fontSize, 24);
+        await capture(
+          tester,
+          'selected-home-header',
+          '${layout.$1.toInt()}-${layout.$3}-${layout.$4.name}',
+        );
+        await go(tester, c, '/groups');
+        expect(
+          tester
+              .widgetList<CircleHeaderAction>(find.byType(CircleHeaderAction))
+              .every((a) => a.tonal),
+          isTrue,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('selected Home header actions retain their real destinations', (
+    tester,
+  ) async {
+    final fixture = RootStyleFixture();
+    final c = await openServerCircle(
+      tester,
+      fixture.server,
+      tokens: await storedSession(fixture.server, fixture.owner),
+    );
+    final routes = <(Finder, String)>[
+      (find.byTooltip('Search'), '/search'),
+      (find.byTooltip('Activity'), '/activity'),
+      (find.text('Share a memory…'), '/compose'),
+      (find.widgetWithText(TextButton, 'Photo'), '/compose'),
+      (find.widgetWithText(TextButton, 'Event'), '/events/new'),
+      (find.widgetWithText(TextButton, 'Poll'), '/polls/new'),
+    ];
+    for (final entry in routes) {
+      await go(tester, c, '/home');
+      await tester.tap(entry.$1);
+      await tester.pumpAndSettle();
+      expect(currentUri(c).path, entry.$2);
+      expect(tester.takeException(), isNull);
+    }
+  });
 
   for (final scale in [1.0, 2.0]) {
     testWidgets('fields keep size, spacing and error room at scale $scale', (

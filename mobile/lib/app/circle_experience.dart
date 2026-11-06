@@ -1041,9 +1041,9 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
             top: false,
             child: CircleTabHeaderData(
               title: index == 0 ? 'Circle' : titles[index],
-              titleStyle: CircleTextStyles.pageTitle(
-                theme.colorScheme.onSurface,
-              ),
+              titleStyle: index == 0
+                  ? CircleTextStyles.brand(theme.colorScheme.onSurface)
+                  : CircleTextStyles.pageTitle(theme.colorScheme.onSurface),
               logo: logo,
               actions: [
                 const SearchButton(),

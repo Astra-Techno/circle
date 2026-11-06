@@ -97,7 +97,7 @@ abstract final class CircleLayout {
     return height > homeHeaderHeight ? height : homeHeaderHeight;
   }
 
-  static const homeLogoSize = 28.0;
+  static const homeLogoSize = 32.0;
   static const headerActionPaintSize = 36.0;
   static const homeActionMinHeight = 48.0;
   // Minimum interactive row, not an extra block above the device inset.

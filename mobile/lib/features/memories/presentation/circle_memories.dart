@@ -88,7 +88,7 @@ class CircleHome extends ConsumerWidget {
   );
 }
 
-/// The composer area: Circle header, avatar + prompt, 4 quick-action tiles.
+/// Selected Home concept: avatar composer and three slim supported shortcuts.
 class _HomeHeader extends ConsumerWidget {
   const _HomeHeader({
     required this.workspace,
@@ -120,9 +120,9 @@ class _HomeHeader extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     Space.md,
-                    Space.xs,
+                    Space.sm,
                     Space.md,
-                    Space.xs,
+                    Space.sm,
                   ),
                   child: Row(
                     children: [
@@ -167,7 +167,7 @@ class _HomeHeader extends ConsumerWidget {
                                                 ).scale(1) <=
                                                 CircleLayout.largeTextThreshold
                                             ? 1
-                                            : null,
+                                            : 2,
                                         overflow: TextOverflow.ellipsis,
                                         style: CircleTextStyles.homeBody(
                                           accents.caption,
@@ -263,7 +263,7 @@ class _QuickActionIcon extends StatelessWidget {
       minimumSize: const Size(Space.large, Space.large),
       foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
       padding: const EdgeInsets.symmetric(horizontal: Space.sm),
-      textStyle: CircleTextStyles.label(
+      textStyle: CircleTextStyles.homeShortcut(
         Theme.of(context).colorScheme.onSurface,
       ),
     ),
