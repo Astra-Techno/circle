@@ -1,0 +1,49 @@
+{
+  "sourceCommit": "b5a3f39bb5684753bc26e44f5d9519c37a142aa2",
+  "localFocusedRuns": [
+    {
+      "passed": 40,
+      "note": "before final decode-recovery refinements and additional guards"
+    },
+    {
+      "passed": 25,
+      "note": "final recovery/photo/provider/design run"
+    }
+  ],
+  "captures": [
+    {
+      "file": "circle-actions-320-2.0-bold-true.png",
+      "sha256": "fdb5fde217fcb71b781d63e4cf7c54c6291c915e692a19068e395a01ec8923ec"
+    },
+    {
+      "file": "circle-actions-393-1.0-bold-false.png",
+      "sha256": "6b0dcae6824b8eb001ba3d7fe2f93dd91f305e27c87f1ca4966e3e946fb67f22"
+    },
+    {
+      "file": "circle-actions-393-1.0-bold-true.png",
+      "sha256": "db44c2faf256c766b6d9c536938a742dc69ad0cb9f2ce411b73f24894470caf3"
+    },
+    {
+      "file": "circle-actions-900-2.0-bold-true.png",
+      "sha256": "a2672f3ecfb393c360818dc7910e5bbd95ff1a9111f10b4210b39b80f8739808"
+    },
+    {
+      "file": "circle-loading-error-393-light.png",
+      "sha256": "82f17cfcbf3e8544afce35c969414a0b1db2daeb38e49dcbde40872b0c2e41d8"
+    }
+  ],
+  "liveServerVerified": false,
+  "nativeDeviceVerified": false,
+  "captureSourceCommit": "358d3bd87dea6528d64c7942d460e368b3995737",
+  "additionalAccountChecksPassed": 36,
+  "windowsVerification": {
+    "runId": 42283041729,
+    "artifactId": 13536816916,
+    "passed": 806,
+    "skipped": 1,
+    "mode": "update-goldens with manual visual review",
+    "baselinesReviewed": 22,
+    "baselinesChanged": 6,
+    "baselinesUnchanged": 16
+  }
+}
