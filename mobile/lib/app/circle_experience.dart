@@ -865,27 +865,31 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
           detail ||
               _navigationVisible ||
               MediaQuery.accessibleNavigationOf(context)
-          ? Align(
-              heightFactor: 1,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: double.infinity),
-                child: DecoratedBox(
-                  decoration: CircleDepth.dock(context),
-                  child: SafeArea(
-                    top: false,
-                    bottom: false,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical:
-                            CircleLayout.navigationBottomPadding(
-                              MediaQuery.viewPaddingOf(context).bottom,
-                            ) /
-                            2,
-                      ),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          minHeight: CircleLayout.homeDockHeight,
-                        ),
+          ? SafeArea(
+              top: false,
+              bottom: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  CircleLayout.navigationSideInset,
+                  Space.sm,
+                  CircleLayout.navigationSideInset,
+                  CircleLayout.navigationBottomPadding(
+                    MediaQuery.viewPaddingOf(context).bottom,
+                  ),
+                ),
+                child: Align(
+                  heightFactor: 1,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: CircleLayout.homeDockMaxWidth,
+                    ),
+                    child: DecoratedBox(
+                      key: const ValueKey('circle-navigation-dock'),
+                      decoration: CircleDepth.dock(context),
+                      child: Material(
+                        type: MaterialType.transparency,
+                        borderRadius: BorderRadius.circular(CircleRadius.pill),
+                        clipBehavior: Clip.antiAlias,
                         child: _DockLayout(
                           children: [
                             _DockTab(
@@ -1088,55 +1092,59 @@ class _DockTab extends StatelessWidget {
         ? theme.colorScheme.primary
         : CircleAccents.of(context).caption;
     return Semantics(
+      key: ValueKey('navigation-tab-$label'),
       button: true,
       selected: selected,
       label: label,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: Space.large,
-            minWidth: Space.large,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: Space.large,
-                height: Space.section,
+      onTap: onTap,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: label,
+        excludeFromSemantics: true,
+        child: InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            height: CircleLayout.homeDockHeight,
+            child: Center(
+              child: AnimatedContainer(
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 200),
+                width: CircleLayout.navigationHighlightWidth,
+                height: CircleLayout.navigationHighlightHeight,
                 decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(CircleRadius.tile),
+                  color: selected
+                      ? CircleAccents.of(context).calmContainer
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(CircleRadius.pill),
                 ),
                 alignment: Alignment.center,
-                child:
-                    leading ??
-                    Icon(
-                      selected ? activeIcon : icon,
-                      color: color,
-                      size: Space.section,
-                    ),
+                child: leading == null
+                    ? Icon(
+                        selected ? activeIcon : icon,
+                        color: color,
+                        size: Space.section,
+                      )
+                    : DecoratedBox(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: selected
+                              ? Border.all(
+                                  color: color,
+                                  width: CircleLayout.navigationRingWidth,
+                                )
+                              : null,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(
+                            CircleLayout.navigationAvatarInset,
+                          ),
+                          child: leading!,
+                        ),
+                      ),
               ),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: CircleTextStyles.navLabel(color).copyWith(
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-              Container(
-                width: Space.sm + Space.xs,
-                height: Space.xs,
-                decoration: BoxDecoration(
-                  color: selected ? color : Colors.transparent,
-                  borderRadius: BorderRadius.circular(Space.xs),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1144,14 +1152,15 @@ class _DockTab extends StatelessWidget {
   }
 }
 
-/// Keep five compact tabs normally; reflow rather than truncate large labels.
+/// Icon-only tabs keep one row independent of text scaling.
+/// Very narrow surfaces reflow to preserve 48px touch targets.
 class _DockLayout extends StatelessWidget {
   const _DockLayout({required this.children});
   final List<Widget> children;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final minimum = CircleLayout.navigationItemWidth(context);
+      const minimum = CircleSizes.minTouchTarget;
       final fit = (constraints.maxWidth / minimum).floor();
       final columns = fit >= children.length
           ? children.length

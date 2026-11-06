@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/circle_experience.dart';
 import 'package:mobile/core/design.dart';
@@ -25,22 +24,22 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       await settle(tester);
       for (final label in ['Home', 'Circles', 'Chats', 'Events', 'Profile']) {
-        final text = find.text(label);
-        final paragraph = tester.renderObject<RenderParagraph>(text);
-        expect(paragraph.didExceedMaxLines, isFalse, reason: label);
-        expect(tester.getRect(text).bottom, lessThanOrEqualTo(1000));
-        final target = find
-            .ancestor(of: text, matching: find.byType(InkWell))
-            .first;
+        final target = find.byTooltip(label);
+        expect(find.text(label), findsNothing);
+        expect(tester.getRect(target).bottom, lessThanOrEqualTo(1000));
         expect(tester.getSize(target).width, greaterThanOrEqualTo(48));
         expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
+        expect(
+          tester.getCenter(target).dy,
+          tester.getCenter(find.byTooltip('Home')).dy,
+        );
       }
       if (scale == 1) {
         final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
         expect(
           tester.getSize(find.byWidget(scaffold.bottomNavigationBar!)).height,
-          lessThanOrEqualTo(64),
-          reason: 'Preserve the normal-size footer fix',
+          lessThanOrEqualTo(72),
+          reason: '56px capsule plus one 8px gap on each side',
         );
       }
       c.read(circleRouterProvider).go('/events/new');

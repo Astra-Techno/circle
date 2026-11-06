@@ -92,7 +92,7 @@ void main() {
         'dock',
         find
             .ancestor(
-              of: find.text('Home'),
+              of: find.byTooltip('Home'),
               matching: find.byType(DecoratedBox),
             )
             .first,
@@ -104,7 +104,7 @@ void main() {
         ),
       );
       measure('commentCount', find.text('8 comments'));
-      measure('navigationLabel', find.text('Home'));
+      measure('navigationItem', find.byTooltip('Home'));
       await tester.runAsync(() async {
         final frame = await boundary.toImage();
         final bytes = await frame.toByteData(format: ui.ImageByteFormat.png);
@@ -131,7 +131,7 @@ void main() {
     );
     expect(tester.getTopLeft(logo).dy, greaterThanOrEqualTo(24));
     expect(
-      tester.getBottomRight(find.text('Profile')).dy,
+      tester.getBottomRight(find.byTooltip('Profile')).dy,
       lessThanOrEqualTo(840),
     );
     expect(tester.takeException(), isNull);

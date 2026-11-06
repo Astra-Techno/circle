@@ -14,14 +14,14 @@ void main() {
     await openCircle(tester);
     final scroll = find.byType(CustomScrollView).first;
     // The floating pill dock is visible.
-    expect(find.text('Circles'), findsOneWidget);
+    expect(find.byTooltip('Circles'), findsOneWidget);
     await tester.drag(scroll, const Offset(0, -600));
     await tester.pumpAndSettle();
     // After scrolling down the dock collapses to zero height.
-    expect(find.text('Circles'), findsNothing);
+    expect(find.byTooltip('Circles'), findsNothing);
     await tester.drag(scroll, const Offset(0, 180));
     await tester.pumpAndSettle();
-    expect(find.text('Circles'), findsOneWidget);
+    expect(find.byTooltip('Circles'), findsOneWidget);
   });
 
   testWidgets(
@@ -35,7 +35,7 @@ void main() {
       expect(find.text('Circle'), findsOneWidget);
       expect(find.text('Share a memory…'), findsOneWidget);
       for (final label in ['Home', 'Circles', 'Events', 'Profile']) {
-        expect(find.text(label), findsOneWidget);
+        expect(find.byTooltip(label), findsOneWidget);
       }
     },
   );
@@ -52,7 +52,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Our weekend circle');
       await tapText(tester, 'Create Circle');
       expect(workspaceOf(container).groups.single.name, 'Our weekend circle');
-      await tester.tap(find.text('Home'));
+      await tester.tap(find.byTooltip('Home'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Share a memory…'));
       await tester.pumpAndSettle();
@@ -117,7 +117,7 @@ void main() {
     'group detail stack survives tab switches and hidden content stays denied',
     (tester) async {
       final container = await openCircle(tester);
-      await tester.tap(find.text('Circles'));
+      await tester.tap(find.byTooltip('Circles'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'window-seat');
       await tester.pumpAndSettle();
@@ -129,10 +129,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Computer science'), findsOneWidget);
       expect(find.byType(BackButton), findsOneWidget);
-      await tester.tap(find.text('Events').last);
+      await tester.tap(find.byTooltip('Events').last);
       await tester.pumpAndSettle();
       expect(find.byType(BackButton), findsNothing);
-      await tester.tap(find.text('Circles'));
+      await tester.tap(find.byTooltip('Circles'));
       await tester.pumpAndSettle();
       expect(find.text('Computer science'), findsOneWidget);
       await go(tester, container, '/groups/g/private-plans');
@@ -145,7 +145,7 @@ void main() {
     tester,
   ) async {
     await openCircle(tester);
-    await tester.tap(find.text('Circles'));
+    await tester.tap(find.byTooltip('Circles'));
     await tester.pumpAndSettle();
     final names = [
       'Northbank 2009',
@@ -211,7 +211,7 @@ void main() {
       final comment = workspaceOf(container).memories.first.comments.last;
       expect(comment.text, 'See you next Sunday.');
       expect(comment.authorName, 'You');
-      await tester.tap(find.text('Profile'));
+      await tester.tap(find.byTooltip('Profile'));
       await tester.pumpAndSettle();
       await tapText(tester, 'Saved');
       await reveal(tester, find.textContaining('Same table'));
@@ -505,7 +505,7 @@ void main() {
 
   testWidgets('navigation dock stays compact at 200% text', (tester) async {
     await openCircle(tester, scale: 2);
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.byTooltip('Home'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

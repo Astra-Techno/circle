@@ -100,30 +100,14 @@ abstract final class CircleLayout {
   static const homeLogoSize = 32.0;
   static const headerActionPaintSize = 36.0;
   static const homeActionMinHeight = 48.0;
-  // Minimum interactive row, not an extra block above the device inset.
-  static const homeDockHeight = 48.0;
+  static const homeDockHeight = 56.0;
+  static const navigationSideInset = Space.sm + Space.xs;
+  static const navigationHighlightWidth = 40.0;
+  static const navigationHighlightHeight = 36.0;
+  static const navigationAvatarInset = Space.xs / 2;
+  static const navigationRingWidth = Space.xs / 2;
   static double navigationBottomPadding(double deviceInset) =>
-      deviceInset.clamp(0.0, Space.md).toDouble();
-  static double navigationItemWidth(BuildContext context) {
-    final painter = TextPainter(
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-    );
-    var width = Space.large;
-    for (final label in ['Home', 'Circles', 'Chats', 'Events', 'Profile']) {
-      painter.text = TextSpan(
-        text: label,
-        style: CircleTextStyles.navLabel(
-          Theme.of(context).colorScheme.onSurface,
-        ),
-      );
-      painter.layout();
-      final measured = painter.width + Space.md;
-      if (measured > width) width = measured;
-    }
-    painter.dispose();
-    return width;
-  }
+      deviceInset > Space.sm ? deviceInset : Space.sm;
 
   static const homeComposerMaxWidth = 720.0;
   static const homeDockMaxWidth = 640.0;
@@ -219,7 +203,15 @@ abstract final class CircleDepth {
   /// The floating navigation dock: surface, hairline and one soft shadow.
   static BoxDecoration dock(BuildContext context) => BoxDecoration(
     color: Theme.of(context).colorScheme.surface,
-    border: Border(top: BorderSide(color: CircleAccents.of(context).hairline)),
+    border: Border.all(color: CircleAccents.of(context).hairline),
+    borderRadius: BorderRadius.circular(CircleRadius.pill),
+    boxShadow: [
+      BoxShadow(
+        color: shadow(Theme.of(context).brightness),
+        blurRadius: Space.md,
+        offset: const Offset(0, Space.xs / 2),
+      ),
+    ],
   );
 
   static WidgetStateProperty<double> get buttonLift =>

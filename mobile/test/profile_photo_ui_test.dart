@@ -28,7 +28,7 @@ void main() {
       tokens: await storedSession(server, user),
       profilePicker: picker,
     );
-    await tester.tap(find.text('Profile'));
+    await tester.tap(find.byTooltip('Profile'));
     await settle(tester);
     await tester.tap(find.byTooltip('Add profile photo'));
     await settle(tester);

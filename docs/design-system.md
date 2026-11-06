@@ -1,5 +1,9 @@
 # CIRCLE design system
 
+## Approved icon-only floating navigation, 6 November 2026
+
+The owner-approved refined third concept supersedes persistent dock labels, the active underline and the edge-to-edge footer. Use a56px outlined/shadowed capsule,12px side insets,8px top gap, bottom max(8px, device inset) exactly once, capped640px wide. Five evenly spaced24px icons/profile avatar remain centered in one row at normal phone widths, independent of text scale. Use a40×36 lavender active highlight and purple profile-photo selection ring. Preserve48px hit targets, tooltips, explicit screen-reader names/selection/actions, actual session avatar and all existing routes/visibility rules. Reserve layout space so content is not covered. Do not add fake profile images or manually draw system chrome. See docs/icon-navigation-selected-2026-11-06.md.
+
 ## Selected Home header — Quiet Wordmark, 6 November 2026
 
 Use the owner-selected first generated option: original32px logo,24px brand wordmark, plain search/bell within48px hit areas, neutral avatar composer and slim Photo/Event/Poll row with14px regular labels and20px icons.16px side margins;8px composer vertical spacing. Allow two-line composer prompt at large text. Preserve floating scroll behavior, actual badges/avatar and capability-scoped navigation. Other headers retain their existing tonal controls. See docs/home-header-selected-2026-11-06.md for the exact reference and Flutter captures.

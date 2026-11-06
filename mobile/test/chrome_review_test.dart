@@ -22,8 +22,8 @@ void main() {
     );
     container.read(circleRouterProvider).go('/chats/g/${fixture.group}');
     await settle(tester);
-    expect(find.text('Home'), findsNothing);
-    expect(find.text('Profile'), findsNothing);
+    expect(find.byTooltip('Home'), findsNothing);
+    expect(find.byTooltip('Profile'), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -66,9 +66,7 @@ void main() {
         tester.view.resetViewPadding();
       });
       await openCircle(tester, brightness: brightness);
-      final surface = find
-          .ancestor(of: find.text('Home'), matching: find.byType(DecoratedBox))
-          .first;
+      final surface = find.byKey(const ValueKey('circle-navigation-dock'));
       final bounds = tester.getRect(surface);
       if (Platform.environment['CIRCLE_CAPTURE_COMPACT_FOOTER'] == 'true') {
         await tester.runAsync(() async {
@@ -86,8 +84,8 @@ void main() {
           frame.dispose();
         });
       }
-      expect(bounds.bottom, 852);
-      expect(bounds.height, lessThanOrEqualTo(64));
+      expect(bounds.bottom, 852 - 34);
+      expect(bounds.height, 56);
       final homeIcon = tester.getRect(find.byIcon(LucideIcons.house).last);
       final profileAvatar = find
           .descendant(
@@ -96,18 +94,13 @@ void main() {
           )
           .last;
       expect(tester.getRect(profileAvatar).center.dy, homeIcon.center.dy);
-      expect(tester.widget<Text>(find.text('Home')).style!.fontSize, 11);
-      final label = tester.getRect(find.text('Home'));
-      expect(homeIcon.center.dx, label.center.dx);
-      expect(
-        (homeIcon.top + label.bottom + 4) / 2,
-        closeTo(bounds.center.dy, 1),
-      );
-      final labelBottom = tester.getRect(find.text('Home')).bottom;
-      expect(852 - labelBottom, inInclusiveRange(12, 20));
+      expect(find.text('Home'), findsNothing);
+      expect(homeIcon.center.dy, closeTo(bounds.center.dy, 0.01));
+      expect(bounds.left, 12);
+      expect(bounds.right, 393 - 12);
       final decoration =
           tester.widget<DecoratedBox>(surface).decoration as BoxDecoration;
-      final theme = Theme.of(tester.element(find.text('Home')));
+      final theme = Theme.of(tester.element(find.byTooltip('Home')));
       expect(decoration.color, theme.colorScheme.surface);
       await tester.pumpWidget(const SizedBox.shrink());
     });
@@ -158,20 +151,20 @@ void main() {
       fixture.server,
       tokens: await storedSession(fixture.server, fixture.owner),
     );
-    expect(find.text('Events'), findsOneWidget);
-    await tester.tap(find.text('Chats'));
+    expect(find.byTooltip('Events'), findsOneWidget);
+    await tester.tap(find.byTooltip('Chats'));
     await settle(tester);
     final router = container.read(circleRouterProvider);
     expect(router.routeInformationProvider.value.uri.path, '/chats');
     expect(find.text('Fictional live circle'), findsOneWidget);
-    await tester.tap(find.text('Home'));
+    await tester.tap(find.byTooltip('Home'));
     await settle(tester);
     await tester.tap(find.text('Share a memory…'));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(FilledButton, 'Create Memory'), findsOneWidget);
     await tester.tap(find.byType(BackButton).first);
     await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.byTooltip('Home'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
   testWidgets('accessible navigation stays visible while scrolling', (
@@ -186,6 +179,6 @@ void main() {
       const Offset(0, -600),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.byTooltip('Home'), findsOneWidget);
   });
 }

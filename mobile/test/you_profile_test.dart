@@ -20,7 +20,7 @@ void main() {
       server,
       tokens: await storedSession(server, user),
     );
-    await tester.tap(find.text('Profile'));
+    await tester.tap(find.byTooltip('Profile'));
     await settle(tester);
     await settle(tester);
     expect(find.text('Preview'), findsNothing);
@@ -31,7 +31,7 @@ void main() {
     await tester.tap(find.text('Browse Memories'));
     await settle(tester);
     expect(currentUri(container).path, '/home');
-    await tester.tap(find.text('Profile'));
+    await tester.tap(find.byTooltip('Profile'));
     await settle(tester);
     await tester.tap(find.byTooltip('Account settings'));
     await settle(tester);
@@ -53,7 +53,7 @@ void main() {
     );
     final tokens = await storedSession(server, user);
     final container = await openServerCircle(tester, server, tokens: tokens);
-    await tester.tap(find.text('Profile'));
+    await tester.tap(find.byTooltip('Profile'));
     await settle(tester);
     await tester.tap(find.text('Edit profile'));
     await settle(tester);
@@ -97,7 +97,7 @@ void main() {
         r.method == 'PATCH' && r.path == '/me' && fail
         ? FakeResponse.error(500, 'server_error')
         : original(r);
-    await tester.tap(find.text('Profile'));
+    await tester.tap(find.byTooltip('Profile'));
     await settle(tester);
     await tester.tap(find.text('Edit profile'));
     await settle(tester);
@@ -140,7 +140,7 @@ void main() {
       tokens: await storedSession(server, user),
       size: const Size(360, 800),
     );
-    await tester.tap(find.text('Profile'));
+    await tester.tap(find.byTooltip('Profile'));
     await settle(tester);
     await reveal(tester, find.text('Browse Memories'));
     expect(tester.takeException(), isNull);

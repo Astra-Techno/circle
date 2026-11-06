@@ -37,7 +37,7 @@ void main() {
         container.read(circleRouterProvider).go('/$page');
         await settle(tester);
         expect(tester.takeException(), isNull, reason: page);
-        expect(find.text('Home'), findsOneWidget);
+        expect(find.byTooltip('Home'), findsOneWidget);
         if (page == 'chats') {
           expect(find.text('Fictional live circle'), findsOneWidget);
           expect(find.textContaining('Looking forward'), findsOneWidget);

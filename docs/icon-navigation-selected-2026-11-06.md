@@ -1,0 +1,15 @@
+# Approved icon-only floating navigation — 6 November 2026
+
+Owner chose the third floating-capsule concept, requested removal of bottom labels and centered icons, then approved the refined image for implementation. [Exact selected reference](design-previews/icon-navigation-selected-2026-11-06/selected-reference.png).
+
+Implemented a56px capsule with12px horizontal insets,8px top spacing, a hairline outline and subtle shared shadow. On wide layouts it centers within640px. All five tabs remain in order: Home, Circles, Chats, Events, Profile. Icons24px and the24px account avatar are optically centered. A40×36 lavender selection background replaces the underline; selected Profile retains its actual private avatar with a purple ring. No persistent tab labels render. Tooltip names and screen-reader button/selected/tap semantics remain explicit. The capsule stays one row at320px/200%text; extremely narrow widths can reflow to preserve48px touch targets.
+
+Bottom spacing is max(8px, actual device inset), applied once, not two safe-area wrappers or a fixed extra footer block. The body reserves the complete dock area, so the dock does not cover scrollable content. iPhone inset34px is required device space, not removed or duplicated. Scroll hide/restore, accessible-navigation visibility, full-screen chat and form/viewer exclusions remain.
+
+Existing account-scoped PersonAvatar supplies the real profile photo. Test renders show its fallback initial when the fictional account has no photo; the generated concept headshot is not bundled as a user's face. Private-image/session handling and other app pages are unchanged apart from their common navigation.
+
+Local checks:63 existing interaction/layout regressions passed with9 Windows golden cases excluded by name; a separate15-check run passed(new dock5, shared guard5, Home review5). New checks cover all five authenticated routes, actual selected semantics, account-avatar identity,48px targets, equal horizontal spacing, vertical centering, zero/34px insets, dark/light and200%text. Analyzer clean; format252 lib/test files clean. Initial local run found expected changed Windows images, old text-based tab selectors and a numeric-padding guard; selectors now target retained tooltips, padding is a shared token. A test semantics handle was corrected to dispose inside the test. Four actual Flutter renders visually reviewed. No physical-device acceptance claimed.
+
+[Phone](design-previews/icon-navigation-selected-2026-11-06/icon-navigation-393-1.0-light.png), [dark/iPhone inset](design-previews/icon-navigation-selected-2026-11-06/icon-navigation-393-1.0-dark.png), [narrow200%](design-previews/icon-navigation-selected-2026-11-06/icon-navigation-320-2.0-dark.png), [tablet200%](design-previews/icon-navigation-selected-2026-11-06/icon-navigation-900-2.0-light.png).
+
+Windows full suite and reviewed baselines: completing. Source only; installed APK42/iOS1058.1 remain unchanged until a subsequent mobile build is delivered. No backend/SQL changes.
