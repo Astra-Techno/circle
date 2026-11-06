@@ -41,4 +41,6 @@ Actual Flutter widgets with fictional data. Desktop Inter rendering is not nativ
 
 ## Delivery
 
-Windows baseline refresh/review, final comparison, signed Android APK/download publication and signed iOS/TestFlight upload are pending at the source commit. Runtime source changes do not update already installed apps. Physical iPhone/Android appearance, picking, actual push and Apple processing/tester availability remain separate acceptance checks.
+Windows full refresh run [42188148877](https://github.com/Astra-Techno/circle/actions/runs/42188148877) passed **773 tests / one skipped**, format and analyzer clean. All22 generated baselines reviewed:7 expected changes (welcome/login/register/light+dark, Circle detail/create, Profile),15 unchanged including every Home baseline. [Review sheet](design-previews/social-2.3/windows-baseline-review.jpg). The connected GitHub plugin supplied the artifact/logs when shell access to the artifact host was restricted. Final normal comparison follows the baseline publication commit.
+
+Signed Android1.0.35(40) built and verified; [APK verification](mobile-release-1.0.35-android.md). Signed iOS run [42188155025](https://github.com/Astra-Techno/circle/actions/runs/42188155025) is compiling after passing its platform-independent guards; upload is not yet confirmed. Runtime source changes do not update already installed apps. Physical iPhone/Android appearance, picking, actual push and Apple processing/tester availability remain separate acceptance checks.

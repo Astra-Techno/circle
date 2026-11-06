@@ -1,0 +1,31 @@
+{
+  "version": "1.0.35",
+  "build": 40,
+  "package": "com.circlecommunity.mobile",
+  "bytes": 65108193,
+  "sha256": "726913aef9d0455a0ffb8f9444f7abeea7b843ceba4635460d769994cf75dbec",
+  "signingCertificateSha256": "bcd5a9dcd2262be9f445f2d52892f574054e8616fbf0df66f226d88b263b9966",
+  "compatibleSigningSinceBuild": 39,
+  "minimumSdk": 24,
+  "targetSdk": 36,
+  "debuggable": false,
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86_64"
+  ],
+  "interfaceMarker": "Social 2.3",
+  "apiBaseUrl": "https://circle.cloudkart24.com/api/v1",
+  "pushEnabled": true,
+  "pushFlagEvidence": "Official release build script explicitly sets CIRCLE_PUSH_ENABLED=true; real device delivery not verified",
+  "sourceCommit": "6b15a72d41da19964ddf2c7d6fc7fd551b892aaa",
+  "buildSeconds": 167.7,
+  "apkSignatureVerified": true,
+  "signatureV2": true,
+  "zipIntegrityVerified": true,
+  "fontAssetsMatchSource": true,
+  "deviceInstallationVerified": false,
+  "windowsRefreshRun": 42188148877,
+  "windowsTestsPassed": 773,
+  "windowsTestsSkipped": 1
+}
