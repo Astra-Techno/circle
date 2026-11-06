@@ -129,6 +129,7 @@ class CircleMemoryCard extends ConsumerWidget {
         key: ValueKey('caption-${memory.id}'),
         text: memory.text,
         expanded: detail,
+        textOnly: !hasPhotos,
       ),
     );
 
@@ -253,7 +254,18 @@ class CircleMemoryCard extends ConsumerWidget {
               ),
             ),
             if (hasText) ...[text, const SizedBox(height: Space.sm)],
-            if (hasPhotos) MemoryPhotoGrid(memory: memory),
+            if (hasPhotos)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: CircleMemoryLayout.mediaInset,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    CircleMemoryLayout.mediaRadius,
+                  ),
+                  child: MemoryPhotoGrid(memory: memory),
+                ),
+              ),
             if (!hasText && memory.poll != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Space.md),
@@ -283,15 +295,16 @@ class CircleMemoryCard extends ConsumerWidget {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.sm),
+              padding: const EdgeInsets.symmetric(horizontal: Space.md),
               child: Row(
                 children: [
                   Expanded(
                     child: Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: Space.sm,
+                      runSpacing: Space.xs,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
+                        _ActionPill(
                           children: [
                             _ActionButton(
                               icon: CircleIcons.react,
@@ -300,68 +313,72 @@ class CircleMemoryCard extends ConsumerWidget {
                               reaction: reactions.mine,
                               onTap: pickReaction,
                             ),
-                            if (reactions.total > 0)
-                              Tooltip(
-                                message: 'Show reactions for $about',
-                                child: TextButton(
-                                  onPressed: () =>
-                                      showReactionSummary(context, reactions),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: accents.caption,
-                                    minimumSize: const Size(
-                                      CircleSizes.minTouchTarget,
-                                      CircleSizes.minTouchTarget,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    CircleMemoryLayout.countLabel(
-                                      reactions.total,
-                                    ),
-                                    semanticsLabel: reactions.describe(),
+                            Tooltip(
+                              message: 'Show reactions for $about',
+                              child: TextButton(
+                                onPressed: () =>
+                                    showReactionSummary(context, reactions),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: accents.caption,
+                                  minimumSize: const Size(
+                                    CircleSizes.minTouchTarget,
+                                    CircleSizes.minTouchTarget,
                                   ),
                                 ),
+                                child: Text(
+                                  CircleMemoryLayout.countLabel(
+                                    reactions.total,
+                                  ),
+                                  semanticsLabel: reactions.describe(),
+                                ),
                               ),
+                            ),
                           ],
                         ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
+                        _ActionPill(
                           children: [
                             _ActionButton(
                               icon: CircleIcons.comment,
                               tooltip: 'Comment on $about',
                               onTap: openDetail,
                             ),
-                            if (comments > 0)
-                              Tooltip(
-                                message: 'View $comments comments',
-                                child: TextButton(
-                                  onPressed: openDetail,
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: accents.caption,
-                                    minimumSize: const Size(
-                                      CircleSizes.minTouchTarget,
-                                      CircleSizes.minTouchTarget,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    CircleMemoryLayout.countLabel(comments),
-                                    semanticsLabel: '$comments comments',
+                            Tooltip(
+                              message: 'View $comments comments',
+                              child: TextButton(
+                                onPressed: openDetail,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: accents.caption,
+                                  minimumSize: const Size(
+                                    CircleSizes.minTouchTarget,
+                                    CircleSizes.minTouchTarget,
                                   ),
                                 ),
+                                child: Text(
+                                  CircleMemoryLayout.countLabel(comments),
+                                  semanticsLabel: '$comments comments',
+                                ),
                               ),
+                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  _ActionButton(
-                    icon: memory.saved
-                        ? CircleIcons.saved
-                        : CircleIcons.bookmark,
-                    selected: memory.saved,
-                    tooltip: '${memory.saved ? 'Unsave' : 'Save'} $about',
-                    onTap: () =>
-                        runCalmly(context, () => controller.save(memory.id)),
+                  const SizedBox(width: Space.sm),
+                  _ActionPill(
+                    children: [
+                      _ActionButton(
+                        icon: memory.saved
+                            ? CircleIcons.saved
+                            : CircleIcons.bookmark,
+                        selected: memory.saved,
+                        tooltip: '${memory.saved ? 'Unsave' : 'Save'} $about',
+                        onTap: () => runCalmly(
+                          context,
+                          () => controller.save(memory.id),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -371,6 +388,33 @@ class CircleMemoryCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Outlined visual pill inside full-height accessible hit areas.
+class _ActionPill extends StatelessWidget {
+  const _ActionPill({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    children: [
+      Positioned.fill(
+        top: Space.xs,
+        bottom: Space.xs,
+        child: DecoratedBox(
+          decoration: ShapeDecoration(
+            shape: StadiumBorder(
+              side: BorderSide(
+                color: CircleAccents.of(context).hairline,
+                width: CircleMemoryLayout.actionBorderWidth,
+              ),
+            ),
+          ),
+        ),
+      ),
+      Row(mainAxisSize: MainAxisSize.min, children: children),
+    ],
+  );
 }
 
 /// Labeled,48px controls with restrained ink and explicit selected state.
@@ -438,9 +482,15 @@ class _ActionButton extends StatelessWidget {
 /// Long captions expand in place without leaving the timeline or clipping
 /// accessible text. Full Memory detail always starts expanded.
 class _MemoryCaption extends StatefulWidget {
-  const _MemoryCaption({super.key, required this.text, required this.expanded});
+  const _MemoryCaption({
+    super.key,
+    required this.text,
+    required this.expanded,
+    required this.textOnly,
+  });
   final String text;
   final bool expanded;
+  final bool textOnly;
   @override
   State<_MemoryCaption> createState() => _MemoryCaptionState();
 }
@@ -459,8 +509,29 @@ class _MemoryCaptionState extends State<_MemoryCaption> {
       final style = CircleTextStyles.postBody(
         Theme.of(context).colorScheme.onSurface,
       );
+      final paragraph = widget.text.indexOf('\n\n');
+      // A short standalone text post or explicit opening paragraph acts as
+      // its heading; never invent a title or duplicate caption content.
+      final leadEnd = paragraph > 0 && paragraph <= 160
+          ? paragraph
+          : widget.textOnly && widget.text.length <= 160
+          ? widget.text.length
+          : 0;
+      final content = TextSpan(
+        style: style,
+        children: [
+          if (leadEnd > 0)
+            TextSpan(
+              text: widget.text.substring(0, leadEnd),
+              style: CircleTextStyles.postHeading(
+                Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          TextSpan(text: widget.text.substring(leadEnd)),
+        ],
+      );
       final painter = TextPainter(
-        text: TextSpan(text: widget.text, style: style),
+        text: content,
         maxLines: CircleMemoryLayout.collapsedLines,
         textDirection: Directionality.of(context),
         textScaler: MediaQuery.textScalerOf(context),
@@ -471,9 +542,8 @@ class _MemoryCaptionState extends State<_MemoryCaption> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.text,
-            style: style,
+          Text.rich(
+            content,
             maxLines: expanded ? null : CircleMemoryLayout.collapsedLines,
             overflow: expanded ? TextOverflow.clip : TextOverflow.ellipsis,
           ),

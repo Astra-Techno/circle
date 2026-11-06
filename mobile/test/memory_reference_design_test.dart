@@ -26,24 +26,37 @@ void main() {
     expect(CircleMemoryLayout.photoAspect(null, null), 1);
   });
 
-  testWidgets('Home, detail and another profile have full-width post media', (
-    tester,
-  ) async {
-    final c = await openCircle(tester);
-    for (final route in ['/home', '/home/memory/table', '/people/mira']) {
-      await go(tester, c, route);
-      final photo = find.byType(MemoryPhotoGrid).first;
-      await reveal(tester, photo);
-      final rect = tester.getRect(photo);
-      expect(rect.left, closeTo(0, 0.01), reason: route);
-      expect(rect.width, closeTo(393, 0.01), reason: route);
-      expect(
-        rect.height,
-        closeTo(393 / CircleMemoryLayout.collageAspect, 0.01),
-      );
-      expect(tester.takeException(), isNull);
-    }
-  });
+  testWidgets(
+    'Home, detail and another profile have matching inset rounded post media',
+    (tester) async {
+      final c = await openCircle(tester);
+      for (final route in ['/home', '/home/memory/table', '/people/mira']) {
+        await go(tester, c, route);
+        final photo = find.byType(MemoryPhotoGrid).first;
+        await reveal(tester, photo);
+        final rect = tester.getRect(photo);
+        expect(
+          rect.left,
+          closeTo(CircleMemoryLayout.mediaInset, 0.01),
+          reason: route,
+        );
+        expect(
+          rect.width,
+          closeTo(393 - 2 * CircleMemoryLayout.mediaInset, 0.01),
+          reason: route,
+        );
+        expect(
+          rect.height,
+          closeTo(
+            (393 - 2 * CircleMemoryLayout.mediaInset) /
+                CircleMemoryLayout.collageAspect,
+            0.01,
+          ),
+        );
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 
   testWidgets('tablet timeline stays one centered reading column', (
     tester,
@@ -115,7 +128,14 @@ void main() {
           matching: find.byType(MemoryPhotoGrid),
         );
         final rect = tester.getRect(grid);
-        expect(rect.width, closeTo(layout.$1 > 720 ? 720 : layout.$1, 0.01));
+        expect(
+          rect.width,
+          closeTo(
+            (layout.$1 > 720 ? 720 : layout.$1) -
+                2 * CircleMemoryLayout.mediaInset,
+            0.01,
+          ),
+        );
         expect(rect.height, closeTo(rect.width, 0.01));
         await capture(
           tester,
@@ -168,6 +188,26 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('reference heading preserves paragraphs and full detail text', (
+    tester,
+  ) async {
+    final c = await openCircle(tester);
+    const caption =
+        'A question for our Circle\n\nWhich little moments made your week?\n\nShare the stories you want to remember.';
+    final id = await c
+        .read(circleWorkspaceProvider.notifier)
+        .createMemory('family', caption);
+    await go(tester, c, '/home/memory/$id');
+    final text = tester.widget<Text>(find.text(caption));
+    final span = text.textSpan! as TextSpan;
+    expect(span.toPlainText(), caption);
+    expect((span.children!.first as TextSpan).style!.fontSize, 18);
+    expect(span.style!.fontSize, 16);
+    expect(text.maxLines, isNull);
+    await capture(tester, 'reference-text-detail', '393-1.0-light');
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('icon actions persist real reactions and saved state', (
     tester,

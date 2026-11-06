@@ -23,7 +23,10 @@ abstract final class CirclePhotoMetrics {
 
 /// Shared geometry for the continuous, photo-first Memories timeline.
 abstract final class CircleMemoryLayout {
-  static const dividerThickness = Space.xs / 2;
+  static const dividerThickness = Space.xs / 4;
+  static const mediaInset = Space.md;
+  static const mediaRadius = Space.md;
+  static const actionBorderWidth = Space.xs / 4;
   static const collageAspect = 4 / 3;
   static const actionIcon = 24.0;
   static const collapsedLines = 3;

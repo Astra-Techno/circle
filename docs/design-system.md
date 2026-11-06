@@ -1,5 +1,11 @@
 # CIRCLE design system
 
+## Latest owner reference — Reddit-style Memories, 6 November 2026
+
+This later screenshot supersedes the square edge-to-edge media and bare action row below. Keep the centered720px white timeline and compact private author metadata. Shared Memory media is inset16px, clipped to16px outer corners, with original aspect/collage rules retained. Use1px post dividers,16/24 regular caption text and18/24 semibold opening text for short text-only posts or an explicit first paragraph of at most160characters. Do not invent separate title data. Detail preserves all paragraphs.
+
+Footer actions use outlined stadium pills:24px selected reaction/outline icon with actual count, comment/count (including zero), and save. Outlines sit inside48px touch targets. Reaction/count and comment/count remain individually actionable and grouped; save stays trailing. Keep real summaries, picker, saved state, existing Lucide family and purple branding. Do not add Reddit voting, reposting, ads or external sharing. Private image/query/session guards remain unchanged.
+
 ## Social 2.4 — reference-inspired Memories timeline, 6 November 2026
 
 The owner's Facebook post screenshot defines the current Memory layout. This
