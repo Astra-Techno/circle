@@ -1,0 +1,41 @@
+{
+  "sourceCommit": "28445a106ce10c0c8b50b52e93c4fa4764fd8103",
+  "selectedImage": "selected-reference.png",
+  "localTestsPassed": 27,
+  "captures": [
+    {
+      "file": "selected-home-header-320-2.0-dark.png",
+      "sha256": "3fe4b1c72db081814c24d384c40cddb7694ed1c8f0ffaa7f475a468b7018dc39"
+    },
+    {
+      "file": "selected-home-header-393-1.0-dark.png",
+      "sha256": "8f11eae9eac99ed5567516c74e5b1cc51be2f32b5e71f1c608ff98d1101d2da1"
+    },
+    {
+      "file": "selected-home-header-393-1.0-light.png",
+      "sha256": "2d62bcb6ad03eb62e3b4fe5833b5146e3934d2266138a47d51795a9cd63821a1"
+    },
+    {
+      "file": "selected-home-header-900-2.0-light.png",
+      "sha256": "1c976d4d4152bbf48b0731d0598a04e25641a393cf68d942cd0d5bdaf0a06be5"
+    },
+    {
+      "file": "selected-reference.png",
+      "sha256": "d11045d3f0b0855f5a256d353af2a0e07b57a7c5682cd08178e6cacc74f26954"
+    }
+  ],
+  "nativeDeviceVerified": false,
+  "installedBuildChanged": false,
+  "windows": {
+    "run": 42242137930,
+    "job": 127974863223,
+    "sourceCommit": "28445a106ce10c0c8b50b52e93c4fa4764fd8103",
+    "testsPassed": 792,
+    "testsSkipped": 1,
+    "baselineMode": "refresh then visual review",
+    "artifactId": 13516367278,
+    "baselinesReviewed": 22,
+    "expectedHomeChanges": 11,
+    "unchanged": 11
+  }
+}
