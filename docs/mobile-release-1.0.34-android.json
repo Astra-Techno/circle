@@ -1,0 +1,28 @@
+{
+  "version": "1.0.34",
+  "build": 39,
+  "package": "com.circlecommunity.mobile",
+  "bytes": 65010241,
+  "sha256": "ba84d1a6ca24a4a4ce4c6e3e27a7c4c7b5259c7d7673ba14a506eadb33366ac2",
+  "signingCertificateSha256": "bcd5a9dcd2262be9f445f2d52892f574054e8616fbf0df66f226d88b263b9966",
+  "previousSigningCertificateSha256": "157579dd08f44d8aebe9bc5b6e53e778d8ca642d97233d15c206f8f5185df01e",
+  "minimumSdk": 24,
+  "targetSdk": 36,
+  "debuggable": false,
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86_64"
+  ],
+  "interfaceMarker": "Social 2.2",
+  "apiBaseUrl": "https://circle.cloudkart24.com/api/v1",
+  "pushEnabled": true,
+  "pushFlagEvidence": "Official production build script uses --dart-define=CIRCLE_PUSH_ENABLED=true; device delivery unverified",
+  "sourceCommit": "f27d3248e1aa04090a2bd38177f905f81cb6e8e6",
+  "buildSeconds": 264.3,
+  "apkSignatureVerified": true,
+  "signatureV2": true,
+  "requiresReinstallFromEarlierBuilds": true,
+  "compatibleSigningSinceBuild": 39,
+  "deviceInstallationVerified": false
+}
