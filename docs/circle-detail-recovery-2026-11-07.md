@@ -1,6 +1,6 @@
 # Circle detail loading and actions — 7 November 2026
 
-Owner approved fixing the screenshot audit findings. Safely pulled main and preserved upstream a232a08 header alignment. Updated its old tonal-header expectation to match that upstream design rather than reverting it.
+Owner approved fixing the screenshot audit findings. Safely pulled main and preserved upstream a232a08 header alignment. Updated its old tonal-header expectation to match the upstream flat design. Inspection of its failed CI42266434165 also identified removal of Profile’s sole Account settings entry; restored that flat gear button without restoring redundant Search controls. Account settings/logout destinations are reachable again.
 
 ## Fixes
 
@@ -11,7 +11,7 @@ Owner approved fixing the screenshot audit findings. Safely pulled main and pres
 
 ## Verification
 
-The initial focused run passed40checks after fixing old photo-control locators; final recovery/photo/provider/design run passed25checks. Separate provider tests demonstrate default containers keep failed workspace/timeline reads in error without a second request after300ms; explicit timeline retry makes the second request. New simulated503 checks verify one cover request and one scoped Memories request even after15s, then separate explicit retries recover each. Corrupt image bytes recover after waiting for the replacement image frame. Revoking admin permission while the first photo menu is open prevents proceeding/uploading. Four bold/normal/scaled phone/tablet cases verify full labels and48px targets. Five Flutter renders reviewed; no device acceptance claimed. Format253lib/test files clean; analyzer clean. Windows full verification and visual baselines completing.
+The initial focused run passed40checks after fixing old photo-control locators; final recovery/photo/provider/design run passed25checks. Separate provider tests demonstrate default containers keep failed workspace/timeline reads in error without a second request after300ms; explicit timeline retry makes the second request. New simulated503 checks verify one cover request and one scoped Memories request even after15s, then separate explicit retries recover each. Corrupt image bytes recover after waiting for the replacement image frame. Revoking admin permission while the first photo menu is open prevents proceeding/uploading. Four bold/normal/scaled phone/tablet cases verify full labels and48px targets. Five Flutter renders reviewed; no device acceptance claimed. Format253lib/test files clean; analyzer clean. An additional36-check account/Profile/header/recovery/design run passes after restoring the gear. Initial full run42282465630 was cancelled before acceptance to include that correction; replacement full verification and visual baselines completing.
 
 [Bold Text](design-previews/circle-recovery-2026-11-07/circle-actions-393-1.0-bold-true.png), [320px/200%](design-previews/circle-recovery-2026-11-07/circle-actions-320-2.0-bold-true.png), [independent failed reads](design-previews/circle-recovery-2026-11-07/circle-loading-error-393-light.png).
 

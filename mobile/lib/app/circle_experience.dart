@@ -1081,6 +1081,12 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
               actions: [
                 if (index == 0 || index == 2) const SearchButton(),
                 if (index == 0) const ActivityBell(),
+                if (index == 4)
+                  IconButton(
+                    tooltip: 'Account settings',
+                    onPressed: () => context.push('/you/account'),
+                    icon: const Icon(LucideIcons.settings),
+                  ),
               ],
               fab: fab,
               child: shell,
