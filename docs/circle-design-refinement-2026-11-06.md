@@ -36,4 +36,10 @@ Fresh after renders: [Circle](design-previews/social-2.2/02-circle-after.png), [
 
 ## Windows integration
 
-Source `253da19` passed full Windows run `42168291358`: **758 tests passed,1 skipped**. All22 baseline PNGs decoded and matched the expected filenames, then were visually reviewed across auth, root pages, Circle detail, light/dark Home and responsive sizes. They were copied from artifact13480470852 (ZIP SHA256 `8ebec7b6ec04011bd3857c2481cc053ce3f455ceb7f85c044b75ef5780d897af`). The normal comparison run is next. iOS run42168293511 has passed release guards and is compiling the signed IPA.
+Source `253da19` passed full Windows run `42168291358`: **758 tests passed,1 skipped**. All22 baseline PNGs decoded and matched the expected filenames, then were visually reviewed across auth, root pages, Circle detail, light/dark Home and responsive sizes. They were copied from artifact13480470852 (ZIP SHA256 `8ebec7b6ec04011bd3857c2481cc053ce3f455ceb7f85c044b75ef5780d897af`). Normal comparison run `42168921653` at baseline commit `b36e735` also passed **758 tests,1 skipped**. Signed iOS run42168293511 completed successfully; delivery verification follows.
+
+## Signed iOS delivery
+
+Apple accepted **1.0.34 (1055.1)** from source `253da19`, run `42168293511`, in19m56s. The later baseline commit changes images/docs only. Actual IPA Info.plist, bundle ID, compiled **Social2.2** marker/native-font alias, absence of the removed Share-button label, checksum manifest, three correctly named font identities/weights/source hashes and bundled license were checked. These binary checks identify the intended release; they do not prove physical-device layout acceptance.
+
+[Verified release receipt](mobile-release-1.0.34-ios.json). Apple processing and tester availability remain separate. Existing warning90068 was nonblocking: the iOS13 minimum must rise to at least15 before April2027 uploads. No Android APK was published because the original signing material remains unavailable. No backend deployment is needed for this UI batch.
