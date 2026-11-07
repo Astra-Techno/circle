@@ -76,9 +76,15 @@ final class Request
         $body = [];
         $rawBody = null;
         if ($method !== 'GET' && $method !== 'HEAD') {
-            // Every implemented PUT is a raw image upload. Do not eagerly buffer
-            // a MIME-mismatched JSON body before the controller's bounded reader.
-            if ($method !== 'PUT' && strtolower(trim(explode(';', $contentType)[0])) === 'application/json') {
+            // Photo endpoints use a bounded streaming reader, even for a wrong
+            // JSON MIME type. Other PUT endpoints (votes, RSVPs, reactions) carry
+            // JSON and must be decoded just like POST/PATCH requests.
+            $path = self::normalisePath((string) ($_SERVER['REQUEST_URI'] ?? '/'));
+            $rawUpload = $method === 'PUT' && preg_match(
+                '~^/(?:api/v1/)?(?:media/uploads/[^/]+/content|me/photos/[^/]+|groups/[^/]+/photos/[^/]+|chats/[^/]+/uploads/[^/]+|events/[^/]+/cover)$~D',
+                $path,
+            ) === 1;
+            if (!$rawUpload && strtolower(trim(explode(';', $contentType)[0])) === 'application/json') {
                 $raw = file_get_contents('php://input');
                 $rawBody = $raw === false ? '' : $raw;
                 if ($raw !== false && $raw !== '') {
