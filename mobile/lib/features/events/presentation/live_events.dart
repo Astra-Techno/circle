@@ -638,10 +638,9 @@ class LiveEventCard extends ConsumerWidget {
                 color: colors.primaryContainer,
                 child: Padding(
                   padding: const EdgeInsets.all(Space.md),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
+                  child: Builder(
+                    builder: (context) {
+                      final badge = Container(
                         padding: const EdgeInsets.all(Space.sm),
                         decoration: BoxDecoration(
                           color: colors.surface,
@@ -672,27 +671,53 @@ class LiveEventCard extends ConsumerWidget {
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(width: Space.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      );
+                      final group = Text(
+                        groupName,
+                        style: CircleTextStyles.homeShortcut(caption),
+                      );
+                      final title = Text(
+                        item['title'] as String,
+                        style: CircleTextStyles.sectionTitle(colors.onSurface),
+                      );
+                      if (CircleLayout.stackDetails(
+                        context,
+                        MediaQuery.sizeOf(context).width,
+                      )) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              groupName,
-                              style: CircleTextStyles.homeShortcut(caption),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                badge,
+                                const SizedBox(width: Space.md),
+                                Expanded(child: group),
+                              ],
                             ),
-                            const SizedBox(height: Space.xs),
-                            Text(
-                              item['title'] as String,
-                              style: CircleTextStyles.sectionTitle(
-                                colors.onSurface,
-                              ),
-                            ),
+                            const SizedBox(height: Space.sm),
+                            title,
                           ],
-                        ),
-                      ),
-                    ],
+                        );
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          badge,
+                          const SizedBox(width: Space.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                group,
+                                const SizedBox(height: Space.xs),
+                                title,
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
