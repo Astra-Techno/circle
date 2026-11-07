@@ -28,5 +28,11 @@
   "windowsWorkflowConclusion": "success",
   "windowsBaselineReview": "Blocked: artifact/log hosts excluded by environment network policy; previous baselines retained",
   "nativeDeviceInstallationVerified": false,
-  "hostingDeploymentVerified": false
+  "hostingDeploymentVerified": false,
+  "publicRepositoryDownload": {
+    "url": "https://raw.githubusercontent.com/Astra-Techno/circle/56e2868f47d039ab7270cf96bbaaa9471c328ab4/downloads/circle-1.0.37-43.apk",
+    "httpStatus": 200,
+    "bytes": 65124717,
+    "sha256": "b96412337b968224be4f3f67ece5869f980f35a5c108ab6aef992112d508dc04"
+  }
 }
