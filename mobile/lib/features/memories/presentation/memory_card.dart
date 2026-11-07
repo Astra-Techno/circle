@@ -702,7 +702,10 @@ class CommentBubble extends ConsumerWidget {
               children: [
                 TextSpan(
                   text: '${comment.authorName}: ',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
                 ),
                 ...mentionSpans(context, comment.text, comment.mentions.values),
               ],

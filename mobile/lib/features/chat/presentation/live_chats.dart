@@ -756,7 +756,9 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
           ),
           title: Text(
             'Unsend',
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.error,
+            ),
           ),
           onTap: _busy ? null : () => _unsend(chat, item),
         ),

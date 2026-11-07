@@ -261,7 +261,9 @@ class _MemberTile extends ConsumerWidget {
                 ),
                 title: Text(
                   'Remove from ${group.name}',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
                 onTap: () => Navigator.pop(context, 'remove'),
               ),
