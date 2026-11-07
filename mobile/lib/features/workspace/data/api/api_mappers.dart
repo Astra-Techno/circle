@@ -188,6 +188,7 @@ abstract final class ApiMappers {
       author: authorId == viewer
           ? 'You'
           : ApiJson.string(json['author_name'], 'Someone'),
+      liveEvents: ApiJson.list(json['events']).map(ApiJson.map).toList(),
       livePolls: ApiJson.list(json['polls']).map(ApiJson.map).toList(),
       text: ApiJson.string(json['body']),
       createdAt: created,

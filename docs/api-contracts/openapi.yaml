@@ -1,7 +1,13 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.4.6
+  version: 0.4.7
+  x-event-memory-publication: >-
+    Event creation atomically publishes one Memory with its original author, group
+    and creation time. Migration025 backfills previous events. Memory pages/detail
+    include batched events with visible group metadata and aggregate going/maybe
+    attendance only, never private RSVP notes. Removing a publication does not
+    delete the event/attendance; event cancellation is reflected in its card.
   x-poll-memory-publication: >-
     Poll creation without memory_id atomically publishes one Memory in the exact
     group and links it to the poll. Idempotent retries reuse the same publication.
@@ -4300,6 +4306,13 @@ components:
     Memory:
       type: object
       properties:
+        events:
+          type: array
+          description: >-
+            Exact-group event card payloads, including status, timezone, optional
+            cover_id, group_name and aggregate going_count/maybe_count (people
+            including guests). Excludes private RSVP notes and attendee identities.
+          items: { type: object }
         polls:
           type: array
           description: >-

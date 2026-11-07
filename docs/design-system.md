@@ -1,5 +1,9 @@
 # CIRCLE design system
 
+## Selected event invitation and form, 7 November 2026
+
+Third selected event direction: lavender identity header/date badge,18px event title, white timing/location area, fine outline and View event entry to existing RSVP. Shared LiveEventCard serves Events and all Memory cards; show real counts only, retain cancelled state/timezone and deferred private covers. Form uses soft filled fields, When/Where sections, separate date/time pickers, actual timezone, collapsed advanced options and existing keyboard/dirty-form guards. Core tokens/native font policy remain. Migration025 publishes/backfills events into chronological Memories with original author/time; batch metadata/counts, never RSVP notes. Post removal preserves the event and attendance. Source and captures:docs/design-previews/event-selected-2026-11-07/.
+
 ## Selected live poll card, 7 November 2026
 
 Use the owner-selected third poll concept: flat white ballot rows with thin dividers, regular16px choice labels, leading radio/checkbox, trailing counts (stack below at large text), lavender selected row, compact real voter total and named-voter link, explicit purple vote button. Omit the Choose one/Names visible instruction line as requested. Retain a small privacy note, hidden-result and anonymous restrictions, closed/immutable/add-option/manage states. Never render empty progress bars. One LivePollCard serves Poll detail/list and all Memory cards. Embedded polls are batched with Memory pages, not fetched per visible card. Standalone polls publish one associated Memory; migration024 backfills previous polls retaining original audience/author/time. Original private query scopes, cursor pagination, saves/reactions/comments and session guards remain.

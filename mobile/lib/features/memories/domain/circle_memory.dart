@@ -24,6 +24,7 @@ class CircleMemory {
     this.editedAt,
     List<MemoryPhoto> photos = const [],
     this.poll,
+    List<Map<String, Object?>> liveEvents = const [],
     List<Map<String, Object?>> livePolls = const [],
     this.takenYear,
     this.place,
@@ -31,7 +32,10 @@ class CircleMemory {
     MemoryReactions? reactions,
     this.saved = false,
     this.commentCount,
-  }) : livePolls = List.unmodifiable(
+  }) : liveEvents = List.unmodifiable(
+         liveEvents.map((e) => Map<String, Object?>.unmodifiable(e)),
+       ),
+       livePolls = List.unmodifiable(
          livePolls.map((p) => Map<String, Object?>.unmodifiable(p)),
        ),
        photos = List.unmodifiable(photos),
@@ -49,6 +53,7 @@ class CircleMemory {
   final DateTime? editedAt;
   final List<MemoryPhoto> photos;
   final PollView? poll;
+  final List<Map<String, Object?>> liveEvents;
   final List<Map<String, Object?>> livePolls;
 
   /// Optional "Taken in 2007 · Kodaikanal" details for older moments.
