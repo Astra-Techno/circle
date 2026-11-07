@@ -1,5 +1,9 @@
 # CIRCLE design system
 
+## Poll card consistency correction, 7 November 2026
+
+Polls now share the event invitation shell:12px outline, lavender identity header with real ballot icon and18px question, white padded body and14px options. Keep one post menu in embedded cards; header opens the exact poll and post menu offers Open poll and settings. Standalone polls retain their management menu. Hide repeated per-option zero counts and empty voter links; keep one honest zero-state summary, compact privacy footer and proper gaps. Bold Text/text scaling stay enabled. Existing votes, result privacy, multiple/closed/immutable rules and server batching remain. Evidence:docs/poll-consistency-2026-11-07.md.
+
 ## Selected event invitation and form, 7 November 2026
 
 Third selected event direction: lavender identity header/date badge,18px event title, white timing/location area, fine outline and View event entry to existing RSVP. Shared LiveEventCard serves Events and all Memory cards; show real counts only, retain cancelled state/timezone and deferred private covers. Form uses soft filled fields, When/Where sections, separate date/time pickers, actual timezone, collapsed advanced options and existing keyboard/dirty-form guards. Core tokens/native font policy remain. Migration025 publishes/backfills events into chronological Memories with original author/time; batch metadata/counts, never RSVP notes. Post removal preserves the event and attendance. Source and captures:docs/design-previews/event-selected-2026-11-07/.

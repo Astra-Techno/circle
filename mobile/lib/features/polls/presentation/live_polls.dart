@@ -226,269 +226,361 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
             closed || (p['allow_change_vote'] != true && mine.isNotEmpty),
         options = ApiJson.list(p['options']).map(ApiJson.map).toList();
     final total = p['voter_count'] as int? ?? 0;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            if (widget.showAudience) ...[
-              Icon(
-                LucideIcons.users,
-                size: CircleSizes.iconInline,
-                color: CircleAccents.of(context).caption,
-              ),
-              const SizedBox(width: Space.sm),
-            ],
-            Expanded(
-              child: Text(
-                widget.showAudience
-                    ? p['group_name'] as String? ?? 'Circle'
-                    : p['question'] as String,
-                style: widget.showAudience
-                    ? CircleTextStyles.homeShortcut(
-                        CircleAccents.of(context).caption,
-                      )
-                    : Theme.of(context).textTheme.titleLarge,
-              ),
-            ),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: PopupMenuButton<String>(
-                tooltip: 'Poll options',
-                enabled: !_busy,
-                icon: const Icon(CircleIcons.more),
-                onSelected: (action) async {
-                  final menuApi = ref.read(livePollApiProvider);
-                  if (action == 'refresh') {
-                    refreshPolls(ref);
-                  } else if (action == 'close') {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (dialog) => AlertDialog(
-                        title: const Text('Close this poll?'),
-                        content: const Text(
-                          'Voting will end for everyone in this circle.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialog, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialog, true),
-                            child: const Text('Close poll'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirmed == true && mounted) {
-                      await _run((_) => menuApi.close(id));
-                    }
-                  }
-                },
-                itemBuilder: (_) => [
-                  const PopupMenuItem(
-                    value: 'refresh',
-                    child: Text('Refresh poll'),
-                  ),
-                  if (!closed && p['can_manage'] == true)
-                    const PopupMenuItem(
-                      value: 'close',
-                      child: Text('Close poll'),
-                    ),
-                ],
-              ),
-            ),
-          ],
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.sm),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: colors.outlineVariant),
+          borderRadius: BorderRadius.circular(CircleRadius.card),
         ),
-        const SizedBox(height: Space.md),
-        if (widget.showAudience)
-          Text(
-            p['question'] as String,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-        const SizedBox(height: Space.sm),
-        if (closed) const Text('Closed'),
-        if (p['closes_at'] case final String end)
-          Text(
-            'Closes ${DateTime.parse(end).toLocal()}',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        RadioGroup<int>(
-          groupValue: multiple ? null : chosen.firstOrNull,
-          onChanged: (value) {
-            if (locked || _busy || multiple) return;
-            setState(() => _chosen = value == null ? <int>{} : {value});
-          },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(CircleRadius.card),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (final option in options)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: Space.xs),
-                  child: Material(
-                    color: chosen.contains(option['id'])
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(CircleRadius.small),
+              Material(
+                color: colors.primaryContainer,
+                child: InkWell(
+                  key: ValueKey('open-poll-$id'),
+                  onTap: widget.showAudience
+                      ? null
+                      : () => context.push('/polls/p/$id'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(Space.md),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (multiple)
-                          CheckboxListTile(
-                            controlAffinity: ListTileControlAffinity.leading,
-                            value: chosen.contains(option['id']),
-                            onChanged: locked || _busy
-                                ? null
-                                : (value) => setState(() {
-                                    _chosen = multiple ? {...chosen} : <int>{};
-                                    if (value == true) {
-                                      _chosen!.add(option['id'] as int);
-                                    } else {
-                                      _chosen!.remove(option['id']);
+                        Row(
+                          children: [
+                            ...[
+                              Icon(
+                                LucideIcons.vote,
+                                size: CircleSizes.iconInline,
+                                color: CircleAccents.of(context).caption,
+                              ),
+                              const SizedBox(width: Space.sm),
+                            ],
+                            Expanded(
+                              child: Text(
+                                widget.showAudience
+                                    ? p['group_name'] as String? ?? 'Circle'
+                                    : 'Poll',
+                                style: widget.showAudience
+                                    ? CircleTextStyles.homeShortcut(
+                                        CircleAccents.of(context).caption,
+                                      )
+                                    : CircleTextStyles.homeShortcut(
+                                        CircleAccents.of(context).caption,
+                                      ),
+                              ),
+                            ),
+                            if (widget.showAudience)
+                              Align(
+                                alignment: AlignmentDirectional.centerEnd,
+                                child: PopupMenuButton<String>(
+                                  tooltip: 'Poll options',
+                                  enabled: !_busy,
+                                  icon: const Icon(CircleIcons.more),
+                                  onSelected: (action) async {
+                                    final menuApi = ref.read(
+                                      livePollApiProvider,
+                                    );
+                                    if (action == 'refresh') {
+                                      refreshPolls(ref);
+                                    } else if (action == 'close') {
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (dialog) => AlertDialog(
+                                          title: const Text('Close this poll?'),
+                                          content: const Text(
+                                            'Voting will end for everyone in this circle.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(dialog, false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(dialog, true),
+                                              child: const Text('Close poll'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirmed == true && mounted) {
+                                        await _run((_) => menuApi.close(id));
+                                      }
                                     }
-                                  }),
-                            title: Text(
-                              option['label'] as String,
-                              style: CircleTextStyles.body(
-                                Theme.of(context).colorScheme.onSurface,
+                                  },
+                                  itemBuilder: (_) => [
+                                    const PopupMenuItem(
+                                      value: 'refresh',
+                                      child: Text('Refresh poll'),
+                                    ),
+                                    if (!closed && p['can_manage'] == true)
+                                      const PopupMenuItem(
+                                        value: 'close',
+                                        child: Text('Close poll'),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            secondary:
-                                results &&
-                                    MediaQuery.textScalerOf(context).scale(1) <=
-                                        CircleLayout.largeTextThreshold
-                                ? Text(
-                                    '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  )
-                                : null,
-                            subtitle:
-                                results &&
-                                    MediaQuery.textScalerOf(context).scale(1) >
-                                        CircleLayout.largeTextThreshold
-                                ? Text(
-                                    '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}${total == 0 ? '' : ' · ${((option['votes'] as int) * 100 / total).round()}%'}',
-                                  )
-                                : null,
-                          )
-                        else
-                          RadioListTile<int>(
-                            value: option['id'] as int,
-                            enabled: !locked && !_busy,
-                            toggleable: true,
-                            title: Text(
-                              option['label'] as String,
-                              style: CircleTextStyles.body(
-                                Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                            secondary:
-                                results &&
-                                    MediaQuery.textScalerOf(context).scale(1) <=
-                                        CircleLayout.largeTextThreshold
-                                ? Text(
-                                    '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  )
-                                : null,
-                            subtitle:
-                                results &&
-                                    MediaQuery.textScalerOf(context).scale(1) >
-                                        CircleLayout.largeTextThreshold
-                                ? Text(
-                                    '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}${total == 0 ? '' : ' · ${((option['votes'] as int) * 100 / total).round()}%'}',
-                                  )
-                                : null,
+                          ],
+                        ),
+                        const SizedBox(height: Space.sm),
+                        Text(
+                          p['question'] as String,
+                          style: CircleTextStyles.sectionTitle(
+                            colors.onSurface,
                           ),
-                        if (!chosen.contains(option['id']))
-                          const Divider(height: Space.xs),
-                        if (results && total > 0)
-                          Padding(
-                            padding: const EdgeInsets.all(Space.md),
-                            child: LinearProgressIndicator(
-                              value: total == 0
-                                  ? 0
-                                  : (option['votes'] as int) / total,
-                            ),
-                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(Space.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (closed) const Text('Closed'),
+                    if (p['closes_at'] case final String end)
+                      Text(
+                        'Closes ${DateTime.parse(end).toLocal()}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    RadioGroup<int>(
+                      groupValue: multiple ? null : chosen.firstOrNull,
+                      onChanged: (value) {
+                        if (locked || _busy || multiple) return;
+                        setState(
+                          () => _chosen = value == null ? <int>{} : {value},
+                        );
+                      },
+                      child: Column(
+                        children: [
+                          for (final option in options)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: Space.xs),
+                              child: Material(
+                                color: chosen.contains(option['id'])
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer
+                                    : Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(
+                                  CircleRadius.small,
+                                ),
+                                child: Column(
+                                  children: [
+                                    if (multiple)
+                                      CheckboxListTile(
+                                        controlAffinity:
+                                            ListTileControlAffinity.leading,
+                                        value: chosen.contains(option['id']),
+                                        onChanged: locked || _busy
+                                            ? null
+                                            : (value) => setState(() {
+                                                _chosen = multiple
+                                                    ? {...chosen}
+                                                    : <int>{};
+                                                if (value == true) {
+                                                  _chosen!.add(
+                                                    option['id'] as int,
+                                                  );
+                                                } else {
+                                                  _chosen!.remove(option['id']);
+                                                }
+                                              }),
+                                        title: Text(
+                                          option['label'] as String,
+                                          style: CircleTextStyles.homeShortcut(
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                          ),
+                                        ),
+                                        secondary:
+                                            results &&
+                                                total > 0 &&
+                                                MediaQuery.textScalerOf(
+                                                      context,
+                                                    ).scale(1) <=
+                                                    CircleLayout
+                                                        .largeTextThreshold
+                                            ? Text(
+                                                '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}',
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              )
+                                            : null,
+                                        subtitle:
+                                            results &&
+                                                total > 0 &&
+                                                MediaQuery.textScalerOf(
+                                                      context,
+                                                    ).scale(1) >
+                                                    CircleLayout
+                                                        .largeTextThreshold
+                                            ? Text(
+                                                '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}${total == 0 ? '' : ' · ${((option['votes'] as int) * 100 / total).round()}%'}',
+                                              )
+                                            : null,
+                                      )
+                                    else
+                                      RadioListTile<int>(
+                                        value: option['id'] as int,
+                                        enabled: !locked && !_busy,
+                                        toggleable: true,
+                                        title: Text(
+                                          option['label'] as String,
+                                          style: CircleTextStyles.homeShortcut(
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                          ),
+                                        ),
+                                        secondary:
+                                            results &&
+                                                total > 0 &&
+                                                MediaQuery.textScalerOf(
+                                                      context,
+                                                    ).scale(1) <=
+                                                    CircleLayout
+                                                        .largeTextThreshold
+                                            ? Text(
+                                                '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}',
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                              )
+                                            : null,
+                                        subtitle:
+                                            results &&
+                                                total > 0 &&
+                                                MediaQuery.textScalerOf(
+                                                      context,
+                                                    ).scale(1) >
+                                                    CircleLayout
+                                                        .largeTextThreshold
+                                            ? Text(
+                                                '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}${total == 0 ? '' : ' · ${((option['votes'] as int) * 100 / total).round()}%'}',
+                                              )
+                                            : null,
+                                      ),
+                                    if (!chosen.contains(option['id']))
+                                      const Divider(height: Space.xs),
+                                    if (results && total > 0)
+                                      Padding(
+                                        padding: const EdgeInsets.all(Space.md),
+                                        child: LinearProgressIndicator(
+                                          value: total == 0
+                                              ? 0
+                                              : (option['votes'] as int) /
+                                                    total,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Space.sm),
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: Space.sm,
+                      children: [
+                        if (results)
+                          Text(
+                            '${total == 0 ? 'No votes yet' : '$total ${total == 1 ? 'voter' : 'voters'}'}${multiple ? ' · multiple choices allowed' : ''}',
+                            style: CircleTextStyles.metadata(
+                              CircleAccents.of(context).caption,
+                            ),
+                          )
+                        else
+                          Text(
+                            p['results_visibility'] == 'after_closing'
+                                ? 'Results appear when this poll closes.'
+                                : 'Vote to see the results.',
+                          ),
+                        if (results && total > 0 && p['anonymous'] != true)
+                          TextButton(
+                            onPressed: () =>
+                                context.push('/polls/p/$id/voters'),
+                            child: Text(
+                              'See who voted',
+                              style: CircleTextStyles.homeShortcut(
+                                colors.primary,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (!closed && locked)
+                      const Text(
+                        'Your vote is saved. This poll does not allow vote changes.',
+                      ),
+                    const SizedBox(height: Space.md),
+                    if (!locked)
+                      FilledButton(
+                        onPressed: _busy || (chosen.isEmpty && mine.isEmpty)
+                            ? null
+                            : () => _run(
+                                (api) => api.vote(id, chosen.toList()..sort()),
+                              ),
+                        child: Text(
+                          _busy
+                              ? 'Saving…'
+                              : mine.isEmpty
+                              ? 'Submit vote'
+                              : chosen.isEmpty
+                              ? 'Remove vote'
+                              : 'Save vote',
+                        ),
+                      ),
+                    const SizedBox(height: Space.sm),
+                    Text(
+                      p['anonymous'] == true
+                          ? 'Your vote is anonymous.'
+                          : 'Your choice is visible to this Circle.',
+                      style: CircleTextStyles.metadata(
+                        CircleAccents.of(context).caption,
+                      ),
+                    ),
+                    if (!closed &&
+                        p['allow_add_options'] == true &&
+                        options.length < 12)
+                      TextButton.icon(
+                        onPressed: _busy
+                            ? null
+                            : () async {
+                                final api = ref.read(livePollApiProvider);
+                                final label = await showDialog<String>(
+                                  context: context,
+                                  builder: (_) => const _OptionDialog(),
+                                );
+                                if (label != null && mounted) {
+                                  await _run((_) => api.option(id, label));
+                                }
+                              },
+                        icon: const Icon(LucideIcons.plus),
+                        label: const Text('Add an option'),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-        const SizedBox(height: Space.sm),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: Space.sm,
-          children: [
-            if (results)
-              Text(
-                '${total == 0 ? 'No votes yet' : '$total ${total == 1 ? 'voter' : 'voters'}'}${multiple ? ' · people may choose multiple options' : ''}',
-              )
-            else
-              Text(
-                p['results_visibility'] == 'after_closing'
-                    ? 'Results appear when this poll closes.'
-                    : 'Vote to see the results.',
-              ),
-            if (results && p['anonymous'] != true)
-              TextButton(
-                onPressed: () => context.push('/polls/p/$id/voters'),
-                child: const Text('See who voted'),
-              ),
-          ],
-        ),
-        if (!closed && locked)
-          const Text(
-            'Your vote is saved. This poll does not allow vote changes.',
-          ),
-        const SizedBox(height: Space.md),
-        if (!locked)
-          FilledButton(
-            onPressed: _busy || (chosen.isEmpty && mine.isEmpty)
-                ? null
-                : () => _run((api) => api.vote(id, chosen.toList()..sort())),
-            child: Text(
-              _busy
-                  ? 'Saving…'
-                  : mine.isEmpty
-                  ? 'Submit vote'
-                  : chosen.isEmpty
-                  ? 'Remove vote'
-                  : 'Save vote',
-            ),
-          ),
-        Text(
-          p['anonymous'] == true
-              ? 'Your vote is anonymous.'
-              : 'Your choice is visible to this Circle.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        if (!closed && p['allow_add_options'] == true && options.length < 12)
-          TextButton.icon(
-            onPressed: _busy
-                ? null
-                : () async {
-                    final api = ref.read(livePollApiProvider);
-                    final label = await showDialog<String>(
-                      context: context,
-                      builder: (_) => const _OptionDialog(),
-                    );
-                    if (label != null && mounted) {
-                      await _run((_) => api.option(id, label));
-                    }
-                  },
-            icon: const Icon(LucideIcons.plus),
-            label: const Text('Add an option'),
-          ),
-      ],
+      ),
     );
   }
 }

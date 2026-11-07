@@ -20,7 +20,7 @@ import '../../polls/presentation/live_polls.dart' show LivePollCard;
 import '../../events/presentation/live_events.dart' show LiveEventCard;
 import 'package:flutter_lucide/flutter_lucide.dart';
 
-enum _MemoryAction { save, replyPrivately, edit, delete, report }
+enum _MemoryAction { openPoll, save, replyPrivately, edit, delete, report }
 
 class CircleMemoryCard extends ConsumerWidget {
   const CircleMemoryCard({
@@ -77,6 +77,8 @@ class CircleMemoryCard extends ConsumerWidget {
 
     Future<void> onMenu(_MemoryAction action) async {
       switch (action) {
+        case _MemoryAction.openPoll:
+          context.push('/polls/p/${memory.livePolls.first['id']}');
         case _MemoryAction.save:
           await runCalmly(context, () => controller.save(memory.id));
         case _MemoryAction.replyPrivately:
@@ -223,6 +225,11 @@ class CircleMemoryCard extends ConsumerWidget {
                     icon: Icon(CircleIcons.more, color: accents.caption),
                     onSelected: onMenu,
                     itemBuilder: (_) => [
+                      if (memory.livePolls.isNotEmpty)
+                        const PopupMenuItem(
+                          value: _MemoryAction.openPoll,
+                          child: Text('Open poll and settings'),
+                        ),
                       PopupMenuItem(
                         value: _MemoryAction.save,
                         child: Text(memory.saved ? 'Unsave' : 'Save'),
