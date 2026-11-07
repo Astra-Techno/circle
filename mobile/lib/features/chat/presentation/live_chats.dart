@@ -50,10 +50,17 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
   bool _loadingMore = false;
   int? _before, _reply;
   String? _retrySignature, _retryKey;
+  bool _showJumpToBottom = false;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _thread.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final away = _thread.hasClients && _thread.offset > 200;
+    if (away != _showJumpToBottom) setState(() => _showJumpToBottom = away);
   }
 
   @override
@@ -127,6 +134,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
     WidgetsBinding.instance.removeObserver(this);
     _text.dispose();
     _search.dispose();
+    _thread.removeListener(_onScroll);
     _thread.dispose();
     super.dispose();
   }
@@ -1089,23 +1097,41 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
           onOptions: () => _options(chat, data),
         ),
         Expanded(
-          child: ColoredBox(
-            color: accents.chatWallpaper,
-            // Reversed, so the newest message sits just above the composer.
-            child: ListView(
-              controller: _thread,
-              reverse: true,
-              padding: const EdgeInsets.fromLTRB(
-                Space.sm,
-                Space.sm,
-                Space.sm,
-                Space.sm,
+          child: Stack(
+            children: [
+              ColoredBox(
+                color: accents.chatWallpaper,
+                // Reversed, so the newest message sits just above the composer.
+                child: ListView(
+                  controller: _thread,
+                  reverse: true,
+                  padding: const EdgeInsets.fromLTRB(
+                    Space.sm,
+                    Space.sm,
+                    Space.sm,
+                    Space.sm,
+                  ),
+                  children: [
+                    if (active && inline) ...composer.reversed,
+                    ...thread.reversed,
+                  ],
+                ),
               ),
-              children: [
-                if (active && inline) ...composer.reversed,
-                ...thread.reversed,
-              ],
-            ),
+              if (_showJumpToBottom)
+                Positioned(
+                  right: Space.md,
+                  bottom: Space.md,
+                  child: FloatingActionButton.small(
+                    heroTag: 'chat_scroll_bottom',
+                    onPressed: () => _thread.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    ),
+                    child: const Icon(LucideIcons.chevron_down),
+                  ),
+                ),
+            ],
           ),
         ),
         if (pinned)

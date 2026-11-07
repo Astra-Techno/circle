@@ -1,4 +1,5 @@
 import '../core/form_exit_guard.dart';
+import '../features/capsules/presentation/capsule_screens.dart';
 import '../features/polls/presentation/live_polls.dart';
 import '../features/profile/presentation/account_security_screens.dart';
 import 'package:flutter/material.dart';
@@ -68,6 +69,8 @@ String? circleReturnDestination(String? input) {
         '/events/new',
         '/polls',
         '/polls/new',
+        '/capsules',
+        '/capsules/new',
         '/chats/new',
         '/you/privacy',
         '/you/notifications',
@@ -79,7 +82,7 @@ String? circleReturnDestination(String? input) {
         '/search',
       }.contains(path) ||
       RegExp(
-        r'^/(home/memory|chats/g|chats/c|groups/g|invite|events/e|polls/p)/[A-Za-z0-9_-]+$',
+        r'^/(home/memory|chats/g|chats/c|groups/g|invite|events/e|polls/p|capsules/c)/[A-Za-z0-9_-]+$',
       ).hasMatch(path) ||
       RegExp(r'^/polls/p/[A-Za-z0-9_-]+/voters$').hasMatch(path) ||
       RegExp(r'^/you/invitations/[A-Za-z0-9_-]+$').hasMatch(path) ||
@@ -110,6 +113,9 @@ String circleDetailTitle(String path, String fallback) {
     return 'Circle Invitations';
   }
   if (path.startsWith('/home/memory/')) return 'Memory';
+  if (path == '/capsules') return 'Memory Capsules';
+  if (path == '/capsules/new') return 'New capsule';
+  if (path.startsWith('/capsules/c/')) return 'Capsule';
   if (path == '/chats/privacy') return 'Messaging privacy';
   if (path == '/you/privacy') return 'Privacy and blocking';
   if (path == '/chats/new') return 'New chat';
@@ -375,6 +381,29 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/capsules',
+        builder: (context, _) =>
+            _page(context, 'Memory Capsules', const CapsuleListScreen()),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => _page(
+              context,
+              'New capsule',
+              CapsuleCreateScreen(groupId: state.uri.queryParameters['group']),
+            ),
+          ),
+          GoRoute(
+            path: 'c/:id',
+            builder: (context, state) => _page(
+              context,
+              'Capsule',
+              _idRoute(state, (id) => CapsuleDetailScreen(id: id)),
+            ),
           ),
         ],
       ),

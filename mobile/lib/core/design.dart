@@ -175,14 +175,42 @@ abstract final class Space {
       large = 48;
 }
 
-/// Editorial surfaces are flat: a quiet fill and, where needed, a hairline.
-/// Only the floating dock keeps one soft shadow so it reads above content.
+/// Dimensional layering: editorial surfaces gain subtle depth through
+/// soft shadows, glass blur and tinted overlays. The floating dock and
+/// premium panels use higher elevation; cards stay quiet.
 abstract final class CircleDepth {
   static const cardElevation = 0.0;
   static const buttonElevation = 0.0;
   static const pressedElevation = 0.0;
   static const floatingElevation = 2.0;
   static const _ink = Color(0xFF1C1E21);
+
+  /// Premium elevated card shadow — subtle depth for hero panels.
+  static List<BoxShadow> elevatedShadow(Brightness brightness) => [
+    BoxShadow(
+      color: brightness == Brightness.light
+          ? _ink.withValues(alpha: 0.06)
+          : Colors.black.withValues(alpha: 0.30),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+    BoxShadow(
+      color: brightness == Brightness.light
+          ? _ink.withValues(alpha: 0.03)
+          : Colors.black.withValues(alpha: 0.15),
+      blurRadius: 4,
+      offset: const Offset(0, 1),
+    ),
+  ];
+
+  /// Glow shadow for accent-tinted hero surfaces (capsules, achievements).
+  static List<BoxShadow> glowShadow(Color accent) => [
+    BoxShadow(
+      color: accent.withValues(alpha: 0.18),
+      blurRadius: 24,
+      spreadRadius: 2,
+    ),
+  ];
 
   static Color shadow(Brightness brightness) => brightness == Brightness.light
       ? _ink.withValues(alpha: 0.08)
@@ -201,6 +229,51 @@ abstract final class CircleDepth {
     context,
     radius: CircleRadius.sheet,
     tint: Theme.of(context).colorScheme.surfaceContainer,
+  );
+
+  /// Premium glass panel: a tinted translucent surface with a soft border,
+  /// used for capsule hero cards, achievement badges, and premium surfaces.
+  static BoxDecoration glassPanel(
+    BuildContext context, {
+    required double radius,
+    Color? tint,
+    Color? glowColor,
+  }) {
+    final brightness = Theme.of(context).brightness;
+    final base =
+        tint ??
+        (brightness == Brightness.light
+            ? Colors.white.withValues(alpha: 0.85)
+            : const Color(0xFF242526).withValues(alpha: 0.85));
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(radius),
+      color: base,
+      border: Border.all(
+        color: brightness == Brightness.light
+            ? Colors.white.withValues(alpha: 0.6)
+            : Colors.white.withValues(alpha: 0.08),
+      ),
+      boxShadow: [
+        ...elevatedShadow(brightness),
+        if (glowColor != null) ...glowShadow(glowColor),
+      ],
+    );
+  }
+
+  /// Subtle accent gradient for premium card headers (capsules, achievements).
+  static BoxDecoration accentHeader(
+    BuildContext context, {
+    required Color primary,
+    required Color secondary,
+  }) => BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        primary.withValues(alpha: 0.10),
+        secondary.withValues(alpha: 0.06),
+      ],
+    ),
   );
 
   /// The floating navigation dock: surface, hairline and one soft shadow.

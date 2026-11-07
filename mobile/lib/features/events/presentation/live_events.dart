@@ -899,7 +899,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
       context: context,
       initialDate: DateTime(d.year, d.month, d.day),
       firstDate: DateTime(2020),
-      lastDate: DateTime(2037, 12, 31),
+      lastDate: DateTime(DateTime.now().year + 5, 12, 31),
     );
     if (day == null || !mounted) return null;
     final time = await showTimePicker(
@@ -1011,7 +1011,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
                       context: context,
                       initialDate: DateTime(base.year, base.month, base.day),
                       firstDate: DateTime(2020),
-                      lastDate: DateTime(2037, 12, 31),
+                      lastDate: DateTime(DateTime.now().year + 5, 12, 31),
                     );
                     if (chosen != null && mounted) {
                       setState(

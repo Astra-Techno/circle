@@ -288,18 +288,8 @@ class _CommentTile extends StatelessWidget {
             children: [
               Expanded(child: CommentBubble(comment)),
               const SizedBox(width: Space.sm),
-              // Heart icon + like count.
-              Column(
-                children: [
-                  const SizedBox(height: Space.md),
-                  Icon(
-                    LucideIcons.heart,
-                    size: Space.md,
-                    color: accents.caption,
-                  ),
-                  Text('0', style: CircleTextStyles.caption(accents.caption)),
-                ],
-              ),
+              // Reply hint — comment likes deferred to server support.
+              const SizedBox(width: Space.md),
             ],
           ),
           // Time + Reply row.

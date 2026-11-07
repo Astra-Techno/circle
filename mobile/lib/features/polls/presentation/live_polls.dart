@@ -796,7 +796,7 @@ class _FormState extends ConsumerState<LivePollForm> {
                               const Duration(days: 1),
                             ),
                             firstDate: DateTime.now(),
-                            lastDate: DateTime(2037, 12, 31),
+                            lastDate: DateTime(DateTime.now().year + 5, 12, 31),
                           );
                           if (d == null || !context.mounted) return;
                           final t = await showTimePicker(

@@ -7,6 +7,7 @@ import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../workspace/application/workspace_providers.dart';
+import '../../workspace/presentation/group_visuals.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import '../domain/membership_rules.dart';
 
@@ -92,7 +93,13 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
               onPressed: () => Navigator.pop(context, person),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: Space.sm),
-                child: Text(workspace.nameOf(person)),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(workspace.nameOf(person))),
+                    if (group.roles[person] == CircleRole.admin)
+                      CircleBadge(circleRoleLabel(CircleRole.admin)),
+                  ],
+                ),
               ),
             ),
         ],

@@ -221,6 +221,15 @@ class _HomeHeader extends ConsumerWidget {
                                 : '/polls/new?group=$groupId',
                           ),
                         ),
+                      _QuickActionIcon(
+                        icon: LucideIcons.timer,
+                        label: 'Capsule',
+                        onTap: () => context.push(
+                          groupId == null
+                              ? '/capsules/new'
+                              : '/capsules/new?group=$groupId',
+                        ),
+                      ),
                     ],
                   ),
                 ),
