@@ -1,0 +1,30 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/app/circle_experience.dart';
+import '/workspace/circle/mobile/test/support/root_style_fixture.dart';
+import '/workspace/circle/mobile/test/support/server_harness.dart';
+import '/workspace/circle/mobile/test/support/circle_harness.dart' as mock;
+import '/workspace/circle/mobile/test/screen_audit_visual_review_test.dart' show capture;
+void main() {
+ testWidgets('audit nested-page opacity after full transition', (tester) async {
+  final f=RootStyleFixture(); final c=await openServerCircle(tester,f.server,tokens:await storedSession(f.server,f.owner));
+  c.read(circleRouterProvider).go('/groups/g/${f.group}'); await settle(tester);
+  c.read(circleRouterProvider).push('/groups/g/${f.group}/events'); await settle(tester); await tester.pump(const Duration(seconds:5));
+  await capture(tester,'confirmed-child-events-after5s','393-light');
+  c.read(circleRouterProvider).go('/groups/g/${f.group}/settings'); await settle(tester); await tester.pump(const Duration(seconds:5));
+  await capture(tester,'confirmed-child-settings-after5s','393-light');
+ });
+ testWidgets('audit Memory menus, sheets and validation', (tester) async {
+  final c=await mock.openCircle(tester);
+  await tester.tap(find.byTooltip(RegExp('More options for Memory')).first); await tester.pumpAndSettle(); await capture(tester,'overlay-memory-menu','393-light');
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape); await tester.pumpAndSettle();
+  await tester.tap(find.byTooltip(RegExp('Choose a reaction for Memory')).first); await tester.pumpAndSettle(); await capture(tester,'overlay-reactions','393-light');
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape); await tester.pumpAndSettle();
+  c.read(circleRouterProvider).go('/compose?group=friends'); await tester.pumpAndSettle();
+  await tester.tap(find.text('More options')); await tester.pumpAndSettle(); await capture(tester,'overlay-compose-options','393-light');
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape); await tester.pumpAndSettle();
+  final create=find.widgetWithText(FilledButton,'Create Memory'); await tester.ensureVisible(create); await tester.tap(create); await tester.pumpAndSettle(); await capture(tester,'validation-compose-empty','393-light');
+  await tester.enterText(find.byType(TextField).first,'Fictional unsaved memory'); c.read(circleRouterProvider).go('/home'); await tester.pumpAndSettle(); await capture(tester,'overlay-discard-memory','393-light');
+ });
+}
