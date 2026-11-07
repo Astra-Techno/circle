@@ -1,0 +1,199 @@
+{
+  "sourceCommit": "52538e5ca64b19f24f18312694224a7ee2576166",
+  "windowsRun": 42343045804,
+  "artifact": 13561594671,
+  "windowsPassed": 823,
+  "windowsSkipped": 1,
+  "mode": "update-goldens then pixel comparison with reviewed baselines",
+  "baselines": [
+    {
+      "file": "access_login.png",
+      "changed": false,
+      "sha256": "0927973f6ee455c2b98cc0aeb750c1818e728ce3097f9c319c1c19ebafda01f9"
+    },
+    {
+      "file": "access_register.png",
+      "changed": false,
+      "sha256": "26eff42192b291276983bcd1d74f30e33f52115e6d5207172f898b1848fc148b"
+    },
+    {
+      "file": "access_register_dark.png",
+      "changed": false,
+      "sha256": "db98f26e8228c416eb5027b83f250c2046edbee05e1f03f35203ee3e65125807"
+    },
+    {
+      "file": "access_welcome.png",
+      "changed": false,
+      "sha256": "98893ebb9475f0409511a137c5100a03309328e4afedc5c05359145f640ef759"
+    },
+    {
+      "file": "circle_chats.png",
+      "changed": false,
+      "sha256": "63e528cf4c469aaa820044102454f0f5e3651271fc02a1342653a63c43b67528"
+    },
+    {
+      "file": "circle_compose.png",
+      "changed": false,
+      "sha256": "948787fbb8ea9028de7eebac9b45a64b505494d08665be24dac6d694e2164cbc"
+    },
+    {
+      "file": "circle_events.png",
+      "changed": false,
+      "sha256": "5e27d2599ec7779c1f8de0426ec6619621e92c51d7ba4d272334d9e5605e46db"
+    },
+    {
+      "file": "circle_groups.png",
+      "changed": false,
+      "sha256": "67128ec71cb96a1d2d4260c004075a19637f1a664b7bae00524ef5af1bc9e363"
+    },
+    {
+      "file": "circle_groups_g_friends.png",
+      "changed": false,
+      "sha256": "29c09b64bd0096db0d3f7f39b76df24ba06716ab15b4c6c1708755634a27548f"
+    },
+    {
+      "file": "circle_groups_new.png",
+      "changed": false,
+      "sha256": "799f6089771b7b6fbec270e638332bba8dc94f59e3f2412bc3a9ef1550839c92"
+    },
+    {
+      "file": "circle_home.png",
+      "changed": false,
+      "sha256": "fb45dbcbfae1ad608a1706c7c38bdfa0d359ae5ab984295e789d9f6fbf450c70"
+    },
+    {
+      "file": "circle_home_dark.png",
+      "changed": false,
+      "sha256": "55d3926297537e7e10087221eb7757df4bd33deb6e6c3ed6933b716ce7502ac7"
+    },
+    {
+      "file": "circle_you.png",
+      "changed": false,
+      "sha256": "9606829a3337db0fd99718c5b0cc0feb50a214f4472f4a532cf1753d7d96f024"
+    },
+    {
+      "file": "home_feed_393x852.png",
+      "changed": false,
+      "sha256": "973e20ce5c97c9cd350f595f46fb3062e1124a258a1e20d4d54fd2a8cad4cfbd"
+    },
+    {
+      "file": "home_feed_dark_393x852.png",
+      "changed": false,
+      "sha256": "55d3926297537e7e10087221eb7757df4bd33deb6e6c3ed6933b716ce7502ac7"
+    },
+    {
+      "file": "responsive_home_1024x768.png",
+      "changed": false,
+      "sha256": "868b50231906fbc1b047aba2f7ef06a336dd5cdf102c66b49a304a03fbf40c3e"
+    },
+    {
+      "file": "responsive_home_1280x800.png",
+      "changed": false,
+      "sha256": "1fa74c20c3b06b0c6705614d54fcb57dffd558a5332b4176d27efbf590daad7d"
+    },
+    {
+      "file": "responsive_home_360x800.png",
+      "changed": false,
+      "sha256": "b355e79375563fa145b91f1b25112355e02f0c214e590e3e860170995080b572"
+    },
+    {
+      "file": "responsive_home_393x852.png",
+      "changed": false,
+      "sha256": "fb45dbcbfae1ad608a1706c7c38bdfa0d359ae5ab984295e789d9f6fbf450c70"
+    },
+    {
+      "file": "responsive_home_430x932.png",
+      "changed": false,
+      "sha256": "977c34e9b98ea7bc3980a3502e68abaa12bda8acca5113fd9ae1362fa44c747c"
+    },
+    {
+      "file": "responsive_home_600x960.png",
+      "changed": false,
+      "sha256": "7d04cbc0180990680129b962a7512e6d3d2711f5f28e7af734e8f78958ff268f"
+    },
+    {
+      "file": "responsive_home_800x1280.png",
+      "changed": false,
+      "sha256": "48871b0f7195f0978ddec60fbdad3f7c4caef43c0b375ca19ff80da99b103116"
+    }
+  ],
+  "earlierFailedRun": 42342449453,
+  "regression": "narrow200% title width, fixed by stacking title below badge",
+  "mobileRegressionPassed": 55,
+  "mobileFinalCreationLayoutPassed": 11,
+  "mobileFinalAccessibilityPassed": 22,
+  "backendTests": 242,
+  "backendAssertions": 4570,
+  "phpstan": "clean",
+  "flutterAnalyze": "clean",
+  "formatFiles": 255,
+  "backendDeployed": false,
+  "nativeDeviceVerified": false,
+  "releaseBuilt": false,
+  "renders": [
+    {
+      "file": "event-card-circle-393-light.png",
+      "sha256": "524e274e3c08f47752094eb876df2822418df0477eb5a56f0b8c8b2244b8d0da"
+    },
+    {
+      "file": "event-card-detail-393-light.png",
+      "sha256": "e73a1d79c9b6a20031296348eed36b004864d11cdf0f508ecc6ba8b0e9e31038"
+    },
+    {
+      "file": "event-card-events-393-light.png",
+      "sha256": "375acb0c2f09fc234fed33c8e77937cb6bb5cc3a6912f8832c0b477075fb0e18"
+    },
+    {
+      "file": "event-card-home-393-light.png",
+      "sha256": "2701cdd86e303c6841c649d4c0555238da69e6c10fe2dd2b75208184c7447d6a"
+    },
+    {
+      "file": "event-card-profile-393-light.png",
+      "sha256": "05ca38ae8e29970232e6872082710234bde50ba89f4b2993a71e0faa5d86cb05"
+    },
+    {
+      "file": "event-card-saved-393-light.png",
+      "sha256": "baf0f858d13f48b5afcd5092a7108b3ea836a9ecb05ff402681108e2c4fa172d"
+    },
+    {
+      "file": "event-form-320-2.0-false.png",
+      "sha256": "1eb13c576d7bfbc2ea98ba7d054e0359709b563dbe9c458a6a398e8fa0c1b2f1"
+    },
+    {
+      "file": "event-form-320-2.0-true.png",
+      "sha256": "e6507d7338b8085d54b3834b4f24b2163dcad9b7cbef60640041c6b60dc9ba27"
+    },
+    {
+      "file": "event-form-393-1.0-false.png",
+      "sha256": "c93965a59a1489123bd077d3c5df0e89c8690939cf702bdf848959b7126e066b"
+    },
+    {
+      "file": "event-form-900-2.0-false.png",
+      "sha256": "960f57a131e3c2d4a3c68e4f857d91598c40f705286f1d6d0cb4559b853a4565"
+    },
+    {
+      "file": "event-form-filled-393-light.png",
+      "sha256": "f40426e862144b4bb2a9178239cf816c638b79ada16b42b708ff73752640943d"
+    },
+    {
+      "file": "event-list-320-2.0-false.png",
+      "sha256": "320efca2817278b8a75fb038038d9dce76ca0745eabdea09846c32d2efb3e1ab"
+    },
+    {
+      "file": "event-list-320-2.0-true.png",
+      "sha256": "079d31049a6a0eecad304aee9c5c3bc4113e649d5baddbfe763d27f8315a19cf"
+    },
+    {
+      "file": "event-list-393-1.0-false.png",
+      "sha256": "2e137f9e2bea5ebbfcec3e6e0d0f5b158d13627cc26de15f0f5a8596b4620f5b"
+    },
+    {
+      "file": "event-list-900-2.0-false.png",
+      "sha256": "1c7412d11e1ad6f5d36a1d43e059a1426afc4a15aeb448367e13c06530481fa6"
+    },
+    {
+      "file": "selected-reference.png",
+      "sha256": "205fa003ad1ed2786d9bfd86c2b7f030e0873d696e44ea6f61d495582a8a49bb"
+    }
+  ]
+}

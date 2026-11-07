@@ -14,4 +14,4 @@ No remaining actionable P0/P1/P2 visual findings. Follow-up P3: native iOS font 
 
 final result: passed
 
-Windows42342449453 caught one narrow200% title-width regression (822passed/1failed/1skipped). The date badge now sits above the full-width title at narrow/large text sizes;22focused event/accessibility checks pass and analyzer is clean. Replacement Windows verification is pending. No failed baseline was accepted.
+Windows42342449453 caught one narrow200% title-width regression (822passed/1failed/1skipped). The date badge now sits above the full-width title at narrow/large text sizes;22focused event/accessibility checks pass and analyzer is clean. Replacement Windows42343045804 passed823tests/1skipped, font/format/analyzer clean;22baselines pixel-identical, none replaced. No failed baseline was accepted.
