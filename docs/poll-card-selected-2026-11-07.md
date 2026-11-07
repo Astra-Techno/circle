@@ -15,5 +15,5 @@ Run the existing backend deployment script so migration024 and updated PHP are i
 ## Validation
 
 - Backend full suite240tests/4497assertions passes; PHPStan clean512MB. Final focused Poll suite9tests/305assertions passes, including the additional bounded Memory-page checks.
-- Final mobile integration/poll/layout/design/provider checks26passed; freshness-only12passed. Format and analyzer checks recorded separately. Windows full verification pending.
+- Final mobile integration/poll/layout/design/provider checks26passed; freshness-only12passed. Format and analyzer checks recorded separately. Windows [42332187248](https://github.com/Astra-Techno/circle/actions/runs/42332187248) passed812tests/1skipped, font/format/analyzer clean. All22generated baselines are pixel-identical to the reviewed repository images, so none were replaced. This was update-goldens with explicit pixel comparison, not a separate normal comparison run. Format254files clean.
 - Fictional renders cover six listing surfaces, normal selection, narrow/tablet200% text and dark/light. Selected source and comparison are in `design-previews/poll-card-selected-2026-11-07/`.

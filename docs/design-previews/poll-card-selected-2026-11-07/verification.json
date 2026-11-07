@@ -1,0 +1,177 @@
+{
+  "sourceCommit": "2c869b46e904a6c1d67c05408ac3e1feec53b0f0",
+  "windowsRun": 42332187248,
+  "artifact": 13558247836,
+  "mode": "update-goldens plus pixel comparison to reviewed baselines",
+  "windowsPassed": 812,
+  "windowsSkipped": 1,
+  "baselines": [
+    {
+      "file": "access_login.png",
+      "changed": false,
+      "sha256": "0927973f6ee455c2b98cc0aeb750c1818e728ce3097f9c319c1c19ebafda01f9"
+    },
+    {
+      "file": "access_register.png",
+      "changed": false,
+      "sha256": "26eff42192b291276983bcd1d74f30e33f52115e6d5207172f898b1848fc148b"
+    },
+    {
+      "file": "access_register_dark.png",
+      "changed": false,
+      "sha256": "db98f26e8228c416eb5027b83f250c2046edbee05e1f03f35203ee3e65125807"
+    },
+    {
+      "file": "access_welcome.png",
+      "changed": false,
+      "sha256": "98893ebb9475f0409511a137c5100a03309328e4afedc5c05359145f640ef759"
+    },
+    {
+      "file": "circle_chats.png",
+      "changed": false,
+      "sha256": "63e528cf4c469aaa820044102454f0f5e3651271fc02a1342653a63c43b67528"
+    },
+    {
+      "file": "circle_compose.png",
+      "changed": false,
+      "sha256": "948787fbb8ea9028de7eebac9b45a64b505494d08665be24dac6d694e2164cbc"
+    },
+    {
+      "file": "circle_events.png",
+      "changed": false,
+      "sha256": "5e27d2599ec7779c1f8de0426ec6619621e92c51d7ba4d272334d9e5605e46db"
+    },
+    {
+      "file": "circle_groups.png",
+      "changed": false,
+      "sha256": "67128ec71cb96a1d2d4260c004075a19637f1a664b7bae00524ef5af1bc9e363"
+    },
+    {
+      "file": "circle_groups_g_friends.png",
+      "changed": false,
+      "sha256": "29c09b64bd0096db0d3f7f39b76df24ba06716ab15b4c6c1708755634a27548f"
+    },
+    {
+      "file": "circle_groups_new.png",
+      "changed": false,
+      "sha256": "799f6089771b7b6fbec270e638332bba8dc94f59e3f2412bc3a9ef1550839c92"
+    },
+    {
+      "file": "circle_home.png",
+      "changed": false,
+      "sha256": "fb45dbcbfae1ad608a1706c7c38bdfa0d359ae5ab984295e789d9f6fbf450c70"
+    },
+    {
+      "file": "circle_home_dark.png",
+      "changed": false,
+      "sha256": "55d3926297537e7e10087221eb7757df4bd33deb6e6c3ed6933b716ce7502ac7"
+    },
+    {
+      "file": "circle_you.png",
+      "changed": false,
+      "sha256": "9606829a3337db0fd99718c5b0cc0feb50a214f4472f4a532cf1753d7d96f024"
+    },
+    {
+      "file": "home_feed_393x852.png",
+      "changed": false,
+      "sha256": "973e20ce5c97c9cd350f595f46fb3062e1124a258a1e20d4d54fd2a8cad4cfbd"
+    },
+    {
+      "file": "home_feed_dark_393x852.png",
+      "changed": false,
+      "sha256": "55d3926297537e7e10087221eb7757df4bd33deb6e6c3ed6933b716ce7502ac7"
+    },
+    {
+      "file": "responsive_home_1024x768.png",
+      "changed": false,
+      "sha256": "868b50231906fbc1b047aba2f7ef06a336dd5cdf102c66b49a304a03fbf40c3e"
+    },
+    {
+      "file": "responsive_home_1280x800.png",
+      "changed": false,
+      "sha256": "1fa74c20c3b06b0c6705614d54fcb57dffd558a5332b4176d27efbf590daad7d"
+    },
+    {
+      "file": "responsive_home_360x800.png",
+      "changed": false,
+      "sha256": "b355e79375563fa145b91f1b25112355e02f0c214e590e3e860170995080b572"
+    },
+    {
+      "file": "responsive_home_393x852.png",
+      "changed": false,
+      "sha256": "fb45dbcbfae1ad608a1706c7c38bdfa0d359ae5ab984295e789d9f6fbf450c70"
+    },
+    {
+      "file": "responsive_home_430x932.png",
+      "changed": false,
+      "sha256": "977c34e9b98ea7bc3980a3502e68abaa12bda8acca5113fd9ae1362fa44c747c"
+    },
+    {
+      "file": "responsive_home_600x960.png",
+      "changed": false,
+      "sha256": "7d04cbc0180990680129b962a7512e6d3d2711f5f28e7af734e8f78958ff268f"
+    },
+    {
+      "file": "responsive_home_800x1280.png",
+      "changed": false,
+      "sha256": "48871b0f7195f0978ddec60fbdad3f7c4caef43c0b375ca19ff80da99b103116"
+    }
+  ],
+  "backendFullTests": 240,
+  "backendFullAssertions": 4497,
+  "backendFinalFocusedTests": 9,
+  "backendFinalFocusedAssertions": 305,
+  "mobileFocusedTests": 26,
+  "phpstan": "clean",
+  "flutterAnalyze": "clean",
+  "formatFiles": 254,
+  "nativeDeviceVerified": false,
+  "backendDeployed": false,
+  "appReleaseBuilt": false,
+  "renders": [
+    {
+      "file": "circle-poll-detail-320.0-dark.png",
+      "sha256": "b6744f9db6eddfe9c4dfe97aa2e2d50eb2e17c4dd18172c36b8f68e557ef45d2"
+    },
+    {
+      "file": "circle-poll-detail-320.0-light.png",
+      "sha256": "ea367977fe59dec424e7c5931f8f69f2f368c4fa388c531d1d199759f0121e97"
+    },
+    {
+      "file": "circle-poll-detail-900.0-dark.png",
+      "sha256": "daefd053381c7d0301212f1fb14668d95d81a2f1cd6dceeea5e9033ba9f748bf"
+    },
+    {
+      "file": "circle-poll-detail-900.0-light.png",
+      "sha256": "5612c4b34a56f05ce933b99c43390db0261077485b81d30db181cfc0b50af36f"
+    },
+    {
+      "file": "poll-card-circle-selected-393-light.png",
+      "sha256": "e2886381c2ed3eb5ce46f5c2326dedac6ec026455362687d010d29b1a4458433"
+    },
+    {
+      "file": "poll-card-detail-selected-393-light.png",
+      "sha256": "6bd75cda4ad3fc85074f6ef7d7b64aef9a28e01e53dd7573369d6bb599d1dc07"
+    },
+    {
+      "file": "poll-card-home-selected-393-light.png",
+      "sha256": "795741218c7a0769fbe72e303e70469988dd9e0fea349ae7ad3488d13785a71d"
+    },
+    {
+      "file": "poll-card-polls-selected-393-light.png",
+      "sha256": "cb2646b4f503017c790ddbb013dd213ef72eef5585f5958a8c15e41a2c30ca2e"
+    },
+    {
+      "file": "poll-card-profile-selected-393-light.png",
+      "sha256": "1dd6ad383d45a6b36004d34716e4581c77934a0d37e5baea4c14705ba31143b5"
+    },
+    {
+      "file": "poll-card-saved-selected-393-light.png",
+      "sha256": "b1ae1b3328651087ef05c16b17d0d4ceba02af3dbfbc7613958d99ac76aa8b1f"
+    },
+    {
+      "file": "selected-reference.png",
+      "sha256": "bb3142349722e7382b30c8cebfe85ea638d194cba8284e48aa4d9fcbd052f2b7"
+    }
+  ]
+}
