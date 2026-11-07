@@ -107,12 +107,22 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
           const Text('Location sharing is optional. No background tracking.'),
           if (_busy) const LinearProgressIndicator(),
           if (_notice != null) Text(_notice!),
-          if (_error != null) Text(_error!),
-          TextButton.icon(
-            onPressed: _busy ? null : _load,
-            icon: const Icon(LucideIcons.refresh_cw),
-            label: const Text('Refresh devices'),
-          ),
+          if (_error != null)
+            CircleEmpty(
+              icon: LucideIcons.wifi_off,
+              title: 'Your devices couldn’t load',
+              message: _error!,
+              action: OutlinedButton(
+                onPressed: _busy ? null : _load,
+                child: const Text('Try again'),
+              ),
+            ),
+          if (_error == null)
+            TextButton.icon(
+              onPressed: _busy ? null : _load,
+              icon: const Icon(LucideIcons.refresh_cw),
+              label: const Text('Refresh devices'),
+            ),
           if (!_busy && _error == null && _items.isEmpty)
             const CircleEmpty(
               icon: LucideIcons.user_round,
@@ -128,7 +138,7 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
                   children: [
                     Text(
                       session.device,
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     if (session.current)
                       const CirclePill(
@@ -338,49 +348,55 @@ class _PasswordState extends ConsumerState<ChangePasswordScreen> {
             onDisposeAction: AutofillContextAction.cancel,
             child: Column(
               children: [
-                TextFormField(
-                  controller: _current,
-                  enabled: !_busy && !_ambiguous,
-                  obscureText: true,
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  autofillHints: const [AutofillHints.password],
-                  decoration: const InputDecoration(
-                    labelText: 'Current password',
+                CircleFieldLabel(
+                  label: 'Current password',
+                  child: TextFormField(
+                    controller: _current,
+                    enabled: !_busy && !_ambiguous,
+                    obscureText: true,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    autofillHints: const [AutofillHints.password],
+                    decoration: const InputDecoration(),
+                    validator: (v) => (v ?? '').isEmpty
+                        ? 'Enter your current password.'
+                        : null,
                   ),
-                  validator: (v) =>
-                      (v ?? '').isEmpty ? 'Enter your current password.' : null,
                 ),
                 const SizedBox(height: Space.md),
-                TextFormField(
-                  controller: _next,
-                  enabled: !_busy && !_ambiguous,
-                  obscureText: true,
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  autofillHints: const [AutofillHints.newPassword],
-                  decoration: const InputDecoration(labelText: 'New password'),
-                  validator: (v) =>
-                      (v ?? '').runes.length < 15 ||
-                          (v ?? '').runes.length > 128
-                      ? 'Use 15–128 characters.'
-                      : v == _current.text
-                      ? 'Choose a different new password.'
-                      : null,
+                CircleFieldLabel(
+                  label: 'New password',
+                  child: TextFormField(
+                    controller: _next,
+                    enabled: !_busy && !_ambiguous,
+                    obscureText: true,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    autofillHints: const [AutofillHints.newPassword],
+                    decoration: const InputDecoration(),
+                    validator: (v) =>
+                        (v ?? '').runes.length < 15 ||
+                            (v ?? '').runes.length > 128
+                        ? 'Use 15–128 characters.'
+                        : v == _current.text
+                        ? 'Choose a different new password.'
+                        : null,
+                  ),
                 ),
                 const SizedBox(height: Space.md),
-                TextFormField(
-                  controller: _confirm,
-                  enabled: !_busy && !_ambiguous,
-                  obscureText: true,
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  autofillHints: const [AutofillHints.newPassword],
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm new password',
+                CircleFieldLabel(
+                  label: 'Confirm new password',
+                  child: TextFormField(
+                    controller: _confirm,
+                    enabled: !_busy && !_ambiguous,
+                    obscureText: true,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    autofillHints: const [AutofillHints.newPassword],
+                    decoration: const InputDecoration(),
+                    validator: (v) =>
+                        v != _next.text ? 'Passwords don’t match.' : null,
                   ),
-                  validator: (v) =>
-                      v != _next.text ? 'Passwords don’t match.' : null,
                 ),
               ],
             ),

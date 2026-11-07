@@ -108,7 +108,10 @@ class SharedProfilePhotoSurface extends ConsumerWidget {
     final avatar = kind == ProfilePhotoKind.avatar;
     final fallback = avatar
         ? Center(
-            child: CircleInitialAvatar(name: name, size: CircleAvatarSize.hero),
+            child: CircleInitialAvatar(
+              name: name,
+              size: CircleAvatarSize.profile,
+            ),
           )
         : DecoratedBox(
             decoration: CircleDepth.profilePanel(context),
@@ -153,7 +156,7 @@ class SharedProfilePhotoSurface extends ConsumerWidget {
     );
     return avatar
         ? SizedBox.square(
-            dimension: CircleAvatarSize.hero.diameter,
+            dimension: CircleAvatarSize.profile.diameter,
             child: ClipOval(child: image),
           )
         : image;

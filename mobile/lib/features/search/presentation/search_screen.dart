@@ -59,7 +59,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final corpus = ref.watch(searchCorpusProvider);
     final workspaceFailed = ref.watch(circleWorkspaceProvider).hasError;
     final recent = ref.watch(recentSearchesProvider);
@@ -84,17 +83,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             },
           ),
           const SizedBox(height: Space.sm),
-          const CircleNote(
-            'Searches your groups, their members and all Memories you can access.',
-          ),
           if (!ready) ...[
-            Text(
-              _query.trim().isEmpty
+            CircleEmpty(
+              icon: LucideIcons.search,
+              title: 'Find something in your Circles',
+              message: _query.trim().isEmpty
                   ? (server
                         ? 'Find groups, people and Memories in your circles.'
                         : 'Find groups, people, Memories, events and messages you can already see.')
                   : 'Type at least ${SearchRules.minLength} characters.',
-              style: theme.textTheme.bodySmall,
             ),
             if (recent.isNotEmpty) ...[
               CircleSectionTitle(

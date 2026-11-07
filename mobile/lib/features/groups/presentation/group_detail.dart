@@ -160,7 +160,6 @@ class CircleGroupSection extends StatelessWidget {
             if (section == 'albums')
               CircleFeatureGate(
                 feature: CircleFeature.albums,
-                inline: true,
                 child: AlbumsTab(group: group),
               ),
           ],
@@ -456,44 +455,45 @@ class _QuickAction extends StatelessWidget {
     final accents = CircleAccents.of(context);
     return Tooltip(
       message: label,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(CircleRadius.card),
-        onTap: onTap,
-        child: Ink(
-          decoration: BoxDecoration(
-            color: primary
-                ? Theme.of(context).colorScheme.primaryContainer
-                : accents.recessed,
-            borderRadius: BorderRadius.circular(CircleRadius.tile),
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: Space.md,
-            vertical: Space.md,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: CircleSizes.iconAction,
-                color: primary
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface,
-              ),
-              const SizedBox(height: Space.sm),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: CircleTextStyles.homeShortcut(
-                  primary
+      child: Material(
+        color: primary
+            ? Theme.of(context).colorScheme.primaryContainer
+            : accents.recessed,
+        borderRadius: BorderRadius.circular(CircleRadius.tile),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(CircleRadius.card),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Space.md,
+              vertical: Space.md,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: CircleSizes.iconAction,
+                  color: primary
                       ? Theme.of(context).colorScheme.primary
                       : Theme.of(context).colorScheme.onSurface,
                 ),
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+                const SizedBox(height: Space.sm),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: CircleTextStyles.homeShortcut(
+                    primary
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -599,33 +599,38 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
               ),
             ),
             const SizedBox(height: Space.section),
-            TextField(
-              controller: _name,
-              autofocus: true,
-              buildCounter: CircleFormMetrics.counter,
-              maxLength: 100,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: 'Circle name',
-                errorText: _error,
-                errorMaxLines: 3,
+            CircleFieldLabel(
+              label: 'Circle name',
+              child: TextField(
+                controller: _name,
+                autofocus: true,
+                buildCounter: CircleFormMetrics.counter,
+                maxLength: 100,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  errorText: _error,
+                  errorMaxLines: 3,
+                ),
+                onSubmitted: (_) => _create(),
               ),
-              onSubmitted: (_) => _create(),
             ),
             const SizedBox(height: Space.md),
-            DropdownButtonFormField<CircleType>(
-              initialValue: _type,
-              decoration: const InputDecoration(labelText: 'Kind of Circle'),
-              items: [
-                for (final type in CircleType.values)
-                  DropdownMenuItem(
-                    value: type,
-                    child: Text(circleTypeLabel(type)),
-                  ),
-              ],
-              onChanged: (type) {
-                if (type != null) setState(() => _type = type);
-              },
+            CircleFieldLabel(
+              label: 'Kind of Circle',
+              child: DropdownButtonFormField<CircleType>(
+                initialValue: _type,
+                decoration: const InputDecoration(),
+                items: [
+                  for (final type in CircleType.values)
+                    DropdownMenuItem(
+                      value: type,
+                      child: Text(circleTypeLabel(type)),
+                    ),
+                ],
+                onChanged: (type) {
+                  if (type != null) setState(() => _type = type);
+                },
+              ),
             ),
             const SizedBox(height: Space.md),
             SwitchListTile(

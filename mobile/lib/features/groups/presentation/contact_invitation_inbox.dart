@@ -235,19 +235,16 @@ class _ContactInvitationInboxState
                 style: CircleTextStyles.body(accents.caption),
               ),
             ),
-          if (_error != null) ...[
-            const CircleEmpty(
+          if (_error != null)
+            CircleEmpty(
               icon: LucideIcons.wifi_off,
               title: 'Could not load invitations',
               message: 'Please check your connection and try again.',
-            ),
-            Center(
-              child: TextButton(
+              action: OutlinedButton(
                 onPressed: _busy ? null : () => _load(),
                 child: const Text('Try again'),
               ),
             ),
-          ],
           if (!_busy && _error == null && filtered.isEmpty)
             CircleEmpty(
               title: switch (_tab) {
@@ -363,60 +360,29 @@ class _InvitationCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top row: cover photo + group info + time.
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Group avatar / cover placeholder.
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(CircleRadius.card),
-                      child: CircleInitialAvatar(
-                        icon: LucideIcons.users,
-                        name: invitation.groupName,
-                        size: CircleAvatarSize.hero,
-                      ),
+                CircleIdentityHeader(
+                  leading: CircleInitialAvatar(
+                    icon: LucideIcons.users,
+                    name: invitation.groupName,
+                    size: CircleAvatarSize.hero,
+                  ),
+                  title: Semantics(
+                    header: true,
+                    child: Text(
+                      invitation.groupName,
+                      style: theme.textTheme.titleMedium,
                     ),
-                    const SizedBox(width: Space.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  invitation.groupName,
-                                  style: CircleTextStyles.cardTitle(
-                                    theme.colorScheme.onSurface,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (timeText.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsetsDirectional.only(
-                                    start: Space.sm,
-                                  ),
-                                  child: Text(
-                                    timeText,
-                                    style: CircleTextStyles.metadata(
-                                      accents.caption,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: Space.xs),
-                          Text(
-                            '${invitation.inviterName} invited you to join this Circle.',
-                            style: CircleTextStyles.metadata(accents.caption),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
+                  subtitle: Text(
+                    '${invitation.inviterName} invited you to join this Circle.',
+                    style: CircleTextStyles.metadata(accents.caption),
+                  ),
+                  trailing: timeText.isEmpty
+                      ? null
+                      : Text(
+                          timeText,
+                          style: CircleTextStyles.metadata(accents.caption),
+                        ),
                 ),
                 const SizedBox(height: Space.md),
                 if (onAccept != null || onDecline != null) ...[

@@ -1,3 +1,4 @@
+import 'package:mobile/core/circle_components.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -75,7 +76,10 @@ void main() {
     expect(find.textContaining('sent to circle.test only'), findsOneWidget);
     await enter(
       tester,
-      find.widgetWithText(TextFormField, 'Name (optional)'),
+      find.descendant(
+        of: find.widgetWithText(CircleFieldLabel, 'Name (optional)'),
+        matching: find.byType(TextFormField),
+      ),
       'Asha',
     );
     await enter(
@@ -107,7 +111,10 @@ void main() {
     await tap(tester, find.widgetWithText(FilledButton, 'Create a group'));
     await enter(
       tester,
-      find.widgetWithText(TextField, 'Circle name'),
+      find.descendant(
+        of: find.widgetWithText(CircleFieldLabel, 'Circle name'),
+        matching: find.byType(TextField),
+      ),
       'Sharma Family',
     );
     await tap(tester, find.text('Create Circle'));

@@ -835,32 +835,37 @@ class _CircleCreateGroupState extends ConsumerState<CircleCreateGroup> {
                     ? 'A private Circle, with you as its owner.'
                     : 'A private InCircle within ${parent.name}. Only its members can join.',
               ),
-              TextField(
-                controller: _name,
-                decoration: InputDecoration(
-                  labelText: 'Circle name',
-                  hintText: 'Something your people will recognise',
-                  errorText: _error,
-                  errorMaxLines: 4,
+              CircleFieldLabel(
+                label: 'Circle name',
+                child: TextField(
+                  controller: _name,
+                  decoration: InputDecoration(
+                    hintText: 'Something your people will recognise',
+                    errorText: _error,
+                    errorMaxLines: 4,
+                  ),
+                  buildCounter: CircleFormMetrics.counter,
+                  maxLength: 60,
+                  textCapitalization: TextCapitalization.words,
                 ),
-                buildCounter: CircleFormMetrics.counter,
-                maxLength: 60,
-                textCapitalization: TextCapitalization.words,
               ),
               const SizedBox(height: Space.section),
-              DropdownButtonFormField<CircleType>(
-                initialValue: _type,
-                decoration: const InputDecoration(labelText: 'Circle type'),
-                items: [
-                  for (final type in CircleType.values)
-                    DropdownMenuItem(
-                      value: type,
-                      child: Text(circleTypeLabel(type)),
-                    ),
-                ],
-                onChanged: (type) {
-                  if (type != null) setState(() => _type = type);
-                },
+              CircleFieldLabel(
+                label: 'Circle type',
+                child: DropdownButtonFormField<CircleType>(
+                  initialValue: _type,
+                  decoration: const InputDecoration(),
+                  items: [
+                    for (final type in CircleType.values)
+                      DropdownMenuItem(
+                        value: type,
+                        child: Text(circleTypeLabel(type)),
+                      ),
+                  ],
+                  onChanged: (type) {
+                    if (type != null) setState(() => _type = type);
+                  },
+                ),
               ),
               if (parent != null)
                 ExpansionTile(

@@ -44,12 +44,13 @@ class CircleIntroPanel extends StatelessWidget {
         ),
         if (!largeText) ...[
           const SizedBox(height: Space.sm),
-          Text(
-            subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: CircleAccents.of(context).caption,
+          if (subtitle.isNotEmpty)
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: CircleAccents.of(context).caption,
+              ),
             ),
-          ),
         ],
       ],
     );
@@ -285,6 +286,75 @@ class CircleEditorLayout extends StatelessWidget {
   }
 }
 
+/// Keeps decision-making identity readable beside decorative avatars and menus.
+/// At large text, the title owns a full row instead of losing width to metadata.
+class CircleIdentityHeader extends StatelessWidget {
+  const CircleIdentityHeader({
+    super.key,
+    required this.leading,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+  });
+  final Widget leading, title;
+  final Widget? subtitle, trailing;
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final stack = CircleLayout.stackDetails(context, constraints.maxWidth);
+      final identity = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          title,
+          if (subtitle != null) ...[
+            const SizedBox(height: Space.xs),
+            subtitle!,
+          ],
+        ],
+      );
+      return stack
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [leading, const Spacer(), ?trailing]),
+                const SizedBox(height: Space.md),
+                identity,
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                leading,
+                const SizedBox(width: Space.md),
+                Expanded(child: identity),
+                if (trailing != null) ...[
+                  const SizedBox(width: Space.sm),
+                  trailing!,
+                ],
+              ],
+            );
+    },
+  );
+}
+
+/// Persistent labels wrap independently of the input's single-line viewport.
+class CircleFieldLabel extends StatelessWidget {
+  const CircleFieldLabel({super.key, required this.label, required this.child});
+  final String label;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      ExcludeSemantics(
+        child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+      ),
+      const SizedBox(height: Space.sm),
+      Semantics(label: label, child: child),
+    ],
+  );
+}
+
 /// The short intro at the top of a page. The app bar already names the
 /// page, so this stays calm: one warm line and an optional explanation.
 class CircleHeading extends StatelessWidget {
@@ -325,12 +395,13 @@ class CircleHeading extends StatelessWidget {
             ),
             const SizedBox(height: Space.sm),
           ],
-          Text(
-            subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: CircleAccents.of(context).caption,
+          if (subtitle.isNotEmpty)
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: CircleAccents.of(context).caption,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -619,12 +690,14 @@ class CircleSearchField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.label,
+    this.helper,
     required this.onChanged,
     this.onSubmitted,
     this.autofocus = false,
   });
   final TextEditingController controller;
   final String label;
+  final String? helper;
   final ValueChanged<String> onChanged;
   final ValueChanged<String>? onSubmitted;
   final bool autofocus;
@@ -641,6 +714,7 @@ class CircleSearchField extends StatelessWidget {
           onSubmitted: onSubmitted,
           decoration: InputDecoration(
             hintText: label,
+            helperText: helper,
             prefixIcon: const Icon(CircleIcons.search),
             suffixIcon: value.text.isEmpty
                 ? null
@@ -1171,7 +1245,11 @@ Border circleHeaderDivider(BuildContext context) => Border(
 /// Optional tonal backing inside an unchanged 48px interactive target.
 /// Wrapping the existing control preserves its tooltip, badge and action.
 class CircleHeaderAction extends StatelessWidget {
-  const CircleHeaderAction({super.key, required this.child, this.tonal = true});
+  const CircleHeaderAction({
+    super.key,
+    required this.child,
+    this.tonal = false,
+  });
   final Widget child;
   final bool tonal;
   @override

@@ -1,5 +1,6 @@
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
@@ -23,13 +24,18 @@ class CircleFeatureGate extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (ref.watch(circleFeaturesProvider).has(feature)) return child;
     if (inline) return const SizedBox.shrink();
-    return const ReadingPane(
+    return ReadingPane(
       child: Padding(
         padding: CircleInsets.page,
         child: CircleEmpty(
           icon: LucideIcons.lock_keyhole,
           title: 'This page is unavailable',
-          message: 'Return to your circles.',
+          message: 'This feature is not available on this server.',
+          action: OutlinedButton(
+            onPressed: () =>
+                context.canPop() ? context.pop() : context.go('/groups'),
+            child: const Text('Back to Circles'),
+          ),
         ),
       ),
     );

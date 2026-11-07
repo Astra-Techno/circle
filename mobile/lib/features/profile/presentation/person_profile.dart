@@ -104,31 +104,24 @@ class PersonProfileScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                      const SizedBox(height: Space.md),
-                      Center(
-                        child: SharedProfilePhotoSurface(
-                          person: person,
-                          kind: ProfilePhotoKind.avatar,
-                          name: name,
-                        ),
-                      ),
                     ],
                     const SizedBox(height: Space.md),
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        name,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineSmall,
+                    CircleIdentityHeader(
+                      leading: SharedProfilePhotoSurface(
+                        person: person,
+                        kind: ProfilePhotoKind.avatar,
+                        name: name,
+                      ),
+                      title: Semantics(
+                        header: true,
+                        child: Text(name, style: theme.textTheme.titleLarge),
+                      ),
+                      subtitle: Text(
+                        'Details stay private by default',
+                        style: theme.textTheme.bodySmall,
                       ),
                     ),
-                    const SizedBox(height: Space.xs),
-                    Text(
-                      'Details stay private by default',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: Space.lg),
+                    const SizedBox(height: Space.md),
                     if (features.has(CircleFeature.liveChat))
                       FilledButton.icon(
                         onPressed: () async {
@@ -142,7 +135,7 @@ class PersonProfileScreen extends ConsumerWidget {
                           }
                         },
                         icon: const Icon(LucideIcons.message_circle),
-                        label: Text('Message $name'),
+                        label: Text('Message', semanticsLabel: 'Message $name'),
                       ),
                     ExpansionTile(
                       title: const Text('Photo options'),

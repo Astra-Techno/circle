@@ -167,15 +167,17 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
                   : 'Only admins can change these settings.',
             ),
             if (admin) ...[
-              TextField(
-                controller: _name,
-                buildCounter: CircleFormMetrics.counter,
-                maxLength: 60,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  labelText: 'Circle name',
-                  errorText: _nameError,
-                  errorMaxLines: 3,
+              CircleFieldLabel(
+                label: 'Circle name',
+                child: TextField(
+                  controller: _name,
+                  buildCounter: CircleFormMetrics.counter,
+                  maxLength: 60,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    errorText: _nameError,
+                    errorMaxLines: 3,
+                  ),
                 ),
               ),
               Align(
@@ -217,79 +219,83 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
                   : null,
             ),
             const SizedBox(height: Space.md),
-            DropdownButtonFormField<InvitePolicy>(
-              initialValue: group.settings.invitePolicy,
-              decoration: const InputDecoration(
-                labelText: 'Who can invite people',
-                helperText: 'Share the link or add people directly.',
-                helperMaxLines: 3,
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: InvitePolicy.adminsOnly,
-                  child: Text('Admins only'),
-                ),
-                DropdownMenuItem(
-                  value: InvitePolicy.allMembers,
-                  child: Text('All members'),
-                ),
-              ],
-              onChanged: admin
-                  ? (policy) => runCalmly(
-                      context,
-                      () => _controller.updateSettings(
-                        group.id,
-                        invitePolicy: policy,
-                      ),
-                      success: policy == InvitePolicy.allMembers
-                          ? 'All members can now invite people.'
-                          : 'Only admins can now invite people.',
-                    )
-                  : null,
-            ),
-            if ((features.has(CircleFeature.events) ||
-                features.has(CircleFeature.liveEvents))) ...[
-              const SizedBox(height: Space.md),
-              DropdownButtonFormField<EventCreationPolicy>(
-                initialValue: group.settings.eventCreation,
+            CircleFieldLabel(
+              label: 'Who can invite people',
+              child: DropdownButtonFormField<InvitePolicy>(
+                initialValue: group.settings.invitePolicy,
                 decoration: const InputDecoration(
-                  labelText: 'Who can create events',
-                  helperText:
-                      'Everyone in the Circle can always see and answer.',
+                  helperText: 'Share the link or add people directly.',
                   helperMaxLines: 3,
                 ),
                 items: const [
                   DropdownMenuItem(
-                    value: EventCreationPolicy.members,
-                    child: Text('Everyone'),
+                    value: InvitePolicy.adminsOnly,
+                    child: Text('Admins only'),
                   ),
                   DropdownMenuItem(
-                    value: EventCreationPolicy.admins,
-                    child: Text('Admins only'),
+                    value: InvitePolicy.allMembers,
+                    child: Text('All members'),
                   ),
                 ],
                 onChanged: admin
-                    ? (policy) {
-                        final previous = group.settings.eventCreation;
-                        runCalmly(
-                          context,
-                          () => _controller.updateSettings(
-                            group.id,
-                            eventCreation: policy,
-                          ),
-                          success: policy == EventCreationPolicy.admins
-                              ? 'Only admins can now create events.'
-                              : 'Everyone can now create events.',
-                          onUndo: undoWith(
+                    ? (policy) => runCalmly(
+                        context,
+                        () => _controller.updateSettings(
+                          group.id,
+                          invitePolicy: policy,
+                        ),
+                        success: policy == InvitePolicy.allMembers
+                            ? 'All members can now invite people.'
+                            : 'Only admins can now invite people.',
+                      )
+                    : null,
+              ),
+            ),
+            if ((features.has(CircleFeature.events) ||
+                features.has(CircleFeature.liveEvents))) ...[
+              const SizedBox(height: Space.md),
+              CircleFieldLabel(
+                label: 'Who can create events',
+                child: DropdownButtonFormField<EventCreationPolicy>(
+                  initialValue: group.settings.eventCreation,
+                  decoration: const InputDecoration(
+                    helperText:
+                        'Everyone in the Circle can always see and answer.',
+                    helperMaxLines: 3,
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: EventCreationPolicy.members,
+                      child: Text('Everyone'),
+                    ),
+                    DropdownMenuItem(
+                      value: EventCreationPolicy.admins,
+                      child: Text('Admins only'),
+                    ),
+                  ],
+                  onChanged: admin
+                      ? (policy) {
+                          final previous = group.settings.eventCreation;
+                          runCalmly(
                             context,
                             () => _controller.updateSettings(
                               group.id,
-                              eventCreation: previous,
+                              eventCreation: policy,
                             ),
-                          ),
-                        );
-                      }
-                    : null,
+                            success: policy == EventCreationPolicy.admins
+                                ? 'Only admins can now create events.'
+                                : 'Everyone can now create events.',
+                            onUndo: undoWith(
+                              context,
+                              () => _controller.updateSettings(
+                                group.id,
+                                eventCreation: previous,
+                              ),
+                            ),
+                          );
+                        }
+                      : null,
+                ),
               ),
             ],
             if (parent != null) ...[

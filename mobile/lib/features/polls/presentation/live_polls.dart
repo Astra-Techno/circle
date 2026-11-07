@@ -651,71 +651,78 @@ class _FormState extends ConsumerState<LivePollForm> {
         child: CircleEditorLayout(
           children: [
             const Text('Ask your Circle a question.'),
-            DropdownButtonFormField<String>(
-              initialValue: selected,
-              decoration: InputDecoration(
-                labelText: 'Share with',
-                errorText: _submitted && selected == null
-                    ? 'Choose a Circle.'
-                    : null,
+            CircleFieldLabel(
+              label: 'Share with',
+              child: DropdownButtonFormField<String>(
+                initialValue: selected,
+                decoration: InputDecoration(
+                  errorText: _submitted && selected == null
+                      ? 'Choose a Circle.'
+                      : null,
+                ),
+                isExpanded: true,
+                items: [
+                  for (final g in groups)
+                    DropdownMenuItem(value: g.id, child: Text(g.name)),
+                ],
+                onChanged:
+                    _busy || (widget.event != null && widget.group != null)
+                    ? null
+                    : (v) => setState(() => _group = v),
               ),
-              isExpanded: true,
-              items: [
-                for (final g in groups)
-                  DropdownMenuItem(value: g.id, child: Text(g.name)),
-              ],
-              onChanged: _busy || (widget.event != null && widget.group != null)
-                  ? null
-                  : (v) => setState(() => _group = v),
             ),
-            TextField(
-              controller: _question,
-              focusNode: _questionFocus,
-              onChanged: (_) {
-                if (_submitted) setState(() {});
-              },
-              enabled: !_busy,
-              buildCounter: CircleFormMetrics.counter,
-              maxLength: 500,
-              decoration: InputDecoration(
-                labelText: 'Question',
-                errorText: _submitted && _question.text.trim().isEmpty
-                    ? 'Enter a question.'
-                    : null,
+            CircleFieldLabel(
+              label: 'Question',
+              child: TextField(
+                controller: _question,
+                focusNode: _questionFocus,
+                onChanged: (_) {
+                  if (_submitted) setState(() {});
+                },
+                enabled: !_busy,
+                buildCounter: CircleFormMetrics.counter,
+                maxLength: 500,
+                decoration: InputDecoration(
+                  errorText: _submitted && _question.text.trim().isEmpty
+                      ? 'Enter a question.'
+                      : null,
+                ),
               ),
             ),
             for (final (i, c) in _options.indexed)
-              TextField(
-                controller: c,
-                enabled: !_busy,
-                buildCounter: CircleFormMetrics.counter,
-                maxLength: 200,
-                decoration: InputDecoration(
-                  labelText: 'Option ${i + 1}',
-                  errorText:
-                      _submitted &&
-                          (c.text.trim().isEmpty ||
-                              _options
-                                      .where(
-                                        (v) =>
-                                            v.text.trim().toLowerCase() ==
-                                            c.text.trim().toLowerCase(),
-                                      )
-                                      .length >
-                                  1)
-                      ? 'Enter a different, non-empty option.'
-                      : null,
-                  suffixIcon: _options.length <= 2
-                      ? null
-                      : IconButton(
-                          tooltip: 'Remove option ${i + 1}',
-                          onPressed: _busy
-                              ? null
-                              : () => setState(() {
-                                  _options.removeAt(i).dispose();
-                                }),
-                          icon: const Icon(CircleIcons.close),
-                        ),
+              CircleFieldLabel(
+                label: 'Option ${i + 1}',
+                child: TextField(
+                  controller: c,
+                  enabled: !_busy,
+                  buildCounter: CircleFormMetrics.counter,
+                  maxLength: 200,
+                  decoration: InputDecoration(
+                    errorText:
+                        _submitted &&
+                            (c.text.trim().isEmpty ||
+                                _options
+                                        .where(
+                                          (v) =>
+                                              v.text.trim().toLowerCase() ==
+                                              c.text.trim().toLowerCase(),
+                                        )
+                                        .length >
+                                    1)
+                        ? 'Enter a different, non-empty option.'
+                        : null,
+                    suffixIcon: _options.length <= 2
+                        ? null
+                        : IconButton(
+                            tooltip: 'Remove option ${i + 1}',
+                            onPressed: _busy
+                                ? null
+                                : () => setState(() {
+                                    _options.removeAt(i).dispose();
+                                  }),
+                            icon: const Icon(CircleIcons.close),
+                          ),
+                  ),
                 ),
               ),
             if (_options.length < 12)
@@ -757,24 +764,27 @@ class _FormState extends ConsumerState<LivePollForm> {
                   value: _change,
                   onChanged: _busy ? null : (v) => setState(() => _change = v),
                 ),
-                DropdownButtonFormField<String>(
-                  initialValue: _visibility,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Show results'),
-                  items: const [
-                    DropdownMenuItem(value: 'always', child: Text('Always')),
-                    DropdownMenuItem(
-                      value: 'after_voting',
-                      child: Text('After voting'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'after_closing',
-                      child: Text('After closing'),
-                    ),
-                  ],
-                  onChanged: _busy
-                      ? null
-                      : (v) => setState(() => _visibility = v!),
+                CircleFieldLabel(
+                  label: 'Show results',
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _visibility,
+                    isExpanded: true,
+                    decoration: const InputDecoration(),
+                    items: const [
+                      DropdownMenuItem(value: 'always', child: Text('Always')),
+                      DropdownMenuItem(
+                        value: 'after_voting',
+                        child: Text('After voting'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'after_closing',
+                        child: Text('After closing'),
+                      ),
+                    ],
+                    onChanged: _busy
+                        ? null
+                        : (v) => setState(() => _visibility = v!),
+                  ),
                 ),
                 TextButton(
                   onPressed: _busy
@@ -958,11 +968,14 @@ class _OptionState extends State<_OptionDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('Add an option'),
-    content: TextField(
-      controller: _text,
-      buildCounter: CircleFormMetrics.counter,
-      maxLength: 200,
-      decoration: const InputDecoration(labelText: 'Option'),
+    content: CircleFieldLabel(
+      label: 'Option',
+      child: TextField(
+        controller: _text,
+        buildCounter: CircleFormMetrics.counter,
+        maxLength: 200,
+        decoration: const InputDecoration(),
+      ),
     ),
     actions: [
       TextButton(

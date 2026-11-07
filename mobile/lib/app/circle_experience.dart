@@ -106,7 +106,9 @@ String circleDetailTitle(String path, String fallback) {
   if (path.endsWith('/sessions')) return 'Your devices';
   if (path.endsWith('/password')) return 'Change password';
   if (path.endsWith('/account')) return 'Account';
-  if (path == '/you/invitations') return 'Circle Invitations';
+  if (path == '/you/invitations' || path.startsWith('/you/invitations/')) {
+    return 'Circle Invitations';
+  }
   if (path.startsWith('/home/memory/')) return 'Memory';
   if (path == '/chats/privacy') return 'Messaging privacy';
   if (path == '/you/privacy') return 'Privacy and blocking';

@@ -130,32 +130,37 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   Widget _field(String key, String label, {int max = 100, int lines = 1}) =>
       Padding(
         padding: const EdgeInsets.only(bottom: Space.lg),
-        child: TextFormField(
-          key: ValueKey('profile-${key.replaceAll('_', '-')}'),
-          controller: _fields[key],
-          enabled: !_saving,
-          buildCounter: CircleFormMetrics.counter,
-          maxLength: max,
-          minLines: lines,
-          maxLines: lines,
-          textCapitalization: key == 'about'
-              ? TextCapitalization.sentences
-              : TextCapitalization.words,
-          textInputAction: lines == 1
-              ? TextInputAction.next
-              : TextInputAction.newline,
-          autofillHints: key == 'display_name'
-              ? const [AutofillHints.name]
-              : null,
-          decoration: InputDecoration(labelText: label),
-          validator: (value) {
-            final text = value?.trim() ?? '';
-            if (key == 'display_name' && text.isEmpty) {
-              return 'Enter the name people know you by.';
-            }
-            if (text.runes.length > max) return 'Use $max characters or fewer.';
-            return null;
-          },
+        child: CircleFieldLabel(
+          label: label,
+          child: TextFormField(
+            key: ValueKey('profile-${key.replaceAll('_', '-')}'),
+            controller: _fields[key],
+            enabled: !_saving,
+            buildCounter: CircleFormMetrics.counter,
+            maxLength: max,
+            minLines: lines,
+            maxLines: lines,
+            textCapitalization: key == 'about'
+                ? TextCapitalization.sentences
+                : TextCapitalization.words,
+            textInputAction: lines == 1
+                ? TextInputAction.next
+                : TextInputAction.newline,
+            autofillHints: key == 'display_name'
+                ? const [AutofillHints.name]
+                : null,
+            decoration: InputDecoration(),
+            validator: (value) {
+              final text = value?.trim() ?? '';
+              if (key == 'display_name' && text.isEmpty) {
+                return 'Enter the name people know you by.';
+              }
+              if (text.runes.length > max) {
+                return 'Use $max characters or fewer.';
+              }
+              return null;
+            },
+          ),
         ),
       );
   @override
@@ -171,7 +176,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           icon: LucideIcons.wifi_off,
           title: 'Your profile couldn’t load',
           message: _error ?? 'Please try again.',
-          action: FilledButton(
+          action: OutlinedButton(
             onPressed: _load,
             child: const Text('Try again'),
           ),
@@ -195,7 +200,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const CircleSectionTitle('Profile'),
                         const Text(
                           'Your name and bio are visible to members of your groups.',
                         ),
@@ -217,11 +221,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                           lines: 2,
                         ),
                         if (_mobile.isNotEmpty)
-                          TextFormField(
-                            initialValue: _mobile,
-                            readOnly: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Mobile number (read-only)',
+                          CircleFieldLabel(
+                            label: 'Mobile number (read-only)',
+                            child: TextFormField(
+                              initialValue: _mobile,
+                              readOnly: true,
+                              decoration: const InputDecoration(),
                             ),
                           ),
                         if (_error != null) ...[

@@ -1,3 +1,4 @@
+import 'package:mobile/core/circle_components.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -46,7 +47,13 @@ void main() {
       await tester.pumpAndSettle();
       tester.view.viewInsets = const FakeViewPadding(bottom: 250);
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(TextField, 'Circle name'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(CircleFieldLabel, 'Circle name'),
+          matching: find.byType(TextField),
+        ),
+        findsOneWidget,
+      );
       final submit = find.widgetWithText(FilledButton, 'Create InCircle');
       await tester.ensureVisible(submit);
       await tester.pumpAndSettle();

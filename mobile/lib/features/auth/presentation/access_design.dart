@@ -47,10 +47,6 @@ class AccessWelcome extends StatelessWidget {
         ),
         const SizedBox(height: Space.section),
 
-        // ── Promises ──
-        const _Promises(),
-        const SizedBox(height: Space.section),
-
         // ── Get Started (→ register) ──
         Container(
           width: double.infinity,
@@ -89,12 +85,6 @@ class AccessWelcome extends StatelessWidget {
         ),
         const SizedBox(height: Space.lg),
         _PreviewNote(connectedTo: connectedTo, welcome: true),
-        const SizedBox(height: Space.md),
-        Text(
-          'Share thoughtfully with the people in your chosen group.',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelSmall?.copyWith(color: muted),
-        ),
       ],
     );
   }
@@ -324,166 +314,6 @@ class _PhotoCollage extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: Space.md),
-          // Quality badge + member avatars
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Space.sm,
-                    vertical: Space.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(CircleRadius.pill),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.shadow.withValues(alpha: 0.04),
-                        blurRadius: Space.xs,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.shield_check,
-                        size: 16,
-                        color: colors.primary,
-                      ),
-                      const SizedBox(width: Space.xs),
-                      Flexible(
-                        child: Text(
-                          'Heirloom Quality',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: Space.sm),
-              // Stacked member avatars
-              SizedBox(
-                width: 54,
-                height: 24,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    _MiniAvatar(label: 'M', color: accents.calm),
-                    Positioned(
-                      left: 14,
-                      child: _MiniAvatar(
-                        label: 'K',
-                        color: colors.primary,
-                        textColor: colors.onPrimary,
-                      ),
-                    ),
-                    Positioned(
-                      left: 28,
-                      child: _MiniAvatar(
-                        label: '+8',
-                        color: colors.surfaceContainerHigh,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniAvatar extends StatelessWidget {
-  const _MiniAvatar({required this.label, required this.color, this.textColor});
-  final String label;
-  final Color color;
-  final Color? textColor;
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 24,
-    height: 24,
-    decoration: BoxDecoration(
-      color: color,
-      shape: BoxShape.circle,
-      border: Border.all(
-        color: Theme.of(context).colorScheme.surface,
-        width: 2,
-      ),
-    ),
-    child: Center(
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: textColor ?? Theme.of(context).colorScheme.onSurface,
-        ),
-      ),
-    ),
-  );
-}
-
-class _Promises extends StatelessWidget {
-  const _Promises();
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    Widget row(IconData icon, String text) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: Space.xs),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: colors.surface,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: colors.shadow.withValues(alpha: 0.04),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Icon(icon, size: 18, color: colors.primary),
-          ),
-          const SizedBox(width: Space.md),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    return Container(
-      padding: const EdgeInsets.all(Space.lg),
-      decoration: BoxDecoration(
-        color: CircleAccents.of(context).recessed,
-        borderRadius: BorderRadius.circular(CircleRadius.card),
-      ),
-      child: Column(
-        children: [
-          row(LucideIcons.shield, 'Shared only with your chosen group'),
-          row(
-            LucideIcons.bell_off,
-            'No follower counts, vanity metrics, or ads',
-          ),
-          row(LucideIcons.users, 'Safe, legible, and simple for ages 15 to 75'),
         ],
       ),
     );
@@ -644,18 +474,20 @@ class _AccessFormState extends ConsumerState<AccessForm> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (widget.registering) ...[
-                TextFormField(
-                  controller: _name,
-                  decoration: const InputDecoration(
-                    labelText: 'Name (optional)',
-                    prefixIcon: Icon(LucideIcons.user),
+                CircleFieldLabel(
+                  label: 'Name (optional)',
+                  child: TextFormField(
+                    controller: _name,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(LucideIcons.user),
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.name],
+                    buildCounter: CircleFormMetrics.counter,
+                    maxLength: 80,
+                    enableSuggestions: false,
                   ),
-                  textCapitalization: TextCapitalization.words,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.name],
-                  buildCounter: CircleFormMetrics.counter,
-                  maxLength: 80,
-                  enableSuggestions: false,
                 ),
                 const SizedBox(height: Space.lg),
               ],
@@ -665,63 +497,67 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                     context,
                     constraints.maxWidth,
                   );
-                  final country = DropdownButtonFormField<DialCode>(
-                    key: ValueKey(_dialCode.region),
-                    initialValue: _dialCode,
-                    decoration: const InputDecoration(
-                      labelText: 'Code',
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: Space.md,
-                        vertical: Space.lg,
+                  final country = CircleFieldLabel(
+                    label: 'Code',
+                    child: DropdownButtonFormField<DialCode>(
+                      key: ValueKey(_dialCode.region),
+                      initialValue: _dialCode,
+                      decoration: const InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: Space.md,
+                          vertical: Space.lg,
+                        ),
                       ),
-                    ),
-                    isExpanded: true,
-                    itemHeight: null,
-                    items: dialCodes
-                        .map(
-                          (d) => DropdownMenuItem(
-                            value: d,
-                            child: Text(
-                              '${d.flag} ${d.code}',
-                              style: Theme.of(context).textTheme.bodyMedium,
+                      isExpanded: true,
+                      itemHeight: null,
+                      items: dialCodes
+                          .map(
+                            (d) => DropdownMenuItem(
+                              value: d,
+                              child: Text(
+                                '${d.flag} ${d.code}',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
                             ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setState(() {
-                          _dialCode = v;
-                          _countryRevision++;
-                          _countryNotice = null;
-                        });
-                      }
-                    },
-                    selectedItemBuilder: (context) => dialCodes
-                        .map(
-                          (d) => Text(
-                            '${d.flag} ${d.code}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        )
-                        .toList(),
-                  );
-                  final phone = TextFormField(
-                    controller: _mobile,
-                    key: const ValueKey('access-mobile'),
-                    decoration: const InputDecoration(
-                      labelText: 'Mobile number',
-                      hintText: 'Phone number',
-                      errorMaxLines: 3,
-                      prefixIcon: Icon(LucideIcons.smartphone),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() {
+                            _dialCode = v;
+                            _countryRevision++;
+                            _countryNotice = null;
+                          });
+                        }
+                      },
+                      selectedItemBuilder: (context) => dialCodes
+                          .map(
+                            (d) => Text(
+                              '${d.flag} ${d.code}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          )
+                          .toList(),
                     ),
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.next,
-                    autofillHints: const [AutofillHints.telephoneNumber],
-                    autocorrect: false,
-                    enableSuggestions: false,
-                    validator: AccessValidation.phoneNumber,
+                  );
+                  final phone = CircleFieldLabel(
+                    label: 'Mobile number',
+                    child: TextFormField(
+                      controller: _mobile,
+                      key: const ValueKey('access-mobile'),
+                      decoration: const InputDecoration(
+                        hintText: 'Phone number',
+                        errorMaxLines: 3,
+                        prefixIcon: Icon(LucideIcons.smartphone),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.telephoneNumber],
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      validator: AccessValidation.phoneNumber,
+                    ),
                   );
                   return stacked
                       ? Column(
@@ -768,39 +604,41 @@ class _AccessFormState extends ConsumerState<AccessForm> {
               if (_countryNotice != null)
                 Semantics(liveRegion: true, child: Text(_countryNotice!)),
               const SizedBox(height: Space.lg),
-              TextFormField(
-                controller: _password,
-                key: const ValueKey('access-password'),
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  helperText: widget.registering
-                      ? '6\u2013128 characters.'
-                      : null,
-                  helperMaxLines: 3,
-                  errorMaxLines: 3,
-                  prefixIcon: const Icon(LucideIcons.lock),
-                  suffixIcon: IconButton(
-                    tooltip: _obscured ? 'Show password' : 'Hide password',
-                    onPressed: () => setState(() => _obscured = !_obscured),
-                    icon: Icon(
-                      _obscured ? LucideIcons.eye : LucideIcons.eye_off,
+              CircleFieldLabel(
+                label: 'Password',
+                child: TextFormField(
+                  controller: _password,
+                  key: const ValueKey('access-password'),
+                  decoration: InputDecoration(
+                    helperText: widget.registering
+                        ? '6\u2013128 characters.'
+                        : null,
+                    helperMaxLines: 3,
+                    errorMaxLines: 3,
+                    prefixIcon: const Icon(LucideIcons.lock),
+                    suffixIcon: IconButton(
+                      tooltip: _obscured ? 'Show password' : 'Hide password',
+                      onPressed: () => setState(() => _obscured = !_obscured),
+                      icon: Icon(
+                        _obscured ? LucideIcons.eye : LucideIcons.eye_off,
+                      ),
                     ),
                   ),
+                  obscureText: _obscured,
+                  autofillHints: [
+                    widget.registering
+                        ? AutofillHints.newPassword
+                        : AutofillHints.password,
+                  ],
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.done,
+                  validator: (value) => AccessValidation.password(
+                    value,
+                    registering: widget.registering,
+                  ),
+                  onFieldSubmitted: (_) => _submit(),
                 ),
-                obscureText: _obscured,
-                autofillHints: [
-                  widget.registering
-                      ? AutofillHints.newPassword
-                      : AutofillHints.password,
-                ],
-                enableSuggestions: false,
-                autocorrect: false,
-                textInputAction: TextInputAction.done,
-                validator: (value) => AccessValidation.password(
-                  value,
-                  registering: widget.registering,
-                ),
-                onFieldSubmitted: (_) => _submit(),
               ),
               if (_error != null) ...[
                 const SizedBox(height: Space.lg),
@@ -896,7 +734,7 @@ class _PreviewNote extends StatelessWidget {
         ? 'Your circles stay private to the people you choose.'
         : 'Your details are sent to ${connectedTo ?? 'CIRCLE'} only.',
     textAlign: TextAlign.center,
-    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     ),
   );

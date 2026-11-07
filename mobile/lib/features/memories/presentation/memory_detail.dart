@@ -217,6 +217,7 @@ class _CircleMemoryDetailState extends ConsumerState<CircleMemoryDetail> {
                     _InlineCommentInput(
                       focusNode: _focus,
                       viewerId: workspace.viewer,
+                      viewerName: workspace.nameOf(workspace.viewer),
                       hint: replyTo == null
                           ? 'Write a comment...'
                           : 'Write a reply...',
@@ -496,12 +497,13 @@ class _CircleTextEditorState extends State<CircleTextEditor> {
 class _InlineCommentInput extends StatefulWidget {
   const _InlineCommentInput({
     required this.viewerId,
+    required this.viewerName,
     required this.hint,
     required this.submit,
     this.focusNode,
     this.mentionMembers = const [],
   });
-  final String viewerId, hint;
+  final String viewerId, viewerName, hint;
   final FocusNode? focusNode;
   final List<MentionCandidate> mentionMembers;
   final Future<void> Function(String text, Map<String, String> mentions) submit;
@@ -560,7 +562,7 @@ class _InlineCommentInputState extends State<_InlineCommentInput> {
           children: [
             PersonAvatar(
               person: widget.viewerId,
-              name: '',
+              name: widget.viewerName,
               size: CircleAvatarSize.small,
             ),
             const SizedBox(width: Space.sm),

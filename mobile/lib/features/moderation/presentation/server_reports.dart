@@ -94,22 +94,29 @@ class _ServerReportsState extends ConsumerState<ServerReportsScreen> {
               subtitle:
                   'Private to this group’s admins. Reporter accounts and notes stay hidden.',
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _busy
-                    ? null
-                    : () => ref.invalidate(safetyPageProvider(query)),
-                icon: const Icon(LucideIcons.refresh_cw),
-                label: const Text('Refresh reports'),
+            if (page.items.isNotEmpty)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _busy
+                      ? null
+                      : () => ref.invalidate(safetyPageProvider(query)),
+                  icon: const Icon(LucideIcons.refresh_cw),
+                  label: const Text('Refresh reports'),
+                ),
               ),
-            ),
             if (_busy) const LinearProgressIndicator(),
             if (page.items.isEmpty)
-              const CircleEmpty(
+              CircleEmpty(
                 icon: LucideIcons.info,
                 title: 'Nothing to review',
                 message: 'Reports from members of this group appear here.',
+                action: OutlinedButton(
+                  onPressed: _busy
+                      ? null
+                      : () => ref.invalidate(safetyPageProvider(query)),
+                  child: const Text('Refresh reports'),
+                ),
               ),
             for (final item in page.items)
               Card(

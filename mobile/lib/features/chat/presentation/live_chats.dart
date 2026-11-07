@@ -453,7 +453,8 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                   padding: const EdgeInsets.symmetric(horizontal: Space.md),
                   child: CircleSearchField(
                     controller: _search,
-                    label: 'Search loaded chats',
+                    label: 'Search chats',
+                    helper: 'Search conversations shown here.',
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
@@ -583,7 +584,8 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
         ),
         child: CircleSearchField(
           controller: _search,
-          label: 'Search loaded people',
+          label: 'Search people',
+          helper: 'Search people shown here.',
           onChanged: (_) => setState(() {}),
         ),
       ),
@@ -1246,14 +1248,19 @@ class LiveChatPrivacyScreen extends ConsumerWidget {
         .when(
           loading: () =>
               const CircleSkeletonPage(label: 'Loading messaging choices'),
-          error: (_, _) => CircleEmpty(
-            icon: LucideIcons.wifi_off,
-            title: 'Choices couldn’t load',
-            message: 'Try again when connected.',
-            action: TextButton(
-              onPressed: () => ref.invalidate(liveChatPrivacyProvider),
-              child: const Text('Try again'),
-            ),
+          error: (_, _) => ListView(
+            padding: CircleInsets.form,
+            children: [
+              CircleEmpty(
+                icon: LucideIcons.wifi_off,
+                title: 'Choices couldn’t load',
+                message: 'Try again when connected.',
+                action: OutlinedButton(
+                  onPressed: () => ref.invalidate(liveChatPrivacyProvider),
+                  child: const Text('Try again'),
+                ),
+              ),
+            ],
           ),
           data: (data) => ListView(
             padding: CircleInsets.form,

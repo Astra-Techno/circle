@@ -90,7 +90,7 @@ abstract final class CircleLayout {
             textScaler: scaler,
             maxLines: 2,
           )..layout(
-            maxWidth: (MediaQuery.sizeOf(context).width - Space.large * 2)
+            maxWidth: (MediaQuery.sizeOf(context).width - Space.large * 3)
                 .clamp(Space.large, double.infinity),
           );
       contentHeight = painter.height;
@@ -275,6 +275,10 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
   /// Recessed fills (comment previews, tiles) and the 1px hairline border.
   final Color recessed, hairline;
 
+  /// Interactive boundaries remain distinct from decorative separators.
+  Color get controlOutline =>
+      this == dark ? const Color(0xFF96999E) : const Color(0xFF7B7E84);
+
   /// Title ink (#1C1B22) and warm caption grey (#6B6878). Body copy is the
   /// scheme's onSurfaceVariant (#34323C) via the text theme.
   final Color title, caption;
@@ -445,6 +449,7 @@ ThemeData circleTheme(Brightness brightness) {
       constraints: const BoxConstraints(
         minHeight: CircleFormMetrics.minFieldHeight,
       ),
+      floatingLabelBehavior: FloatingLabelBehavior.always,
       labelStyle: text.bodyMedium?.copyWith(color: accents.caption),
       floatingLabelStyle: text.bodySmall?.copyWith(color: accents.caption),
       helperStyle: text.bodySmall?.copyWith(color: accents.caption),
@@ -465,11 +470,11 @@ ThemeData circleTheme(Brightness brightness) {
       contentPadding: CircleFormMetrics.fieldPadding,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(CircleRadius.input),
-        borderSide: hairline,
+        borderSide: BorderSide(color: accents.controlOutline),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(CircleRadius.input),
-        borderSide: hairline,
+        borderSide: BorderSide(color: accents.controlOutline),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(CircleRadius.input),
@@ -611,14 +616,14 @@ ThemeData circleTheme(Brightness brightness) {
             states.contains(WidgetState.selected) ? colors.primary : null,
       ),
       checkColor: WidgetStatePropertyAll(colors.onPrimary),
-      side: BorderSide(color: accents.hairline, width: 1.5),
+      side: BorderSide(color: accents.controlOutline, width: 1.5),
       shape: rounded(CircleRadius.xsmall),
     ),
     radioTheme: RadioThemeData(
       fillColor: WidgetStateProperty.resolveWith(
         (states) => states.contains(WidgetState.selected)
             ? colors.primary
-            : accents.hairline,
+            : accents.controlOutline,
       ),
     ),
     tabBarTheme: TabBarThemeData(
@@ -719,7 +724,13 @@ class _CirclePageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    if (MediaQuery.disableAnimationsOf(context)) return child;
+    // Nested routes may not own a Scaffold. Every route must paint its full
+    // surface, including after the transition, so the previous page cannot bleed.
+    final page = Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: SizedBox.expand(child: child),
+    );
+    if (MediaQuery.disableAnimationsOf(context)) return page;
     final fade = CurvedAnimation(
       parent: animation,
       curve: CircleMotion.enterCurve,
@@ -730,7 +741,7 @@ class _CirclePageTransitionsBuilder extends PageTransitionsBuilder {
     ).animate(fade);
     return FadeTransition(
       opacity: fade,
-      child: SlideTransition(position: slide, child: child),
+      child: SlideTransition(position: slide, child: page),
     );
   }
 }
@@ -826,11 +837,14 @@ class ReadingPane extends StatelessWidget {
   Widget build(BuildContext context) {
     final available = MediaQuery.sizeOf(context).width;
     final cap = maxWidth ?? (available < 600 ? available : 720.0);
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: cap),
-        child: child,
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: cap),
+          child: child,
+        ),
       ),
     );
   }

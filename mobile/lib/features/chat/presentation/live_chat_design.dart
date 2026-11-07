@@ -261,48 +261,89 @@ class ChatTopBar extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: Space.xs),
-          child: Row(
-            children: [
-              CircleHeaderAction(child: BackButton(onPressed: onBack)),
-              ChatIdentity(
-                name: name,
-                person: person,
-                group: group,
-                groupId: groupId,
-              ),
-              const SizedBox(width: Space.md),
-              Expanded(
-                child: Semantics(
-                  header: true,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (CircleLayout.stackDetails(context, constraints.maxWidth)) {
+                return Padding(
+                  padding: CircleInsets.content,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium,
+                      Row(
+                        children: [
+                          CircleHeaderAction(
+                            child: BackButton(onPressed: onBack),
+                          ),
+                          ChatIdentity(
+                            name: name,
+                            person: person,
+                            group: group,
+                            groupId: groupId,
+                          ),
+                          const Spacer(),
+                          CircleHeaderAction(
+                            child: IconButton(
+                              tooltip: 'Conversation options',
+                              onPressed: onOptions,
+                              icon: const Icon(CircleIcons.more),
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: CircleAccents.of(context).caption,
-                        ),
+                      const SizedBox(height: Space.sm),
+                      Semantics(
+                        header: true,
+                        child: Text(name, style: theme.textTheme.titleMedium),
                       ),
+                      Text(subtitle, style: theme.textTheme.bodySmall),
                     ],
                   ),
-                ),
-              ),
-              CircleHeaderAction(
-                child: IconButton(
-                  tooltip: 'Conversation options',
-                  onPressed: onOptions,
-                  icon: const Icon(CircleIcons.more),
-                ),
-              ),
-            ],
+                );
+              }
+              return Row(
+                children: [
+                  CircleHeaderAction(child: BackButton(onPressed: onBack)),
+                  ChatIdentity(
+                    name: name,
+                    person: person,
+                    group: group,
+                    groupId: groupId,
+                  ),
+                  const SizedBox(width: Space.md),
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: CircleAccents.of(context).caption,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  CircleHeaderAction(
+                    child: IconButton(
+                      tooltip: 'Conversation options',
+                      onPressed: onOptions,
+                      icon: const Icon(CircleIcons.more),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -487,7 +528,13 @@ class ChatMessageBubble extends StatelessWidget {
             ? AlignmentDirectional.centerEnd
             : AlignmentDirectional.centerStart,
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.8),
+          constraints: BoxConstraints(
+            maxWidth:
+                constraints.maxWidth *
+                (CircleLayout.stackDetails(context, constraints.maxWidth)
+                    ? 0.95
+                    : 0.8),
+          ),
           child: Semantics(
             container: true,
             label: [

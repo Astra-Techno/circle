@@ -1,5 +1,9 @@
 # CIRCLE design system
 
+## Social 2.5: audit consistency, 7 November 2026
+
+Preserve the approved Home header, icon-only floating dock and shared Memories/Poll/Event cards. Use a separate accessible interactive-outline token for fields, checkboxes and radio buttons; decorative hairlines stay quiet. Forms use `CircleFieldLabel` above the input so long labels wrap independently, preserve field semantics and keep validation at its input. Share field spacing/padding/radii and neutral base fills; reserve lavender for selected/date/time content. Header actions are flat by default with48px targets. `CircleIdentityHeader` stacks critical names below avatar/menu at narrow widths or large text. Never shrink RSVP text; allow action wrapping and scroll actions with Event detail at large text. `ReadingPane` paints its page surface; Circle shortcut ink stays on its own clipped Material. Keep error recovery in its owning state and unsupported deep links honest. Native Apple text/Inter policy and Bold Text remain unchanged. Full implementation/verification:docs/ui-audit-completed-2026-11-07.md.
+
 ## Poll card consistency correction, 7 November 2026
 
 Polls now share the event invitation shell:12px outline, lavender identity header with real ballot icon and18px question, white padded body and14px options. Keep one post menu in embedded cards; header opens the exact poll and post menu offers Open poll and settings. Standalone polls retain their management menu. Hide repeated per-option zero counts and empty voter links; keep one honest zero-state summary, compact privacy footer and proper gaps. Bold Text/text scaling stay enabled. Existing votes, result privacy, multiple/closed/immutable rules and server batching remain. Evidence:docs/poll-consistency-2026-11-07.md.

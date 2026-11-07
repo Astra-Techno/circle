@@ -237,11 +237,7 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
               ).isAfter(DateTime.now().toUtc());
           final chosen = mine is Map ? mine['status'] : null;
           Widget choiceButton(MapEntry<String, String> choice) {
-            // One line that shrinks rather than wrapping a word.
-            final label = FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(choice.value, maxLines: 1, softWrap: false),
-            );
+            final label = Text(choice.value, textAlign: TextAlign.center);
             return chosen == choice.key
                 ? FilledButton(onPressed: null, child: label)
                 : OutlinedButton(
@@ -360,10 +356,16 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
             onTap: onTap,
           );
           final going = (e['going_count'] as num?)?.toInt() ?? 0;
+          final stackAnswers =
+              MediaQuery.textScalerOf(context).scale(1) >=
+              CircleLayout.largeTextThreshold;
           final details = RefreshIndicator(
             onRefresh: () async => refreshLiveEvents(ref),
             child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
+              shrinkWrap: stackAnswers,
+              physics: stackAnswers
+                  ? const NeverScrollableScrollPhysics()
+                  : const AlwaysScrollableScrollPhysics(),
               padding: CircleInsets.form,
               children: [
                 if (e['cover_id'] case final String cover)
@@ -379,52 +381,47 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                       ),
                     ),
                   ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    EventDateBlock(
-                      wall: liveEventWall(e['start_at'] as String, zone),
+                CircleIdentityHeader(
+                  leading: EventDateBlock(
+                    wall: liveEventWall(e['start_at'] as String, zone),
+                  ),
+                  title: Semantics(
+                    header: true,
+                    child: Text(
+                      e['title'] as String,
+                      style: theme.textTheme.titleLarge,
                     ),
-                    const SizedBox(width: Space.lg),
-                    Expanded(
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          e['title'] as String,
-                          style: theme.textTheme.titleLarge,
-                        ),
-                      ),
-                    ),
-                    if (manage && active)
-                      PopupMenuButton<String>(
-                        tooltip: 'Event options',
-                        enabled: !_busy,
-                        onSelected: manageAction,
-                        itemBuilder: (_) => [
-                          PopupMenuItem(
-                            value: 'cover',
-                            child: Text(
-                              e['cover_id'] == null
-                                  ? 'Add cover photo'
-                                  : 'Change cover photo',
+                  ),
+                  trailing: manage && active
+                      ? PopupMenuButton<String>(
+                          tooltip: 'Event options',
+                          enabled: !_busy,
+                          onSelected: manageAction,
+                          itemBuilder: (_) => [
+                            PopupMenuItem(
+                              value: 'cover',
+                              child: Text(
+                                e['cover_id'] == null
+                                    ? 'Add cover photo'
+                                    : 'Change cover photo',
+                              ),
                             ),
-                          ),
-                          if (e['cover_id'] != null)
+                            if (e['cover_id'] != null)
+                              const PopupMenuItem(
+                                value: 'remove-cover',
+                                child: Text('Remove cover'),
+                              ),
                             const PopupMenuItem(
-                              value: 'remove-cover',
-                              child: Text('Remove cover'),
+                              value: 'edit',
+                              child: Text('Edit event'),
                             ),
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Edit event'),
-                          ),
-                          const PopupMenuItem(
-                            value: 'cancel',
-                            child: Text('Cancel event'),
-                          ),
-                        ],
-                      ),
-                  ],
+                            const PopupMenuItem(
+                              value: 'cancel',
+                              child: Text('Cancel event'),
+                            ),
+                          ],
+                        )
+                      : null,
                 ),
                 const SizedBox(height: Space.lg),
                 if (!active)
@@ -505,9 +502,9 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
             ),
           );
           // Answers sit in the thumb zone, pinned below the details.
-          return Column(
+          final answers = Column(
             children: [
-              Expanded(child: details),
+              if (!stackAnswers) Expanded(child: details),
               if (canRsvp)
                 DecoratedBox(
                   decoration: BoxDecoration(
@@ -537,16 +534,17 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                           ),
                         ),
                         const SizedBox(height: Space.sm),
-                        Row(
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: Space.sm,
+                          runSpacing: Space.sm,
                           children: [
-                            for (final (index, choice) in {
+                            for (final choice in {
                               'going': 'Going',
                               'maybe': 'Maybe',
                               'not_going': 'Can’t go',
-                            }.entries.indexed) ...[
-                              if (index > 0) const SizedBox(width: Space.sm),
-                              Expanded(child: choiceButton(choice)),
-                            ],
+                            }.entries)
+                              choiceButton(choice),
                           ],
                         ),
                       ],
@@ -554,6 +552,16 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                   ),
                 ),
             ],
+          );
+          if (!stackAnswers) return answers;
+          // A single scrollable area preserves full-size labels without a tall
+          // pinned action panel obscuring the event body.
+          return RefreshIndicator(
+            onRefresh: () async => refreshLiveEvents(ref),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [details, answers],
+            ),
           );
         },
       ),
@@ -1041,46 +1049,47 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
       child: ReadingPane(
         child: CircleEditorLayout(
           children: [
-            Text(
-              widget.id == null ? 'Plan an event' : 'Edit event',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
             if (widget.id == null)
-              DropdownButtonFormField<String>(
-                initialValue: selected,
-                isExpanded: true,
-                itemHeight: null,
-                key: _requiredFields,
+              Text(
+                'Plan an event',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            if (widget.id == null)
+              CircleFieldLabel(
+                label: 'Circle',
+                child: DropdownButtonFormField<String>(
+                  initialValue: selected,
+                  isExpanded: true,
+                  itemHeight: null,
+                  key: _requiredFields,
+                  decoration: InputDecoration(
+                    errorText: _submitted && selected == null
+                        ? 'Choose a Circle.'
+                        : null,
+                  ),
+                  items: [
+                    for (final g in groups)
+                      DropdownMenuItem(value: g.id, child: Text(g.name)),
+                  ],
+                  onChanged: _busy ? null : (v) => setState(() => _group = v),
+                ),
+              ),
+            CircleFieldLabel(
+              label: 'Event title',
+              child: TextField(
+                controller: _title,
+                focusNode: _titleFocus,
+                onChanged: (_) {
+                  if (_submitted) setState(() {});
+                },
+                enabled: !_busy,
+                buildCounter: CircleFormMetrics.counter,
+                maxLength: 200,
                 decoration: InputDecoration(
-                  labelText: 'Circle',
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.primaryContainer,
-                  errorText: _submitted && selected == null
-                      ? 'Choose a Circle.'
+                  errorText: _submitted && _title.text.trim().isEmpty
+                      ? 'Enter an event title.'
                       : null,
                 ),
-                items: [
-                  for (final g in groups)
-                    DropdownMenuItem(value: g.id, child: Text(g.name)),
-                ],
-                onChanged: _busy ? null : (v) => setState(() => _group = v),
-              ),
-            TextField(
-              controller: _title,
-              focusNode: _titleFocus,
-              onChanged: (_) {
-                if (_submitted) setState(() {});
-              },
-              enabled: !_busy,
-              buildCounter: CircleFormMetrics.counter,
-              maxLength: 200,
-              decoration: InputDecoration(
-                labelText: 'Event title',
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.primaryContainer,
-                errorText: _submitted && _title.text.trim().isEmpty
-                    ? 'Enter an event title.'
-                    : null,
               ),
             ),
             Text(
@@ -1105,80 +1114,89 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
                 Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            TextField(
-              controller: _venue,
-              enabled: !_busy,
-              buildCounter: CircleFormMetrics.counter,
-              maxLength: 500,
-              decoration: InputDecoration(
-                labelText: 'Place',
-                prefixIcon: const Icon(LucideIcons.map_pin),
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.primaryContainer,
+            CircleFieldLabel(
+              label: 'Place',
+              child: TextField(
+                controller: _venue,
+                enabled: !_busy,
+                buildCounter: CircleFormMetrics.counter,
+                maxLength: 500,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(LucideIcons.map_pin),
+                ),
               ),
             ),
             ExpansionTile(
               title: const Text('More options'),
               subtitle: const Text('Description, end time and more'),
               children: [
-                TextField(
-                  controller: _description,
-                  enabled: !_busy,
-                  buildCounter: CircleFormMetrics.counter,
-                  maxLength: 10000,
-                  minLines: 2,
-                  maxLines: 5,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                ),
-                TextField(
-                  controller: _link,
-                  enabled: !_busy,
-                  buildCounter: CircleFormMetrics.counter,
-                  maxLength: 1000,
-                  decoration: const InputDecoration(
-                    labelText: 'Meeting link',
-                    helperText:
-                        'Optional HTTPS URL. Use instead of a place for online events.',
+                CircleFieldLabel(
+                  label: 'Description',
+                  child: TextField(
+                    controller: _description,
+                    enabled: !_busy,
+                    buildCounter: CircleFormMetrics.counter,
+                    maxLength: 10000,
+                    minLines: 2,
+                    maxLines: 5,
+                    decoration: const InputDecoration(),
                   ),
                 ),
-                DropdownButtonFormField<String>(
-                  initialValue: _type,
-                  isExpanded: true,
-                  itemHeight: null,
-                  decoration: const InputDecoration(labelText: 'Event type'),
-                  items: [
-                    for (final type in [
-                      'function',
-                      'wedding',
-                      'reunion',
-                      'meetup',
-                      'birthday',
-                      'trip',
-                      'online',
-                      'other',
-                    ])
-                      DropdownMenuItem(value: type, child: Text(type)),
-                  ],
-                  onChanged: _busy ? null : (v) => setState(() => _type = v!),
-                ),
-                DropdownButtonFormField<String>(
-                  key: ValueKey(_zone),
-                  initialValue: _zone,
-                  isExpanded: true,
-                  itemHeight: null,
-                  decoration: const InputDecoration(
-                    labelText: 'Event time zone',
+                CircleFieldLabel(
+                  label: 'Meeting link',
+                  child: TextField(
+                    controller: _link,
+                    enabled: !_busy,
+                    buildCounter: CircleFormMetrics.counter,
+                    maxLength: 1000,
+                    decoration: const InputDecoration(
+                      helperText:
+                          'Optional HTTPS URL. Use instead of a place for online events.',
+                    ),
                   ),
-                  items: [
-                    for (final zone in liveEventZones())
-                      DropdownMenuItem(value: zone, child: Text(zone)),
-                  ],
-                  onChanged: _busy
-                      ? null
-                      : (v) => setState(() {
-                          _zoneTouched = true;
-                          _zone = v!;
-                        }),
+                ),
+                CircleFieldLabel(
+                  label: 'Event type',
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _type,
+                    isExpanded: true,
+                    itemHeight: null,
+                    decoration: const InputDecoration(),
+                    items: [
+                      for (final type in [
+                        'function',
+                        'wedding',
+                        'reunion',
+                        'meetup',
+                        'birthday',
+                        'trip',
+                        'online',
+                        'other',
+                      ])
+                        DropdownMenuItem(value: type, child: Text(type)),
+                    ],
+                    onChanged: _busy ? null : (v) => setState(() => _type = v!),
+                  ),
+                ),
+                CircleFieldLabel(
+                  label: 'Event time zone',
+                  child: DropdownButtonFormField<String>(
+                    key: ValueKey(_zone),
+                    initialValue: _zone,
+                    isExpanded: true,
+                    itemHeight: null,
+                    decoration: const InputDecoration(),
+                    items: [
+                      for (final zone in liveEventZones())
+                        DropdownMenuItem(value: zone, child: Text(zone)),
+                    ],
+                    onChanged: _busy
+                        ? null
+                        : (v) => setState(() {
+                            _zoneTouched = true;
+                            _zone = v!;
+                          }),
+                  ),
                 ),
                 date('End', _end, (v) => _end = v, optional: true),
                 date(
@@ -1187,13 +1205,15 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
                   (v) => _deadline = v,
                   optional: true,
                 ),
-                TextField(
-                  controller: _capacity,
-                  enabled: !_busy,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Capacity',
-                    helperText: 'Optional. Includes guests.',
+                CircleFieldLabel(
+                  label: 'Capacity',
+                  child: TextField(
+                    controller: _capacity,
+                    enabled: !_busy,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      helperText: 'Optional. Includes guests.',
+                    ),
                   ),
                 ),
               ],
@@ -1338,27 +1358,32 @@ class _RsvpState extends ConsumerState<_RsvpSheet> {
           title: 'Guests and note',
           subtitle: 'Saving sets your RSVP to Going.',
         ),
-        DropdownButtonFormField<int>(
-          initialValue: _guests,
-          isExpanded: true,
-          itemHeight: null,
-          decoration: const InputDecoration(labelText: 'Guests'),
-          items: [
-            for (var i = 0; i <= 10; i++)
-              DropdownMenuItem(value: i, child: Text('$i')),
-          ],
-          onChanged: _busy ? null : (v) => setState(() => _guests = v!),
+        CircleFieldLabel(
+          label: 'Guests',
+          child: DropdownButtonFormField<int>(
+            initialValue: _guests,
+            isExpanded: true,
+            itemHeight: null,
+            decoration: const InputDecoration(),
+            items: [
+              for (var i = 0; i <= 10; i++)
+                DropdownMenuItem(value: i, child: Text('$i')),
+            ],
+            onChanged: _busy ? null : (v) => setState(() => _guests = v!),
+          ),
         ),
-        TextField(
-          controller: _note,
-          enabled: !_busy,
-          buildCounter: CircleFormMetrics.counter,
-          maxLength: 500,
-          minLines: 1,
-          maxLines: 4,
-          decoration: const InputDecoration(
-            labelText: 'Private note',
-            helperText: 'Only you can view this note.',
+        CircleFieldLabel(
+          label: 'Private note',
+          child: TextField(
+            controller: _note,
+            enabled: !_busy,
+            buildCounter: CircleFormMetrics.counter,
+            maxLength: 500,
+            minLines: 1,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              helperText: 'Only you can view this note.',
+            ),
           ),
         ),
         FilledButton(
