@@ -188,6 +188,7 @@ abstract final class ApiMappers {
       author: authorId == viewer
           ? 'You'
           : ApiJson.string(json['author_name'], 'Someone'),
+      livePolls: ApiJson.list(json['polls']).map(ApiJson.map).toList(),
       text: ApiJson.string(json['body']),
       createdAt: created,
       editedAt: edited ? updated : null,

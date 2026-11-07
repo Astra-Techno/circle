@@ -16,6 +16,7 @@ import 'memory_photos.dart';
 import '../../chat/application/live_chat.dart';
 import 'memory_reactions_sheet.dart';
 import 'mention_text.dart';
+import '../../polls/presentation/live_polls.dart' show LivePollCard;
 import 'package:flutter_lucide/flutter_lucide.dart';
 
 enum _MemoryAction { save, replyPrivately, edit, delete, report }
@@ -253,7 +254,21 @@ class CircleMemoryCard extends ConsumerWidget {
                 ],
               ),
             ),
-            if (hasText) ...[text, const SizedBox(height: Space.sm)],
+            if (hasText &&
+                !(memory.livePolls.length == 1 &&
+                    memory.livePolls.first['question'] == memory.text)) ...[
+              text,
+              const SizedBox(height: Space.sm),
+            ],
+            for (final poll in memory.livePolls)
+              Padding(
+                padding: CircleInsets.content,
+                child: LivePollCard(
+                  key: ValueKey('poll-${poll['id']}'),
+                  poll: poll,
+                  showAudience: false,
+                ),
+              ),
             if (hasPhotos)
               Padding(
                 padding: const EdgeInsets.symmetric(

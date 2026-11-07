@@ -67,3 +67,22 @@ final livePollVotersProvider = FutureProvider.autoDispose
       (ref, p) => ref.watch(livePollApiProvider).voters(p.id, p.offset),
       retry: (_, _) => null,
     );
+
+// Session-scoped vote snapshots keep multiple appearances of a ballot coherent
+// without making one detail request per card in a paginated timeline.
+final pollCardStateProvider = NotifierProvider.autoDispose
+    .family<PollCardState, Map<String, Object?>?, String>(PollCardState.new);
+
+class PollCardState extends Notifier<Map<String, Object?>?> {
+  PollCardState(this.id);
+  final String id;
+  @override
+  Map<String, Object?>? build() {
+    ref.watch(livePollApiProvider);
+    return null;
+  }
+
+  void replace(Map<String, Object?> value) {
+    state = value;
+  }
+}

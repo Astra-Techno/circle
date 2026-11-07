@@ -84,6 +84,22 @@ final class PollController
         },$rows);
     }
 
+    /** @param list<int> $ids
+     * @return array<int,list<array<string,mixed>>> */
+    public static function forMemories(array $ids,int $user):array
+    {
+        if($ids===[])return [];
+        $params=['viewer'=>$user];$slots=[];
+        foreach($ids as $i=>$id){$key='memory_'.$i;$slots[]=':'.$key;$params[$key]=$id;}
+        $in=implode(',',$slots);
+        $rows=Database::query("SELECT p.*,gm.role AS viewer_role,g.name AS page_group_name FROM polls p
+            JOIN memories m ON m.id=p.memory_id AND m.group_id=p.group_id AND m.status='active'
+            JOIN group_members gm ON gm.group_id=p.group_id AND gm.user_id=:viewer AND gm.status='active'
+            JOIN `groups` g ON g.id=p.group_id
+            WHERE p.memory_id IN ($in) AND (p.event_id IS NULL OR EXISTS(SELECT 1 FROM events e WHERE e.id=p.event_id AND e.group_id=p.group_id)) ORDER BY p.id",$params);
+        $out=[];foreach(self::pagePayloads($rows,$user) as $poll){$out[(int)$poll['memory_id']][]=$poll;}return $out;
+    }
+
     public static function create(Request $r):void
     {
         $f=$r->all();$allowed=['question','options','poll_type','anonymous','allow_add_options','results_visibility','allow_change_vote','closes_at','client_id','memory_id','event_id'];if(array_diff(array_keys($f),$allowed)!==[])Response::validationError('Choose supported poll settings.');
@@ -106,7 +122,12 @@ final class PollController
             if($f['closes_at']!==null&&$f['closes_at']<=gmdate('Y-m-d H:i:s'))Response::validationError('Choose a future end time.');
             if($f['event_id']!==null&&Database::queryOne("SELECT id FROM events WHERE id=:id AND status='active'",['id'=>$f['event_id']])===null)Response::error('conflict','This event is cancelled.',409);
             RateLimitMiddleware::consumeForUser($r->userId(),'poll_create',20,3600,'Please wait before creating more polls.');
-            Database::execute('INSERT INTO polls(group_id,created_by,client_id,request_hash,question,poll_type,anonymous,allow_add_options,results_visibility,allow_change_vote,closes_at,memory_id,event_id) VALUES(:g,:u,:client_id,:hash,:question,:poll_type,:anonymous,:allow_add_options,:results_visibility,:allow_change_vote,:closes_at,:memory_id,:event_id)',['g'=>$g,'u'=>$r->userId(),'hash'=>$hash,...array_diff_key($f,['options'=>true])]);$id=Database::lastInsertId();foreach($labels as $i=>$label)Database::execute('INSERT INTO poll_options(poll_id,label,sort_order,added_by) VALUES(:p,:l,:s,:u)',['p'=>$id,'l'=>$label,'s'=>$i,'u'=>$r->userId()]);PollNotifications::capture($id,'poll.created',$r->userId());return $id;
+            Database::execute('INSERT INTO polls(group_id,created_by,client_id,request_hash,question,poll_type,anonymous,allow_add_options,results_visibility,allow_change_vote,closes_at,memory_id,event_id) VALUES(:g,:u,:client_id,:hash,:question,:poll_type,:anonymous,:allow_add_options,:results_visibility,:allow_change_vote,:closes_at,:memory_id,:event_id)',['g'=>$g,'u'=>$r->userId(),'hash'=>$hash,...array_diff_key($f,['options'=>true])]);$id=Database::lastInsertId();foreach($labels as $i=>$label)Database::execute('INSERT INTO poll_options(poll_id,label,sort_order,added_by) VALUES(:p,:l,:s,:u)',['p'=>$id,'l'=>$label,'s'=>$i,'u'=>$r->userId()]);if($f['memory_id']===null){
+                Database::execute('INSERT INTO memories(group_id,author_id,body,source_poll_id) VALUES(:g,:u,:body,:p)', ['g'=>$g,'u'=>$r->userId(),'body'=>$f['question'],'p'=>$id]);
+                $memoryId=Database::lastInsertId();
+                Database::execute('UPDATE polls SET memory_id=:m WHERE id=:p',['m'=>$memoryId,'p'=>$id]);
+            }
+            PollNotifications::capture($id,'poll.created',$r->userId());return $id;
         });Response::ok(['id'=>$id,'group_id'=>$g]);
     }
     public static function show(Request $r):void{Response::header('Cache-Control','private, no-store');Response::ok(self::payload(self::access($r),$r->userId()));}

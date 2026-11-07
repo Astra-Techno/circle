@@ -20,6 +20,40 @@ final class PollTest extends ApiTestCase
     private function poll(array $u,int $group,array $fields=[]):int {
         $r=$this->request('POST',"/api/v1/groups/$group/polls",['question'=>'Fictional lunch?','options'=>['Park','Cafe'],'client_id'=>'fictional-poll-'.bin2hex(random_bytes(8)),...$fields],$u['token']);self::assertSame(200,$r->status(),json_encode($r->json())?:'');return $r->data()['id'];
     }
+    public function testPollPublicationUsesMemoryPaginationAndPreservesVisibility():void
+    {
+        $owner=$this->user('Fictional owner');$viewer=$this->user('Fictional viewer');$other=$this->user('Fictional outsider');
+        $g=$this->createGroup($owner);$this->join($owner,$viewer,$g);
+        $body=['question'=>'Fictional card?','options'=>['Park','Cafe'],'results_visibility'=>'after_voting','anonymous'=>true,'client_id'=>'fictional-card-idempotent'];
+        $first=$this->request('POST',"/api/v1/groups/$g/polls",$body,$owner['token']);$id=$first->data()['id'];
+        $again=$this->request('POST',"/api/v1/groups/$g/polls",$body,$owner['token']);self::assertSame($id,$again->data()['id']);
+        $page=$this->request('GET',"/api/v1/memories?group_id=$g",[],$viewer['token'])->data();self::assertCount(1,$page);
+        $memory=$page[0];self::assertSame($owner['id'],$memory['author_id']);self::assertCount(1,$memory['polls']);
+        $poll=$memory['polls'][0];self::assertSame($id,$poll['id']);self::assertSame($memory['id'],$poll['memory_id']);self::assertFalse($poll['results_available']);self::assertNull($poll['voter_count']);
+        foreach($poll['options'] as $o)self::assertArrayNotHasKey('votes',$o);
+        $mid=$memory['id'];self::assertSame($id,$this->request('GET',"/api/v1/memories/$mid",[],$viewer['token'])->data()['polls'][0]['id']);
+        self::assertSame(404,$this->request('GET',"/api/v1/memories/$mid",[],$other['token'])->status());
+        $this->request('POST',"/api/v1/memories/$mid/save",[],$viewer['token']);
+        $saved=$this->request('GET','/api/v1/memories?saved=true',[],$viewer['token']);self::assertSame($id,$saved->data()[0]['polls'][0]['id']);
+        $this->request('PUT',"/api/v1/polls/$id/votes",['option_ids'=>[$poll['options'][0]['id']]],$viewer['token']);
+        $voted=$this->request('GET',"/api/v1/memories/$mid",[],$viewer['token'])->data()['polls'][0];self::assertTrue($voted['results_available']);self::assertSame(1,$voted['voter_count']);
+        self::assertSame(403,$this->request('GET',"/api/v1/polls/$id/voters",[],$owner['token'])->status());
+        Database::execute("UPDATE memories SET status='hidden' WHERE id=:id",['id'=>$mid]);
+        self::assertSame(404,$this->request('GET',"/api/v1/polls/$id",[],$viewer['token'])->status());
+        self::assertSame([],$this->request('GET',"/api/v1/memories?group_id=$g",[],$viewer['token'])->data());
+    }
+    public function testPublicationBackfillPreservesTimeAndDoesNotDuplicateOnRetry():void
+    {
+        $a=$this->user();$g=$this->createGroup($a);$id=$this->poll($a,$g);
+        $p=Database::queryOne('SELECT memory_id FROM polls WHERE id=:p',['p'=>$id]);
+        Database::execute('UPDATE polls SET memory_id=NULL,created_at=:t WHERE id=:p',['p'=>$id,'t'=>'2026-01-02 03:04:05']);
+        Database::execute('DELETE FROM memories WHERE id=:m',['m'=>$p['memory_id']]);
+        $sql=file_get_contents(__DIR__.'/../database/migrations/024_poll_memory_cards.sql');self::assertIsString($sql);
+        $statements=\Circle\Core\Migrator::split($sql);
+        foreach([1,2] as $_)foreach(array_slice($statements,1) as $statement)Database::connection()->exec($statement);
+        $rows=Database::query('SELECT m.* FROM memories m JOIN polls p ON p.memory_id=m.id WHERE p.id=:p',['p'=>$id]);self::assertCount(1,$rows);self::assertSame('2026-01-02 03:04:05',$rows[0]['created_at']);self::assertSame($a['id'],(int)$rows[0]['author_id']);
+    }
+
     public function testListQueryCountIsBoundedAndHiddenResultsStayPrivate():void
     {
         $owner=$this->user('Fictional owner');$viewer=$this->user('Fictional viewer');$g=$this->createGroup($owner);$this->join($owner,$viewer,$g);
@@ -33,6 +67,12 @@ final class PollTest extends ApiTestCase
             foreach($poll['options'] as $option){self::assertArrayNotHasKey('votes',$option);self::assertArrayNotHasKey('poll_id',$option);}
         }
         self::assertLessThanOrEqual($small+1,$large,'Poll pages must not query per poll.');
+        $before=$count();$oneMemory=$this->request('GET','/api/v1/memories?limit=1',[],$viewer['token']);$smallMemory=$count()-$before;
+        $before=$count();$manyMemory=$this->request('GET','/api/v1/memories?limit=10',[],$viewer['token']);$largeMemory=$count()-$before;
+        self::assertCount(1,$oneMemory->data());self::assertCount(10,$manyMemory->data());
+        self::assertLessThanOrEqual($smallMemory+1,$largeMemory,'Memory poll cards must batch all projection queries.');
+        foreach($manyMemory->data() as $m)foreach($m['polls'] as $p){self::assertFalse($p['results_available']);self::assertNull($p['voter_count']);}
+
         if(getenv('CIRCLE_TEST_QUERY_METRICS')==='true')fwrite(STDERR,sprintf("Poll SELECTs:1 poll=%d;10 polls=%d\n",$small,$large));
     }
 

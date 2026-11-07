@@ -1,22 +1,17 @@
-# Circle identity visual QA — 7 November 2026
+# Selected poll card visual QA — 7 November 2026
 
-Source visual truth: docs/design-previews/circle-identity-selected-2026-11-07/selected-reference.png.
-Implementation: docs/design-previews/circle-identity-selected-2026-11-07/circle-actions-393-1.0-bold-false.png.
-Combined focused comparison: docs/design-previews/circle-identity-selected-2026-11-07/comparison.jpg.
+Source: docs/design-previews/poll-card-selected-2026-11-07/selected-reference.png.
+Implementation: docs/design-previews/poll-card-selected-2026-11-07/poll-card-polls-selected-393-light.png.
+Combined comparison: docs/design-previews/poll-card-selected-2026-11-07/comparison.jpg.
 
-Native Flutter component implementation, not a browser prototype. Viewport393×1100 logical pixels, density1, signed-in fictional owner/light theme. Reference1436×1096 normalized proportionally to393px width; implementation region cropped215..500px to compare app-owned group identity/actions. The surrounding existing cover/dock are outside the selected component. Mock name differs deliberately to keep fictional data; no exact pixel equivalence claimed. Full capture and focused combined comparison inspected.
+Native Flutter rendering, not a browser prototype. Source852×1846 normalized proportionally to393px width; implementation393×852 density1. Light theme, one pending selection. Fictional labels/two options differ deliberately from source names/three options; actual UI supports2–12 options. Polls list includes its existing create button; embedded Memory examples include real outer post controls. Owner-requested removal of instruction line overrides the generated source.
 
-Findings: no remaining actionable P0/P1/P2 visual differences for this component.
-- Typography: native Apple/corrected Inter policy preserved, compact role badge, regular14px action/metadata labels. Reference's heavier generated name is interpreted using the app's established heading token.
-- Spacing/layout: side-by-side role badge, unobtrusive metadata, two rows/three columns normally.12px corners and8px gaps. Full touch targets intentionally give metadata more height than the static image.
-- Colors: white surface, neutral recessed tiles, existing lavender/purple Chat and role badge tokens; no new palette or gradients.
-- Image quality: reference contains standard outline UI icons only; real library icons render sharply. No rasterized UI, custom artwork or copied private photos.
-- Copy: all six actions preserved; real member count/role/name and existing InCircles destination. No added unsupported features.
+Required surfaces reviewed: native/correctly named Inter typography with regular16px option labels and existing heading scale; white/purple/lavender semantic tokens; compact rows with48px targets, radio/checkbox alignment and counts; real vector icons without rasterized UI; live copy/state rather than invented votes. Source contains no artwork requiring generated assets. Source/implementation full comparison and focused card regions inspected.
 
-History: narrow200% Bold Text clipped Memory when measured width omitted part of horizontal padding; measurement now includes full padding. Subsequent four-size layout checks pass with no label truncation. Metadata locator corrected to target the exact Circle header, excluding tablet sidebar links.
+History: initial option backgrounds hid Material ink and triggered Flutter assertions; changed to Material surfaces. Narrow200% layouts stack counts and wrap summaries without overflow. Added fresh Memory refresh so voting/closing/creation persist between listings. Removed requested instruction line. The mock omits Add option/closed/multiple/privacy states; production preserves these existing permission-controlled behaviors.
 
-Interactions: existing UI6 journeys and photo tests pass; exact-group link destinations and capability gates preserved. Normal/Bold Text and200% phone/tablet captures reviewed. No native-device acceptance claimed.
+Verification: six inline-voting listing checks and existing poll/provider/design tests pass; light/dark phone/tablet200% renders inspected. Anonymous/hidden results and scope guards retained. No native-device/server acceptance inferred from fictional rendering.
 
-Follow-up P3: inspect actual iOS system font rendering on the next device build.
+No actionable P0/P1/P2 visual issues remain. Follow-up P3: compare native iOS font rasterization on the next app build.
 
 final result: passed

@@ -140,7 +140,9 @@ final class MemoryController
 
         $memories = array_map(self::normaliseListItem(...), $memories);
         $media = MediaRepository::mediaForMemories(array_map(static fn (array $m): int => (int) $m['id'], $memories));
+        $polls = PollController::forMemories(array_map(static fn (array $m): int => (int) $m['id'], $memories), $userId);
         foreach ($memories as $i => $m) {
+            $memories[$i]['polls'] = $polls[(int) $m['id']] ?? [];
             $memories[$i]['media'] = $media[(int) $m['id']] ?? [];
         }
         $last = $memories !== [] ? $memories[count($memories) - 1] : null;
@@ -185,6 +187,7 @@ final class MemoryController
             ['mid' => $memoryId]
         ));
 
+        $memory['polls'] = PollController::forMemories([$memoryId], $userId)[$memoryId] ?? [];
         Response::ok($memory);
     }
 

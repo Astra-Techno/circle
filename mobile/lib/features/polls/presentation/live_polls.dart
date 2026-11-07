@@ -1,5 +1,6 @@
 import '../../../core/design/circle_icons.dart';
 import '../../../core/form_exit_guard.dart';
+import '../../../core/design/circle_typography.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -51,18 +52,10 @@ class _PollState extends ConsumerState<LivePollScreen> {
                   title: 'Ask your circle',
                   message: 'Start with a question and two options.',
                 ),
-              for (final poll in items)
-                Card(
-                  child: ListTile(
-                    leading: const Icon(LucideIcons.chart_bar),
-                    title: Text(poll['question'] as String),
-                    subtitle: Text(
-                      '${poll['group_name'] ?? 'Circle'} · ${poll['closed'] == true ? 'Closed' : 'Open'} · ${poll['anonymous'] == true ? 'Anonymous' : 'Named'} votes',
-                    ),
-                    trailing: const Icon(CircleIcons.chevronRight),
-                    onTap: () => context.push('/polls/p/${poll['id']}'),
-                  ),
-                ),
+              for (final poll in items) ...[
+                LivePollCard(key: ValueKey('poll-${poll['id']}'), poll: poll),
+                const Divider(height: Space.section),
+              ],
               ?end,
             ],
           ),
@@ -95,21 +88,6 @@ class _PollState extends ConsumerState<LivePollScreen> {
       ),
     ],
   );
-  bool _busy = false;
-  Set<int>? _chosen;
-  String? _choiceScope;
-  Future<void> _run(Future<Object?> Function(LivePollApi) action) async {
-    final api = ref.read(livePollApiProvider);
-    setState(() => _busy = true);
-    await runCalmly(context, () => action(api));
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _chosen = null;
-    });
-    refreshPolls(ref);
-  }
-
   @override
   Widget build(BuildContext context) {
     final id = widget.id;
@@ -162,203 +140,355 @@ class _PollState extends ConsumerState<LivePollScreen> {
                   : null,
             );
           }
-          final api = ref.watch(livePollApiProvider),
-              scope = '$id:${api.scope.account}:${api.scope.session}';
-          if (_choiceScope != scope) {
-            _choiceScope = scope;
-            _chosen = null;
-          }
-          final mine = ApiJson.list(p['my_votes']).cast<int>().toSet(),
-              chosen = _chosen ?? mine,
-              closed = p['closed'] == true,
-              multiple = p['poll_type'] == 'multiple',
-              results = p['results_available'] == true;
-          final locked =
-                  closed || (p['allow_change_vote'] != true && mine.isNotEmpty),
-              options = ApiJson.list(p['options']).map(ApiJson.map).toList();
-          final total = p['voter_count'] as int? ?? 0;
           return ListView(
             padding: CircleInsets.form,
-            children: [
-              CircleHeading(
-                title: p['question'] as String,
-                subtitle:
-                    '${closed ? 'Closed' : 'Choose ${multiple ? 'one or more options' : 'one option'}'} · ${p['anonymous'] == true ? 'Anonymous' : 'Named'} votes',
-              ),
-              Text(
-                'Shared with ${p['group_name'] ?? 'this circle'}${p['event_id'] == null ? '' : ' · event poll'}',
-              ),
-              if (p['closes_at'] case final String end)
-                Text('Closes ${DateTime.parse(end).toLocal()}'),
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: PopupMenuButton<String>(
-                  tooltip: 'Poll options',
-                  enabled: !_busy,
-                  icon: const Icon(CircleIcons.more),
-                  onSelected: (action) async {
-                    if (action == 'refresh') {
-                      refreshPolls(ref);
-                    } else if (action == 'close') {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (dialog) => AlertDialog(
-                          title: const Text('Close this poll?'),
-                          content: const Text(
-                            'Voting will end for everyone in this circle.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(dialog, false),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(dialog, true),
-                              child: const Text('Close poll'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmed == true && mounted) {
-                        await _run((api) => api.close(id));
-                      }
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(
-                      value: 'refresh',
-                      child: Text('Refresh poll'),
-                    ),
-                    if (!closed && p['can_manage'] == true)
-                      const PopupMenuItem(
-                        value: 'close',
-                        child: Text('Close poll'),
-                      ),
-                  ],
-                ),
-              ),
-              RadioGroup<int>(
-                groupValue: multiple ? null : chosen.firstOrNull,
-                onChanged: (value) {
-                  if (locked || _busy || multiple) return;
-                  setState(() => _chosen = value == null ? <int>{} : {value});
-                },
-                child: Column(
-                  children: [
-                    for (final option in options)
-                      Card(
-                        margin: const EdgeInsets.only(bottom: Space.md),
-                        child: Column(
-                          children: [
-                            if (multiple)
-                              CheckboxListTile(
-                                value: chosen.contains(option['id']),
-                                onChanged: locked || _busy
-                                    ? null
-                                    : (value) => setState(() {
-                                        _chosen = multiple
-                                            ? {...chosen}
-                                            : <int>{};
-                                        if (value == true) {
-                                          _chosen!.add(option['id'] as int);
-                                        } else {
-                                          _chosen!.remove(option['id']);
-                                        }
-                                      }),
-                                title: Text(option['label'] as String),
-                                subtitle: results
-                                    ? Text(
-                                        '${option['votes']} vote(s) · ${total == 0 ? 0 : ((option['votes'] as int) * 100 / total).round()}%',
-                                      )
-                                    : null,
-                              )
-                            else
-                              RadioListTile<int>(
-                                value: option['id'] as int,
-                                enabled: !locked && !_busy,
-                                toggleable: true,
-                                title: Text(option['label'] as String),
-                                subtitle: results
-                                    ? Text(
-                                        '${option['votes']} vote(s) · ${total == 0 ? 0 : ((option['votes'] as int) * 100 / total).round()}%',
-                                      )
-                                    : null,
-                              ),
-                            if (results)
-                              Padding(
-                                padding: const EdgeInsets.all(Space.md),
-                                child: LinearProgressIndicator(
-                                  value: total == 0
-                                      ? 0
-                                      : (option['votes'] as int) / total,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (results)
-                Text(
-                  '$total voter(s)${multiple ? ' · people may choose multiple options' : ''}',
-                )
-              else
-                Text(
-                  p['results_visibility'] == 'after_closing'
-                      ? 'Results appear when this poll closes.'
-                      : 'Vote to see the results.',
-                ),
-              if (!closed && locked)
-                const Text(
-                  'Your vote is saved. This poll does not allow vote changes.',
-                ),
-              if (!locked)
-                FilledButton.icon(
-                  onPressed: _busy || (chosen.isEmpty && mine.isEmpty)
-                      ? null
-                      : () => _run(
-                          (api) => api.vote(id, chosen.toList()..sort()),
-                        ),
-                  icon: const Icon(LucideIcons.vote),
-                  label: Text(
-                    _busy
-                        ? 'Saving…'
-                        : mine.isEmpty
-                        ? 'Submit vote'
-                        : chosen.isEmpty
-                        ? 'Remove vote'
-                        : 'Save vote',
-                  ),
-                ),
-              if (!closed &&
-                  p['allow_add_options'] == true &&
-                  options.length < 12)
-                TextButton.icon(
-                  onPressed: _busy
-                      ? null
-                      : () async {
-                          final api = ref.read(livePollApiProvider);
-                          final label = await showDialog<String>(
-                            context: context,
-                            builder: (_) => const _OptionDialog(),
-                          );
-                          if (label != null && mounted) {
-                            await _run((_) => api.option(id, label));
-                          }
-                        },
-                  icon: const Icon(LucideIcons.plus),
-                  label: const Text('Add an option'),
-                ),
-              if (results && p['anonymous'] != true)
-                TextButton(
-                  onPressed: () => context.push('/polls/p/$id/voters'),
-                  child: const Text('See who voted'),
-                ),
-            ],
+            children: [LivePollCard(poll: p)],
           );
         },
       ),
+    );
+  }
+}
+
+/// One live ballot surface for detail, poll lists and every Memory timeline.
+class LivePollCard extends ConsumerStatefulWidget {
+  const LivePollCard({super.key, required this.poll, this.showAudience = true});
+  final bool showAudience;
+  final Map<String, Object?> poll;
+  @override
+  ConsumerState<LivePollCard> createState() => _LivePollCardState();
+}
+
+class _LivePollCardState extends ConsumerState<LivePollCard> {
+  @override
+  void didUpdateWidget(LivePollCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (jsonEncode(oldWidget.poll) != jsonEncode(widget.poll)) {
+      final api = ref.read(livePollApiProvider);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && identical(ref.read(livePollApiProvider), api)) {
+          ref.invalidate(pollCardStateProvider(widget.poll['id'].toString()));
+        }
+      });
+    }
+  }
+
+  bool _busy = false;
+  Set<int>? _chosen;
+  String? _choiceScope;
+  Future<void> _run(Future<Object?> Function(LivePollApi) action) async {
+    final api = ref.read(livePollApiProvider);
+    setState(() => _busy = true);
+    final result = await runCalmly(context, () => action(api));
+    if (!mounted || !api.scope.current()) return;
+    if (result is Map<String, Object?>) {
+      ref
+          .read(pollCardStateProvider(widget.poll['id'].toString()).notifier)
+          .replace(result);
+    }
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (result != null) _chosen = null;
+    });
+    if (result != null) {
+      refreshPolls(ref);
+      if (result is Map<String, Object?> && result['memory_id'] != null) {
+        ref.invalidate(memoryTimelineProvider);
+        await runCalmly(
+          context,
+          () => ref
+              .read(circleWorkspaceProvider.notifier)
+              .refreshMemory(result['memory_id'].toString()),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final id = widget.poll['id'].toString();
+    final p = ref.watch(pollCardStateProvider(id)) ?? widget.poll;
+    final api = ref.watch(livePollApiProvider),
+        scope =
+            '$id:${identityHashCode(api.scope.api)}:${api.scope.account}:${api.scope.session}';
+    if (_choiceScope != scope) {
+      _choiceScope = scope;
+      _chosen = null;
+      _busy = false;
+    }
+    final mine = ApiJson.list(p['my_votes']).cast<int>().toSet(),
+        chosen = _chosen ?? mine,
+        closed = p['closed'] == true,
+        multiple = p['poll_type'] == 'multiple',
+        results = p['results_available'] == true;
+    final locked =
+            closed || (p['allow_change_vote'] != true && mine.isNotEmpty),
+        options = ApiJson.list(p['options']).map(ApiJson.map).toList();
+    final total = p['voter_count'] as int? ?? 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            if (widget.showAudience) ...[
+              Icon(
+                LucideIcons.users,
+                size: CircleSizes.iconInline,
+                color: CircleAccents.of(context).caption,
+              ),
+              const SizedBox(width: Space.sm),
+            ],
+            Expanded(
+              child: Text(
+                widget.showAudience
+                    ? p['group_name'] as String? ?? 'Circle'
+                    : p['question'] as String,
+                style: widget.showAudience
+                    ? CircleTextStyles.homeShortcut(
+                        CircleAccents.of(context).caption,
+                      )
+                    : Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: PopupMenuButton<String>(
+                tooltip: 'Poll options',
+                enabled: !_busy,
+                icon: const Icon(CircleIcons.more),
+                onSelected: (action) async {
+                  final menuApi = ref.read(livePollApiProvider);
+                  if (action == 'refresh') {
+                    refreshPolls(ref);
+                  } else if (action == 'close') {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialog) => AlertDialog(
+                        title: const Text('Close this poll?'),
+                        content: const Text(
+                          'Voting will end for everyone in this circle.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialog, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialog, true),
+                            child: const Text('Close poll'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true && mounted) {
+                      await _run((_) => menuApi.close(id));
+                    }
+                  }
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'refresh',
+                    child: Text('Refresh poll'),
+                  ),
+                  if (!closed && p['can_manage'] == true)
+                    const PopupMenuItem(
+                      value: 'close',
+                      child: Text('Close poll'),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: Space.md),
+        if (widget.showAudience)
+          Text(
+            p['question'] as String,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        const SizedBox(height: Space.sm),
+        if (closed) const Text('Closed'),
+        if (p['closes_at'] case final String end)
+          Text(
+            'Closes ${DateTime.parse(end).toLocal()}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        RadioGroup<int>(
+          groupValue: multiple ? null : chosen.firstOrNull,
+          onChanged: (value) {
+            if (locked || _busy || multiple) return;
+            setState(() => _chosen = value == null ? <int>{} : {value});
+          },
+          child: Column(
+            children: [
+              for (final option in options)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: Space.xs),
+                  child: Material(
+                    color: chosen.contains(option['id'])
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(CircleRadius.small),
+                    child: Column(
+                      children: [
+                        if (multiple)
+                          CheckboxListTile(
+                            controlAffinity: ListTileControlAffinity.leading,
+                            value: chosen.contains(option['id']),
+                            onChanged: locked || _busy
+                                ? null
+                                : (value) => setState(() {
+                                    _chosen = multiple ? {...chosen} : <int>{};
+                                    if (value == true) {
+                                      _chosen!.add(option['id'] as int);
+                                    } else {
+                                      _chosen!.remove(option['id']);
+                                    }
+                                  }),
+                            title: Text(
+                              option['label'] as String,
+                              style: CircleTextStyles.body(
+                                Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            secondary:
+                                results &&
+                                    MediaQuery.textScalerOf(context).scale(1) <=
+                                        CircleLayout.largeTextThreshold
+                                ? Text(
+                                    '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  )
+                                : null,
+                            subtitle:
+                                results &&
+                                    MediaQuery.textScalerOf(context).scale(1) >
+                                        CircleLayout.largeTextThreshold
+                                ? Text(
+                                    '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}${total == 0 ? '' : ' · ${((option['votes'] as int) * 100 / total).round()}%'}',
+                                  )
+                                : null,
+                          )
+                        else
+                          RadioListTile<int>(
+                            value: option['id'] as int,
+                            enabled: !locked && !_busy,
+                            toggleable: true,
+                            title: Text(
+                              option['label'] as String,
+                              style: CircleTextStyles.body(
+                                Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            secondary:
+                                results &&
+                                    MediaQuery.textScalerOf(context).scale(1) <=
+                                        CircleLayout.largeTextThreshold
+                                ? Text(
+                                    '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  )
+                                : null,
+                            subtitle:
+                                results &&
+                                    MediaQuery.textScalerOf(context).scale(1) >
+                                        CircleLayout.largeTextThreshold
+                                ? Text(
+                                    '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}${total == 0 ? '' : ' · ${((option['votes'] as int) * 100 / total).round()}%'}',
+                                  )
+                                : null,
+                          ),
+                        if (!chosen.contains(option['id']))
+                          const Divider(height: Space.xs),
+                        if (results && total > 0)
+                          Padding(
+                            padding: const EdgeInsets.all(Space.md),
+                            child: LinearProgressIndicator(
+                              value: total == 0
+                                  ? 0
+                                  : (option['votes'] as int) / total,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: Space.sm),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: Space.sm,
+          children: [
+            if (results)
+              Text(
+                '${total == 0 ? 'No votes yet' : '$total ${total == 1 ? 'voter' : 'voters'}'}${multiple ? ' · people may choose multiple options' : ''}',
+              )
+            else
+              Text(
+                p['results_visibility'] == 'after_closing'
+                    ? 'Results appear when this poll closes.'
+                    : 'Vote to see the results.',
+              ),
+            if (results && p['anonymous'] != true)
+              TextButton(
+                onPressed: () => context.push('/polls/p/$id/voters'),
+                child: const Text('See who voted'),
+              ),
+          ],
+        ),
+        if (!closed && locked)
+          const Text(
+            'Your vote is saved. This poll does not allow vote changes.',
+          ),
+        const SizedBox(height: Space.md),
+        if (!locked)
+          FilledButton(
+            onPressed: _busy || (chosen.isEmpty && mine.isEmpty)
+                ? null
+                : () => _run((api) => api.vote(id, chosen.toList()..sort())),
+            child: Text(
+              _busy
+                  ? 'Saving…'
+                  : mine.isEmpty
+                  ? 'Submit vote'
+                  : chosen.isEmpty
+                  ? 'Remove vote'
+                  : 'Save vote',
+            ),
+          ),
+        Text(
+          p['anonymous'] == true
+              ? 'Your vote is anonymous.'
+              : 'Your choice is visible to this Circle.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        if (!closed && p['allow_add_options'] == true && options.length < 12)
+          TextButton.icon(
+            onPressed: _busy
+                ? null
+                : () async {
+                    final api = ref.read(livePollApiProvider);
+                    final label = await showDialog<String>(
+                      context: context,
+                      builder: (_) => const _OptionDialog(),
+                    );
+                    if (label != null && mounted) {
+                      await _run((_) => api.option(id, label));
+                    }
+                  },
+            icon: const Icon(LucideIcons.plus),
+            label: const Text('Add an option'),
+          ),
+      ],
     );
   }
 }
@@ -695,6 +825,15 @@ class _FormState extends ConsumerState<LivePollForm> {
                         api.scope.check();
                         _edits.commit();
                         refreshPolls(ref);
+                        ref.invalidate(memoryTimelineProvider);
+                        if (!context.mounted) return;
+                        await runCalmly(
+                          context,
+                          () => ref
+                              .read(circleWorkspaceProvider.notifier)
+                              .refresh(),
+                        );
+                        if (!mounted || !api.scope.current()) return;
                         if (context.mounted) {
                           context.go('/polls/p/${result['id']}');
                         }

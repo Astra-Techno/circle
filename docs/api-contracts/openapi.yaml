@@ -1,7 +1,13 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.4.5
+  version: 0.4.6
+  x-poll-memory-publication: >-
+    Poll creation without memory_id atomically publishes one Memory in the exact
+    group and links it to the poll. Idempotent retries reuse the same publication.
+    Existing polls are backfilled by migration024, preserving author/time. Existing
+    explicit Memory associations are retained. Memory deletion/hiding removes poll
+    access through the existing visibility rules.
   license:
     name: Proprietary
   summary: Private nested groups, invites and Memories for any community.
@@ -4294,6 +4300,13 @@ components:
     Memory:
       type: object
       properties:
+        polls:
+          type: array
+          description: >-
+            Live poll detail payloads for this exact Memory, projected for the caller
+            with the same result/anonymous-voter restrictions as GET /polls/{pollId}.
+            Empty when no polls exist. Batched with each page; no per-card fetch required.
+          items: { type: object }
         id: { type: integer }
         group_id: { type: integer }
         author_id: { type: integer }

@@ -1,5 +1,9 @@
 # CIRCLE design system
 
+## Selected live poll card, 7 November 2026
+
+Use the owner-selected third poll concept: flat white ballot rows with thin dividers, regular16px choice labels, leading radio/checkbox, trailing counts (stack below at large text), lavender selected row, compact real voter total and named-voter link, explicit purple vote button. Omit the Choose one/Names visible instruction line as requested. Retain a small privacy note, hidden-result and anonymous restrictions, closed/immutable/add-option/manage states. Never render empty progress bars. One LivePollCard serves Poll detail/list and all Memory cards. Embedded polls are batched with Memory pages, not fetched per visible card. Standalone polls publish one associated Memory; migration024 backfills previous polls retaining original audience/author/time. Original private query scopes, cursor pagination, saves/reactions/comments and session guards remain.
+
 ## Selected Circle identity and shortcuts, 7 November 2026
 
 Small lavender role badge beside the Circle name (wrap at large text), quiet14px Members and InCircles links without chevrons, separated by a decorative dot. Preserve48px metadata targets and exact-group destinations. Shortcuts use12px rounded neutral rectangular tiles,24px outline icons above14px labels, purple/lavender Chat emphasis. Adaptive grid up to3columns; measure scaled/Bold Text labels plus full horizontal padding. Keep capability gates and admin/photo/session guards. Selected image and Flutter captures:docs/design-previews/circle-identity-selected-2026-11-07/.

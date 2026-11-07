@@ -38,7 +38,7 @@ class PollFixture {
       'question': question,
       'created_by': owner,
       'event_id': null,
-      'memory_id': null,
+      'memory_id': server.memories.firstOrNull?['id'],
       'poll_type': 'single',
       'anonymous': anonymous,
       'allow_change_vote': true,
@@ -64,6 +64,9 @@ class PollFixture {
 
   Future<FakeResponse> handle(FakeRequest r) async {
     if (!server.access.containsKey(r.bearer)) return server.handle(r);
+    if (server.memories.isNotEmpty && server.memories.first['polls'] != null) {
+      server.memories.first['polls'] = [data()];
+    }
     if (r.path == '/polls') {
       return FakeResponse.ok({
         'items': [data()],
@@ -78,6 +81,12 @@ class PollFixture {
       if (failOnce) {
         failOnce = false;
         return FakeResponse.error(503, 'server_error');
+      }
+      if (server.memories.isEmpty) {
+        final mid = server.addMemory(group, owner, question);
+        server.memories.first['polls'] = [
+          {...data(), 'memory_id': mid},
+        ];
       }
       return FakeResponse.ok({'id': 81, 'group_id': group});
     }
@@ -144,7 +153,7 @@ void main() {
       await tapPoll(tester, find.text('Park'));
       await tapPoll(tester, find.text('Submit vote'));
       expect(f.votes, [1]);
-      expect(find.text('1 voter(s)'), findsOneWidget);
+      expect(find.text('1 voter'), findsOneWidget);
       await tapPoll(tester, find.text('See who voted'));
       expect(find.text('Fictional Owner'), findsOneWidget);
       expect(find.text('Park'), findsOneWidget);
@@ -158,6 +167,11 @@ void main() {
       await settle(tester);
       expect(f.closed, isTrue);
       expect(find.text('Submit vote'), findsNothing);
+      c.read(circleRouterProvider).go('/home');
+      await settle(tester);
+      expect(find.text('Fictional meetup?'), findsOneWidget);
+      expect(find.text('Closed'), findsOneWidget);
+      expect(find.text('1 voter'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -176,21 +190,21 @@ void main() {
       c.read(circleRouterProvider).go('/polls/p/81');
       await settle(tester);
       expect(find.text('See who voted'), findsNothing);
-      expect(find.textContaining('voter(s)'), findsNothing);
+      expect(find.textContaining('voter'), findsNothing);
       expect(
         find.text('Results appear when this poll closes.'),
         findsOneWidget,
       );
       await tapPoll(tester, find.text('Park'));
       await tapPoll(tester, find.text('Submit vote'));
-      expect(find.textContaining('voter(s)'), findsNothing);
+      expect(find.textContaining('voter'), findsNothing);
       await tester.tap(find.byTooltip('Poll options'));
       await settle(tester);
       await tester.tap(find.text('Close poll'));
       await settle(tester);
       await tester.tap(find.text('Close poll').last);
       await settle(tester);
-      expect(find.text('1 voter(s)'), findsOneWidget);
+      expect(find.text('1 voter'), findsOneWidget);
       expect(find.text('See who voted'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
