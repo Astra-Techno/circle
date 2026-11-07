@@ -44,7 +44,8 @@ class GroupAvatar extends ConsumerWidget {
 }
 
 class GroupPhotoHeader extends ConsumerStatefulWidget {
-  const GroupPhotoHeader({super.key, required this.group});
+  const GroupPhotoHeader({super.key, required this.group, this.titleAccessory});
+  final Widget? titleAccessory;
   final CircleGroup group;
   @override
   ConsumerState<GroupPhotoHeader> createState() => _GroupPhotoHeaderState();
@@ -291,9 +292,14 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
           header: true,
           child: Padding(
             padding: CircleInsets.content,
-            child: Text(
-              group.name,
-              style: Theme.of(context).textTheme.titleLarge,
+            child: Wrap(
+              spacing: Space.sm,
+              runSpacing: Space.sm,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(group.name, style: Theme.of(context).textTheme.titleLarge),
+                if (widget.titleAccessory != null) widget.titleAccessory!,
+              ],
             ),
           ),
         ),

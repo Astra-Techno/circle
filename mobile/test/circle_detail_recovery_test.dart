@@ -9,6 +9,7 @@ import 'support/fake_api.dart';
 import 'group_photo_ui_test.dart' show image;
 import 'screen_audit_visual_review_test.dart' show capture;
 import 'package:mobile/app/circle_experience.dart';
+import 'package:mobile/core/design/circle_icons.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
 
 void main() {
@@ -37,6 +38,21 @@ void main() {
         );
         c.read(circleRouterProvider).go('/groups/g/${f.group}');
         await settle(tester);
+        // Identity metadata belongs to the heading, without navigation chevrons.
+        expect(find.text('Owner'), findsOneWidget);
+        for (final label in ['2 members', 'InCircles']) {
+          final link = find
+              .ancestor(of: find.text(label), matching: find.byType(InkWell))
+              .first;
+          expect(
+            find.descendant(
+              of: link,
+              matching: find.byIcon(CircleIcons.chevronRight),
+            ),
+            findsNothing,
+          );
+          expect(tester.getSize(link).height, greaterThanOrEqualTo(48));
+        }
         for (final label in [
           'Chat',
           'Invite',

@@ -216,15 +216,21 @@ class _GroupHeader extends ConsumerWidget {
             ),
           ),
         // Cover photo.
-        GroupPhotoHeader(group: group),
+        GroupPhotoHeader(
+          group: group,
+          titleAccessory: role == CircleRole.member
+              ? null
+              : _RoleBadge(role: role),
+        ),
         const SizedBox(height: Space.md),
 
         // Compact stat pills row.
         Padding(
           padding: CircleInsets.content,
           child: Wrap(
-            spacing: Space.sm,
+            spacing: Space.xs,
             runSpacing: Space.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               _StatPill(
                 icon: LucideIcons.users,
@@ -232,18 +238,12 @@ class _GroupHeader extends ConsumerWidget {
                     '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
                 onTap: () => context.push('/groups/g/${group.id}/members'),
               ),
+              const ExcludeSemantics(child: Text('·')),
               _StatPill(
                 icon: LucideIcons.layers,
                 label: 'InCircles',
                 onTap: () => context.push('/groups/g/${group.id}/incircles'),
               ),
-              if (role != CircleRole.member)
-                _StatPill(
-                  icon: role == CircleRole.owner
-                      ? LucideIcons.crown
-                      : LucideIcons.shield,
-                  label: circleRoleLabel(role),
-                ),
               if (group.isSubgroup)
                 _StatPill(
                   icon: group.hidden ? LucideIcons.lock : LucideIcons.link,
@@ -277,6 +277,7 @@ class _GroupHeader extends ConsumerWidget {
                 _QuickAction(
                   icon: LucideIcons.messages_square,
                   label: 'Chat',
+                  primary: true,
                   onTap: () => context.push('/chats/g/${group.id}'),
                 ),
               if (canInvite)
@@ -335,7 +336,7 @@ class _GroupActionGrid extends StatelessWidget {
         child,
       ) {
         final needed =
-            CircleLayout.quickActionWidth(context, child.label) + Space.sm;
+            CircleLayout.quickActionWidth(context, child.label) + Space.md * 2;
         return needed > width ? needed : width;
       });
       final columns = ((constraints.maxWidth + Space.sm) / (minimum + Space.sm))
@@ -353,7 +354,43 @@ class _GroupActionGrid extends StatelessWidget {
   );
 }
 
-/// Small pill showing a stat: icon + label on a recessed background.
+class _RoleBadge extends StatelessWidget {
+  const _RoleBadge({required this.role});
+  final CircleRole role;
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(CircleRadius.pill),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Space.sm,
+          vertical: Space.xs,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              role == CircleRole.owner ? LucideIcons.crown : LucideIcons.shield,
+              size: CircleSizes.iconInline,
+              color: colors.primary,
+            ),
+            const SizedBox(width: Space.xs),
+            Text(
+              circleRoleLabel(role),
+              style: CircleTextStyles.metadata(colors.primary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Quiet metadata link with a full touch target and no navigation chevron.
 class _StatPill extends StatelessWidget {
   const _StatPill({
     required this.icon,
@@ -385,15 +422,7 @@ class _StatPill extends StatelessWidget {
         children: [
           Icon(icon, size: CircleSizes.iconInline, color: color),
           const SizedBox(width: Space.xs),
-          Text(label, style: CircleTextStyles.metadata(color)),
-          if (onTap != null) ...[
-            const SizedBox(width: Space.xs),
-            Icon(
-              CircleIcons.chevronRight,
-              size: CircleSizes.iconInline,
-              color: color,
-            ),
-          ],
+          Text(label, style: CircleTextStyles.homeShortcut(color)),
         ],
       ),
     );
@@ -408,16 +437,18 @@ class _StatPill extends StatelessWidget {
   }
 }
 
-/// Circular icon button with label underneath for the quick-action row.
+/// Compact action tile matching the selected Circle identity design.
 class _QuickAction extends StatelessWidget {
   const _QuickAction({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.primary = false,
   });
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool primary;
 
   @override
   Widget build(BuildContext context) {
@@ -427,40 +458,41 @@ class _QuickAction extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(CircleRadius.card),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: Space.xs,
-            vertical: Space.xs,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: primary
+                ? Theme.of(context).colorScheme.primaryContainer
+                : accents.recessed,
+            borderRadius: BorderRadius.circular(CircleRadius.tile),
           ),
-          child: SizedBox(
-            width: CircleLayout.quickActionWidth(context, label),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: CircleLayout.quickActionPaint,
-                  height: CircleLayout.quickActionPaint,
-                  decoration: BoxDecoration(
-                    color: accents.recessed,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    icon,
-                    size: CircleSizes.iconAction,
-                    color: accents.caption,
-                  ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.md,
+            vertical: Space.md,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: CircleSizes.iconAction,
+                color: primary
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
+              const SizedBox(height: Space.sm),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: CircleTextStyles.homeShortcut(
+                  primary
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface,
                 ),
-                const SizedBox(height: Space.xs),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: CircleTextStyles.homeShortcut(accents.caption),
-                  maxLines: 1,
-                  softWrap: false,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ),

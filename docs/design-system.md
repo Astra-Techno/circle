@@ -1,5 +1,9 @@
 # CIRCLE design system
 
+## Selected Circle identity and shortcuts, 7 November 2026
+
+Small lavender role badge beside the Circle name (wrap at large text), quiet14px Members and InCircles links without chevrons, separated by a decorative dot. Preserve48px metadata targets and exact-group destinations. Shortcuts use12px rounded neutral rectangular tiles,24px outline icons above14px labels, purple/lavender Chat emphasis. Adaptive grid up to3columns; measure scaled/Bold Text labels plus full horizontal padding. Keep capability gates and admin/photo/session guards. Selected image and Flutter captures:docs/design-previews/circle-identity-selected-2026-11-07/.
+
 ## Circle actions and recovery, 7 November 2026
 
 Circle detail shortcuts use a balanced adaptive grid capped at3columns, measuring the14px label with actual Bold Text and text scaling. Keep whole-word labels,48px targets and existing scoped routes. Use one admin photo-edit menu for Circle/cover choices, one labeled retry for cover failures, and explicit safe failure messages for Memories. Stop automatic workspace/timeline retry loops; preserve session checks and explicit refresh. See docs/circle-detail-recovery-2026-11-07.md.
