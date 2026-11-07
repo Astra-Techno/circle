@@ -1,16 +1,16 @@
 {
-  "version": "1.0.36",
-  "build": 42,
+  "version": "1.0.37",
+  "build": 43,
   "minimumAndroid": "7.0",
   "minimumSdk": 24,
   "apiBaseUrl": "https://circle.cloudkart24.com/api/v1",
   "preview": false,
   "pushEnabled": true,
-  "bytes": 65092153,
-  "sha256": "39d045fb7df87395e2f66031a2bab61f28f76f06d7319dfd482cba2586548b63",
+  "bytes": 65124717,
+  "sha256": "b96412337b968224be4f3f67ece5869f980f35a5c108ab6aef992112d508dc04",
   "signingCertificateSha256": "bcd5a9dcd2262be9f445f2d52892f574054e8616fbf0df66f226d88b263b9966",
   "requiresReinstallFromEarlierBuilds": true,
   "compatibleSigningSinceBuild": 39,
-  "download": "https://circle.cloudkart24.com/downloads/circle-1.0.36-42.apk",
+  "download": "https://circle.cloudkart24.com/downloads/circle-1.0.37-43.apk",
   "reinstallNotice": "Build 39 and newer can update directly. Earlier builds require a one-time reinstall; finish or copy unsent local drafts first."
 }

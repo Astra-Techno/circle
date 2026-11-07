@@ -7,6 +7,7 @@ import 'package:mobile/core/circle_components.dart';
 import 'package:mobile/core/design.dart';
 import 'package:mobile/features/events/presentation/live_events.dart';
 import 'support/root_style_fixture.dart';
+import 'screen_audit_visual_review_test.dart' show capture;
 import 'support/server_harness.dart';
 
 void main() {
@@ -122,6 +123,49 @@ void main() {
       semantics.dispose();
     },
   );
+
+  testWidgets('large event RSVP remains reachable and saves the real choice', (
+    tester,
+  ) async {
+    final fixture = RootStyleFixture();
+    final c = await openServerCircle(
+      tester,
+      fixture.server,
+      tokens: await storedSession(fixture.server, fixture.owner),
+      size: const Size(320, 1000),
+    );
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    c.read(circleRouterProvider).go('/events/e/91');
+    await settle(tester);
+    final going = find.widgetWithText(OutlinedButton, 'Going');
+    await tester.scrollUntilVisible(
+      going,
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(LiveEventsScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+    expect(going.hitTestable(), findsOneWidget);
+    expect(
+      find.ancestor(of: find.text('Going'), matching: find.byType(FittedBox)),
+      findsNothing,
+    );
+    expect(
+      tester.widget<Text>(find.text('Going')).textScaler,
+      isNull,
+      reason: 'The action must inherit the user text scale',
+    );
+    await capture(tester, 'large-event-rsvp-reachable', '320-2.0-light');
+    await tester.tap(going);
+    await settle(tester);
+    expect((fixture.event['my_rsvp'] as Map)['status'], 'going');
+    expect(tester.takeException(), isNull);
+  });
 
   test('invitation detail gets an invitation title', () {
     expect(

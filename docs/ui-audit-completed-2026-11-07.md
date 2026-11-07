@@ -22,8 +22,31 @@ Implements the source-level findings from [the audit](ui-audit-2026-11-07.md), r
 - Initial focused suite:56 passing checks, including four-layout route renders, Poll/Event cards, design guard, form layout, account security and profile photos.
 - Added regressions for control contrast, settled child-page pixels/back navigation, persistent-label semantics at200%, and invitation route title.
 - Updated two existing UI flow tests to locate inputs below persistent labels; their keyboard/submission expectations remain intact.
-- Local broad run:805 passed/1skipped/2 failures captured before the final welcome/field-finder corrections. Final affected suites:23 passed, including welcome accessibility, keyboard reachability and the four new regressions. Analyzer clean; Dart format257files clean; font identity check passed. Windows full-suite and baseline review pending. Windows baselines must not be generated on Linux.
+- Local broad run:805 passed/1skipped/2 failures captured before the final welcome/field-finder corrections. Final affected suites:23 passed, including welcome accessibility, keyboard reachability and the four new regressions. Analyzer clean; Dart format257files clean; font identity check passed. Full Windows refresh workflow42366720525 succeeded on application source1e23d24; Run tests and artifact upload both succeeded. Exact log counts and generated Windows image review/import remain blocked by the environment network allowlist. Existing Windows baselines are retained; a normal comparison after review/import is still pending. Windows baselines must not be generated on Linux.
 
 ## Limits
 
 Flutter renders and fictional service fixtures do not verify an installed iPhone/Android build, screen readers, real-network images, production latency, native photo/contact sheets or push delivery. A capability-disabled screenshot is not evidence of a live outage. Publishing source is distinct from deploying the backend or installing a new client. Release receipts, if produced, are recorded separately.
+
+## Final visual evidence
+
+Final source render run:32checks passed;259fresh captures(59named states ×4 layouts plus23Poll/Event variants). Selected full-size evidence and contact sheets are committed; the manifest records all original PNG hashes. Originals remain in the task capture directory; fixtures/capture tests can reproduce them.
+
+![Corrected priority layouts](design-previews/ui-audit-completed-2026-11-07/completed-priorities.jpg)
+
+[Capture manifest](design-previews/ui-audit-completed-2026-11-07/capture-manifest.csv).
+
+Phone light: [1](design-previews/ui-audit-completed-2026-11-07/light-1.jpg), [2](design-previews/ui-audit-completed-2026-11-07/light-2.jpg), [3](design-previews/ui-audit-completed-2026-11-07/light-3.jpg).
+
+Phone dark: [1](design-previews/ui-audit-completed-2026-11-07/dark-1.jpg), [2](design-previews/ui-audit-completed-2026-11-07/dark-2.jpg), [3](design-previews/ui-audit-completed-2026-11-07/dark-3.jpg).
+
+Narrow200%: [1](design-previews/ui-audit-completed-2026-11-07/large-1.jpg), [2](design-previews/ui-audit-completed-2026-11-07/large-2.jpg), [3](design-previews/ui-audit-completed-2026-11-07/large-3.jpg).
+
+Tablet200%: [1](design-previews/ui-audit-completed-2026-11-07/tablet-1.jpg), [2](design-previews/ui-audit-completed-2026-11-07/tablet-2.jpg), [3](design-previews/ui-audit-completed-2026-11-07/tablet-3.jpg).
+
+## Release and remaining verification
+
+- Signed Android1.0.37(43),Social2.5 built in138.6seconds with the established39+ signing certificate. ZIP/signature/package/version/SDKs verified; all three AOT libraries contain the new marker and production API; bundled Inter assets match source. Immutable APK, metadata and both download buttons updated together. [Receipt](mobile-release-1.0.37-android.json).
+- Additional large-text RSVP regression:5checks pass in the final audit regression file. The test scrolls to the lazy action, verifies inherited text scaling/no FittedBox, taps Going and verifies the service fixture saved it. [Capture](design-previews/ui-audit-completed-2026-11-07/large-event-rsvp-reachable-320-2.0-light.png).
+- Signed iOS/TestFlight workflow42367416076 triggered from the same runtime source; completion/Apple processing are separate and not yet verified.
+- Remaining Windows work: download/review the22 generated images, import only reviewed changes with checksum verification, then run the ordinary comparison suite. Direct artifact/log downloads returned403 for `productionresultssa8.blob.core.windows.net` and `results-receiver.actions.githubusercontent.com`, both outside this environment’s allowed domains. No baseline was generated locally or silently replaced. Owner asked to allow these hosts; production hosting/device verification also remains separate.
