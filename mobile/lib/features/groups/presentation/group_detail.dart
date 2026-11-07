@@ -428,6 +428,7 @@ class _StatPill extends StatelessWidget {
     );
     if (onTap != null) {
       return InkWell(
+        key: ValueKey('circle-metadata-$label'),
         borderRadius: BorderRadius.circular(CircleRadius.button),
         onTap: onTap,
         child: pill,

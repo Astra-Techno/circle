@@ -41,9 +41,7 @@ void main() {
         // Identity metadata belongs to the heading, without navigation chevrons.
         expect(find.text('Owner'), findsOneWidget);
         for (final label in ['2 members', 'InCircles']) {
-          final link = find
-              .ancestor(of: find.text(label), matching: find.byType(InkWell))
-              .first;
+          final link = find.byKey(ValueKey('circle-metadata-$label'));
           expect(
             find.descendant(
               of: link,
