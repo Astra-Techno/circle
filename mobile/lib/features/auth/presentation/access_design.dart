@@ -502,14 +502,17 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                     child: DropdownButtonFormField<DialCode>(
                       key: ValueKey(_dialCode.region),
                       initialValue: _dialCode,
+                      isDense: true,
+                      itemHeight: CircleFormMetrics.minFieldHeight,
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: Space.md,
-                          vertical: Space.lg,
+                        ),
+                        constraints: BoxConstraints(
+                          minHeight: CircleFormMetrics.minFieldHeight,
                         ),
                       ),
                       isExpanded: true,
-                      itemHeight: null,
                       items: dialCodes
                           .map(
                             (d) => DropdownMenuItem(
@@ -534,7 +537,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                           .map(
                             (d) => Text(
                               '${d.flag} ${d.code}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                              style: Theme.of(context).textTheme.bodyMedium,
                               overflow: TextOverflow.ellipsis,
                             ),
                           )
