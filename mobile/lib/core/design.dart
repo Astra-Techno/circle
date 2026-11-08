@@ -276,6 +276,23 @@ abstract final class CircleDepth {
     ),
   );
 
+  /// Animated sliding accent gradient bar for active headers.
+  static BoxDecoration slidingAccentBar(BuildContext context, double value) {
+    final colors = Theme.of(context).colorScheme;
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment(-1.0 + value * 2, 0),
+        end: Alignment(1.0 + value * 2, 0),
+        colors: [
+          colors.primary,
+          colors.primary.withValues(alpha: 0.6),
+          colors.tertiary,
+          colors.primary,
+        ],
+      ),
+    );
+  }
+
   /// The floating navigation dock: surface, hairline and one soft shadow.
   static BoxDecoration dock(BuildContext context) => BoxDecoration(
     color: Theme.of(context).colorScheme.surface,

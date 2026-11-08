@@ -33,15 +33,21 @@ class CapsuleListScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: accents.calmContainer,
-                    shape: BoxShape.circle,
-                    boxShadow: CircleDepth.glowShadow(accents.calm),
+                CircleShimmerGlow(
+                  color: accents.calm,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: accents.calmContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      LucideIcons.timer,
+                      size: 36,
+                      color: accents.calm,
+                    ),
                   ),
-                  child: Icon(LucideIcons.timer, size: 36, color: accents.calm),
                 ),
                 const SizedBox(height: Space.section),
                 Text('Memory Capsules', style: theme.textTheme.headlineSmall),
@@ -70,7 +76,10 @@ class CapsuleListScreen extends ConsumerWidget {
           separatorBuilder: (_, _) => const SizedBox(height: Space.sm),
           itemBuilder: (context, index) {
             final capsule = capsules[index];
-            return _CapsuleCard(capsule: capsule);
+            return CircleFadeIn(
+              delay: CircleMotion.staggerDelay * index,
+              child: _CapsuleCard(capsule: capsule),
+            );
           },
         );
       },
@@ -292,24 +301,47 @@ class CapsuleDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(Space.section),
                 child: Column(
                   children: [
-                    // Status icon
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: isUnlocked
-                            ? accents.sageContainer
-                            : accents.calmContainer,
-                        shape: BoxShape.circle,
-                        boxShadow: CircleDepth.glowShadow(
-                          isUnlocked ? accents.sage : accents.calm,
-                        ),
-                      ),
-                      child: Icon(
-                        isUnlocked ? LucideIcons.lock_open : LucideIcons.lock,
-                        size: 32,
-                        color: isUnlocked ? accents.sage : accents.calm,
-                      ),
+                    // Status icon with progress ring and shimmer glow
+                    CircleShimmerGlow(
+                      color: isUnlocked ? accents.sage : accents.calm,
+                      animate: isSealed && !isUnlocked,
+                      child: isSealed && !isUnlocked
+                          ? CircleProgressRing(
+                              progress: capsule.progress,
+                              color: accents.calm,
+                              size: 80,
+                              strokeWidth: 5,
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: accents.calmContainer,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  LucideIcons.lock,
+                                  size: 28,
+                                  color: accents.calm,
+                                ),
+                              ),
+                            )
+                          : Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: isUnlocked
+                                    ? accents.sageContainer
+                                    : accents.calmContainer,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                isUnlocked
+                                    ? LucideIcons.lock_open
+                                    : LucideIcons.lock,
+                                size: 32,
+                                color: isUnlocked ? accents.sage : accents.calm,
+                              ),
+                            ),
                     ),
                     const SizedBox(height: Space.md),
 
@@ -339,20 +371,6 @@ class CapsuleDetailScreen extends ConsumerWidget {
                         ).copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
-
-                    // Progress bar
-                    if (isSealed && !isUnlocked) ...[
-                      const SizedBox(height: Space.md),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(CircleRadius.pill),
-                        child: LinearProgressIndicator(
-                          value: capsule.progress,
-                          minHeight: 6,
-                          backgroundColor: accents.hairline,
-                          valueColor: AlwaysStoppedAnimation(accents.calm),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -395,22 +413,28 @@ class CapsuleDetailScreen extends ConsumerWidget {
 
               const SizedBox(height: Space.md),
 
-              // Stats row
+              // Stats row — glass panels
               Row(
                 children: [
                   Expanded(
-                    child: _StatCard(
-                      icon: LucideIcons.message_square,
-                      value: '${capsule.messageCount}',
-                      label: 'Messages',
+                    child: CircleFadeIn(
+                      delay: CircleMotion.staggerDelay,
+                      child: _StatCard(
+                        icon: LucideIcons.message_square,
+                        value: '${capsule.messageCount}',
+                        label: 'Messages',
+                      ),
                     ),
                   ),
                   const SizedBox(width: Space.sm),
                   Expanded(
-                    child: _StatCard(
-                      icon: LucideIcons.users,
-                      value: '${capsule.contributors.length}',
-                      label: 'Contributors',
+                    child: CircleFadeIn(
+                      delay: CircleMotion.staggerDelay * 2,
+                      child: _StatCard(
+                        icon: LucideIcons.users,
+                        value: '${capsule.contributors.length}',
+                        label: 'Contributors',
+                      ),
                     ),
                   ),
                 ],
@@ -650,10 +674,7 @@ class _StatCard extends StatelessWidget {
     final accents = CircleAccents.of(context);
     return Container(
       padding: const EdgeInsets.all(Space.md),
-      decoration: BoxDecoration(
-        color: accents.recessed,
-        borderRadius: BorderRadius.circular(CircleRadius.tile),
-      ),
+      decoration: CircleDepth.glassPanel(context, radius: CircleRadius.tile),
       child: Column(
         children: [
           Icon(icon, size: 20, color: accents.calm),
@@ -794,19 +815,26 @@ class _CapsuleCreateScreenState extends ConsumerState<CapsuleCreateScreen> {
           child: ListView(
             padding: CircleInsets.form,
             children: [
-              // Hero illustration
-              Container(
+              // Hero illustration with shimmer glow
+              Padding(
                 padding: const EdgeInsets.symmetric(vertical: Space.section),
-                alignment: Alignment.center,
-                child: Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    color: accents.calmContainer,
-                    shape: BoxShape.circle,
-                    boxShadow: CircleDepth.glowShadow(accents.calm),
+                child: Center(
+                  child: CircleShimmerGlow(
+                    color: accents.calm,
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        color: accents.calmContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        LucideIcons.timer,
+                        size: 40,
+                        color: accents.calm,
+                      ),
+                    ),
                   ),
-                  child: Icon(LucideIcons.timer, size: 40, color: accents.calm),
                 ),
               ),
 

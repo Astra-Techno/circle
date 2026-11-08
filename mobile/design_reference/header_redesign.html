@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CIRCLE Header Redesign — Premium Glass</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #f5f3f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    gap: 60px;
+    min-height: 100vh;
+  }
+
+  h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6B6878;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-align: center;
+  }
+
+  .phone {
+    width: 393px;
+    background: #fff;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow:
+      0 20px 60px rgba(28,30,33,0.12),
+      0 4px 16px rgba(28,30,33,0.06);
+    position: relative;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1C1E21;
+  }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+  .status-bar .icons svg { width: 18px; height: 18px; }
+
+  /* ===== OPTION A: Compact Glass Header ===== */
+  .header-a {
+    padding: 8px 16px 12px;
+    background: #fff;
+  }
+
+  .header-row-1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #EBE8F5 0%, #D8D2EE 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-mark svg { width: 22px; height: 22px; }
+
+  .brand-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1C1E21;
+    flex: 1;
+    letter-spacing: -0.3px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .header-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #1C1E21;
+    transition: background 0.15s;
+  }
+  .header-btn:hover { background: #F0F2F5; }
+  .header-btn svg { width: 22px; height: 22px; }
+
+  /* Composer row */
+  .composer-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c4b5fd, #8b5cf6);
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 2px solid #EBE8F5;
+  }
+  .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .composer-pill {
+    flex: 1;
+    height: 40px;
+    border-radius: 20px;
+    background: #F0F2F5;
+    border: 1px solid #E4E6EA;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 15px;
+    color: #65676B;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .composer-pill:hover {
+    background: #E8E6EE;
+    border-color: #D0CCE0;
+  }
+
+  /* Quick actions — single horizontal row */
+  .quick-actions {
+    display: flex;
+    gap: 0;
+    margin-top: 10px;
+    border-top: 1px solid #E4E6EA;
+    padding-top: 8px;
+  }
+  .quick-action {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: #65676B;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .quick-action:hover {
+    background: #F0EEFC;
+    color: #4930A7;
+  }
+  .quick-action svg { width: 18px; height: 18px; }
+  .quick-action.accent { color: #4930A7; }
+  .quick-action.accent svg { color: #4930A7; }
+
+  .divider {
+    height: 1px;
+    background: #E4E6EA;
+  }
+
+  /* ===== OPTION B: Glass-Blur Floating Header ===== */
+  .header-b {
+    padding: 8px 16px 0;
+    background: #fff;
+  }
+
+  .glass-composer-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(235,232,245,0.6) 0%, rgba(255,255,255,0.9) 100%);
+    border: 1px solid rgba(73,48,167,0.08);
+    box-shadow:
+      0 2px 8px rgba(73,48,167,0.06),
+      0 0 0 1px rgba(255,255,255,0.5) inset;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 4px 0 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .glass-actions::-webkit-scrollbar { display: none; }
+
+  .glass-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid #E4E6EA;
+    background: #fff;
+    color: #34323C;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .glass-chip:hover {
+    background: #EBE8F5;
+    border-color: #D0CCE0;
+    color: #4930A7;
+  }
+  .glass-chip svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .glass-chip.capsule-chip {
+    background: linear-gradient(135deg, #EBE8F5 0%, #F3EFFF 100%);
+    border-color: rgba(73,48,167,0.15);
+    color: #4930A7;
+  }
+  .glass-chip.capsule-chip:hover {
+    background: linear-gradient(135deg, #DDD8F0 0%, #EBE5FF 100%);
+  }
+
+  /* ===== OPTION C: Minimal Premium with Gradient Accent ===== */
+  .header-c {
+    padding: 8px 16px 0;
+    background: #fff;
+    position: relative;
+  }
+
+  .gradient-accent {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #4930A7, #8B5CF6, #C084FC, #4930A7);
+    background-size: 200% 100%;
+    animation: gradient-slide 4s ease infinite;
+  }
+  @keyframes gradient-slide {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .c-composer-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding-bottom: 10px;
+  }
+
+  .c-quick-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 0 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .c-quick-row::-webkit-scrollbar { display: none; }
+
+  .c-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    background: #F0F2F5;
+    color: #34323C;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+  }
+  .c-chip:hover { background: #E8E6EE; color: #4930A7; }
+  .c-chip svg { width: 16px; height: 16px; }
+  .c-chip.capsule-accent {
+    background: linear-gradient(135deg, #4930A7, #7C3AED);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(73,48,167,0.25);
+  }
+  .c-chip.capsule-accent:hover {
+    background: linear-gradient(135deg, #3D2691, #6D28D9);
+  }
+
+  /* Feed placeholder */
+  .feed-placeholder {
+    padding: 16px;
+  }
+  .feed-card {
+    border-radius: 12px;
+    background: #F8F7FA;
+    border: 1px solid #E4E6EA;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .feed-bar {
+    height: 10px;
+    border-radius: 5px;
+    background: #E4E6EA;
+    margin-bottom: 8px;
+  }
+  .feed-bar.short { width: 60%; }
+  .feed-bar.med { width: 80%; }
+  .feed-img {
+    height: 180px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #EBE8F5, #F0F2F5);
+    margin: 12px 0;
+  }
+
+  .section-label {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4930A7;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* SVG icons inline */
+  .icon-search { stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .icon-bell { stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+</style>
+</head>
+<body>
+
+<h2>Current Issue: 4-row tall header with orphaned Capsule button</h2>
+
+<!-- ===== OPTION A ===== -->
+<div>
+  <h2>Option A — Compact Divider Row (Facebook-style)</h2>
+  <div class="phone">
+    <div class="status-bar">
+      <span>8:10</span>
+      <div class="icons">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h2V8H2v12zm4 0h2V4H6v16zm4 0h2v-8h-2v8zm4 0h2V9h-2v11zm4 0h2V2h-2v18z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2a12.73 12.73 0 0 1 18 0l2-2A15.57 15.57 0 0 0 1 9zm8 8l3 3 3-3a4.24 4.24 0 0 0-6 0zm-4-4l2 2a8.48 8.48 0 0 1 10 0l2-2c-3.9-3.9-10.1-3.9-14 0z"/></svg>
+      </div>
+    </div>
+    <div class="header-a">
+      <div class="header-row-1">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4930A7" stroke-width="2.5" stroke-linecap="round"><path d="M6 12a6 6 0 0 1 12 0"/><path d="M18 12a6 6 0 0 1-12 0"/></svg>
+        </div>
+        <span class="brand-name">Circle</span>
+        <div class="header-actions">
+          <button class="header-btn">
+            <svg viewBox="0 0 24 24" class="icon-search"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <button class="header-btn">
+            <svg viewBox="0 0 24 24" class="icon-bell"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="composer-row">
+        <div class="avatar" style="background: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%238b5cf6%22 width=%2240%22 height=%2240%22/><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2218%22>G</text></svg>') center/cover"></div>
+        <div class="composer-pill">Share a memory...</div>
+      </div>
+      <div class="quick-actions">
+        <button class="quick-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          Photo
+        </button>
+        <button class="quick-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Event
+        </button>
+        <button class="quick-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Poll
+        </button>
+        <button class="quick-action accent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Capsule
+        </button>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="feed-placeholder">
+      <div class="feed-card"><div class="feed-bar short"></div><div class="feed-bar med"></div><div class="feed-img"></div><div class="feed-bar short"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== OPTION B ===== -->
+<div>
+  <h2>Option B — Glass Composer + Scrollable Chips (Recommended)</h2>
+  <div class="phone">
+    <div class="status-bar">
+      <span>8:10</span>
+      <div class="icons">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h2V8H2v12zm4 0h2V4H6v16zm4 0h2v-8h-2v8zm4 0h2V9h-2v11zm4 0h2V2h-2v18z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2a12.73 12.73 0 0 1 18 0l2-2A15.57 15.57 0 0 0 1 9zm8 8l3 3 3-3a4.24 4.24 0 0 0-6 0zm-4-4l2 2a8.48 8.48 0 0 1 10 0l2-2c-3.9-3.9-10.1-3.9-14 0z"/></svg>
+      </div>
+    </div>
+    <div class="header-b">
+      <div class="header-row-1">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4930A7" stroke-width="2.5" stroke-linecap="round"><path d="M6 12a6 6 0 0 1 12 0"/><path d="M18 12a6 6 0 0 1-12 0"/></svg>
+        </div>
+        <span class="brand-name">Circle</span>
+        <div class="header-actions">
+          <button class="header-btn">
+            <svg viewBox="0 0 24 24" class="icon-search"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <button class="header-btn">
+            <svg viewBox="0 0 24 24" class="icon-bell"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="glass-composer-card">
+        <div class="avatar" style="background: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%238b5cf6%22 width=%2240%22 height=%2240%22/><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2218%22>G</text></svg>') center/cover"></div>
+        <div class="composer-pill" style="background: transparent; border-color: transparent;">Share a memory...</div>
+      </div>
+      <div class="glass-actions">
+        <div class="glass-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          Photo
+        </div>
+        <div class="glass-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Event
+        </div>
+        <div class="glass-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Poll
+        </div>
+        <div class="glass-chip capsule-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Capsule
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="feed-placeholder">
+      <div class="feed-card"><div class="feed-bar short"></div><div class="feed-bar med"></div><div class="feed-img"></div><div class="feed-bar short"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== OPTION C ===== -->
+<div>
+  <h2>Option C — Minimal with Gradient Accent + Capsule CTA</h2>
+  <div class="phone">
+    <div class="status-bar">
+      <span>8:10</span>
+      <div class="icons">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h2V8H2v12zm4 0h2V4H6v16zm4 0h2v-8h-2v8zm4 0h2V9h-2v11zm4 0h2V2h-2v18z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2a12.73 12.73 0 0 1 18 0l2-2A15.57 15.57 0 0 0 1 9zm8 8l3 3 3-3a4.24 4.24 0 0 0-6 0zm-4-4l2 2a8.48 8.48 0 0 1 10 0l2-2c-3.9-3.9-10.1-3.9-14 0z"/></svg>
+      </div>
+    </div>
+    <div class="header-c">
+      <div class="gradient-accent"></div>
+      <div class="header-row-1">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4930A7" stroke-width="2.5" stroke-linecap="round"><path d="M6 12a6 6 0 0 1 12 0"/><path d="M18 12a6 6 0 0 1-12 0"/></svg>
+        </div>
+        <span class="brand-name">Circle</span>
+        <div class="header-actions">
+          <button class="header-btn">
+            <svg viewBox="0 0 24 24" class="icon-search"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <button class="header-btn">
+            <svg viewBox="0 0 24 24" class="icon-bell"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="c-composer-row">
+        <div class="avatar" style="background: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%238b5cf6%22 width=%2240%22 height=%2240%22/><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2218%22>G</text></svg>') center/cover"></div>
+        <div class="composer-pill">Share a memory...</div>
+      </div>
+      <div class="c-quick-row">
+        <div class="c-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          Photo
+        </div>
+        <div class="c-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Event
+        </div>
+        <div class="c-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Poll
+        </div>
+        <div class="c-chip capsule-accent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Capsule
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="feed-placeholder">
+      <div class="feed-card"><div class="feed-bar short"></div><div class="feed-bar med"></div><div class="feed-img"></div><div class="feed-bar short"></div></div>
+    </div>
+  </div>
+</div>
+
+<div style="max-width: 500px; text-align: center; color: #65676B; font-size: 13px; line-height: 1.6; padding: 20px;">
+  <strong style="color: #1C1E21;">Design rationale (UI/UX Pro Max audit):</strong><br>
+  All 3 options fix the 4-row header by putting Photo/Event/Poll/Capsule in a single horizontal row.
+  <strong>Option B</strong> is recommended: the glass composer card adds premium depth, scrollable chips accommodate future actions, and the Capsule chip gets a tinted accent treatment as the differentiating feature.
+  Follows 8dp grid, 48px touch targets, 4.5:1 contrast, Inter font, and the existing indigo (#4930A7) accent.
+</div>
+
+</body>
+</html>

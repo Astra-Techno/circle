@@ -1,4 +1,5 @@
 import '../../../core/design/circle_icons.dart';
+import '../../../core/design/circle_typography.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/local_settings.dart';
@@ -338,23 +339,34 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
           ),
           const SizedBox(height: Space.md),
 
-          // Caption follows the same input geometry as other forms.
-          TextField(
-            controller: _text,
-            readOnly: _resumeDraft != null,
-            minLines: 2,
-            maxLines: 6,
-            maxLength: MemoryRules.maxText,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              hintText: 'Share a memory with your Circle...',
-              hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                color: accents.caption,
+          // Caption inside soft recessed container (matches create_memory.png).
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: accents.recessed.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(CircleRadius.card),
+              border: Border.all(color: accents.hairline),
+            ),
+            child: TextField(
+              controller: _text,
+              readOnly: _resumeDraft != null,
+              minLines: 3,
+              maxLines: 6,
+              maxLength: MemoryRules.maxText,
+              textCapitalization: TextCapitalization.sentences,
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(
+                hintText: 'Share a memory with your Circle...',
+                hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                  color: accents.caption,
+                ),
+                contentPadding: CircleFormMetrics.fieldPadding,
+                counterText: '',
+                errorText: _textError,
+                errorMaxLines: 3,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
-              contentPadding: CircleFormMetrics.fieldPadding,
-              counterText: '',
-              errorText: _textError,
-              errorMaxLines: 3,
             ),
           ),
           const SizedBox(height: Space.md),
@@ -455,22 +467,23 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
                     const SizedBox(height: Space.sm),
                   ],
                   SizedBox(
-                    height: Space.large + Space.md,
+                    height: 52,
                     child: FilledButton(
                       onPressed: _busy ? null : () => _share(chosen),
                       style: FilledButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
-                            CircleRadius.button,
+                            CircleRadius.pill,
                           ),
                         ),
                       ),
                       child: Text(
                         _busy ? 'Sharing...' : 'Create Memory',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: CircleTextStyles.button(
+                          theme.colorScheme.onPrimary,
+                        ).copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -841,7 +854,7 @@ class _CompactPhotoRow extends StatelessWidget {
               ),
             );
           }
-          // Add button at the end.
+          // Add button at the end (clean purple plus tile from create_memory.png).
           return Tooltip(
             message: 'Add photos',
             child: Semantics(
@@ -854,31 +867,17 @@ class _CompactPhotoRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(CircleRadius.card),
                   onTap: onAdd,
                   child: Container(
-                    width: CircleFormMetrics.photoActionWidth(context),
+                    width: _thumbSize,
                     height: _thumbSize,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(CircleRadius.card),
                       border: Border.all(color: accents.hairline),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(Space.sm),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            LucideIcons.image_plus,
-                            size: Space.section,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(height: Space.xs),
-                          Text(
-                            'Add photos',
-                            maxLines: 1,
-                            softWrap: false,
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.labelMedium,
-                          ),
-                        ],
+                    child: Center(
+                      child: Icon(
+                        LucideIcons.plus,
+                        size: Space.hero,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ),
@@ -892,7 +891,7 @@ class _CompactPhotoRow extends StatelessWidget {
   }
 }
 
-/// A single action row: icon + label + chevron, separated by a thin divider.
+/// Rounded card option tile matching create_memory.png.
 class _ActionRow extends StatelessWidget {
   const _ActionRow({required this.icon, required this.label, this.onTap});
   final IconData icon;
@@ -903,28 +902,45 @@ class _ActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accents = CircleAccents.of(context);
-    return Column(
-      children: [
-        InkWell(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.sm),
+      child: Material(
+        color: accents.recessed.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(CircleRadius.card),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: Space.md),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(CircleRadius.card),
+              border: Border.all(color: accents.hairline),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Space.md,
+              vertical: Space.md,
+            ),
             child: Row(
               children: [
-                Icon(icon, size: 22, color: theme.colorScheme.onSurface),
+                Icon(icon, size: 20, color: theme.colorScheme.onSurface),
                 const SizedBox(width: Space.md),
-                Expanded(child: Text(label, style: theme.textTheme.bodyLarge)),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: CircleTextStyles.bodyMedium(
+                      theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
                 Icon(
                   CircleIcons.chevronRight,
-                  size: 20,
+                  size: 18,
                   color: accents.caption,
                 ),
               ],
             ),
           ),
         ),
-        Divider(height: 1, color: accents.hairline),
-      ],
+      ),
     );
   }
 }

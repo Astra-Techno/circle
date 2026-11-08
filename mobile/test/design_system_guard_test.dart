@@ -11,8 +11,13 @@ const tokenFiles = {
   'lib/core/design/circle_typography.dart',
   'lib/core/design/circle_icons.dart',
   'lib/core/design/circle_responsive.dart',
+  'lib/core/design/circle_motion.dart',
 };
-const kitFiles = {'lib/core/design.dart', 'lib/core/circle_components.dart'};
+const kitFiles = {
+  'lib/core/design.dart',
+  'lib/core/circle_components.dart',
+  'lib/core/design/circle_motion.dart',
+};
 
 /// The single, intentional exception for network images: the kit widget
 /// that shows private photos from the CIRCLE media API. It only accepts a

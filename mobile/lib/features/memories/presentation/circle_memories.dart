@@ -115,6 +115,8 @@ class _HomeHeader extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Animated gradient accent bar (Option C).
+              const _GradientAccentBar(),
               if (workspace.groups.isNotEmpty) ...[
                 // Composer row: avatar + prompt.
                 Padding(
@@ -184,25 +186,20 @@ class _HomeHeader extends ConsumerWidget {
                     ],
                   ),
                 ),
-                // One restrained row of supported quick actions.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    Space.md,
-                    Space.xs,
-                    Space.md,
-                    Space.sm,
-                  ),
-                  child: Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    spacing: Space.sm,
+                // Horizontal scrollable quick-action chips (Option C).
+                SizedBox(
+                  height: CircleSizes.minTouchTarget,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: Space.md),
                     children: [
-                      _QuickActionIcon(
+                      _QuickActionChip(
                         icon: LucideIcons.image,
                         label: 'Photo',
                         onTap: () => context.push(composeLocation(groupId)),
                       ),
                       if (features.has(CircleFeature.liveEvents))
-                        _QuickActionIcon(
+                        _QuickActionChip(
                           icon: LucideIcons.calendar,
                           label: 'Event',
                           onTap: () => context.push(
@@ -212,7 +209,7 @@ class _HomeHeader extends ConsumerWidget {
                           ),
                         ),
                       if (features.has(CircleFeature.livePolls))
-                        _QuickActionIcon(
+                        _QuickActionChip(
                           icon: LucideIcons.list,
                           label: 'Poll',
                           onTap: () => context.push(
@@ -221,7 +218,7 @@ class _HomeHeader extends ConsumerWidget {
                                 : '/polls/new?group=$groupId',
                           ),
                         ),
-                      _QuickActionIcon(
+                      _QuickActionChip(
                         icon: LucideIcons.timer,
                         label: 'Capsule',
                         onTap: () => context.push(
@@ -229,10 +226,12 @@ class _HomeHeader extends ConsumerWidget {
                               ? '/capsules/new'
                               : '/capsules/new?group=$groupId',
                         ),
+                        filled: true,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: Space.sm),
               ],
               if (hasMemories)
                 Divider(
@@ -255,29 +254,64 @@ class _HomeHeader extends ConsumerWidget {
   }
 }
 
-/// Compact supported action: a consistent outline icon and readable label.
-class _QuickActionIcon extends StatelessWidget {
-  const _QuickActionIcon({
+/// Rounded chip for the horizontal quick-action row (Option C header).
+/// When [filled] is true the chip renders as a solid primary CTA (Capsule).
+class _QuickActionChip extends StatelessWidget {
+  const _QuickActionChip({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.filled = false,
   });
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool filled;
+
   @override
-  Widget build(BuildContext context) => TextButton.icon(
-    onPressed: onTap,
-    style: TextButton.styleFrom(
-      minimumSize: const Size(Space.large, Space.large),
-      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-      padding: const EdgeInsets.symmetric(horizontal: Space.sm),
-      textStyle: CircleTextStyles.homeShortcut(
-        Theme.of(context).colorScheme.onSurface,
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final accents = CircleAccents.of(context);
+    final foreground = filled ? colors.onPrimary : accents.title;
+    return Padding(
+      padding: const EdgeInsets.only(right: Space.sm),
+      child: TextButton.icon(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+          foregroundColor: foreground,
+          backgroundColor: filled ? colors.primary : accents.recessed,
+          elevation: filled ? 2 : 0,
+          shadowColor: filled
+              ? colors.primary.withValues(alpha: 0.25)
+              : Colors.transparent,
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.contentInset,
+            vertical: Space.sm,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(CircleRadius.small),
+          ),
+          textStyle: CircleTextStyles.label(foreground),
+        ),
+        icon: Icon(
+          icon,
+          size: CircleSizes.iconSmall,
+          color: filled ? colors.onPrimary : accents.caption,
+        ),
+        label: Text(label),
       ),
-    ),
-    icon: Icon(icon, size: CircleSizes.iconDefault),
-    label: Text(label),
+    );
+  }
+}
+
+/// Slim subtle gradient accent bar at the top of the Home header.
+class _GradientAccentBar extends StatelessWidget {
+  const _GradientAccentBar();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 3,
+    decoration: CircleDepth.slidingAccentBar(context, 0.5),
   );
 }
 

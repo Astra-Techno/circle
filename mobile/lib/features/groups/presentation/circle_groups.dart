@@ -50,6 +50,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
   @override
   Widget build(BuildContext context) => WorkspaceView(
     builder: (workspace) {
+      final theme = Theme.of(context);
       final accents = CircleAccents.of(context);
       Widget filterChip(_CircleFilter filter) => _FilterChip(
         label: switch (filter) {
@@ -199,18 +200,138 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                               )
                             : null,
                       ),
-                    // All Circles section header.
-                    if (entries.isNotEmpty)
+                    // Pinned & All Circles sections
+                    if (entries.isNotEmpty) ...[
+                      if (_query.isEmpty &&
+                          _filter == _CircleFilter.all &&
+                          entries.where((e) => e.level == 0).length >= 2) ...[
+                        Builder(
+                          builder: (context) {
+                            final topLevel = entries
+                                .where((e) => e.level == 0)
+                                .take(2)
+                                .toList();
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: Space.sm,
+                                    bottom: Space.sm,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        LucideIcons.pin,
+                                        size: Space.md,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: Space.xs),
+                                      Expanded(
+                                        child: Text(
+                                          'Pinned Circles',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style:
+                                              CircleTextStyles.sectionTitle(
+                                                theme.colorScheme.onSurface,
+                                              ).copyWith(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: Space.xs),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: Space.contentInset,
+                                          vertical: Space.xs,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: accents.recessed,
+                                          borderRadius: BorderRadius.circular(
+                                            CircleRadius.pill,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Edit',
+                                          style:
+                                              CircleTextStyles.caption(
+                                                theme.colorScheme.primary,
+                                              ).copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                for (final entry in topLevel)
+                                  _CircleCard(
+                                    group: entry.group,
+                                    workspace: workspace,
+                                    level: entry.level,
+                                    isPinned: true,
+                                    activity: activityMap[entry.group.id],
+                                    eventCount:
+                                        eventCounts[entry.group.id] ?? 0,
+                                    notificationCount: _notificationCount(
+                                      workspace,
+                                      entry.group.id,
+                                    ),
+                                    expanded: !entry.hasChildren
+                                        ? null
+                                        : entry.expanded,
+                                    onToggle: () => setState(() {
+                                      if (!_collapsed.remove(entry.group.id)) {
+                                        _collapsed.add(entry.group.id);
+                                      }
+                                    }),
+                                  ),
+                                const SizedBox(height: Space.md),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
                       Padding(
                         padding: const EdgeInsets.only(
-                          top: Space.md,
+                          top: Space.sm,
                           bottom: Space.sm,
                         ),
-                        child: Text(
-                          '${entries.length} ${entries.length == 1 ? 'Circle' : 'Circles'}',
-                          style: CircleTextStyles.label(accents.caption),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'All Circles',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: CircleTextStyles.sectionTitle(
+                                  theme.colorScheme.onSurface,
+                                ).copyWith(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            const SizedBox(width: Space.xs),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Sort by',
+                                  style: CircleTextStyles.metadata(
+                                    accents.caption,
+                                  ),
+                                ),
+                                const SizedBox(width: Space.xs),
+                                Icon(
+                                  LucideIcons.chevron_down,
+                                  size: 14,
+                                  color: accents.caption,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
+                    ],
                     for (final entry in entries) ...[
                       if (_query.isNotEmpty && entry.path.isNotEmpty)
                         Padding(
@@ -282,11 +403,27 @@ class _FilterChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => ChoiceChip(
-    label: Text(label),
-    selected: selected,
-    onSelected: (_) => onTap(),
-  );
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accents = CircleAccents.of(context);
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      selectedColor: theme.colorScheme.primary,
+      backgroundColor: accents.recessed,
+      showCheckmark: false,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(CircleRadius.pill),
+        side: BorderSide.none,
+      ),
+      labelStyle: CircleTextStyles.label(
+        selected
+            ? theme.colorScheme.onPrimary
+            : theme.colorScheme.onSurfaceVariant,
+      ).copyWith(fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
+    );
+  }
 }
 
 /// Number of loaded Memories in this exact circle.
@@ -316,6 +453,7 @@ class _CircleCard extends ConsumerWidget {
     required this.group,
     required this.workspace,
     this.level = 0,
+    this.isPinned = false,
     this.activity,
     this.eventCount = 0,
     this.notificationCount = 0,
@@ -325,6 +463,7 @@ class _CircleCard extends ConsumerWidget {
   final CircleGroup group;
   final CircleWorkspace workspace;
   final int level;
+  final bool isPinned;
   final _GroupActivity? activity;
   final int eventCount;
   final int notificationCount;
@@ -380,9 +519,14 @@ class _CircleCard extends ConsumerWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Cover photo — 48px rounded square.
+                    // Cover photo — landscape rounded rectangle.
                     if (!compact) ...[
-                      _GroupCoverPhoto(groupId: group.id, type: group.type),
+                      _GroupCoverPhoto(
+                        groupId: group.id,
+                        type: group.type,
+                        width: 104.0,
+                        height: 76.0,
+                      ),
                       const SizedBox(width: Space.md),
                     ],
                     // Info column.
@@ -391,7 +535,7 @@ class _CircleCard extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Name + notification dot.
+                          // Name + pin icon.
                           Row(
                             children: [
                               Flexible(
@@ -404,15 +548,12 @@ class _CircleCard extends ConsumerWidget {
                                   ),
                                 ),
                               ),
-                              if (notificationCount > 0) ...[
-                                const SizedBox(width: Space.sm),
-                                Container(
-                                  width: Space.sm,
-                                  height: Space.sm,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary,
-                                    shape: BoxShape.circle,
-                                  ),
+                              if (isPinned) ...[
+                                const SizedBox(width: Space.xs),
+                                Icon(
+                                  LucideIcons.pin,
+                                  size: 14,
+                                  color: theme.colorScheme.primary,
                                 ),
                               ],
                             ],
@@ -465,18 +606,22 @@ class _CircleCard extends ConsumerWidget {
                               if (remaining > 0) ...[
                                 const SizedBox(width: Space.xs),
                                 Container(
-                                  width: _avatarDiameter,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: Space.xs,
+                                  ),
                                   height: _avatarDiameter,
                                   decoration: BoxDecoration(
                                     color: accents.recessed,
-                                    shape: BoxShape.circle,
+                                    borderRadius: BorderRadius.circular(
+                                      CircleRadius.pill,
+                                    ),
                                   ),
                                   alignment: Alignment.center,
                                   child: Text(
                                     '+$remaining',
                                     style: CircleTextStyles.caption(
                                       accents.caption,
-                                    ),
+                                    ).copyWith(fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               ],
@@ -510,6 +655,61 @@ class _CircleCard extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: Space.sm),
+                    // Trailing badges + chevron / collapse control.
+                    if (notificationCount > 0) ...[
+                      Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 22,
+                          minHeight: 22,
+                        ),
+                        padding: const EdgeInsets.all(Space.xs),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$notificationCount',
+                          style: CircleTextStyles.caption(
+                            theme.colorScheme.onPrimary,
+                          ).copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      const SizedBox(width: Space.xs),
+                    ] else if (eventCount > 0) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Space.sm,
+                          vertical: Space.xs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.errorContainer.withValues(
+                            alpha: 0.15,
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            CircleRadius.pill,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              LucideIcons.calendar,
+                              size: 13,
+                              color: theme.colorScheme.error,
+                            ),
+                            const SizedBox(width: Space.xs),
+                            Text(
+                              '$eventCount ${eventCount == 1 ? 'event' : 'events'}',
+                              style: CircleTextStyles.caption(
+                                theme.colorScheme.error,
+                              ).copyWith(fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: Space.xs),
+                    ],
                     // Right side: collapse/expand or nav chevron.
                     if (expanded != null)
                       Tooltip(
@@ -517,7 +717,7 @@ class _CircleCard extends ConsumerWidget {
                             '${expanded! ? 'Collapse' : 'Expand'} ${group.name}',
                         child: InkWell(
                           borderRadius: BorderRadius.circular(
-                            CircleSizes.minTouchTarget / 2,
+                            CircleRadius.pill,
                           ),
                           onTap: onToggle,
                           child: SizedBox(
@@ -557,9 +757,16 @@ class _CircleCard extends ConsumerWidget {
 
 /// Rounded rectangle cover photo for a group.
 class _GroupCoverPhoto extends ConsumerWidget {
-  const _GroupCoverPhoto({required this.groupId, required this.type});
+  const _GroupCoverPhoto({
+    required this.groupId,
+    required this.type,
+    this.width = 104.0,
+    this.height = 76.0,
+  });
   final String groupId;
   final CircleType type;
+  final double width;
+  final double height;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -588,8 +795,8 @@ class _GroupCoverPhoto extends ConsumerWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(CircleRadius.card),
       child: SizedBox(
-        width: CircleSizes.minTouchTarget,
-        height: CircleSizes.minTouchTarget,
+        width: width,
+        height: height,
         child: image != null
             ? Semantics(
                 label: 'Cover photo',
