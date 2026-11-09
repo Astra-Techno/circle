@@ -88,7 +88,7 @@ class CircleHome extends ConsumerWidget {
   );
 }
 
-/// Selected Home concept: avatar composer and three slim supported shortcuts.
+/// Selected Home concept: Floating 3D Glass Island with whisper prompt and tactile action tray.
 class _HomeHeader extends ConsumerWidget {
   const _HomeHeader({
     required this.workspace,
@@ -104,168 +104,214 @@ class _HomeHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final accents = CircleAccents.of(context);
     final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surface,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: CircleLayout.homeComposerMaxWidth,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Animated gradient accent bar (Option C).
-              const _GradientAccentBar(),
-              if (workspace.groups.isNotEmpty) ...[
-                // Composer row: avatar + prompt.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    Space.md,
-                    Space.sm,
-                    Space.md,
-                    Space.sm,
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: CircleLayout.homeComposerMaxWidth,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (workspace.groups.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Space.md,
+                  Space.xs,
+                  Space.md,
+                  Space.sm,
+                ),
+                child: Container(
+                  decoration: CircleDepth.glassPanel(
+                    context,
+                    radius: CircleRadius.sheet,
+                    glowColor: theme.colorScheme.primary,
                   ),
-                  child: Row(
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      PersonAvatar(
-                        person: workspace.viewer,
-                        name: 'You',
-                        size: CircleAvatarSize.medium,
-                      ),
-                      const SizedBox(width: Space.sm),
-                      Expanded(
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(Space.hero),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(Space.hero),
-                            onTap: () => context.push(composeLocation(groupId)),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                minHeight: Space.large,
-                              ),
-                              child: Center(
-                                heightFactor: 1,
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: Ink(
-                                    decoration: BoxDecoration(
-                                      color: accents.recessed,
-                                      borderRadius: BorderRadius.circular(
-                                        Space.hero,
-                                      ),
+                      // Subtle radiant accent top edge
+                      const _GradientAccentBar(),
+                      Padding(
+                        padding: const EdgeInsets.all(Space.sm),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Keepsake whisper prompt row: avatar + tactile capsule with sparkle
+                            Row(
+                              children: [
+                                PersonAvatar(
+                                  person: workspace.viewer,
+                                  name: 'You',
+                                  size: CircleAvatarSize.medium,
+                                ),
+                                const SizedBox(width: Space.sm),
+                                Expanded(
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(
+                                      CircleRadius.pill,
                                     ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: Space.md,
-                                        vertical: Space.sm + Space.xs,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(
+                                        CircleRadius.pill,
                                       ),
-                                      child: Text(
-                                        'Share a memory…',
-                                        maxLines:
-                                            MediaQuery.textScalerOf(
-                                                  context,
-                                                ).scale(1) <=
-                                                CircleLayout.largeTextThreshold
-                                            ? 1
-                                            : 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: CircleTextStyles.homeBody(
-                                          accents.caption,
+                                      onTap: () => context.push(
+                                        composeLocation(groupId),
+                                      ),
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          minHeight: Space.large,
+                                        ),
+                                        child: Center(
+                                          heightFactor: 1,
+                                          child: SizedBox(
+                                            width: double.infinity,
+                                            child: Ink(
+                                              decoration: BoxDecoration(
+                                                color: accents.recessed,
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      CircleRadius.pill,
+                                                    ),
+                                                border: Border.all(
+                                                  color: accents.hairline,
+                                                ),
+                                              ),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: Space.md,
+                                                      vertical:
+                                                          Space.sm + Space.xs,
+                                                    ),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        'Share a memory…',
+                                                        maxLines:
+                                                            MediaQuery.textScalerOf(
+                                                                  context,
+                                                                ).scale(1) <=
+                                                                CircleLayout
+                                                                    .largeTextThreshold
+                                                            ? 1
+                                                            : 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style:
+                                                            CircleTextStyles.homeBody(
+                                                              accents.caption,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(
+                                                      width: Space.xs,
+                                                    ),
+                                                    Icon(
+                                                      LucideIcons.sparkles,
+                                                      size:
+                                                          CircleSizes.iconSmall,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .primary,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: Space.sm),
+                            // Horizontal scrollable tactile quick-action chips
+                            SizedBox(
+                              height: CircleSizes.minTouchTarget,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: [
+                                  _QuickActionChip(
+                                    icon: LucideIcons.image,
+                                    label: 'Photo',
+                                    iconColor: theme.colorScheme.primary,
+                                    onTap: () =>
+                                        context.push(composeLocation(groupId)),
+                                  ),
+                                  if (features.has(CircleFeature.liveEvents))
+                                    _QuickActionChip(
+                                      icon: LucideIcons.calendar,
+                                      label: 'Event',
+                                      iconColor: accents.calm,
+                                      onTap: () => context.push(
+                                        groupId == null
+                                            ? '/events/new'
+                                            : '/events/new?group=$groupId',
+                                      ),
+                                    ),
+                                  if (features.has(CircleFeature.livePolls))
+                                    _QuickActionChip(
+                                      icon: LucideIcons.list,
+                                      label: 'Poll',
+                                      iconColor: accents.sage,
+                                      onTap: () => context.push(
+                                        groupId == null
+                                            ? '/polls/new'
+                                            : '/polls/new?group=$groupId',
+                                      ),
+                                    ),
+                                  _QuickActionChip(
+                                    icon: LucideIcons.timer,
+                                    label: 'Capsule',
+                                    onTap: () => context.push(
+                                      groupId == null
+                                          ? '/capsules/new'
+                                          : '/capsules/new?group=$groupId',
+                                    ),
+                                    filled: true,
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Horizontal scrollable quick-action chips (Option C).
-                SizedBox(
-                  height: CircleSizes.minTouchTarget,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: Space.md),
-                    children: [
-                      _QuickActionChip(
-                        icon: LucideIcons.image,
-                        label: 'Photo',
-                        onTap: () => context.push(composeLocation(groupId)),
-                      ),
-                      if (features.has(CircleFeature.liveEvents))
-                        _QuickActionChip(
-                          icon: LucideIcons.calendar,
-                          label: 'Event',
-                          onTap: () => context.push(
-                            groupId == null
-                                ? '/events/new'
-                                : '/events/new?group=$groupId',
-                          ),
-                        ),
-                      if (features.has(CircleFeature.livePolls))
-                        _QuickActionChip(
-                          icon: LucideIcons.list,
-                          label: 'Poll',
-                          onTap: () => context.push(
-                            groupId == null
-                                ? '/polls/new'
-                                : '/polls/new?group=$groupId',
-                          ),
-                        ),
-                      _QuickActionChip(
-                        icon: LucideIcons.timer,
-                        label: 'Capsule',
-                        onTap: () => context.push(
-                          groupId == null
-                              ? '/capsules/new'
-                              : '/capsules/new?group=$groupId',
-                        ),
-                        filled: true,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: Space.sm),
-              ],
-              if (hasMemories)
-                Divider(
-                  height: CircleMemoryLayout.dividerThickness,
-                  thickness: CircleMemoryLayout.dividerThickness,
-                  color: accents.hairline,
-                ),
-              if (!hasMemories)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Space.section,
-                  ),
-                  child: _FirstSteps(workspace: workspace, groupId: groupId),
-                ),
-            ],
-          ),
+              ),
+            if (!hasMemories)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Space.section),
+                child: _FirstSteps(workspace: workspace, groupId: groupId),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Rounded chip for the horizontal quick-action row (Option C header).
+/// Rounded chip for the horizontal quick-action row (Floating Glass Island).
 /// When [filled] is true the chip renders as a solid primary CTA (Capsule).
 class _QuickActionChip extends StatelessWidget {
   const _QuickActionChip({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.iconColor,
     this.filled = false,
   });
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color? iconColor;
   final bool filled;
 
   @override
@@ -278,25 +324,27 @@ class _QuickActionChip extends StatelessWidget {
       child: TextButton.icon(
         onPressed: onTap,
         style: TextButton.styleFrom(
+          minimumSize: const Size(0, CircleSizes.minTouchTarget),
           foregroundColor: foreground,
-          backgroundColor: filled ? colors.primary : accents.recessed,
+          backgroundColor: filled ? colors.primary : colors.surface,
           elevation: filled ? 2 : 0,
           shadowColor: filled
               ? colors.primary.withValues(alpha: 0.25)
               : Colors.transparent,
+          side: BorderSide(color: filled ? colors.primary : accents.hairline),
           padding: const EdgeInsets.symmetric(
             horizontal: Space.contentInset,
             vertical: Space.sm,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(CircleRadius.small),
+            borderRadius: BorderRadius.circular(CircleRadius.pill),
           ),
           textStyle: CircleTextStyles.label(foreground),
         ),
         icon: Icon(
           icon,
           size: CircleSizes.iconSmall,
-          color: filled ? colors.onPrimary : accents.caption,
+          color: filled ? colors.onPrimary : (iconColor ?? accents.caption),
         ),
         label: Text(label),
       ),

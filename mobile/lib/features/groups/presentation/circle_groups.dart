@@ -278,14 +278,6 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                                       workspace,
                                       entry.group.id,
                                     ),
-                                    expanded: !entry.hasChildren
-                                        ? null
-                                        : entry.expanded,
-                                    onToggle: () => setState(() {
-                                      if (!_collapsed.remove(entry.group.id)) {
-                                        _collapsed.add(entry.group.id);
-                                      }
-                                    }),
                                   ),
                                 const SizedBox(height: Space.md),
                               ],
