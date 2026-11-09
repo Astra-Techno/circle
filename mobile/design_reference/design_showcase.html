@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CIRCLE — Design Gallery & 3D Renderings</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0A0C12;
+    background-image: 
+      radial-gradient(circle at 15% 20%, rgba(99, 66, 232, 0.22) 0%, transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(233, 59, 129, 0.18) 0%, transparent 45%);
+    color: #F0F2F8;
+    padding: 40px 20px 80px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header {
+    text-align: center;
+    max-width: 820px;
+    margin-bottom: 40px;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(99, 66, 232, 0.2);
+    border: 1px solid rgba(142, 116, 255, 0.35);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #C2B3FF;
+    margin-bottom: 16px;
+    box-shadow: 0 0 20px rgba(99, 66, 232, 0.3);
+  }
+  h1 {
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #FFFFFF 30%, #C4B5FD 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  p {
+    font-size: 15px;
+    color: #9DA0B4;
+    line-height: 1.6;
+  }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+    gap: 40px;
+    max-width: 1300px;
+    width: 100%;
+  }
+
+  .card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(142, 116, 255, 0.35);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+  .badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .badge-light { background: rgba(255, 255, 255, 0.15); color: #fff; }
+  .badge-dark { background: rgba(99, 66, 232, 0.3); color: #C2B3FF; border: 1px solid rgba(142,116,255,0.4); }
+
+  .img-container {
+    width: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  }
+  .img-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform 0.4s ease;
+  }
+  .img-container:hover img {
+    transform: scale(1.02);
+  }
+
+  .features-list {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    color: #B5B9CB;
+  }
+  .features-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+  }
+  .check {
+    color: #4ADE80;
+    font-weight: bold;
+  }
+
+  @media(max-width: 900px) {
+    .gallery { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="tag">✨ 3D Design Renders • CIRCLE Social 2.6</div>
+    <h1>Photorealistic Design Gallery</h1>
+    <p>
+      High-fidelity 3D product renders showcasing CIRCLE's new <strong>Floating 3D Glass Island</strong> header, tactile quick-action tray, keepsake feed, and frosted glass dock.
+    </p>
+  </header>
+
+  <main class="gallery">
+    <!-- LIGHT MODE RENDER -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Light Theme • Natural Titanium</h2>
+        <span class="badge badge-light">Studio Daylight</span>
+      </div>
+      <div class="img-container">
+        <img src="circle_mobile_glass_island_mockup.jpg" alt="CIRCLE Light Mode Mockup">
+      </div>
+      <ul class="features-list">
+        <li><span class="check">✓</span> <strong>Floating 3D Glass Island</strong>: Hovering frosted capsule with luminous violet edge accent.</li>
+        <li><span class="check">✓</span> <strong>Whisper Prompt</strong>: "Share a memory…" with subtle violet star glyph.</li>
+        <li><span class="check">✓</span> <strong>Tactile Chips</strong>: Color-coded pills for [Photo], [Event], [Poll], and [Capsule].</li>
+        <li><span class="check">✓</span> <strong>Keepsake Feed</strong>: Warm family memory cards with zero social media clutter.</li>
+      </ul>
+    </section>
+
+    <!-- DARK MODE RENDER -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">OLED Dark Mode • Obsidian Titanium</h2>
+        <span class="badge badge-dark">Cyber-Luxury Studio</span>
+      </div>
+      <div class="img-container">
+        <img src="circle_oled_dark_mode_mockup.jpg" alt="CIRCLE Dark Mode Mockup">
+      </div>
+      <ul class="features-list">
+        <li><span class="check">✓</span> <strong>Deep Obsidian Background</strong>: Gentle purple backlight aura without eye fatigue.</li>
+        <li><span class="check">✓</span> <strong>Smoky Translucent Glass</strong>: High-contrast frosted glass with neon violet light-pipes.</li>
+        <li><span class="check">✓</span> <strong>Glowing Avatar Halo</strong>: Radiant member presence indicator.</li>
+        <li><span class="check">✓</span> <strong>Floating Frosted Dock</strong>: Bottom navigation glowing softly above dark content.</li>
+      </ul>
+    </section>
+  </main>
+
+</body>
+</html>
