@@ -231,53 +231,10 @@ class _HomeHeader extends ConsumerWidget {
                               ],
                             ),
                             const SizedBox(height: Space.sm),
-                            // Horizontal scrollable tactile quick-action chips
-                            SizedBox(
-                              height: CircleSizes.minTouchTarget,
-                              child: ListView(
-                                scrollDirection: Axis.horizontal,
-                                children: [
-                                  _QuickActionChip(
-                                    icon: LucideIcons.image,
-                                    label: 'Photo',
-                                    iconColor: theme.colorScheme.primary,
-                                    onTap: () =>
-                                        context.push(composeLocation(groupId)),
-                                  ),
-                                  if (features.has(CircleFeature.liveEvents))
-                                    _QuickActionChip(
-                                      icon: LucideIcons.calendar,
-                                      label: 'Event',
-                                      iconColor: accents.calm,
-                                      onTap: () => context.push(
-                                        groupId == null
-                                            ? '/events/new'
-                                            : '/events/new?group=$groupId',
-                                      ),
-                                    ),
-                                  if (features.has(CircleFeature.livePolls))
-                                    _QuickActionChip(
-                                      icon: LucideIcons.list,
-                                      label: 'Poll',
-                                      iconColor: accents.sage,
-                                      onTap: () => context.push(
-                                        groupId == null
-                                            ? '/polls/new'
-                                            : '/polls/new?group=$groupId',
-                                      ),
-                                    ),
-                                  _QuickActionChip(
-                                    icon: LucideIcons.timer,
-                                    label: 'Capsule',
-                                    onTap: () => context.push(
-                                      groupId == null
-                                          ? '/capsules/new'
-                                          : '/capsules/new?group=$groupId',
-                                    ),
-                                    filled: true,
-                                  ),
-                                ],
-                              ),
+                            // Icon-only flat bold action strip
+                            _ActionIconStrip(
+                              groupId: groupId,
+                              features: features,
                             ),
                           ],
                         ),
@@ -298,58 +255,77 @@ class _HomeHeader extends ConsumerWidget {
   }
 }
 
-/// Rounded chip for the horizontal quick-action row (Floating Glass Island).
-/// When [filled] is true the chip renders as a solid primary CTA (Capsule).
-class _QuickActionChip extends StatelessWidget {
-  const _QuickActionChip({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.iconColor,
-    this.filled = false,
-  });
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color? iconColor;
-  final bool filled;
+/// Flat bold icon-only action strip for the Home header.
+/// Renders [CircleActionIcon] widgets at 34px with vertical dividers.
+class _ActionIconStrip extends StatelessWidget {
+  const _ActionIconStrip({required this.groupId, required this.features});
+  final String? groupId;
+  final CircleFeatures features;
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final accents = CircleAccents.of(context);
-    final foreground = filled ? colors.onPrimary : accents.title;
-    return Padding(
-      padding: const EdgeInsets.only(right: Space.sm),
-      child: TextButton.icon(
-        onPressed: onTap,
-        style: TextButton.styleFrom(
-          minimumSize: const Size(0, CircleSizes.minTouchTarget),
-          foregroundColor: foreground,
-          backgroundColor: filled ? colors.primary : colors.surface,
-          elevation: filled ? 2 : 0,
-          shadowColor: filled
-              ? colors.primary.withValues(alpha: 0.25)
-              : Colors.transparent,
-          side: BorderSide(color: filled ? colors.primary : accents.hairline),
-          padding: const EdgeInsets.symmetric(
-            horizontal: Space.contentInset,
-            vertical: Space.sm,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(CircleRadius.pill),
-          ),
-          textStyle: CircleTextStyles.label(foreground),
+    final items = <_ActionItem>[
+      _ActionItem(
+        type: CircleActionIconType.memory,
+        tooltip: 'Photo',
+        route: composeLocation(groupId),
+      ),
+      if (features.has(CircleFeature.liveEvents))
+        _ActionItem(
+          type: CircleActionIconType.event,
+          tooltip: 'Event',
+          route: groupId == null ? '/events/new' : '/events/new?group=$groupId',
         ),
-        icon: Icon(
-          icon,
-          size: CircleSizes.iconSmall,
-          color: filled ? colors.onPrimary : (iconColor ?? accents.caption),
+      if (features.has(CircleFeature.livePolls))
+        _ActionItem(
+          type: CircleActionIconType.poll,
+          tooltip: 'Poll',
+          route: groupId == null ? '/polls/new' : '/polls/new?group=$groupId',
         ),
-        label: Text(label),
+      _ActionItem(
+        type: CircleActionIconType.capsule,
+        tooltip: 'Capsule',
+        route: groupId == null
+            ? '/capsules/new'
+            : '/capsules/new?group=$groupId',
+      ),
+    ];
+
+    return SizedBox(
+      height: CircleSizes.minTouchTarget,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) Container(width: 1, height: 20, color: accents.hairline),
+            Tooltip(
+              message: items[i].tooltip,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(CircleRadius.card),
+                onTap: () => context.push(items[i].route),
+                child: Padding(
+                  padding: const EdgeInsets.all(Space.xs),
+                  child: CircleActionIcon(type: items[i].type),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
+}
+
+class _ActionItem {
+  const _ActionItem({
+    required this.type,
+    required this.tooltip,
+    required this.route,
+  });
+  final CircleActionIconType type;
+  final String tooltip;
+  final String route;
 }
 
 /// Slim subtle gradient accent bar at the top of the Home header.

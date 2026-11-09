@@ -1,5 +1,22 @@
 # CIRCLE design system
 
+## Social 2.6: flat bold action icons, 9 November 2026
+
+Home header action row and header nav icons use the Circle flat bold icon style: a solid single-colour rx=14 squircle with a crisp 2.5px white stroke symbol centred inside. No gradients, shadows, glows or overlays. Each icon has a distinct semantic colour:
+
+| Icon | Colour | Hex | Meaning |
+|------|--------|-----|---------|
+| Search | Navy | `#1E3A5F` | Focused, precision |
+| Notify | Crimson | `#DC2626` | Urgency, alerts |
+| Memory | Orange | `#EA580C` | Warmth, nostalgia |
+| Event | Pink | `#DB2777` | Celebration |
+| Poll | Teal | `#0D9488` | Data, clarity |
+| Capsule | Purple | `#7C3AED` | Mystery, premium |
+| Home | Green | `#16A34A` | Safe, grounded |
+| Chat | Blue | `#2563EB` | Communication |
+
+Implementation uses `CircleActionIcon` in `mobile/lib/core/design/circle_action_icons.dart`. The widget takes a `CircleActionIconType` enum, renders a `Container` with the flat colour fill and `CustomPaint` for the white symbol at the token size. Use these exclusively in the Home header action strip and nav icons. Symbols are pure white `#FFFFFF`; dark mode uses the same colours (they pop on dark backgrounds). Icons render at 34px in the action strip and 26px in the nav bar. The squircle background and symbol are a single flat layer; there is no 3D depth, highlight overlay or animation on the icon itself.
+
 ## Social 2.5: audit consistency, 7 November 2026
 
 Preserve the approved Home header, icon-only floating dock and shared Memories/Poll/Event cards. Use a separate accessible interactive-outline token for fields, checkboxes and radio buttons; decorative hairlines stay quiet. Forms use `CircleFieldLabel` above the input so long labels wrap independently, preserve field semantics and keep validation at its input. Share field spacing/padding/radii and neutral base fills; reserve lavender for selected/date/time content. Header actions are flat by default with48px targets. `CircleIdentityHeader` stacks critical names below avatar/menu at narrow widths or large text. Never shrink RSVP text; allow action wrapping and scroll actions with Event detail at large text. `ReadingPane` paints its page surface; Circle shortcut ink stays on its own clipped Material. Keep error recovery in its owning state and unsupported deep links honest. Native Apple text/Inter policy and Bold Text remain unchanged. Full implementation/verification:docs/ui-audit-completed-2026-11-07.md.

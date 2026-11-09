@@ -12,6 +12,7 @@ const tokenFiles = {
   'lib/core/design/circle_icons.dart',
   'lib/core/design/circle_responsive.dart',
   'lib/core/design/circle_motion.dart',
+  'lib/core/design/circle_action_icons.dart',
 };
 const kitFiles = {
   'lib/core/design.dart',

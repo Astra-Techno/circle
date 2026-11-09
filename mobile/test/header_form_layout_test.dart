@@ -81,9 +81,9 @@ void main() {
       (find.byTooltip('Search'), '/search'),
       (find.byTooltip('Activity'), '/activity'),
       (find.text('Share a memory…'), '/compose'),
-      (find.widgetWithText(TextButton, 'Photo'), '/compose'),
-      (find.widgetWithText(TextButton, 'Event'), '/events/new'),
-      (find.widgetWithText(TextButton, 'Poll'), '/polls/new'),
+      (find.byTooltip('Photo'), '/compose'),
+      (find.byTooltip('Event'), '/events/new'),
+      (find.byTooltip('Poll'), '/polls/new'),
     ];
     for (final entry in routes) {
       await go(tester, c, '/home');

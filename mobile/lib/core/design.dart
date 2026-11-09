@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'design/circle_typography.dart';
 import 'design/circle_icons.dart';
 import 'design/circle_motion.dart';
+export 'design/circle_action_icons.dart';
 export 'design/circle_motion.dart';
 
 /// Decode budgets for private image previews. Full-screen viewing keeps the

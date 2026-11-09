@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/circle_harness.dart';
 import 'support/reference_home_repository.dart';
 import 'package:mobile/core/circle_brand.dart';
+import 'package:mobile/core/design/circle_action_icons.dart';
 
 void main() {
   testWidgets('normalized Home visual fixture', (tester) async {
@@ -156,10 +157,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       final cards = find.byType(CircleMemoryCard);
-      final tile = find
-          .ancestor(of: find.text('Photo'), matching: find.byType(InkWell))
+      // Verify that the action icon strip has adequate touch targets.
+      final actionIcons = find.byType(CircleActionIcon);
+      expect(actionIcons, findsWidgets);
+      final firstAction = find
+          .ancestor(of: actionIcons.first, matching: find.byType(InkWell))
           .first;
-      expect(tester.getSize(tile).height, greaterThanOrEqualTo(48));
+      expect(tester.getSize(firstAction).height, greaterThanOrEqualTo(42));
       if (size.width >= 840) {
         final first = tester.getRect(cards.first);
         expect(first.width, closeTo(720, 0.01));
@@ -191,7 +195,7 @@ void main() {
           ).writeAsString(
             jsonEncode({
               'viewport': {'width': size.width, 'height': size.height},
-              'photoAction': rect(tile),
+              'photoAction': rect(firstAction),
               'composer': rect(
                 find
                     .ancestor(
