@@ -424,6 +424,41 @@ final class MemoryController
         Response::created($comment, 'Comment added.');
     }
 
+    // --- Comment Deletion ---
+
+    /**
+     * Soft-delete a comment. The author can delete their own comment, and
+     * group admins can hide any comment. Descendants stay visible (no cascade).
+     */
+    public static function deleteComment(Request $request): void
+    {
+        $userId = $request->userId();
+        $memoryId = (int) $request->param('id');
+        $commentId = (int) $request->param('commentId');
+
+        $memory = self::findMemoryForMember($memoryId, $userId);
+        $groupId = (int) $memory['group_id'];
+
+        $comment = Database::queryOne(
+            "SELECT id, author_id, status FROM comments WHERE id = :cid AND memory_id = :mid",
+            ['cid' => $commentId, 'mid' => $memoryId]
+        );
+        if ($comment === null || $comment['status'] !== 'active') {
+            Response::notFound('Comment not found.');
+        }
+
+        if ((int) $comment['author_id'] !== $userId && !MemberRepository::isAdmin($groupId, $userId)) {
+            Response::forbidden('Only the comment author or a group admin can remove this comment.');
+        }
+
+        Database::execute(
+            "UPDATE comments SET status = 'hidden' WHERE id = :id",
+            ['id' => $commentId]
+        );
+
+        Response::ok(null, 'Comment removed.');
+    }
+
     // --- Reactions ---
 
     /**

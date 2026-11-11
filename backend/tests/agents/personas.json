@@ -1,0 +1,544 @@
+{
+  "groups": [
+    {
+      "key": "sharma_family",
+      "name": "Sharma Family",
+      "type": "family",
+      "description": "Our Sharma family circle. Sharing moments from festivals, dinners and everyday life.",
+      "subgroups": [
+        {"key": "sharma_kids", "name": "Kids Corner", "type": "family", "description": "Fun stuff for the kids"}
+      ]
+    },
+    {
+      "key": "iit_alumni_2018",
+      "name": "IIT Madras 2018 Batch",
+      "type": "college",
+      "description": "Reconnecting with our batch from IIT Madras. Reunions, throwbacks and career updates.",
+      "subgroups": [
+        {"key": "iit_cricket", "name": "Cricket Team", "type": "club", "description": "Weekend cricket gang"}
+      ]
+    },
+    {
+      "key": "techcorp_office",
+      "name": "TechCorp Bangalore",
+      "type": "office",
+      "description": "Our daily work circle at TechCorp. Team updates, celebrations and office moments.",
+      "subgroups": [
+        {"key": "techcorp_design", "name": "Design Team", "type": "office", "description": "UX/UI design team discussions"}
+      ]
+    },
+    {
+      "key": "weekend_trekkers",
+      "name": "Weekend Trekkers",
+      "type": "club",
+      "description": "Planning weekend treks around Bangalore. Routes, photos and trail reviews.",
+      "subgroups": []
+    },
+    {
+      "key": "maple_apartments",
+      "name": "Maple Apartments B-Block",
+      "type": "other",
+      "description": "Neighbours in B-Block. Maintenance updates, lost and found, community events.",
+      "subgroups": []
+    }
+  ],
+  "personas": [
+    {
+      "key": "priya",
+      "display_name": "Priya Sharma",
+      "mobile": "+919800000001",
+      "about": "Mom of two. Love cooking and gardening.",
+      "current_city": "Bangalore",
+      "hometown": "Jaipur",
+      "work": "Homemaker",
+      "education": "BA English, Rajasthan University",
+      "behavior": "active_poster",
+      "groups": ["sharma_family", "sharma_kids", "maple_apartments"],
+      "owns": ["sharma_family"]
+    },
+    {
+      "key": "arjun",
+      "display_name": "Arjun Sharma",
+      "mobile": "+919800000002",
+      "about": "Software architect. Weekend cricketer.",
+      "current_city": "Bangalore",
+      "hometown": "Jaipur",
+      "work": "Lead Architect, TechCorp",
+      "education": "BTech CSE, IIT Madras 2018",
+      "behavior": "moderate",
+      "groups": ["sharma_family", "sharma_kids", "iit_alumni_2018", "iit_cricket", "techcorp_office", "weekend_trekkers"],
+      "owns": ["iit_alumni_2018", "techcorp_office"]
+    },
+    {
+      "key": "meera",
+      "display_name": "Meera Sharma",
+      "mobile": "+919800000003",
+      "about": "Class 10. Aspiring artist.",
+      "current_city": "Bangalore",
+      "hometown": "Jaipur",
+      "education": "DPS Bangalore",
+      "behavior": "active_poster",
+      "groups": ["sharma_family", "sharma_kids"],
+      "owns": []
+    },
+    {
+      "key": "vikram",
+      "display_name": "Vikram Sharma",
+      "mobile": "+919800000004",
+      "about": "Retired bank manager. Avid reader.",
+      "current_city": "Jaipur",
+      "hometown": "Jaipur",
+      "work": "Retired, State Bank",
+      "education": "MCom, Rajasthan University",
+      "behavior": "lurker",
+      "groups": ["sharma_family"],
+      "owns": []
+    },
+    {
+      "key": "sneha",
+      "display_name": "Sneha Iyer",
+      "mobile": "+919800000005",
+      "about": "UX Designer. Coffee addict. Dog mom.",
+      "current_city": "Bangalore",
+      "hometown": "Chennai",
+      "work": "Senior UX Designer, TechCorp",
+      "education": "MDes, NID Ahmedabad",
+      "behavior": "active_poster",
+      "groups": ["techcorp_office", "techcorp_design", "weekend_trekkers"],
+      "owns": ["techcorp_design"]
+    },
+    {
+      "key": "rahul",
+      "display_name": "Rahul Menon",
+      "mobile": "+919800000006",
+      "about": "Backend dev. Plays bass guitar.",
+      "current_city": "Hyderabad",
+      "hometown": "Kochi",
+      "work": "Software Engineer, Flipkart",
+      "education": "BTech CSE, IIT Madras 2018",
+      "behavior": "lurker",
+      "groups": ["iit_alumni_2018", "iit_cricket"],
+      "owns": []
+    },
+    {
+      "key": "ananya",
+      "display_name": "Ananya Reddy",
+      "mobile": "+919800000007",
+      "about": "PM at Google. Marathon runner.",
+      "current_city": "Bangalore",
+      "hometown": "Hyderabad",
+      "work": "Product Manager, Google",
+      "education": "BTech CSE, IIT Madras 2018",
+      "behavior": "moderate",
+      "groups": ["iit_alumni_2018", "weekend_trekkers"],
+      "owns": ["weekend_trekkers"]
+    },
+    {
+      "key": "deepak",
+      "display_name": "Deepak Gupta",
+      "mobile": "+919800000008",
+      "about": "Full stack developer. Fitness enthusiast.",
+      "current_city": "Bangalore",
+      "hometown": "Lucknow",
+      "work": "Tech Lead, TechCorp",
+      "education": "BTech IT, BITS Pilani",
+      "behavior": "moderate",
+      "groups": ["techcorp_office", "techcorp_design", "weekend_trekkers", "maple_apartments"],
+      "owns": []
+    },
+    {
+      "key": "kavita",
+      "display_name": "Kavita Nair",
+      "mobile": "+919800000009",
+      "about": "Data scientist. Love travelling and photography.",
+      "current_city": "Bangalore",
+      "hometown": "Trivandrum",
+      "work": "Data Scientist, TechCorp",
+      "education": "MSc Statistics, ISI Kolkata",
+      "behavior": "active_poster",
+      "groups": ["techcorp_office", "iit_alumni_2018", "weekend_trekkers"],
+      "owns": []
+    },
+    {
+      "key": "sanjay",
+      "display_name": "Sanjay Patel",
+      "mobile": "+919800000010",
+      "about": "Startup founder. Angel investor.",
+      "current_city": "Mumbai",
+      "hometown": "Ahmedabad",
+      "work": "CEO, NovaPay",
+      "education": "BTech EE, IIT Madras 2018",
+      "behavior": "lurker",
+      "groups": ["iit_alumni_2018"],
+      "owns": []
+    },
+    {
+      "key": "nisha",
+      "display_name": "Nisha Kapoor",
+      "mobile": "+919800000011",
+      "about": "HR lead. Weekend baker.",
+      "current_city": "Bangalore",
+      "hometown": "Delhi",
+      "work": "HR Director, TechCorp",
+      "education": "MBA HR, XLRI",
+      "behavior": "organizer",
+      "groups": ["techcorp_office", "maple_apartments"],
+      "owns": ["maple_apartments"]
+    },
+    {
+      "key": "rohan",
+      "display_name": "Rohan Das",
+      "mobile": "+919800000012",
+      "about": "iOS developer. Biker.",
+      "current_city": "Bangalore",
+      "hometown": "Kolkata",
+      "work": "iOS Engineer, TechCorp",
+      "education": "BTech CSE, Jadavpur University",
+      "behavior": "moderate",
+      "groups": ["techcorp_office", "techcorp_design", "iit_cricket"],
+      "owns": []
+    },
+    {
+      "key": "aisha",
+      "display_name": "Aisha Khan",
+      "mobile": "+919800000013",
+      "about": "Content writer. Bookworm.",
+      "current_city": "Bangalore",
+      "hometown": "Lucknow",
+      "work": "Content Lead, TechCorp",
+      "education": "MA English, JNU",
+      "behavior": "active_poster",
+      "groups": ["techcorp_office", "weekend_trekkers", "maple_apartments"],
+      "owns": []
+    },
+    {
+      "key": "karthik",
+      "display_name": "Karthik Subramanian",
+      "mobile": "+919800000014",
+      "about": "DevOps engineer. Chess player.",
+      "current_city": "Chennai",
+      "hometown": "Chennai",
+      "work": "DevOps Lead, Zoho",
+      "education": "BTech CSE, IIT Madras 2018",
+      "behavior": "lurker",
+      "groups": ["iit_alumni_2018", "iit_cricket"],
+      "owns": ["iit_cricket"]
+    },
+    {
+      "key": "divya",
+      "display_name": "Divya Menon",
+      "mobile": "+919800000015",
+      "about": "Pediatrician. Love painting.",
+      "current_city": "Bangalore",
+      "hometown": "Kochi",
+      "work": "Pediatrician, Apollo Hospital",
+      "education": "MBBS MD, CMC Vellore",
+      "behavior": "moderate",
+      "groups": ["sharma_family", "maple_apartments"],
+      "owns": []
+    },
+    {
+      "key": "amit",
+      "display_name": "Amit Joshi",
+      "mobile": "+919800000016",
+      "about": "Civil engineer. Amateur photographer.",
+      "current_city": "Bangalore",
+      "hometown": "Pune",
+      "work": "Project Manager, L&T",
+      "education": "BTech Civil, COEP Pune",
+      "behavior": "active_poster",
+      "groups": ["maple_apartments", "weekend_trekkers"],
+      "owns": []
+    },
+    {
+      "key": "lakshmi",
+      "display_name": "Lakshmi Venkatesh",
+      "mobile": "+919800000017",
+      "about": "School teacher. Carnatic music vocalist.",
+      "current_city": "Bangalore",
+      "hometown": "Mysore",
+      "work": "Teacher, DPS Bangalore",
+      "education": "MEd, Mysore University",
+      "behavior": "moderate",
+      "groups": ["maple_apartments", "sharma_family"],
+      "owns": []
+    },
+    {
+      "key": "ravi",
+      "display_name": "Ravi Kumar",
+      "mobile": "+919800000018",
+      "about": "Marketing head. Weekend DJ.",
+      "current_city": "Bangalore",
+      "hometown": "Patna",
+      "work": "Marketing Head, TechCorp",
+      "education": "MBA Marketing, IIM Lucknow",
+      "behavior": "organizer",
+      "groups": ["techcorp_office", "weekend_trekkers"],
+      "owns": []
+    },
+    {
+      "key": "pooja",
+      "display_name": "Pooja Agarwal",
+      "mobile": "+919800000019",
+      "about": "QA lead. Yoga instructor on weekends.",
+      "current_city": "Bangalore",
+      "hometown": "Varanasi",
+      "work": "QA Lead, TechCorp",
+      "education": "BTech IT, BHU",
+      "behavior": "moderate",
+      "groups": ["techcorp_office", "maple_apartments"],
+      "owns": []
+    },
+    {
+      "key": "suresh",
+      "display_name": "Suresh Nair",
+      "mobile": "+919800000020",
+      "about": "Retired professor. Bird watcher.",
+      "current_city": "Bangalore",
+      "hometown": "Trivandrum",
+      "work": "Retired Professor, IISc",
+      "education": "PhD Physics, IISc Bangalore",
+      "behavior": "lurker",
+      "groups": ["maple_apartments"],
+      "owns": []
+    },
+    {
+      "key": "tanya",
+      "display_name": "Tanya Bose",
+      "mobile": "+919800000021",
+      "about": "Graphic designer. Cat lady.",
+      "current_city": "Bangalore",
+      "hometown": "Kolkata",
+      "work": "Visual Designer, TechCorp",
+      "education": "BDes, Srishti School of Design",
+      "behavior": "active_poster",
+      "groups": ["techcorp_office", "techcorp_design"],
+      "owns": []
+    },
+    {
+      "key": "manoj",
+      "display_name": "Manoj Tiwari",
+      "mobile": "+919800000022",
+      "about": "Security consultant. History buff.",
+      "current_city": "Noida",
+      "hometown": "Bhopal",
+      "work": "Security Architect, Infosys",
+      "education": "BTech CSE, IIT Madras 2018",
+      "behavior": "lurker",
+      "groups": ["iit_alumni_2018"],
+      "owns": []
+    },
+    {
+      "key": "rekha",
+      "display_name": "Rekha Sharma",
+      "mobile": "+919800000023",
+      "about": "Homemaker. Expert in Rajasthani cuisine.",
+      "current_city": "Jaipur",
+      "hometown": "Jaipur",
+      "behavior": "moderate",
+      "groups": ["sharma_family"],
+      "owns": []
+    },
+    {
+      "key": "nikhil",
+      "display_name": "Nikhil Iyer",
+      "mobile": "+919800000024",
+      "about": "Android developer. Gamer.",
+      "current_city": "Bangalore",
+      "hometown": "Chennai",
+      "work": "Android Dev, TechCorp",
+      "education": "BTech CSE, Anna University",
+      "behavior": "moderate",
+      "groups": ["techcorp_office", "techcorp_design", "iit_cricket"],
+      "owns": []
+    },
+    {
+      "key": "fatima",
+      "display_name": "Fatima Sheikh",
+      "mobile": "+919800000025",
+      "about": "Architect. Sketch artist.",
+      "current_city": "Bangalore",
+      "hometown": "Mumbai",
+      "work": "Architect, Foster+Partners",
+      "education": "BArch, SPA Delhi",
+      "behavior": "moderate",
+      "groups": ["maple_apartments", "weekend_trekkers"],
+      "owns": []
+    }
+  ],
+  "content_templates": {
+    "memories": {
+      "sharma_family": [
+        "Amma made the most amazing dal baati today. Family dinner was perfect!",
+        "Meera won first prize in the inter-school art competition! So proud of her.",
+        "Sunday morning pooja at the temple. Beautiful weather today.",
+        "Dad's birthday celebration! He finally agreed to cut the cake.",
+        "Diwali decorations are up. The house looks magical with all the diyas.",
+        "Family movie night. We watched Kapoor & Sons again. Never gets old.",
+        "Meera cooked her first full meal today. Paneer butter masala!",
+        "Old family photos from the 1990s. Found some real gems in the trunk."
+      ],
+      "iit_alumni_2018": [
+        "Found this photo from our final year project presentation. What a journey!",
+        "Who remembers the midnight maggi runs at Gurunath? Those were the days.",
+        "Just visited campus last week. The new library building is incredible.",
+        "Our batch reunion is overdue. Who's in for December in Chennai?",
+        "Throwback to Saarang 2017. Our team won the robotics competition!",
+        "Professor Raman just published a new paper. Proud to have been his student.",
+        "Running into batchmates at every tech conference now. Small world!",
+        "The hostel mess food still haunts me. But I'd go back in a heartbeat."
+      ],
+      "techcorp_office": [
+        "Team lunch at the new South Indian place near office. The dosas were incredible.",
+        "Congrats to the design team for shipping the new dashboard ahead of schedule!",
+        "Fire drill today was actually fun. We all gathered at the coffee shop after.",
+        "Friday evening board games session was a hit. Next week: Catan tournament!",
+        "Welcome Tanya to the team! She's joining as Visual Designer.",
+        "Quarterly all-hands was inspiring. Great roadmap for Q1 2027.",
+        "The new standing desks finally arrived. My back thanks the facilities team.",
+        "Hackathon results are in. Team Phoenix won with their accessibility tool!"
+      ],
+      "weekend_trekkers": [
+        "Nandi Hills sunrise trek this Saturday. Meeting at 4:30 AM at Marathahalli bridge.",
+        "Photos from last weekend's Skandagiri trek. The cloud cover was unreal!",
+        "Trail review: Savandurga is tough but worth it. Carry at least 2L water.",
+        "Monsoon season means waterfall treks! Jog Falls anyone?",
+        "New members: please read the safety guidelines pinned in the description.",
+        "Lost my sunglasses on the Anthargange trek. If anyone found them, let me know!",
+        "Best sunrise I've ever seen from Mullayanagiri peak. Photos don't do justice."
+      ],
+      "maple_apartments": [
+        "Water supply will be disrupted tomorrow 10 AM to 2 PM for tank cleaning.",
+        "Lost: Golden retriever named Buddy. Last seen near B-Block parking. Please help!",
+        "The new garden landscaping looks beautiful. Thanks to the maintenance team.",
+        "Reminder: Monthly maintenance due by 5th. UPI to the registered number.",
+        "Navratri celebration in the community hall this Saturday. All families welcome!",
+        "Parking slot 42 has been occupied by an unknown car for 3 days. Whose is it?",
+        "Power outage expected tonight 11 PM to 5 AM. Generator will cover common areas."
+      ]
+    },
+    "comments": [
+      "This is wonderful!",
+      "Love this!",
+      "Haha, so true!",
+      "Thanks for sharing",
+      "Beautiful photo!",
+      "Where was this taken?",
+      "I remember this! Good times.",
+      "Congratulations!",
+      "Count me in!",
+      "That's amazing!",
+      "Miss those days",
+      "So wholesome",
+      "Great capture!",
+      "This made my day",
+      "Need to try this",
+      "Wow, didn't know that!",
+      "Can we plan something similar?",
+      "Brilliant!"
+    ],
+    "polls": [
+      {
+        "question": "Best day for our next team outing?",
+        "options": ["This Saturday", "Next Saturday", "Sunday 15th", "Let's skip this month"],
+        "group_keys": ["techcorp_office", "iit_alumni_2018", "weekend_trekkers"]
+      },
+      {
+        "question": "What should we order for Friday lunch?",
+        "options": ["Biryani", "Pizza", "Chinese", "South Indian", "Wraps & Salads"],
+        "group_keys": ["techcorp_office"]
+      },
+      {
+        "question": "Preferred trek difficulty for next month?",
+        "options": ["Easy (Nandi Hills)", "Moderate (Skandagiri)", "Hard (Kumara Parvatha)"],
+        "group_keys": ["weekend_trekkers"]
+      },
+      {
+        "question": "Movie night pick?",
+        "options": ["RRR", "Ponniyin Selvan", "Pathaan", "Jawan"],
+        "group_keys": ["sharma_family"]
+      },
+      {
+        "question": "Should we install CCTV at the parking entrance?",
+        "options": ["Yes, definitely", "No, not needed", "Let's discuss in the next meeting"],
+        "group_keys": ["maple_apartments"]
+      },
+      {
+        "question": "Reunion location preference?",
+        "options": ["Chennai (campus)", "Bangalore", "Goa", "Online only"],
+        "group_keys": ["iit_alumni_2018"]
+      }
+    ],
+    "events": [
+      {
+        "title": "Diwali Party 2026",
+        "description": "Annual Diwali celebration. Bring a dish to share! Rangoli competition for kids.",
+        "event_type": "function",
+        "venue": "Community Hall, Maple Apartments",
+        "group_keys": ["maple_apartments", "sharma_family"],
+        "hours_from_now": 168
+      },
+      {
+        "title": "IIT Madras 2018 Reunion",
+        "description": "8 years since graduation! Let's catch up over a weekend. Spouses and kids welcome.",
+        "event_type": "reunion",
+        "venue": "IIT Madras Guest House, Chennai",
+        "group_keys": ["iit_alumni_2018"],
+        "hours_from_now": 720
+      },
+      {
+        "title": "Friday Board Games",
+        "description": "Catan, Ticket to Ride, Codenames. Snacks provided. 6 PM at the cafeteria.",
+        "event_type": "meetup",
+        "venue": "TechCorp Cafeteria, 3rd Floor",
+        "group_keys": ["techcorp_office"],
+        "hours_from_now": 72
+      },
+      {
+        "title": "Skandagiri Night Trek",
+        "description": "Night trek to catch the sunrise. Difficulty: Moderate. Carry headlamp and water.",
+        "event_type": "trip",
+        "venue": "Skandagiri Base, Chikballapur",
+        "group_keys": ["weekend_trekkers"],
+        "hours_from_now": 336
+      },
+      {
+        "title": "Meera's Art Exhibition",
+        "description": "Meera is showcasing her paintings at school. Come support her!",
+        "event_type": "function",
+        "venue": "DPS Bangalore, Art Gallery",
+        "group_keys": ["sharma_family"],
+        "hours_from_now": 120
+      }
+    ],
+    "chat_messages": {
+      "techcorp_office": [
+        "Good morning team!",
+        "Anyone coming for lunch?",
+        "Meeting pushed to 3 PM",
+        "Great work on the release everyone",
+        "Coffee break in 10?",
+        "Who has the conference room key?",
+        "Sprint planning at 10 tomorrow",
+        "The build is passing now",
+        "Happy Friday everyone!"
+      ],
+      "sharma_family": [
+        "Dinner at 8 today?",
+        "Who's picking up groceries?",
+        "Dad says hi from Jaipur",
+        "Meera, finish your homework!",
+        "Should we order in tonight?",
+        "The electrician is coming at 4",
+        "Sending old photos of our trip to Udaipur"
+      ],
+      "iit_alumni_2018": [
+        "Anyone in Bangalore this weekend?",
+        "Saw the campus on Google Maps, so many changes!",
+        "Cricket match at Cubbon Park Sunday?",
+        "Sanjay made it to the Forbes 30 under 30 list!",
+        "Who has Prof. Raman's email?"
+      ]
+    }
+  }
+}

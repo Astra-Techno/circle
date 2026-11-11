@@ -88,7 +88,9 @@ $server->exec('CREATE DATABASE IF NOT EXISTS `' . CIRCLE_TEST_DATABASE . '` CHAR
 
 $pdo = Database::connection();
 $current = $pdo->query('SELECT DATABASE()');
-if ($current === false || $current->fetchColumn() !== CIRCLE_TEST_DATABASE) {
+$currentDb = $current !== false ? $current->fetchColumn() : null;
+$current->closeCursor();
+if ($currentDb !== CIRCLE_TEST_DATABASE) {
     fwrite(STDERR, "Refusing to run: connected database is not " . CIRCLE_TEST_DATABASE . "\n");
     exit(1);
 }
@@ -96,7 +98,9 @@ if ($current === false || $current->fetchColumn() !== CIRCLE_TEST_DATABASE) {
 // Fresh schema: drop every table in circle_test, then run all migrations.
 $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
 $tables = $pdo->query('SHOW FULL TABLES WHERE Table_type = \'BASE TABLE\'');
-foreach ($tables !== false ? $tables->fetchAll(PDO::FETCH_COLUMN) : [] as $table) {
+$tableNames = $tables !== false ? $tables->fetchAll(PDO::FETCH_COLUMN) : [];
+if ($tables !== false) $tables->closeCursor();
+foreach ($tableNames as $table) {
     $pdo->exec('DROP TABLE IF EXISTS `' . str_replace('`', '', (string) $table) . '`');
 }
 $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');

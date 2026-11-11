@@ -27,6 +27,7 @@ final class Migrator
 
         $stmt = $pdo->query('SELECT name FROM migrations');
         $executed = $stmt !== false ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        if ($stmt !== false) $stmt->closeCursor();
 
         $applied = [];
         foreach ($files as $file) {
@@ -39,7 +40,10 @@ final class Migrator
                 continue;
             }
             foreach (self::split($sql) as $statement) {
-                $pdo->exec($statement);
+                $result = $pdo->query($statement);
+                if ($result !== false) {
+                    $result->closeCursor();
+                }
             }
             $insert = $pdo->prepare('INSERT INTO migrations (name) VALUES (:name)');
             $insert->execute(['name' => $name]);

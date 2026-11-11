@@ -19,6 +19,10 @@ use Circle\Controllers\GroupInvitationController;
 use Circle\Controllers\MediaController;
 use Circle\Controllers\MemberController;
 use Circle\Controllers\MemoryController;
+use Circle\Controllers\CapsuleController;
+use Circle\Controllers\AlbumController;
+use Circle\Controllers\SearchController;
+use Circle\Controllers\ActivityController;
 use Circle\Core\ConfigException;
 use Circle\Core\Database;
 use Circle\Core\JWT;
@@ -234,6 +238,7 @@ final class App
 
             // Comments, reactions, saves
             $r->post('/memories/{id}/comments', MemoryController::addComment(...));
+            $r->delete('/memories/{id}/comments/{commentId}', MemoryController::deleteComment(...));
             $r->post('/memories/{id}/reactions', MemoryController::react(...));
             $r->post('/memories/{id}/save', MemoryController::save(...));
 
@@ -241,6 +246,32 @@ final class App
             $r->post('/groups/{id}/media/uploads', MediaController::createUpload(...));
             $r->put('/media/uploads/{uploadId}/content', MediaController::uploadContent(...));
             $r->delete('/media/{mediaId}', MediaController::discard(...));
+
+            // Capsules
+            $r->get('/groups/{id}/capsules', CapsuleController::index(...));
+            $r->post('/groups/{id}/capsules', CapsuleController::create(...));
+            $r->get('/capsules/{capsuleId}', CapsuleController::show(...));
+            $r->post('/capsules/{capsuleId}/entries', CapsuleController::addEntry(...));
+            $r->get('/capsules/{capsuleId}/entries', CapsuleController::entries(...));
+            $r->post('/capsules/{capsuleId}/seal', CapsuleController::seal(...));
+            $r->delete('/capsules/{capsuleId}', CapsuleController::delete(...));
+
+            // Albums
+            $r->get('/groups/{id}/albums', AlbumController::index(...));
+            $r->post('/groups/{id}/albums', AlbumController::create(...));
+            $r->get('/albums/{albumId}', AlbumController::show(...));
+            $r->patch('/albums/{albumId}', AlbumController::update(...));
+            $r->delete('/albums/{albumId}', AlbumController::delete(...));
+            $r->post('/albums/{albumId}/photos', AlbumController::addPhoto(...));
+            $r->patch('/albums/{albumId}/photos/{photoId}', AlbumController::updatePhoto(...));
+            $r->delete('/albums/{albumId}/photos/{photoId}', AlbumController::removePhoto(...));
+
+            // Search
+            $r->get('/search', SearchController::search(...));
+
+            // Activity / notification inbox
+            $r->get('/me/activity', ActivityController::index(...));
+            $r->post('/me/activity/read', ActivityController::markRead(...));
 
             // Device tokens (FCM push notifications)
             $r->post('/devices/register', DeviceController::register(...));
