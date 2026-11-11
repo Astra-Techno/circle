@@ -4,12 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import '../../../core/design/circle_icons.dart';
 import '../../../core/circle_brand.dart';
 import '../../../core/circle_failure.dart';
 import '../domain/access_validation.dart';
 import '../application/country_provider.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Welcome with the owner's complete supplied CIRCLE identity.
 /// Create account and Log in are the two clear choices.
@@ -60,7 +58,7 @@ class AccessWelcome extends StatelessWidget {
                   child: Text('Create account', textAlign: TextAlign.center),
                 ),
                 SizedBox(width: Space.sm),
-                Icon(LucideIcons.arrow_right),
+                Icon(CircleIcons.arrowRight),
               ],
             ),
           ),
@@ -76,7 +74,7 @@ class AccessWelcome extends StatelessWidget {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(LucideIcons.log_in),
+                Icon(CircleIcons.logIn),
                 SizedBox(width: Space.sm),
                 Flexible(child: Text('Log in', textAlign: TextAlign.center)),
               ],
@@ -215,7 +213,7 @@ class _PhotoCollage extends StatelessWidget {
                                 ),
                               ),
                               Icon(
-                                LucideIcons.heart,
+                                CircleIcons.react,
                                 size: CircleSizes.iconInline,
                                 color: accents.heart,
                               ),
@@ -282,7 +280,7 @@ class _PhotoCollage extends StatelessWidget {
                       child: Row(
                         children: [
                           CircleInitialAvatar(
-                            icon: LucideIcons.lock,
+                            icon: CircleIcons.lock,
                             size: CircleAvatarSize.small,
                           ),
                           const SizedBox(width: Space.sm),
@@ -479,7 +477,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                   child: TextFormField(
                     controller: _name,
                     decoration: const InputDecoration(
-                      prefixIcon: Icon(LucideIcons.user),
+                      prefixIcon: Icon(CircleIcons.user),
                     ),
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
@@ -552,7 +550,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                       decoration: const InputDecoration(
                         hintText: 'Phone number',
                         errorMaxLines: 3,
-                        prefixIcon: Icon(LucideIcons.smartphone),
+                        prefixIcon: Icon(CircleIcons.smartphone),
                       ),
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
@@ -591,7 +589,7 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                 children: [
                   TextButton.icon(
                     onPressed: _locating || _busy ? null : _detectCountry,
-                    icon: const Icon(LucideIcons.locate),
+                    icon: const Icon(CircleIcons.locate),
                     label: Text(
                       _locating
                           ? 'Finding your country…'
@@ -618,12 +616,12 @@ class _AccessFormState extends ConsumerState<AccessForm> {
                         : null,
                     helperMaxLines: 3,
                     errorMaxLines: 3,
-                    prefixIcon: const Icon(LucideIcons.lock),
+                    prefixIcon: const Icon(CircleIcons.lock),
                     suffixIcon: IconButton(
                       tooltip: _obscured ? 'Show password' : 'Hide password',
                       onPressed: () => setState(() => _obscured = !_obscured),
                       icon: Icon(
-                        _obscured ? LucideIcons.eye : LucideIcons.eye_off,
+                        _obscured ? CircleIcons.eye : CircleIcons.eyeOff,
                       ),
                     ),
                   ),

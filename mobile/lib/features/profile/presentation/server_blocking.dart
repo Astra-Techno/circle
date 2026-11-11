@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../application/server_blocks.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 class ServerBlockButton extends ConsumerStatefulWidget {
   const ServerBlockButton({
@@ -28,7 +27,7 @@ class _BlockButtonState extends ConsumerState<ServerBlockButton> {
         child: const Text('Refresh blocking options'),
       ),
       data: (blocked) => ListTile(
-        leading: const Icon(LucideIcons.ban),
+        leading: const Icon(CircleIcons.ban),
         title: Text(
           blocked ? 'Unblock ${widget.name}' : 'Block ${widget.name}',
         ),
@@ -111,7 +110,7 @@ class _BlockingState extends ConsumerState<ServerBlockingScreen> {
           label: 'Loading blocked people',
         ),
         error: (_, _) => CircleEmpty(
-          icon: LucideIcons.wifi_off,
+          icon: CircleIcons.wifiOff,
           title: 'Blocked people couldn’t load',
           message: 'Check your connection and try again.',
           action: OutlinedButton(
@@ -132,14 +131,14 @@ class _BlockingState extends ConsumerState<ServerBlockingScreen> {
                 onPressed: _busy
                     ? null
                     : () => ref.invalidate(blockPageProvider(_offset)),
-                icon: const Icon(LucideIcons.refresh_cw),
+                icon: const Icon(CircleIcons.refreshCw),
                 label: const Text('Refresh list'),
               ),
             ),
             if (_busy) const LinearProgressIndicator(),
             if (page.items.isEmpty)
               const CircleEmpty(
-                icon: LucideIcons.user_round,
+                icon: CircleIcons.profile,
                 title: 'No blocked people here',
                 message:
                     'Use a member’s profile or an invitation to block someone.',

@@ -1,4 +1,3 @@
-import '../../../core/design/circle_icons.dart';
 import '../../profile/application/profile_providers.dart'
     show profilePhotoPickerProvider;
 import '../../../core/private_photo.dart';
@@ -14,7 +13,6 @@ import '../../../core/design.dart';
 import '../application/live_chat.dart';
 import '../../profile/presentation/server_blocking.dart';
 import '../../moderation/presentation/report_sheet.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 enum _InboxFilter {
   all('All'),
@@ -298,7 +296,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SwitchListTile(
-                secondary: const Icon(LucideIcons.volume_off),
+                secondary: const Icon(CircleIcons.volumeOff),
                 title: const Text('Mute this chat'),
                 value: data['muted'] == true,
                 onChanged: _busy
@@ -307,7 +305,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                           close(run((api) => api.state(chat, {'muted': v})))(),
               ),
               ListTile(
-                leading: const Icon(LucideIcons.pin),
+                leading: const Icon(CircleIcons.pin),
                 title: Text(data['pinned'] == true ? 'Unpin' : 'Pin chat'),
                 onTap: _busy
                     ? null
@@ -320,7 +318,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                       ),
               ),
               ListTile(
-                leading: const Icon(LucideIcons.archive),
+                leading: const Icon(CircleIcons.archive),
                 title: Text(data['archived'] == true ? 'Unarchive' : 'Archive'),
                 onTap: _busy
                     ? null
@@ -334,14 +332,14 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
               ),
               if (active && data['kind'] == 'group' && data['group_id'] != null)
                 ListTile(
-                  leading: const Icon(LucideIcons.chart_bar),
+                  leading: const Icon(CircleIcons.chartBar),
                   title: const Text('Group polls'),
                   onTap: close(
                     () => context.push('/polls?group=${data['group_id']}'),
                   ),
                 ),
               ListTile(
-                leading: const Icon(LucideIcons.refresh_cw),
+                leading: const Icon(CircleIcons.refreshCw),
                 title: const Text('Refresh'),
                 onTap: close(_refresh),
               ),
@@ -396,7 +394,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
     if (last['removed'] == true) {
       return (
         text: '${who}Message unsent',
-        icon: LucideIcons.ban,
+        icon: CircleIcons.ban,
         highlight: false,
       );
     }
@@ -410,7 +408,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
               : photos == 1
               ? 'Photo'
               : '$photos photos'),
-      icon: photos > 0 ? LucideIcons.camera : null,
+      icon: photos > 0 ? CircleIcons.camera : null,
       highlight: false,
     );
   }
@@ -485,7 +483,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: Space.section),
                     child: CircleEmpty(
-                      icon: LucideIcons.message_circle,
+                      icon: CircleIcons.chat,
                       title: filtered
                           ? 'No matching chats'
                           : 'Your conversations start here',
@@ -502,7 +500,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                             )
                           : TextButton.icon(
                               onPressed: () => context.push('/chats/new'),
-                              icon: const Icon(LucideIcons.plus),
+                              icon: const Icon(CircleIcons.create),
                               label: const Text('New chat'),
                             ),
                     ),
@@ -607,7 +605,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: Space.section),
           child: CircleEmpty(
-            icon: LucideIcons.users,
+            icon: CircleIcons.members,
             title: 'No matching people',
             message:
                 'Try another name, or join a circle to message its members.',
@@ -625,7 +623,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
             person: '${item['id']}',
           ),
           title: Text(item['display_name'] as String),
-          trailing: const Icon(LucideIcons.message_circle),
+          trailing: const Icon(CircleIcons.chat),
           onTap: _busy
               ? null
               : () async {
@@ -711,13 +709,13 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
     return [
       if (active)
         ListTile(
-          leading: const Icon(LucideIcons.reply),
+          leading: const Icon(CircleIcons.reply),
           title: const Text('Reply'),
           onTap: _busy ? null : () => _replyTo(item),
         ),
       if (active && !removed)
         ListTile(
-          leading: Icon(_loves(item) ? Icons.favorite : LucideIcons.heart),
+          leading: Icon(_loves(item) ? CircleIcons.loved : CircleIcons.react),
           title: Text(_loves(item) ? 'Remove heart' : 'React with heart'),
           onTap: _busy
               ? null
@@ -731,7 +729,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
         ),
       if (!removed && (item['body'] as String? ?? '').isNotEmpty)
         ListTile(
-          leading: const Icon(LucideIcons.copy),
+          leading: const Icon(CircleIcons.copy),
           title: const Text('Copy'),
           onTap: () {
             Clipboard.setData(ClipboardData(text: item['body'] as String));
@@ -740,13 +738,13 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
         ),
       if (active && mine && !removed)
         ListTile(
-          leading: const Icon(LucideIcons.pencil),
+          leading: const Icon(CircleIcons.pencil),
           title: const Text('Edit'),
           onTap: _busy ? null : () => _edit(chat, item),
         ),
       if (active && mine && removed)
         ListTile(
-          leading: const Icon(LucideIcons.undo),
+          leading: const Icon(CircleIcons.undo),
           title: const Text('Undo unsend'),
           onTap: _busy
               ? null
@@ -759,7 +757,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
       if (active && mine && !removed)
         ListTile(
           leading: Icon(
-            LucideIcons.trash,
+            CircleIcons.trash,
             color: Theme.of(context).colorScheme.error,
           ),
           title: Text(
@@ -772,7 +770,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
         ),
       if (data['kind'] == 'direct' && !removed && !mine)
         ListTile(
-          leading: const Icon(LucideIcons.flag),
+          leading: const Icon(CircleIcons.flag),
           title: const Text('Report message'),
           onTap: () {
             final api = ref.read(liveChatApiProvider);
@@ -1041,7 +1039,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                         }
                         setState(() => _busy = false);
                       },
-                icon: const Icon(LucideIcons.camera),
+                icon: const Icon(CircleIcons.camera),
                 tooltip: _busy ? 'Please wait…' : 'Add photo',
               )
             : null,
@@ -1128,7 +1126,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOut,
                     ),
-                    child: const Icon(LucideIcons.chevron_down),
+                    child: const Icon(CircleIcons.chevronDown),
                   ),
                 ),
             ],
@@ -1237,7 +1235,7 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                   child: BackButton(onPressed: _back),
                 ),
               CircleEmpty(
-                icon: LucideIcons.wifi_off,
+                icon: CircleIcons.wifiOff,
                 title: 'Chats couldn’t load',
                 message: 'Check your connection and access.',
                 action: TextButton(
@@ -1280,7 +1278,7 @@ class LiveChatPrivacyScreen extends ConsumerWidget {
             padding: CircleInsets.form,
             children: [
               CircleEmpty(
-                icon: LucideIcons.wifi_off,
+                icon: CircleIcons.wifiOff,
                 title: 'Choices couldn’t load',
                 message: 'Try again when connected.',
                 action: OutlinedButton(

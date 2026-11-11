@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../groups/domain/group_tree.dart';
 import '../../moderation/presentation/report_sheet.dart';
@@ -110,7 +108,7 @@ class _CircleMemoryDetailState extends ConsumerState<CircleMemoryDetail> {
           child: Padding(
             padding: CircleInsets.form,
             child: CircleEmpty(
-              icon: LucideIcons.lock_keyhole,
+              icon: CircleIcons.lockKeyhole,
               title: 'Memory unavailable',
               message: 'This Memory is not shared with your current groups.',
             ),

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'circle_failure.dart';
 import 'design.dart';
-import 'design/circle_icons.dart';
 import 'design/circle_typography.dart';
 
 /// An editorial page opening: a headline and one quiet line, with an
@@ -16,7 +14,7 @@ class CircleIntroPanel extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.artwork,
-    this.icon = LucideIcons.sparkles,
+    this.icon = CircleIcons.sparkles,
   });
   final String title, subtitle;
   final Widget? artwork;
@@ -724,7 +722,7 @@ class CircleSearchField extends StatelessWidget {
                       controller.clear();
                       onChanged('');
                     },
-                    icon: const Icon(LucideIcons.x),
+                    icon: const Icon(CircleIcons.close),
                   ),
           ),
         ),
@@ -737,7 +735,7 @@ class CircleEmpty extends StatelessWidget {
     required this.title,
     required this.message,
     this.action,
-    this.icon = LucideIcons.info,
+    this.icon = CircleIcons.info,
   });
   final String title, message;
   final Widget? action;
@@ -790,7 +788,7 @@ class CircleNote extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
-          LucideIcons.info,
+          CircleIcons.info,
           size: Space.lg,
           color: CircleAccents.of(context).caption,
         ),
@@ -1219,8 +1217,8 @@ class CircleFloatingHeader extends StatelessWidget {
               onPressed: () => GoRouter.of(context).push(data.fab!.location),
               icon: Icon(
                 data.fab!.label == 'New chat'
-                    ? LucideIcons.pencil
-                    : LucideIcons.plus,
+                    ? CircleIcons.pencil
+                    : CircleIcons.create,
               ),
             ),
           ),

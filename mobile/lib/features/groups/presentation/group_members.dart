@@ -1,4 +1,3 @@
-import '../../../core/design/circle_icons.dart';
 import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../moderation/presentation/report_sheet.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/group_visuals.dart';
 import '../domain/membership_rules.dart';
@@ -122,7 +120,7 @@ class _GroupMembersState extends ConsumerState<GroupMembersTab> {
         CircleSectionTitle('Members (${members.length})'),
         TextButton.icon(
           onPressed: () => runCalmly(context, controller.refresh),
-          icon: const Icon(LucideIcons.refresh_cw),
+          icon: const Icon(CircleIcons.refreshCw),
           label: const Text('Refresh members'),
         ),
         for (final member in members.take(_visible))
@@ -143,7 +141,7 @@ class _GroupMembersState extends ConsumerState<GroupMembersTab> {
           for (final invitation in invited)
             CircleRow(
               child: ListTile(
-                leading: const Icon(LucideIcons.clock),
+                leading: const Icon(CircleIcons.clock),
                 title: Text(workspace.nameOf(invitation.invitee)),
                 subtitle: Text(
                   'Invited by ${workspace.nameOf(invitation.inviter)}',
@@ -236,19 +234,19 @@ class _MemberTile extends ConsumerWidget {
             const SizedBox(height: Space.sm),
             if (actions.promote)
               ListTile(
-                leading: const Icon(LucideIcons.shield),
+                leading: const Icon(CircleIcons.shield),
                 title: const Text('Make admin'),
                 onTap: () => Navigator.pop(context, 'promote'),
               ),
             if (actions.demote)
               ListTile(
-                leading: const Icon(LucideIcons.shield_off),
+                leading: const Icon(CircleIcons.shieldOff),
                 title: const Text('Remove admin role'),
                 onTap: () => Navigator.pop(context, 'demote'),
               ),
             if (actions.transfer)
               ListTile(
-                leading: const Icon(LucideIcons.crown),
+                leading: const Icon(CircleIcons.crown),
                 title: const Text('Make owner'),
                 subtitle: const Text('You’ll become an admin.'),
                 onTap: () => Navigator.pop(context, 'transfer'),
@@ -256,7 +254,7 @@ class _MemberTile extends ConsumerWidget {
             if (actions.remove)
               ListTile(
                 leading: Icon(
-                  LucideIcons.user_minus,
+                  CircleIcons.userMinus,
                   color: Theme.of(context).colorScheme.error,
                 ),
                 title: Text(
@@ -269,13 +267,13 @@ class _MemberTile extends ConsumerWidget {
               ),
             const Divider(),
             ListTile(
-              leading: const Icon(LucideIcons.user),
+              leading: const Icon(CircleIcons.user),
               title: const Text('View profile'),
               onTap: () => Navigator.pop(context, 'profile'),
             ),
             if (features.has(CircleFeature.moderation))
               ListTile(
-                leading: const Icon(LucideIcons.flag),
+                leading: const Icon(CircleIcons.flag),
                 title: Text('Report $name'),
                 onTap: () => Navigator.pop(context, 'report'),
               ),

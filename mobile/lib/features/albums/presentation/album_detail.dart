@@ -7,7 +7,6 @@ import '../../memories/presentation/memory_photos.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/album_providers.dart';
 import 'albums_tab.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 enum _AlbumAction { rename, delete }
 
@@ -21,7 +20,7 @@ class _AlbumUnavailable extends StatelessWidget {
       padding: CircleInsets.form,
       children: [
         CircleEmpty(
-          icon: LucideIcons.lock_keyhole,
+          icon: CircleIcons.lockKeyhole,
           title: 'This album is unavailable',
           message:
               message ??
@@ -166,11 +165,11 @@ class AlbumDetailScreen extends ConsumerWidget {
             children: [
               CirclePill(
                 group.name,
-                icon: LucideIcons.lock,
+                icon: CircleIcons.lock,
                 semanticsLabel: 'Shared with ${group.name} only',
               ),
               if (album.isEventAlbum)
-                const CirclePill('Event album', icon: LucideIcons.calendar),
+                const CirclePill('Event album', icon: CircleIcons.calendar),
             ],
           ),
           const SizedBox(height: Space.md),
@@ -178,7 +177,7 @@ class AlbumDetailScreen extends ConsumerWidget {
             alignment: AlignmentDirectional.centerStart,
             child: FilledButton.icon(
               onPressed: room == 0 ? null : add,
-              icon: const Icon(LucideIcons.image_plus),
+              icon: const Icon(CircleIcons.imagePlus),
               label: const Text('Add photos'),
             ),
           ),
@@ -193,7 +192,7 @@ class AlbumDetailScreen extends ConsumerWidget {
           const SizedBox(height: Space.lg),
           if (album.photos.isEmpty)
             const CircleEmpty(
-              icon: LucideIcons.info,
+              icon: CircleIcons.info,
               title: 'No photos yet',
               message:
                   'Add the first few. Everyone in this group can add more.',
@@ -327,7 +326,7 @@ class _PhotoTile extends ConsumerWidget {
             child: ExcludeSemantics(
               child: CirclePill(
                 'Cover',
-                icon: LucideIcons.star,
+                icon: CircleIcons.star,
                 tone: CircleTone.surface,
               ),
             ),
@@ -338,7 +337,7 @@ class _PhotoTile extends ConsumerWidget {
             end: 0,
             child: PopupMenuButton<_PhotoAction>(
               tooltip: 'Options for photo ${index + 1}',
-              icon: const Icon(LucideIcons.ellipsis_vertical),
+              icon: const Icon(CircleIcons.ellipsisVertical),
               onSelected: run,
               itemBuilder: (_) => [
                 for (final (action, label) in _photoMenu(actions, photo))
@@ -377,19 +376,19 @@ Future<_PhotoAction?> _showPhotoSheet(
       children: [
         if (actions.cover)
           ListTile(
-            leading: const Icon(LucideIcons.star),
+            leading: const Icon(CircleIcons.star),
             title: const Text('Set as cover'),
             onTap: () => Navigator.of(context).pop(_PhotoAction.cover),
           ),
         if (actions.caption)
           ListTile(
-            leading: const Icon(LucideIcons.type),
+            leading: const Icon(CircleIcons.type),
             title: const Text('Caption'),
             onTap: () => Navigator.of(context).pop(_PhotoAction.caption),
           ),
         if (actions.remove)
           ListTile(
-            leading: const Icon(LucideIcons.trash),
+            leading: const Icon(CircleIcons.trash),
             title: const Text('Remove from album'),
             onTap: () => Navigator.of(context).pop(_PhotoAction.remove),
           ),
@@ -610,13 +609,13 @@ class AlbumPhotoViewer extends ConsumerWidget {
             if (actions.cover)
               TextButton.icon(
                 onPressed: () => run(_PhotoAction.cover),
-                icon: const Icon(LucideIcons.star),
+                icon: const Icon(CircleIcons.star),
                 label: const Text('Set as cover'),
               ),
             if (actions.caption)
               TextButton.icon(
                 onPressed: () => run(_PhotoAction.caption),
-                icon: const Icon(LucideIcons.type),
+                icon: const Icon(CircleIcons.type),
                 label: Text(
                   photo.photo.caption == null ? 'Add caption' : 'Edit caption',
                 ),
@@ -624,7 +623,7 @@ class AlbumPhotoViewer extends ConsumerWidget {
             if (actions.remove)
               TextButton.icon(
                 onPressed: () => run(_PhotoAction.remove),
-                icon: const Icon(LucideIcons.trash),
+                icon: const Icon(CircleIcons.trash),
                 label: const Text('Remove from album'),
               ),
           ],

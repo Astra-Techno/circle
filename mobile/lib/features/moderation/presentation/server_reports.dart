@@ -4,7 +4,6 @@ import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../application/server_moderation.dart';
 import '../../workspace/application/workspace_providers.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Server-only queue: no fictional cases and no reporter account/note fields.
 class ServerReportsScreen extends ConsumerStatefulWidget {
@@ -52,7 +51,7 @@ class _ServerReportsState extends ConsumerState<ServerReportsScreen> {
     if (group?.roleOf(viewer)?.isAdmin != true) {
       return const ReadingPane(
         child: CircleEmpty(
-          icon: LucideIcons.lock_keyhole,
+          icon: CircleIcons.lockKeyhole,
           title: 'Reports are for admins',
           message:
               'Only current admins of this exact group can review reports.',
@@ -74,7 +73,7 @@ class _ServerReportsState extends ConsumerState<ServerReportsScreen> {
           padding: CircleInsets.form,
           children: [
             CircleEmpty(
-              icon: LucideIcons.wifi_off,
+              icon: CircleIcons.wifiOff,
               title: 'Reports couldn’t load',
               message: error is CircleFailure
                   ? error.message
@@ -101,14 +100,14 @@ class _ServerReportsState extends ConsumerState<ServerReportsScreen> {
                   onPressed: _busy
                       ? null
                       : () => ref.invalidate(safetyPageProvider(query)),
-                  icon: const Icon(LucideIcons.refresh_cw),
+                  icon: const Icon(CircleIcons.refreshCw),
                   label: const Text('Refresh reports'),
                 ),
               ),
             if (_busy) const LinearProgressIndicator(),
             if (page.items.isEmpty)
               CircleEmpty(
-                icon: LucideIcons.info,
+                icon: CircleIcons.info,
                 title: 'Nothing to review',
                 message: 'Reports from members of this group appear here.',
                 action: OutlinedButton(
@@ -134,7 +133,7 @@ class _ServerReportsState extends ConsumerState<ServerReportsScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       if (item.hidden)
-                        const CirclePill('Hidden', icon: LucideIcons.eye_off),
+                        const CirclePill('Hidden', icon: CircleIcons.eyeOff),
                       Text(item.summary ?? 'This item is no longer available.'),
                       if (item.reasons.isNotEmpty) Text(item.reasons),
                       const SizedBox(height: Space.sm),

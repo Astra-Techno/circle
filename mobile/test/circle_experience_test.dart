@@ -628,4 +628,17 @@ void main() {
       matchesGoldenFile('goldens/circle_home_dark.png'),
     );
   });
+
+  testWidgets('Memory Capsules are offered from Home (owner decision)', (
+    tester,
+  ) async {
+    final container = await openCircle(tester);
+    expect(find.byTooltip('Capsule'), findsOneWidget);
+    // The capsule screen animates continuously, so pump fixed frames.
+    container.read(circleRouterProvider).go('/capsules/new');
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('This page is unavailable'), findsNothing);
+    expect(find.text('New capsule'), findsWidgets);
+  });
 }

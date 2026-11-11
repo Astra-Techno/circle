@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/group_visuals.dart';
 import '../application/group_photos.dart';
@@ -81,13 +80,13 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(LucideIcons.images),
+              leading: const Icon(CircleIcons.images),
               title: Text(present ? 'Replace photo' : 'Choose a photo'),
               onTap: () => Navigator.pop(context, 'choose'),
             ),
             if (present)
               ListTile(
-                leading: const Icon(LucideIcons.trash),
+                leading: const Icon(CircleIcons.trash),
                 title: const Text('Remove photo'),
                 onTap: () => Navigator.pop(context, 'remove'),
               ),
@@ -128,12 +127,12 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: const Icon(LucideIcons.user),
+            leading: const Icon(CircleIcons.user),
             title: const Text('Circle photo'),
             onTap: () => Navigator.pop(context, ProfilePhotoKind.avatar),
           ),
           ListTile(
-            leading: const Icon(LucideIcons.image),
+            leading: const Icon(CircleIcons.photo),
             title: const Text('Cover photo'),
             onTap: () => Navigator.pop(context, ProfilePhotoKind.cover),
           ),
@@ -188,7 +187,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
                   child: TextButton.icon(
                     onPressed: () =>
                         ref.invalidate(groupPhotoBytesProvider(query)),
-                    icon: const Icon(LucideIcons.refresh_cw),
+                    icon: const Icon(CircleIcons.refreshCw),
                     label: const Text('Retry'),
                   ),
                 ),
@@ -263,7 +262,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
                               ? IconButton.filledTonal(
                                   tooltip: 'Edit Circle photos',
                                   onPressed: _busy ? null : _editPhotos,
-                                  icon: const Icon(LucideIcons.camera),
+                                  icon: const Icon(CircleIcons.camera),
                                 )
                               : const SizedBox.shrink(),
                         ),
@@ -311,7 +310,7 @@ class _GroupPhotoHeaderState extends ConsumerState<GroupPhotoHeader> {
               child: IconButton.filledTonal(
                 tooltip: 'Edit Circle photos',
                 onPressed: _busy ? null : _editPhotos,
-                icon: const Icon(LucideIcons.camera),
+                icon: const Icon(CircleIcons.camera),
               ),
             ),
           ),

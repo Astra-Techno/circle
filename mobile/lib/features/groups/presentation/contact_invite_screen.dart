@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../auth/domain/access_validation.dart';
 import '../../workspace/presentation/workspace_view.dart';
 import '../application/contact_invitations.dart';
@@ -147,7 +146,7 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
       if (group == null ||
           !MembershipRules.canInvite(group, workspace.viewer).allowed) {
         return const CircleEmpty(
-          icon: LucideIcons.users,
+          icon: CircleIcons.members,
           title: 'Inviting is limited here',
           message: 'Open the group to check your access.',
         );
@@ -173,7 +172,7 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
             if (ref.watch(inviteShareBridgeProvider).supported)
               FilledButton.icon(
                 onPressed: _busy ? null : _choose,
-                icon: const Icon(LucideIcons.user_plus),
+                icon: const Icon(CircleIcons.invite),
                 label: const Text('Choose contact'),
               )
             else ...[
@@ -185,7 +184,7 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
             const SizedBox(height: Space.sm),
             OutlinedButton.icon(
               onPressed: _busy ? null : _copy,
-              icon: const Icon(LucideIcons.copy),
+              icon: const Icon(CircleIcons.copy),
               label: const Text('Copy invite link'),
             ),
             if (_share) ...[

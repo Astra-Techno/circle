@@ -1,11 +1,9 @@
-import '../../../core/design/circle_icons.dart';
 import '../../../core/form_exit_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/group_visuals.dart';
 import '../../workspace/presentation/workspace_view.dart';
@@ -21,7 +19,7 @@ class GroupSettingsScreen extends StatelessWidget {
       if (group == null) {
         return const ReadingPane(
           child: CircleEmpty(
-            icon: LucideIcons.users,
+            icon: CircleIcons.members,
             title: 'This circle is private',
             message: 'You need membership in this exact group.',
           ),
@@ -341,7 +339,7 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
               const SizedBox(height: Space.md),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(LucideIcons.flag),
+                leading: const Icon(CircleIcons.flag),
                 title: const Text('Reports and admin actions'),
                 subtitle: const Text(
                   'Review reports privately with this Circle’s admins.',
@@ -354,7 +352,7 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
               const SizedBox(height: Space.md),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(LucideIcons.crown),
+                leading: const Icon(CircleIcons.crown),
                 title: const Text('Transfer ownership'),
                 subtitle: const Text('Choose a member to own this Circle.'),
                 trailing: const Icon(CircleIcons.chevronRight),
@@ -386,7 +384,7 @@ class _GroupSettingsState extends ConsumerState<_GroupSettings> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(LucideIcons.info),
+                  const Icon(CircleIcons.info),
                   const SizedBox(width: Space.sm),
                   Expanded(child: Text(leave.reason!)),
                 ],

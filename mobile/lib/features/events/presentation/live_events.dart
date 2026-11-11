@@ -10,14 +10,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import 'event_visuals.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../notifications/application/push_settings.dart'
     show deviceTimezoneProvider;
 import '../application/live_events.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 void refreshLiveEvents(WidgetRef ref) {
   ref.invalidate(liveEventsProvider);
@@ -116,7 +114,7 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                 ),
                 if (visible.isEmpty)
                   CircleEmpty(
-                    icon: LucideIcons.calendar_days,
+                    icon: CircleIcons.events,
                     title: items.isEmpty
                         ? 'Something to look forward to'
                         : 'No ${_filter.toLowerCase()} events loaded',
@@ -183,7 +181,7 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
               ),
         error: (_, _) => CircleStatePanel(
           child: CircleEmpty(
-            icon: LucideIcons.wifi_off,
+            icon: CircleIcons.wifiOff,
             title: 'Events couldn’t load',
             message: 'Check your connection and group access.',
             action: TextButton(
@@ -426,44 +424,44 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                 const SizedBox(height: Space.lg),
                 if (!active)
                   const EventNotice(
-                    icon: LucideIcons.calendar_x,
+                    icon: CircleIcons.calendarX,
                     text: 'This event is cancelled.',
                   ),
                 row(
-                  LucideIcons.clock,
+                  CircleIcons.clock,
                   liveEventLabel(e),
                   subtitle: e['end_at'] == null
                       ? null
                       : 'Ends ${formatDay(liveEventWall(e['end_at'] as String, zone), today: DateTime.now())} · ${formatTime(liveEventWall(e['end_at'] as String, zone))}',
                 ),
-                if (venue.isNotEmpty) row(LucideIcons.map_pin, venue),
+                if (venue.isNotEmpty) row(CircleIcons.location, venue),
                 if (link.isNotEmpty)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(LucideIcons.link),
+                    leading: const Icon(CircleIcons.link),
                     title: SelectableText(link),
                   ),
                 if (e['rsvp_deadline'] != null)
                   row(
-                    LucideIcons.calendar_check,
+                    CircleIcons.calendarCheck,
                     'RSVP by ${formatDay(liveEventWall(e['rsvp_deadline'] as String, zone), today: DateTime.now())} · ${formatTime(liveEventWall(e['rsvp_deadline'] as String, zone))}',
                   ),
                 row(
-                  LucideIcons.users,
+                  CircleIcons.members,
                   'Who’s coming?',
                   subtitle:
                       '$going going${e['max_capacity'] == null ? '' : ' · room for ${e['max_capacity']}'}',
                   onTap: () => context.go('/events/e/$id/attendees'),
                 ),
                 row(
-                  LucideIcons.chart_bar,
+                  CircleIcons.chartBar,
                   'Event polls',
                   onTap: () =>
                       context.push('/polls?group=${e['group_id']}&event=$id'),
                 ),
                 if (canRsvp && mine is Map)
                   row(
-                    LucideIcons.pencil,
+                    CircleIcons.pencil,
                     'Guests and RSVP note',
                     onTap: _busy
                         ? null
@@ -739,12 +737,12 @@ class LiveEventCard extends ConsumerWidget {
                         'Cancelled',
                         style: CircleTextStyles.homeShortcut(colors.error),
                       ),
-                    info(LucideIcons.clock, liveEventLabel(item)),
+                    info(CircleIcons.clock, liveEventLabel(item)),
                     if ((item['venue'] as String? ?? '').isNotEmpty)
-                      info(LucideIcons.map_pin, item['venue'] as String),
+                      info(CircleIcons.location, item['venue'] as String),
                     if ((item['venue'] as String? ?? '').isEmpty &&
                         (item['online_link'] as String? ?? '').isNotEmpty)
-                      info(LucideIcons.video, 'Online event'),
+                      info(CircleIcons.video, 'Online event'),
                     const Divider(),
                     Wrap(
                       alignment: WrapAlignment.spaceBetween,
@@ -794,7 +792,7 @@ class LiveEventForm extends ConsumerWidget {
         .when(
           loading: () => const CircleSkeletonPage(label: 'Loading event'),
           error: (_, _) => CircleEmpty(
-            icon: LucideIcons.wifi_off,
+            icon: CircleIcons.wifiOff,
             title: 'Event couldn’t load',
             message: 'Refresh and try again.',
             action: TextButton(
@@ -812,7 +810,7 @@ class LiveEventForm extends ConsumerWidget {
                   api: api,
                 )
               : const CircleEmpty(
-                  icon: LucideIcons.lock_keyhole,
+                  icon: CircleIcons.lockKeyhole,
                   title: 'Editing unavailable',
                   message:
                       'Only the organizer or current group admins can edit.',
@@ -937,7 +935,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
       color: Theme.of(context).colorScheme.primaryContainer,
       borderRadius: BorderRadius.circular(CircleRadius.input),
       child: ListTile(
-        leading: const Icon(LucideIcons.calendar),
+        leading: const Icon(CircleIcons.calendar),
         contentPadding: CircleInsets.content,
         title: Text(label),
         subtitle: Text(
@@ -951,7 +949,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
                 icon: const Icon(CircleIcons.close),
                 tooltip: 'Clear $label',
               )
-            : const Icon(LucideIcons.calendar),
+            : const Icon(CircleIcons.calendar),
         onTap: _busy
             ? null
             : () async {
@@ -974,7 +972,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
         color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(CircleRadius.input),
         child: ListTile(
-          leading: Icon(time ? LucideIcons.clock : LucideIcons.calendar),
+          leading: Icon(time ? CircleIcons.clock : CircleIcons.calendar),
           title: Text(time ? 'Time' : 'Date'),
           subtitle: Text(
             _start == null
@@ -985,7 +983,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
                   ).formatTimeOfDay(TimeOfDay.fromDateTime(base))
                 : MaterialLocalizations.of(context).formatMediumDate(base),
           ),
-          trailing: const Icon(LucideIcons.chevron_down),
+          trailing: const Icon(CircleIcons.chevronDown),
           enabled: !_busy && (!time || _start != null),
           onTap: _busy || (time && _start == null)
               ? null
@@ -1122,7 +1120,7 @@ class _EventEditorState extends ConsumerState<_EventEditor> {
                 buildCounter: CircleFormMetrics.counter,
                 maxLength: 500,
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(LucideIcons.map_pin),
+                  prefixIcon: const Icon(CircleIcons.location),
                 ),
               ),
             ),
@@ -1444,7 +1442,7 @@ class _AttendeesState extends ConsumerState<LiveAttendeesScreen> {
       ),
       if (people.isEmpty)
         const CircleEmpty(
-          icon: LucideIcons.calendar_days,
+          icon: CircleIcons.events,
           title: 'No answers yet',
           message:
               'When people answer Going, Maybe or Can’t go, they show up here.',
@@ -1481,7 +1479,7 @@ class _AttendeesState extends ConsumerState<LiveAttendeesScreen> {
                 )
               : const CircleSkeletonPage(label: 'Loading attendees'),
           error: (_, _) => CircleEmpty(
-            icon: LucideIcons.wifi_off,
+            icon: CircleIcons.wifiOff,
             title: 'Attendees couldn’t load',
             message: 'Check your connection and membership.',
             action: TextButton(

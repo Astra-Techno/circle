@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/design.dart';
-import 'package:mobile/core/design/circle_icons.dart';
 import 'package:mobile/features/memories/presentation/memory_card.dart';
 import 'package:mobile/features/memories/presentation/memory_photos.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
@@ -165,19 +164,22 @@ void main() {
       await tester.tap(find.widgetWithText(ChoiceChip, '❤️'));
       await tester.pumpAndSettle();
       final action = find.byTooltip('Choose a reaction for $about');
-      final emoji = find.descendant(of: action, matching: find.text('❤️'));
+      // Love shows as the solid red heart tile, aligned with Comment.
+      final heart = find.descendant(
+        of: action,
+        matching: find.byType(CircleActionIcon),
+      );
+      expect(tester.widget<CircleActionIcon>(heart).tinted, isFalse);
       final comment = find.descendant(
         of: find.byTooltip('Comment on $about'),
-        matching: find.byIcon(CircleIcons.comment),
+        matching: find.byType(CircleActionIcon),
       );
+      expect(tester.widget<CircleActionIcon>(comment).tinted, isTrue);
       expect(
-        tester.getCenter(emoji).dy,
+        tester.getCenter(heart).dy,
         closeTo(tester.getCenter(comment).dy, 0.01),
       );
-      expect(
-        tester.getSize(emoji).height,
-        lessThanOrEqualTo(CircleMemoryLayout.actionIcon),
-      );
+      expect(tester.getSize(heart).height, CircleMemoryLayout.actionTile);
       expect(tester.getSize(action).height, greaterThanOrEqualTo(48));
       expect(tester.getSize(action).width, greaterThanOrEqualTo(48));
       await capture(

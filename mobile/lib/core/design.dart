@@ -3,6 +3,7 @@ import 'design/circle_typography.dart';
 import 'design/circle_icons.dart';
 import 'design/circle_motion.dart';
 export 'design/circle_action_icons.dart';
+export 'design/circle_icons.dart';
 export 'design/circle_motion.dart';
 
 /// Decode budgets for private image previews. Full-screen viewing keeps the
@@ -30,6 +31,9 @@ abstract final class CircleMemoryLayout {
   static const actionBorderWidth = Space.xs / 4;
   static const collageAspect = 4 / 3;
   static const actionIcon = 24.0;
+
+  /// Coloured React/Comment/Save tiles inside the action pills.
+  static const actionTile = 30.0;
   static const collapsedLines = 3;
   static String countLabel(int count) => count < 1000
       ? '$count'

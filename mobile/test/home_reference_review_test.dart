@@ -163,7 +163,8 @@ void main() {
       final firstAction = find
           .ancestor(of: actionIcons.first, matching: find.byType(InkWell))
           .first;
-      expect(tester.getSize(firstAction).height, greaterThanOrEqualTo(42));
+      expect(tester.getSize(firstAction).height, greaterThanOrEqualTo(48));
+      expect(tester.getSize(firstAction).width, greaterThanOrEqualTo(48));
       if (size.width >= 840) {
         final first = tester.getRect(cards.first);
         expect(first.width, closeTo(720, 0.01));

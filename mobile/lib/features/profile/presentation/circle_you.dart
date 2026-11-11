@@ -1,4 +1,3 @@
-import '../../../core/design/circle_icons.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../memories/presentation/memory_card.dart';
@@ -11,7 +10,6 @@ import '../../../core/circle_brand.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../../core/theme_controller.dart';
 import 'profile_photo.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../notifications/application/notification_providers.dart';
 import '../../memories/presentation/scoped_memory_list.dart';
 import '../../workspace/application/workspace_providers.dart';
@@ -66,7 +64,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                       padding: EdgeInsets.zero,
                       child: ListTile(
                         leading: const CircleInitialAvatar(
-                          icon: LucideIcons.mail,
+                          icon: CircleIcons.mail,
                         ),
                         title: Text(
                           waiting == 1
@@ -124,7 +122,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                               .read(circleWorkspaceProvider.notifier)
                               .loadMoreMemories(),
                         ),
-                        icon: const Icon(LucideIcons.chevron_down),
+                        icon: const Icon(CircleIcons.chevronDown),
                         label: const Text('Load older Memories'),
                       ),
                   ],
@@ -132,7 +130,7 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                     ScopedMemoryList(
                       query: const MemoryQuery(saved: true),
                       empty: CircleEmpty(
-                        icon: LucideIcons.bookmark,
+                        icon: CircleIcons.bookmark,
                         title: 'Keep a Memory close',
                         message:
                             'Save a Memory to find it here later. Only you see your saved list.',
@@ -167,14 +165,14 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                               if (_loadError != null)
                                 TextButton.icon(
                                   onPressed: _refreshProfile,
-                                  icon: const Icon(LucideIcons.refresh_cw),
+                                  icon: const Icon(CircleIcons.refreshCw),
                                   label: const Text(
                                     'Retry loading profile details',
                                   ),
                                 ),
                               const CirclePill(
                                 'Only you',
-                                icon: LucideIcons.lock,
+                                icon: CircleIcons.lock,
                               ),
                               const SizedBox(height: Space.sm),
                               if ([
@@ -188,14 +186,14 @@ class _CircleYouState extends ConsumerState<CircleYou> {
                                 ),
                               for (final detail in [
                                 (
-                                  LucideIcons.building,
+                                  CircleIcons.building,
                                   'Lives in',
                                   account.currentCity,
                                 ),
-                                (LucideIcons.house, 'From', account.hometown),
-                                (LucideIcons.briefcase, 'Work', account.work),
+                                (CircleIcons.home, 'From', account.hometown),
+                                (CircleIcons.briefcase, 'Work', account.work),
                                 (
-                                  LucideIcons.graduation_cap,
+                                  CircleIcons.graduationCap,
                                   'Education',
                                   account.education,
                                 ),
@@ -274,7 +272,7 @@ class AccountScreen extends ConsumerWidget {
               children: [
                 if (features.has(CircleFeature.activity))
                   entry(
-                    icon: LucideIcons.bell,
+                    icon: CircleIcons.notifications,
                     title: 'Activity',
                     subtitle:
                         'Mentions, replies, invitations and event updates',
@@ -295,20 +293,20 @@ class AccountScreen extends ConsumerWidget {
                   ),
                 if (features.has(CircleFeature.notificationSettings))
                   entry(
-                    icon: LucideIcons.sliders_horizontal,
+                    icon: CircleIcons.slidersHorizontal,
                     title: 'Notifications',
                     subtitle: 'Your updates and quiet hours',
                     location: '/you/notifications',
                   ),
                 if (features.has(CircleFeature.blocking))
                   entry(
-                    icon: LucideIcons.lock,
+                    icon: CircleIcons.lock,
                     title: 'Privacy and blocking',
                     subtitle: 'Manage blocked people',
                     location: '/you/privacy',
                   ),
                 entry(
-                  icon: LucideIcons.mail,
+                  icon: CircleIcons.mail,
                   title: 'Invitations',
                   subtitle: 'Choose which circles to join',
                   location: '/you/invitations',
@@ -336,13 +334,13 @@ class AccountScreen extends ConsumerWidget {
           ),
           ...[
             ListTile(
-              leading: const Icon(LucideIcons.lock),
+              leading: const Icon(CircleIcons.lock),
               title: const Text('Change password'),
               trailing: const Icon(CircleIcons.chevronRight),
               onTap: () => context.push('/you/account/password'),
             ),
             ListTile(
-              leading: const Icon(LucideIcons.monitor_smartphone),
+              leading: const Icon(CircleIcons.monitorSmartphone),
               title: const Text('Your devices'),
               subtitle: const Text('Locations and session logout'),
               trailing: const Icon(CircleIcons.chevronRight),

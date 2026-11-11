@@ -7,7 +7,6 @@ import '../../chat/application/chat_providers.dart';
 import '../../memories/presentation/circle_memories.dart' show memoryTimeLabel;
 import '../../workspace/application/workspace_providers.dart';
 import '../application/notification_providers.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// The shell's bell: opens Activity. The indigo badge counts only unread
 /// items that need the person (README §4.0: badges mean something).
@@ -23,29 +22,29 @@ class ActivityBell extends ConsumerWidget {
         key: const ValueKey('activity-badge'),
         isLabelVisible: count > 0,
         label: Text('$count', semanticsLabel: '$count need you'),
-        child: const Icon(LucideIcons.bell),
+        child: const CircleActionIcon(type: CircleActionIconType.alerts),
       ),
     );
   }
 }
 
 IconData _icon(ActivityKind kind) => switch (kind) {
-  ActivityKind.reply || ActivityKind.mention => LucideIcons.at_sign,
-  ActivityKind.reactions => LucideIcons.heart,
-  ActivityKind.newMemory => LucideIcons.image,
-  ActivityKind.invitation => LucideIcons.mail,
-  ActivityKind.approved => LucideIcons.user_check,
-  ActivityKind.declined => LucideIcons.user_x,
-  ActivityKind.joinRequest => LucideIcons.user_plus,
-  ActivityKind.eventChanged => LucideIcons.calendar_cog,
-  ActivityKind.eventCancelled => LucideIcons.calendar_x,
-  ActivityKind.eventReminder => LucideIcons.alarm_clock,
-  ActivityKind.newEvent => LucideIcons.calendar,
-  ActivityKind.pollClosing => LucideIcons.vote,
-  ActivityKind.pollResults => LucideIcons.chart_bar,
-  ActivityKind.roleChange => LucideIcons.shield,
-  ActivityKind.messageRequest => LucideIcons.inbox,
-  ActivityKind.directMessage => LucideIcons.message_circle,
+  ActivityKind.reply || ActivityKind.mention => CircleIcons.atSign,
+  ActivityKind.reactions => CircleIcons.react,
+  ActivityKind.newMemory => CircleIcons.photo,
+  ActivityKind.invitation => CircleIcons.mail,
+  ActivityKind.approved => CircleIcons.userCheck,
+  ActivityKind.declined => CircleIcons.userX,
+  ActivityKind.joinRequest => CircleIcons.invite,
+  ActivityKind.eventChanged => CircleIcons.calendarCog,
+  ActivityKind.eventCancelled => CircleIcons.calendarX,
+  ActivityKind.eventReminder => CircleIcons.alarmClock,
+  ActivityKind.newEvent => CircleIcons.calendar,
+  ActivityKind.pollClosing => CircleIcons.vote,
+  ActivityKind.pollResults => CircleIcons.chartBar,
+  ActivityKind.roleChange => CircleIcons.shield,
+  ActivityKind.messageRequest => CircleIcons.inbox,
+  ActivityKind.directMessage => CircleIcons.chat,
 };
 
 /// I1: what happened in your circles, Today and Earlier. Personal items
@@ -65,7 +64,7 @@ class ActivityScreen extends ConsumerWidget {
           padding: CircleInsets.form,
           children: [
             CircleEmpty(
-              icon: LucideIcons.wifi_off,
+              icon: CircleIcons.wifiOff,
               title: 'Activity couldn’t load',
               message: 'Try again in a moment.',
               action: FilledButton(
@@ -100,13 +99,13 @@ class ActivityScreen extends ConsumerWidget {
                           .markAllRead(),
                       success: 'All caught up.',
                     ),
-                    icon: const Icon(LucideIcons.check_check),
+                    icon: const Icon(CircleIcons.checkCheck),
                     label: const Text('Mark all read'),
                   ),
                 ),
               if (feed.entries.isEmpty)
                 const CircleEmpty(
-                  icon: LucideIcons.bell,
+                  icon: CircleIcons.notifications,
                   title: 'All quiet',
                   message:
                       'Mentions, replies, invitations and event updates will '

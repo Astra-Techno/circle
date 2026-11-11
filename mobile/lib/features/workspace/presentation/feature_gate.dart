@@ -1,4 +1,3 @@
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,7 +27,7 @@ class CircleFeatureGate extends ConsumerWidget {
       child: Padding(
         padding: CircleInsets.page,
         child: CircleEmpty(
-          icon: LucideIcons.lock_keyhole,
+          icon: CircleIcons.lockKeyhole,
           title: 'This page is unavailable',
           message: 'This feature is not available on this server.',
           action: OutlinedButton(

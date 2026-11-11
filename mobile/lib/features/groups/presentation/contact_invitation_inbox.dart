@@ -1,11 +1,9 @@
 import '../../profile/application/server_blocks.dart';
 import 'invite_link_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/contact_invitations.dart';
@@ -198,19 +196,19 @@ class _ContactInvitationInboxState
               runSpacing: Space.sm,
               children: [
                 _InviteTabChip(
-                  icon: LucideIcons.mail,
+                  icon: CircleIcons.mail,
                   label: 'Received${received > 0 ? ' ($received)' : ''}',
                   selected: _tab == _InviteTab.received,
                   onTap: () => setState(() => _tab = _InviteTab.received),
                 ),
                 _InviteTabChip(
-                  icon: LucideIcons.check,
+                  icon: CircleIcons.check,
                   label: 'Accepted${accepted > 0 ? ' ($accepted)' : ''}',
                   selected: _tab == _InviteTab.accepted,
                   onTap: () => setState(() => _tab = _InviteTab.accepted),
                 ),
                 _InviteTabChip(
-                  icon: LucideIcons.clock,
+                  icon: CircleIcons.clock,
                   label: 'Expired',
                   selected: _tab == _InviteTab.expired,
                   onTap: () => setState(() => _tab = _InviteTab.expired),
@@ -222,7 +220,7 @@ class _ContactInvitationInboxState
             alignment: AlignmentDirectional.centerStart,
             child: TextButton.icon(
               onPressed: () => openInviteLinkDialog(context, ref),
-              icon: const Icon(LucideIcons.link),
+              icon: const Icon(CircleIcons.link),
               label: const Text('Open an invite link'),
             ),
           ),
@@ -237,7 +235,7 @@ class _ContactInvitationInboxState
             ),
           if (_error != null)
             CircleEmpty(
-              icon: LucideIcons.wifi_off,
+              icon: CircleIcons.wifiOff,
               title: 'Could not load invitations',
               message: 'Please check your connection and try again.',
               action: OutlinedButton(
@@ -362,7 +360,7 @@ class _InvitationCard extends StatelessWidget {
               children: [
                 CircleIdentityHeader(
                   leading: CircleInitialAvatar(
-                    icon: LucideIcons.users,
+                    icon: CircleIcons.members,
                     name: invitation.groupName,
                     size: CircleAvatarSize.hero,
                   ),
@@ -452,7 +450,7 @@ class _AcceptButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => FilledButton.icon(
     onPressed: onPressed,
-    icon: const Icon(LucideIcons.check, size: 16),
+    icon: const Icon(CircleIcons.check, size: 16),
     label: const Text('Accept'),
   );
 }

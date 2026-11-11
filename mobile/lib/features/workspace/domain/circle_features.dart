@@ -18,6 +18,11 @@ enum CircleFeature {
   contactInvitations('Contact invitations', plural: true),
   directInvitations('Direct invitations', plural: true),
   joinListedSubgroups('Asking to join from the subgroup list'),
+
+  /// Memory Capsules. Owner decision (10 Nov 2026): shown without a label
+  /// even though they are stored only on this phone until the server
+  /// offers them.
+  capsules('Memory Capsules', plural: true),
   commentDeletion('Deleting comments');
 
   const CircleFeature(this.label, {this.plural = false});
@@ -45,8 +50,10 @@ class CircleFeatures {
               CircleFeature.moderation,
               CircleFeature.notificationSettings,
               CircleFeature.contactInvitations,
+              CircleFeature.capsules,
             }
           : const {
+              CircleFeature.capsules,
               CircleFeature.contactInvitations,
               CircleFeature.moderation,
               CircleFeature.liveChat,

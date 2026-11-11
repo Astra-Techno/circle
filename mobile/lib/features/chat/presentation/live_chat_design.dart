@@ -1,4 +1,3 @@
-import '../../../core/design/circle_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +7,6 @@ import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../profile/presentation/person_avatar.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// WhatsApp-style chat pieces for live (server) conversations: inbox rows,
 /// a full-screen conversation bar, day chips, tailed bubbles with the time
@@ -43,7 +41,7 @@ class ChatIdentity extends ConsumerWidget {
         ? PersonAvatar(person: person!, name: name, size: size)
         : CircleInitialAvatar(
             name: name,
-            icon: group ? LucideIcons.users : null,
+            icon: group ? CircleIcons.members : null,
             size: size,
           );
   }
@@ -131,14 +129,14 @@ class ChatInboxRow extends StatelessWidget {
           children: [
             if (muted)
               Icon(
-                LucideIcons.volume_off,
+                CircleIcons.volumeOff,
                 size: Space.md,
                 color: accents.caption,
                 semanticLabel: 'Muted',
               ),
             if (pinned)
               Icon(
-                LucideIcons.pin,
+                CircleIcons.pin,
                 size: Space.md,
                 color: accents.caption,
                 semanticLabel: 'Pinned',

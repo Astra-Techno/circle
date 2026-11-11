@@ -1,4 +1,3 @@
-import '../../../core/design/circle_icons.dart';
 import '../../groups/presentation/group_photos.dart';
 import '../../profile/presentation/person_avatar.dart';
 import 'dart:async';
@@ -10,7 +9,6 @@ import '../../../core/design.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../memories/presentation/scoped_memory_list.dart';
 import '../application/search_providers.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// I2: one field; results grouped by kind, only from your own circles.
 class SearchScreen extends ConsumerStatefulWidget {
@@ -85,7 +83,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           const SizedBox(height: Space.sm),
           if (!ready) ...[
             CircleEmpty(
-              icon: LucideIcons.search,
+              icon: CircleIcons.search,
               title: 'Find something in your Circles',
               message: _query.trim().isEmpty
                   ? (server
@@ -106,7 +104,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 CircleRow(
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(LucideIcons.clock),
+                    leading: const Icon(CircleIcons.clock),
                     title: Text(item),
                     onTap: () => _set(item),
                   ),
@@ -114,7 +112,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ],
           ] else if (corpus.hasError || workspaceFailed)
             CircleEmpty(
-              icon: LucideIcons.wifi_off,
+              icon: CircleIcons.wifiOff,
               title: 'Groups and people couldn’t load',
               message:
                   'Your search is kept. Retry this section when connected.',
@@ -130,7 +128,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const CircleSkeleton(count: 3, label: 'Searching')
           else if (results.isEmpty && !server)
             CircleEmpty(
-              icon: LucideIcons.info,
+              icon: CircleIcons.info,
               title: 'No results',
               message:
                   'Nothing in your circles matches “${_query.trim()}”. Search '
@@ -148,7 +146,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ScopedMemoryList(
                 query: MemoryQuery(text: _serverQuery),
                 empty: const CircleEmpty(
-                  icon: LucideIcons.info,
+                  icon: CircleIcons.info,
                   title: 'No matching Memories',
                   message: 'Try another word from the Memory or its place.',
                 ),
@@ -239,7 +237,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         for (final event in results.events)
           row(
             leading: const CircleInitialAvatar(
-              icon: LucideIcons.calendar,
+              icon: CircleIcons.calendar,
               tone: CircleTone.neutral,
             ),
             title: event.title,
@@ -252,7 +250,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         for (final message in results.messages)
           row(
             leading: const CircleInitialAvatar(
-              icon: LucideIcons.message_circle,
+              icon: CircleIcons.chat,
               tone: CircleTone.neutral,
             ),
             title: message.text,
@@ -271,6 +269,6 @@ class SearchButton extends StatelessWidget {
   Widget build(BuildContext context) => IconButton(
     tooltip: 'Search',
     onPressed: () => context.push('/search'),
-    icon: const Icon(CircleIcons.search),
+    icon: const CircleActionIcon(type: CircleActionIconType.search),
   );
 }

@@ -7,7 +7,6 @@ import '../../../core/design.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/profile_providers.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Authenticated bytes are provided by the application layer, never a public URL.
 class ProfilePhotoSurface extends ConsumerWidget {
@@ -72,7 +71,7 @@ class ProfilePhotoSurface extends ConsumerWidget {
                         'Retry loading ${avatar ? 'profile' : 'cover'} photo',
                     onPressed: () =>
                         ref.invalidate(profilePhotoBytesProvider(query)),
-                    icon: const Icon(LucideIcons.refresh_cw),
+                    icon: const Icon(CircleIcons.refreshCw),
                   ),
                 ),
               ],
@@ -143,7 +142,7 @@ class SharedProfilePhotoSurface extends ConsumerWidget {
                       'Retry loading ${avatar ? 'profile' : 'cover'} photo',
                   onPressed: () =>
                       ref.invalidate(sharedProfilePhotoBytesProvider(query)),
-                  icon: const Icon(LucideIcons.refresh_cw),
+                  icon: const Icon(CircleIcons.refreshCw),
                 ),
               ),
             ],
@@ -199,13 +198,13 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
             ),
             const SizedBox(height: Space.sm),
             ListTile(
-              leading: const Icon(LucideIcons.images),
+              leading: const Icon(CircleIcons.images),
               title: Text(existing ? 'Replace photo' : 'Choose a photo'),
               onTap: () => Navigator.pop(sheet, 'choose'),
             ),
             if (existing)
               ListTile(
-                leading: const Icon(LucideIcons.trash),
+                leading: const Icon(CircleIcons.trash),
                 title: const Text('Remove photo'),
                 onTap: () => Navigator.pop(sheet, 'remove'),
               ),
@@ -314,7 +313,7 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                               onPressed: _busy
                                   ? null
                                   : () => _photo(ProfilePhotoKind.avatar),
-                              icon: const Icon(LucideIcons.camera),
+                              icon: const Icon(CircleIcons.camera),
                             ),
                           ),
                         ],
@@ -328,7 +327,7 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                           onPressed: _busy
                               ? null
                               : () => _photo(ProfilePhotoKind.cover),
-                          icon: const Icon(LucideIcons.camera),
+                          icon: const Icon(CircleIcons.camera),
                           label: const Text('Add cover'),
                         ),
                       ),
@@ -364,7 +363,7 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                       onPressed: _busy
                           ? null
                           : () => _photo(ProfilePhotoKind.cover),
-                      icon: const Icon(LucideIcons.camera),
+                      icon: const Icon(CircleIcons.camera),
                     ),
                   ),
                   PositionedDirectional(
@@ -397,7 +396,7 @@ class _ProfileHeaderState extends ConsumerState<ProfileHeader> {
                               onPressed: _busy
                                   ? null
                                   : () => _photo(ProfilePhotoKind.avatar),
-                              icon: const Icon(LucideIcons.camera),
+                              icon: const Icon(CircleIcons.camera),
                             ),
                           ),
                         ],

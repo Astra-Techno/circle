@@ -1,4 +1,3 @@
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -144,7 +143,7 @@ class _InviteLinkScreenState extends ConsumerState<InviteLinkScreen> {
               children: [
                 if (snapshot.hasError)
                   CircleEmpty(
-                    icon: LucideIcons.wifi_off,
+                    icon: CircleIcons.wifiOff,
                     title: 'This invite couldn’t load',
                     message:
                         'Check your connection and try again. Your invitation has not been changed.',

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../groups/domain/group_tree.dart';
 import '../../workspace/application/workspace_providers.dart';
@@ -14,7 +13,6 @@ import '../application/circle_seen.dart';
 import '../application/home_filter.dart';
 import 'memory_card.dart';
 import 'memory_photos.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 export 'memory_card.dart';
 export 'memory_compose.dart';
@@ -115,26 +113,25 @@ class _HomeHeader extends ConsumerWidget {
           children: [
             if (workspace.groups.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  Space.md,
-                  Space.xs,
-                  Space.md,
-                  Space.sm,
-                ),
-                child: Container(
-                  decoration: CircleDepth.glassPanel(
-                    context,
-                    radius: CircleRadius.sheet,
-                    glowColor: theme.colorScheme.primary,
+                // Full-width divider; content keeps the 16px margins.
+                padding: const EdgeInsets.only(top: Space.xs),
+                // Merged with the header (owner, 10 Nov 2026): no card of its
+                // own; the prompt and tiles continue the header surface and a
+                // divider separates them from the Memories.
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: accents.hairline)),
                   ),
-                  clipBehavior: Clip.antiAlias,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Subtle radiant accent top edge
-                      const _GradientAccentBar(),
                       Padding(
-                        padding: const EdgeInsets.all(Space.sm),
+                        padding: const EdgeInsets.fromLTRB(
+                          Space.md,
+                          0,
+                          Space.md,
+                          Space.sm,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -211,7 +208,7 @@ class _HomeHeader extends ConsumerWidget {
                                                       width: Space.xs,
                                                     ),
                                                     Icon(
-                                                      LucideIcons.sparkles,
+                                                      CircleIcons.sparkles,
                                                       size:
                                                           CircleSizes.iconSmall,
                                                       color: theme
@@ -256,7 +253,7 @@ class _HomeHeader extends ConsumerWidget {
 }
 
 /// Flat bold icon-only action strip for the Home header.
-/// Renders [CircleActionIcon] widgets at 34px with vertical dividers.
+/// Renders 34px [CircleActionIcon] tiles in 48px tap targets with dividers.
 class _ActionIconStrip extends StatelessWidget {
   const _ActionIconStrip({required this.groupId, required this.features});
   final String? groupId;
@@ -283,13 +280,15 @@ class _ActionIconStrip extends StatelessWidget {
           tooltip: 'Poll',
           route: groupId == null ? '/polls/new' : '/polls/new?group=$groupId',
         ),
-      _ActionItem(
-        type: CircleActionIconType.capsule,
-        tooltip: 'Capsule',
-        route: groupId == null
-            ? '/capsules/new'
-            : '/capsules/new?group=$groupId',
-      ),
+      // Capsules are phone-only until the server offers them: hidden.
+      if (features.has(CircleFeature.capsules))
+        _ActionItem(
+          type: CircleActionIconType.capsule,
+          tooltip: 'Capsule',
+          route: groupId == null
+              ? '/capsules/new'
+              : '/capsules/new?group=$groupId',
+        ),
     ];
 
     return SizedBox(
@@ -304,9 +303,10 @@ class _ActionIconStrip extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(CircleRadius.card),
                 onTap: () => context.push(items[i].route),
-                child: Padding(
-                  padding: const EdgeInsets.all(Space.xs),
-                  child: CircleActionIcon(type: items[i].type),
+                // 48px tap target around the 34px tile.
+                child: SizedBox.square(
+                  dimension: CircleSizes.minTouchTarget,
+                  child: Center(child: CircleActionIcon(type: items[i].type)),
                 ),
               ),
             ),
@@ -326,17 +326,6 @@ class _ActionItem {
   final CircleActionIconType type;
   final String tooltip;
   final String route;
-}
-
-/// Slim subtle gradient accent bar at the top of the Home header.
-class _GradientAccentBar extends StatelessWidget {
-  const _GradientAccentBar();
-
-  @override
-  Widget build(BuildContext context) => Container(
-    height: 3,
-    decoration: CircleDepth.slidingAccentBar(context, 0.5),
-  );
 }
 
 class _LoadOlderMemories extends ConsumerStatefulWidget {
@@ -476,10 +465,7 @@ class _FirstSteps extends StatelessWidget {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: done
-            ? Icon(
-                LucideIcons.circle_check_big,
-                color: theme.colorScheme.primary,
-              )
+            ? Icon(CircleIcons.circleCheckBig, color: theme.colorScheme.primary)
             : CircleInitialAvatar(
                 name: '$number',
                 size: CircleAvatarSize.small,
@@ -514,7 +500,7 @@ class _FirstSteps extends StatelessWidget {
             onPressed: () => hasGroup
                 ? context.push(composeLocation(groupId))
                 : context.go('/groups/new'),
-            icon: const Icon(LucideIcons.plus),
+            icon: const Icon(CircleIcons.create),
             label: Text(hasGroup ? 'Share a Memory' : 'Create a group'),
           ),
         ),
@@ -563,7 +549,7 @@ class CirclePhotos extends ConsumerWidget {
           if (entries.isEmpty)
             const SliverToBoxAdapter(
               child: CircleEmpty(
-                icon: LucideIcons.image,
+                icon: CircleIcons.photo,
                 title: 'No photos loaded yet',
                 message: 'Photos shared with you appear here.',
               ),

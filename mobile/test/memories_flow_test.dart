@@ -29,10 +29,12 @@ void main() {
   group('compose', () {
     testWidgets('Home only offers supported compact actions', (tester) async {
       await openCircle(tester);
-      expect(find.text('Photo'), findsOneWidget);
-      expect(find.text('Event'), findsOneWidget);
-      expect(find.text('Poll'), findsOneWidget);
-      expect(find.text('Video'), findsNothing);
+      // Icon tiles named by their tooltips.
+      expect(find.byTooltip('Photo'), findsOneWidget);
+      expect(find.byTooltip('Event'), findsOneWidget);
+      expect(find.byTooltip('Poll'), findsOneWidget);
+      expect(find.byTooltip('Capsule'), findsOneWidget);
+      expect(find.byTooltip('Video'), findsNothing);
     });
 
     testWidgets('caption, year and place render on the new card', (

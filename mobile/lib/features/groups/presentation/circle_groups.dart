@@ -8,10 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
-import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import '../../../core/two_pane.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/group_visuals.dart';
 import '../../workspace/presentation/workspace_view.dart';
@@ -85,7 +83,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
         if (existing == null || memory.createdAt.isAfter(existing.time)) {
           final hasPhotos = memory.photos.isNotEmpty;
           activityMap[memory.groupId] = _GroupActivity(
-            icon: hasPhotos ? LucideIcons.images : LucideIcons.message_circle,
+            icon: hasPhotos ? CircleIcons.images : CircleIcons.chat,
             text:
                 '${workspace.nameOf(memory.authorId)} ${hasPhotos ? 'shared ${memory.photos.length == 1 ? 'a photo' : '${memory.photos.length} photos'}' : 'posted a memory'}',
             time: memory.createdAt,
@@ -96,7 +94,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
         final existing = activityMap[event.groupId];
         if (existing == null || event.createdAt.isAfter(existing.time)) {
           activityMap[event.groupId] = _GroupActivity(
-            icon: LucideIcons.calendar,
+            icon: CircleIcons.calendar,
             text: event.title,
             time: event.createdAt,
           );
@@ -163,7 +161,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                   if (_filter == _CircleFilter.invited) ...[
                     if (workspace.invitations.isEmpty)
                       CircleEmpty(
-                        icon: LucideIcons.users,
+                        icon: CircleIcons.members,
                         title: 'No invitations',
                         message:
                             'Invitations from your circles will appear here.',
@@ -222,7 +220,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                                   child: Row(
                                     children: [
                                       Icon(
-                                        LucideIcons.pin,
+                                        CircleIcons.pin,
                                         size: Space.md,
                                         color: theme.colorScheme.primary,
                                       ),
@@ -314,7 +312,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                                 ),
                                 const SizedBox(width: Space.xs),
                                 Icon(
-                                  LucideIcons.chevron_down,
+                                  CircleIcons.chevronDown,
                                   size: 14,
                                   color: accents.caption,
                                 ),
@@ -361,7 +359,7 @@ class _CircleGroupsState extends ConsumerState<CircleGroups> {
                         CircleRow(
                           child: ListTile(
                             leading: const CircleInitialAvatar(
-                              icon: LucideIcons.hourglass,
+                              icon: CircleIcons.hourglass,
                               tone: CircleTone.neutral,
                             ),
                             title: Text(pending.name),
@@ -543,7 +541,7 @@ class _CircleCard extends ConsumerWidget {
                               if (isPinned) ...[
                                 const SizedBox(width: Space.xs),
                                 Icon(
-                                  LucideIcons.pin,
+                                  CircleIcons.pin,
                                   size: 14,
                                   color: theme.colorScheme.primary,
                                 ),
@@ -686,7 +684,7 @@ class _CircleCard extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              LucideIcons.calendar,
+                              CircleIcons.calendar,
                               size: 13,
                               color: theme.colorScheme.error,
                             ),
@@ -721,7 +719,7 @@ class _CircleCard extends ConsumerWidget {
                                 duration: CircleMotion.micro,
                                 curve: CircleMotion.enterCurve,
                                 child: Icon(
-                                  LucideIcons.chevron_down,
+                                  CircleIcons.chevronDown,
                                   size: Space.section,
                                   color: accents.caption,
                                 ),
@@ -928,8 +926,8 @@ class CircleGroupTile extends ConsumerWidget {
                               : 'Expand ${group.name}',
                           icon: Icon(
                             expanded!
-                                ? LucideIcons.chevron_up
-                                : LucideIcons.chevron_down,
+                                ? CircleIcons.chevronUp
+                                : CircleIcons.chevronDown,
                             color: accents.caption,
                           ),
                           onPressed: onToggle,
@@ -1010,7 +1008,7 @@ class _CircleCreateGroupState extends ConsumerState<CircleCreateGroup> {
               padding: CircleInsets.form,
               children: [
                 CircleEmpty(
-                  icon: LucideIcons.users,
+                  icon: CircleIcons.members,
                   title: 'A subgroup can\'t be added here',
                   message: rule.reason!,
                 ),

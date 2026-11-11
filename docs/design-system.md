@@ -1,21 +1,21 @@
 # CIRCLE design system
 
-## Social 2.6: flat bold action icons, 9 November 2026
+## Social 2.6: coloured icon tiles, 10 November 2026 (owner choice, style A)
 
-Home header action row and header nav icons use the Circle flat bold icon style: a solid single-colour rx=14 squircle with a crisp 2.5px white stroke symbol centred inside. No gradients, shadows, glows or overlays. Each icon has a distinct semantic colour:
+Owner picked style A from rendered options (`~/Downloads/circle-icon-options`): every primary icon is a coloured rounded-square tile with a crisp white Lucide glyph (`CircleActionIcon`, `mobile/lib/core/design/circle_action_icons.dart`). The tinted form (pale fill, coloured glyph) marks unselected states.
 
-| Icon | Colour | Hex | Meaning |
-|------|--------|-----|---------|
-| Search | Navy | `#1E3A5F` | Focused, precision |
-| Notify | Crimson | `#DC2626` | Urgency, alerts |
-| Memory | Orange | `#EA580C` | Warmth, nostalgia |
-| Event | Pink | `#DB2777` | Celebration |
-| Poll | Teal | `#0D9488` | Data, clarity |
-| Capsule | Purple | `#7C3AED` | Mystery, premium |
-| Home | Green | `#16A34A` | Safe, grounded |
-| Chat | Blue | `#2563EB` | Communication |
+| Where | Tiles | Selected / unselected |
+|---|---|---|
+| Home quick actions (34px) | Photo orange, Event pink (calendar +), Poll teal (bar chart), Capsule violet (upright two-tone pill) | Always solid |
+| Bottom bar (34px) | Home green, Circles brand purple, Chats blue, Events pink; Profile keeps the real avatar with a ring | Selected solid, others tinted |
+| Root header (34px in 48px buttons) | Search navy, Alerts red, Account settings slate | Solid |
+| Memory actions (30px in 48px pills) | React rose heart, Comment sky square bubble, Save amber bookmark | Tinted; solid once loved or saved. Other emoji reactions still show the emoji |
 
-Implementation uses `CircleActionIcon` in `mobile/lib/core/design/circle_action_icons.dart`. The widget takes a `CircleActionIconType` enum, renders a `Container` with the flat colour fill and `CustomPaint` for the white symbol at the token size. Use these exclusively in the Home header action strip and nav icons. Symbols are pure white `#FFFFFF`; dark mode uses the same colours (they pop on dark backgrounds). Icons render at 34px in the action strip and 26px in the nav bar. The squircle background and symbol are a single flat layer; there is no 3D depth, highlight overlay or animation on the icon itself.
+Each type has a light and a deeper dark-mode tone; white glyphs keep 3:1 or better. Capsule is shown (owner decision, 10 Nov) although capsules are still stored only on the phone until the server supports them; `CircleFeature.capsules` is on in every session. Inner-page and form icons stay plain Lucide outline from `CircleIcons`.
+
+**Home header merge (owner, 10 Nov):** the "Share a memory…" prompt and quick-action tiles have no card of their own. They continue the header surface under the "Circle" title, and a full-width hairline divides them from the Memories.
+
+**Icons rule (10 Nov):** app code uses `CircleIcons` and `CircleActionIcon` only. `flutter_lucide` and Material `Icons.*` are allowed only in `circle_icons.dart`; `test/design_system_guard_test.dart` enforces it.
 
 ## Social 2.5: audit consistency, 7 November 2026
 

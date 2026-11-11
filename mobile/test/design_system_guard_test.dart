@@ -66,6 +66,13 @@ final rules = <({String name, RegExp pattern, Set<String> allowedIn})>[
     allowedIn: signedImageFiles,
   ),
   (
+    name: 'icon library used directly (use CircleIcons)',
+    pattern: RegExp(
+      r"flutter_lucide|\bLucideIcons\.|(?<![A-Za-z])Icons\.[a-z]",
+    ),
+    allowedIn: {'lib/core/design/circle_icons.dart'},
+  ),
+  (
     name: 'numeric padding (use Space, CircleInsets)',
     pattern: RegExp(r'EdgeInsets[\w.]*\([^)]*?(?<![\w.])[1-9]\d*(\.\d+)?\b'),
     allowedIn: tokenFiles,

@@ -1,5 +1,5 @@
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter/material.dart';
+import '../../../core/design/circle_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../application/workspace_providers.dart';
@@ -27,7 +27,7 @@ class WorkspaceView extends ConsumerWidget {
           child: Column(
             children: [
               CircleEmpty(
-                icon: LucideIcons.wifi_off,
+                icon: CircleIcons.wifiOff,
                 title: 'Your circles couldn’t load',
                 message: error is CircleFailure
                     ? error.message

@@ -6,7 +6,6 @@ import '../../../core/circle_components.dart';
 import '../../../core/api/api_providers.dart';
 import '../../../core/design.dart';
 import '../../../core/design/circle_typography.dart';
-import '../../../core/design/circle_icons.dart';
 import '../../moderation/presentation/report_sheet.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/feature_gate.dart';
@@ -18,7 +17,6 @@ import 'memory_reactions_sheet.dart';
 import 'mention_text.dart';
 import '../../polls/presentation/live_polls.dart' show LivePollCard;
 import '../../events/presentation/live_events.dart' show LiveEventCard;
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 enum _MemoryAction { openPoll, save, replyPrivately, edit, delete, report }
 
@@ -197,7 +195,7 @@ class CircleMemoryCard extends ConsumerWidget {
                         Row(
                           children: [
                             Icon(
-                              LucideIcons.lock_keyhole,
+                              CircleIcons.lockKeyhole,
                               size: CircleSizes.iconInline,
                               color: accents.caption,
                             ),
@@ -319,7 +317,7 @@ class CircleMemoryCard extends ConsumerWidget {
                 child: Row(
                   children: [
                     Icon(
-                      LucideIcons.clock,
+                      CircleIcons.clock,
                       size: Space.lg,
                       color: accents.caption,
                     ),
@@ -341,7 +339,7 @@ class CircleMemoryCard extends ConsumerWidget {
                         _ActionPill(
                           children: [
                             _ActionButton(
-                              icon: CircleIcons.react,
+                              type: CircleActionIconType.react,
                               tooltip: 'Choose a reaction for $about',
                               selected: reactions.mine != null,
                               reaction: reactions.mine,
@@ -372,7 +370,7 @@ class CircleMemoryCard extends ConsumerWidget {
                         _ActionPill(
                           children: [
                             _ActionButton(
-                              icon: CircleIcons.comment,
+                              type: CircleActionIconType.comment,
                               tooltip: 'Comment on $about',
                               onTap: openDetail,
                             ),
@@ -402,9 +400,8 @@ class CircleMemoryCard extends ConsumerWidget {
                   _ActionPill(
                     children: [
                       _ActionButton(
-                        icon: memory.saved
-                            ? CircleIcons.saved
-                            : CircleIcons.bookmark,
+                        type: CircleActionIconType.save,
+                        glyph: memory.saved ? CircleIcons.saved : null,
                         selected: memory.saved,
                         tooltip: '${memory.saved ? 'Unsave' : 'Save'} $about',
                         onTap: () => runCalmly(
@@ -454,22 +451,26 @@ class _ActionPill extends StatelessWidget {
 /// Labeled,48px controls with restrained ink and explicit selected state.
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
-    required this.icon,
+    required this.type,
     required this.tooltip,
     required this.onTap,
+    this.glyph,
     this.reaction,
     this.selected = false,
   });
-  final IconData icon;
+
+  /// Coloured tile: solid when [selected], tinted otherwise.
+  final CircleActionIconType type;
+  final IconData? glyph;
+
+  /// The viewer's own reaction; any reaction other than love shows itself.
   final String? reaction;
   final String tooltip;
   final VoidCallback onTap;
   final bool selected;
   @override
   Widget build(BuildContext context) {
-    final ink = selected
-        ? Theme.of(context).colorScheme.primary
-        : CircleAccents.of(context).caption;
+    final emoji = reaction != null && reaction != loveReaction;
     return Semantics(
       button: true,
       selected: selected,
@@ -484,25 +485,28 @@ class _ActionButton extends StatelessWidget {
               minWidth: CircleSizes.minTouchTarget,
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.sm),
+              padding: const EdgeInsets.symmetric(horizontal: Space.xs),
               child: Center(
                 widthFactor: 1,
                 heightFactor: 1,
-                child: reaction == null
-                    ? Icon(
-                        icon,
-                        size: CircleMemoryLayout.actionIcon,
-                        color: ink,
-                      )
-                    : SizedBox.square(
+                child: emoji
+                    ? SizedBox.square(
                         dimension: CircleMemoryLayout.actionIcon,
                         child: FittedBox(
                           child: Text(
                             reaction!,
                             textScaler: TextScaler.noScaling,
-                            style: CircleTextStyles.reactionGlyph(ink),
+                            style: CircleTextStyles.reactionGlyph(
+                              Theme.of(context).colorScheme.primary,
+                            ),
                           ),
                         ),
+                      )
+                    : CircleActionIcon(
+                        type: type,
+                        size: CircleMemoryLayout.actionTile,
+                        tinted: !selected,
+                        glyph: glyph,
                       ),
               ),
             ),

@@ -6,7 +6,6 @@ import '../../../core/design.dart';
 import '../../memories/presentation/memory_photos.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/album_providers.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Where an album lives: inside its group's space.
 String albumLocation(String groupId, String albumId) =>
@@ -33,7 +32,7 @@ class AlbumsTab extends ConsumerWidget {
           alignment: AlignmentDirectional.centerStart,
           child: OutlinedButton.icon(
             onPressed: () => showNewAlbumSheet(context, group),
-            icon: const Icon(LucideIcons.image_plus),
+            icon: const Icon(CircleIcons.imagePlus),
             label: const Text('New album'),
           ),
         ),
@@ -46,14 +45,14 @@ class AlbumsTab extends ConsumerWidget {
           )
         else if (albums == null)
           CircleEmpty(
-            icon: LucideIcons.lock_keyhole,
+            icon: CircleIcons.lockKeyhole,
             title: 'Albums unavailable',
             message:
                 load.value?.unavailable ?? 'Albums couldn’t load. Try again.',
           )
         else if (albums.isEmpty)
           CircleEmpty(
-            icon: LucideIcons.info,
+            icon: CircleIcons.info,
             title: 'A home for your shared photos',
             message:
                 'Start an album for ${group.name}. Only members of this exact group will see it.',
@@ -109,7 +108,7 @@ class AlbumTile extends StatelessWidget {
               child: CircleSceneTile(
                 label: cover?.photo.label ?? 'No photos yet',
                 icon: cover == null
-                    ? LucideIcons.images
+                    ? CircleIcons.images
                     : memorySceneIcon(cover.photo.scene),
                 semanticsLabel: album.title,
               ),
@@ -130,7 +129,7 @@ class AlbumTile extends StatelessWidget {
             if (album.isEventAlbum)
               const Padding(
                 padding: EdgeInsets.only(top: Space.xs),
-                child: CirclePill('Event', icon: LucideIcons.calendar),
+                child: CirclePill('Event', icon: CircleIcons.calendar),
               ),
           ],
         ),
@@ -287,7 +286,7 @@ class _AlbumFormSheetState extends ConsumerState<AlbumFormSheet> {
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton.icon(
                   onPressed: _pick,
-                  icon: const Icon(LucideIcons.image_plus),
+                  icon: const Icon(CircleIcons.imagePlus),
                   label: Text(
                     _scenes.isEmpty
                         ? 'Choose photos (optional)'

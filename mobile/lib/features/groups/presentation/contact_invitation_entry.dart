@@ -1,8 +1,6 @@
-import '../../../core/design/circle_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import '../application/contact_invitations.dart';
 import '../../../core/design.dart';
 import '../../../core/design/circle_typography.dart';
@@ -96,7 +94,7 @@ class _ContactInvitationEntryState extends ConsumerState<ContactInvitationEntry>
                     child: SizedBox.square(
                       dimension: Space.hero,
                       child: Icon(
-                        LucideIcons.mail,
+                        CircleIcons.mail,
                         size: Space.section,
                         color: theme.colorScheme.primary,
                       ),

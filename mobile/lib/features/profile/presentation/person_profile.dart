@@ -1,4 +1,3 @@
-import '../../../core/design/circle_icons.dart';
 import '../application/profile_providers.dart';
 import '../../groups/presentation/group_photos.dart';
 import 'profile_photo.dart';
@@ -15,7 +14,6 @@ import '../../groups/presentation/group_members.dart' show personLocation;
 import '../../moderation/presentation/report_sheet.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 export '../../groups/presentation/group_members.dart' show personLocation;
 
@@ -43,7 +41,7 @@ class PersonProfileScreen extends ConsumerWidget {
             padding: CircleInsets.form,
             children: [
               CircleEmpty(
-                icon: LucideIcons.user_round,
+                icon: CircleIcons.profile,
                 title: 'This is you',
                 message: 'Your own settings live in You.',
                 action: FilledButton(
@@ -60,7 +58,7 @@ class PersonProfileScreen extends ConsumerWidget {
           child: Padding(
             padding: CircleInsets.form,
             child: CircleEmpty(
-              icon: LucideIcons.lock_keyhole,
+              icon: CircleIcons.lockKeyhole,
               title: 'This profile isn’t available',
               message: 'You can only see people who share a group with you.',
             ),
@@ -134,7 +132,7 @@ class PersonProfileScreen extends ConsumerWidget {
                             context.go('/chats/c/$id');
                           }
                         },
-                        icon: const Icon(LucideIcons.message_circle),
+                        icon: const Icon(CircleIcons.chat),
                         label: Text('Message', semanticsLabel: 'Message $name'),
                       ),
                     ExpansionTile(
@@ -157,7 +155,7 @@ class PersonProfileScreen extends ConsumerWidget {
                                 )),
                               );
                             },
-                            icon: const Icon(LucideIcons.refresh_cw),
+                            icon: const Icon(CircleIcons.refreshCw),
                             label: const Text('Refresh photos'),
                           ),
                         ),
@@ -191,7 +189,7 @@ class PersonProfileScreen extends ConsumerWidget {
                               .read(circleWorkspaceProvider.notifier)
                               .loadMoreMemories(),
                         ),
-                        icon: const Icon(LucideIcons.chevron_down),
+                        icon: const Icon(CircleIcons.chevronDown),
                         label: const Text('Load older Memories'),
                       ),
                     CircleSectionTitle('Groups in common (${shared.length})'),
@@ -222,7 +220,7 @@ class PersonProfileScreen extends ConsumerWidget {
                       CircleRow(
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
-                          leading: const Icon(LucideIcons.flag),
+                          leading: const Icon(CircleIcons.flag),
                           title: Text('Report $name'),
                           subtitle: Text(
                             'To the admins of ${reportGroup.name}',

@@ -21,7 +21,11 @@ void main() {
       'shared event invitation on $surface uses page data and opens RSVP',
       (tester) async {
         final f = LiveFixture();
-        f.event['start_at'] = '2026-11-08T01:30:00Z';
+        // Always upcoming, so the RSVP answers show (a fixed date expires).
+        f.event['start_at'] = DateTime.now()
+            .toUtc()
+            .add(const Duration(days: 7))
+            .toIso8601String();
         f.event['maybe_count'] = 1;
         final mid = f.server.addMemory(
           f.group,

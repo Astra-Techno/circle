@@ -1,4 +1,3 @@
-import '../../../core/design/circle_icons.dart';
 import '../../../core/form_exit_guard.dart';
 import '../../../core/design/circle_typography.dart';
 import 'dart:convert';
@@ -10,7 +9,6 @@ import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/live_polls.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 void refreshPolls(WidgetRef ref) {
   ref.invalidate(livePollProvider);
@@ -48,7 +46,7 @@ class _PollState extends ConsumerState<LivePollScreen> {
             children: [
               if (items.isEmpty)
                 const CircleEmpty(
-                  icon: LucideIcons.list_todo,
+                  icon: CircleIcons.poll,
                   title: 'Ask your circle',
                   message: 'Start with a question and two options.',
                 ),
@@ -81,7 +79,7 @@ class _PollState extends ConsumerState<LivePollScreen> {
                 },
               ).toString(),
             ),
-            icon: const Icon(LucideIcons.plus),
+            icon: const Icon(CircleIcons.create),
             label: const Text('Create a poll'),
           ),
         ),
@@ -116,7 +114,7 @@ class _PollState extends ConsumerState<LivePollScreen> {
                 label: 'Loading polls',
               ),
         error: (_, _) => CircleEmpty(
-          icon: LucideIcons.wifi_off,
+          icon: CircleIcons.wifiOff,
           title: 'Polls couldn’t load',
           message: 'Check your connection and group access.',
           action: TextButton(
@@ -255,7 +253,7 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
                           children: [
                             ...[
                               Icon(
-                                LucideIcons.vote,
+                                CircleIcons.vote,
                                 size: CircleSizes.iconInline,
                                 color: CircleAccents.of(context).caption,
                               ),
@@ -571,7 +569,7 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
                                   await _run((_) => api.option(id, label));
                                 }
                               },
-                        icon: const Icon(LucideIcons.plus),
+                        icon: const Icon(CircleIcons.create),
                         label: const Text('Add an option'),
                       ),
                   ],
@@ -731,7 +729,7 @@ class _FormState extends ConsumerState<LivePollForm> {
                     ? null
                     : () =>
                           setState(() => _options.add(TextEditingController())),
-                icon: const Icon(LucideIcons.plus),
+                icon: const Icon(CircleIcons.create),
                 label: const Text('Add option'),
               ),
             ExpansionTile(
@@ -941,7 +939,7 @@ class _FormState extends ConsumerState<LivePollForm> {
                         }
                       }
                     },
-              icon: const Icon(LucideIcons.chart_bar),
+              icon: const Icon(CircleIcons.chartBar),
               label: Text(_busy ? 'Creating…' : 'Post poll'),
             ),
           ],
@@ -1036,7 +1034,7 @@ class _VotersState extends ConsumerState<LivePollVoters> {
                 )
               : const Center(child: CircularProgressIndicator()),
           error: (_, _) => const CircleEmpty(
-            icon: LucideIcons.list_todo,
+            icon: CircleIcons.poll,
             title: 'Voters are private',
             message: 'Check poll settings and current group access.',
           ),

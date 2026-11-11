@@ -6,27 +6,25 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/circle_signed_image.dart';
 import '../../../core/design.dart';
-import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import '../application/media_providers.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/workspace_view.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'memory_reactions_sheet.dart';
 
 /// The icon drawn for each fictional scene.
 IconData memorySceneIcon(MemoryScene? scene) => switch (scene) {
-  null => LucideIcons.image,
-  MemoryScene.sundayLunch => LucideIcons.utensils,
-  MemoryScene.hillTrip => LucideIcons.mountain,
-  MemoryScene.graduationDay => LucideIcons.graduation_cap,
-  MemoryScene.birthdayCake => LucideIcons.cake,
-  MemoryScene.beachWalk => LucideIcons.umbrella,
-  MemoryScene.officeParty => LucideIcons.party_popper,
-  MemoryScene.cricketMatch => LucideIcons.trophy,
-  MemoryScene.weddingStage => LucideIcons.flower_2,
-  MemoryScene.templeFestival => LucideIcons.landmark,
-  MemoryScene.oldClassroom => LucideIcons.book_open,
+  null => CircleIcons.photo,
+  MemoryScene.sundayLunch => CircleIcons.utensils,
+  MemoryScene.hillTrip => CircleIcons.mountain,
+  MemoryScene.graduationDay => CircleIcons.graduationCap,
+  MemoryScene.birthdayCake => CircleIcons.birthday,
+  MemoryScene.beachWalk => CircleIcons.umbrella,
+  MemoryScene.officeParty => CircleIcons.partyPopper,
+  MemoryScene.cricketMatch => CircleIcons.trophy,
+  MemoryScene.weddingStage => CircleIcons.flower2,
+  MemoryScene.templeFestival => CircleIcons.landmark,
+  MemoryScene.oldClassroom => CircleIcons.bookOpen,
 };
 
 /// Fictional preview scenes that have a bundled photo (the owner's
@@ -156,7 +154,7 @@ class MemoryPhotoViewer extends ConsumerWidget {
           child: Padding(
             padding: CircleInsets.form,
             child: CircleEmpty(
-              icon: LucideIcons.lock_keyhole,
+              icon: CircleIcons.lockKeyhole,
               title: 'Photos unavailable',
               message: 'These photos are not shared with your current groups.',
             ),
@@ -241,7 +239,7 @@ class _PhotoPagerState extends State<PhotoPager> {
         child: Padding(
           padding: CircleInsets.form,
           child: CircleEmpty(
-            icon: LucideIcons.image,
+            icon: CircleIcons.photo,
             title: 'No photos here',
             message: 'There\u2019s nothing left to show.',
           ),
@@ -320,7 +318,7 @@ class _PhotoPagerState extends State<PhotoPager> {
                             )
                           : null,
                       icon: const Icon(
-                        LucideIcons.chevron_left,
+                        CircleIcons.chevronLeft,
                         color: CircleOverlay.foreground,
                       ),
                     ),
@@ -402,13 +400,13 @@ class _PhotoPagerState extends State<PhotoPager> {
                   children: [
                     if (widget.onReact != null)
                       _PhotoAction(
-                        icon: LucideIcons.face_slightly_smiling,
+                        icon: CircleIcons.faceSlightlySmiling,
                         label: 'React',
                         onPressed: widget.onReact!,
                       ),
                     if (widget.onComment != null)
                       _PhotoAction(
-                        icon: LucideIcons.message_square,
+                        icon: CircleIcons.comment,
                         label: 'Comment',
                         onPressed: widget.onComment!,
                       ),

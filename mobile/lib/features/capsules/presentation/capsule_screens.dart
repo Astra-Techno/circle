@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
@@ -43,7 +42,7 @@ class CapsuleListScreen extends ConsumerWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      LucideIcons.timer,
+                      CircleIcons.timer,
                       size: 36,
                       color: accents.calm,
                     ),
@@ -62,7 +61,7 @@ class CapsuleListScreen extends ConsumerWidget {
                 const SizedBox(height: Space.section),
                 FilledButton.icon(
                   onPressed: () => context.push('/capsules/new'),
-                  icon: const Icon(LucideIcons.plus),
+                  icon: const Icon(CircleIcons.create),
                   label: const Text('Create capsule'),
                 ),
               ],
@@ -133,7 +132,7 @@ class _CapsuleCard extends StatelessWidget {
                         boxShadow: CircleDepth.glowShadow(accentColor),
                       ),
                       child: Icon(
-                        isUnlocked ? LucideIcons.lock_open : LucideIcons.lock,
+                        isUnlocked ? CircleIcons.lockOpen : CircleIcons.lock,
                         size: 20,
                         color: accentColor,
                       ),
@@ -222,7 +221,7 @@ class _CapsuleCard extends StatelessWidget {
                       const Spacer(),
                     if (capsule.messageCount > 0)
                       _MetaBadge(
-                        icon: LucideIcons.message_square,
+                        icon: CircleIcons.comment,
                         count: capsule.messageCount,
                       ),
                   ],
@@ -319,7 +318,7 @@ class CapsuleDetailScreen extends ConsumerWidget {
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  LucideIcons.lock,
+                                  CircleIcons.lock,
                                   size: 28,
                                   color: accents.calm,
                                 ),
@@ -336,8 +335,8 @@ class CapsuleDetailScreen extends ConsumerWidget {
                               ),
                               child: Icon(
                                 isUnlocked
-                                    ? LucideIcons.lock_open
-                                    : LucideIcons.lock,
+                                    ? CircleIcons.lockOpen
+                                    : CircleIcons.lock,
                                 size: 32,
                                 color: isUnlocked ? accents.sage : accents.calm,
                               ),
@@ -391,21 +390,21 @@ class CapsuleDetailScreen extends ConsumerWidget {
               // Status info
               if (!isUnlocked && !isSealed)
                 _InfoTile(
-                  icon: LucideIcons.info,
+                  icon: CircleIcons.info,
                   label: 'Open for contributions',
                   message:
                       'Add messages before sealing. Once sealed, contents are hidden until the unlock date.',
                 ),
               if (isSealed && !isUnlocked)
                 _InfoTile(
-                  icon: LucideIcons.shield,
+                  icon: CircleIcons.shield,
                   label: 'Sealed',
                   message:
                       'This capsule is sealed. Contents will be revealed on the unlock date.',
                 ),
               if (isUnlocked)
                 _InfoTile(
-                  icon: LucideIcons.sparkles,
+                  icon: CircleIcons.sparkles,
                   label: 'Unlocked',
                   message:
                       'This capsule has been unlocked! All memories inside are now visible.',
@@ -420,7 +419,7 @@ class CapsuleDetailScreen extends ConsumerWidget {
                     child: CircleFadeIn(
                       delay: CircleMotion.staggerDelay,
                       child: _StatCard(
-                        icon: LucideIcons.message_square,
+                        icon: CircleIcons.comment,
                         value: '${capsule.messageCount}',
                         label: 'Messages',
                       ),
@@ -431,7 +430,7 @@ class CapsuleDetailScreen extends ConsumerWidget {
                     child: CircleFadeIn(
                       delay: CircleMotion.staggerDelay * 2,
                       child: _StatCard(
-                        icon: LucideIcons.users,
+                        icon: CircleIcons.members,
                         value: '${capsule.contributors.length}',
                         label: 'Contributors',
                       ),
@@ -446,19 +445,19 @@ class CapsuleDetailScreen extends ConsumerWidget {
               if (isMine && capsule.isOpen) ...[
                 FilledButton.icon(
                   onPressed: () => _confirmSeal(context, ref, capsule),
-                  icon: const Icon(LucideIcons.lock),
+                  icon: const Icon(CircleIcons.lock),
                   label: const Text('Seal capsule'),
                 ),
                 const SizedBox(height: Space.sm),
                 OutlinedButton.icon(
                   onPressed: () => _addEntry(context, ref, capsule),
-                  icon: const Icon(LucideIcons.plus),
+                  icon: const Icon(CircleIcons.create),
                   label: const Text('Add a message'),
                 ),
                 const SizedBox(height: Space.sm),
                 TextButton.icon(
                   onPressed: () => _confirmDelete(context, ref, capsule),
-                  icon: Icon(LucideIcons.trash, color: theme.colorScheme.error),
+                  icon: Icon(CircleIcons.trash, color: theme.colorScheme.error),
                   label: Text(
                     'Delete capsule',
                     style: theme.textTheme.bodyLarge?.copyWith(
@@ -470,7 +469,7 @@ class CapsuleDetailScreen extends ConsumerWidget {
               if (capsule.isOpen && !isMine)
                 OutlinedButton.icon(
                   onPressed: () => _addEntry(context, ref, capsule),
-                  icon: const Icon(LucideIcons.plus),
+                  icon: const Icon(CircleIcons.create),
                   label: const Text('Add a message'),
                 ),
             ],
@@ -829,7 +828,7 @@ class _CapsuleCreateScreenState extends ConsumerState<CapsuleCreateScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        LucideIcons.timer,
+                        CircleIcons.timer,
                         size: 40,
                         color: accents.calm,
                       ),
@@ -902,7 +901,7 @@ class _CapsuleCreateScreenState extends ConsumerState<CapsuleCreateScreen> {
               const SizedBox(height: Space.sm),
               OutlinedButton.icon(
                 onPressed: _pickDate,
-                icon: const Icon(LucideIcons.calendar),
+                icon: const Icon(CircleIcons.calendar),
                 label: Text(
                   _unlockAt != null ? _formatDate(_unlockAt!) : 'Pick a date',
                 ),
@@ -928,7 +927,7 @@ class _CapsuleCreateScreenState extends ConsumerState<CapsuleCreateScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(LucideIcons.clock, size: 18, color: accents.calm),
+                      Icon(CircleIcons.clock, size: 18, color: accents.calm),
                       const SizedBox(width: Space.sm),
                       Expanded(
                         child: Text(

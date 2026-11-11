@@ -10,7 +10,6 @@ import '../core/api/api_providers.dart';
 import '../core/circle_brand.dart';
 import '../core/circle_components.dart';
 import '../core/design.dart';
-import '../core/design/circle_icons.dart';
 import '../core/design/circle_typography.dart';
 import '../core/invite_entry.dart';
 import '../core/theme_controller.dart';
@@ -43,7 +42,6 @@ import '../features/profile/presentation/person_avatar.dart';
 import '../features/search/presentation/search_screen.dart';
 import '../features/workspace/application/workspace_providers.dart';
 import '../features/workspace/presentation/feature_gate.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 const _branchRoots = ['/home', '/chats', '/groups', '/events', '/you'];
 final _idSegment = RegExp(r'^[A-Za-z0-9_-]+$');
@@ -178,7 +176,7 @@ class _NotificationSettingsAction extends ConsumerWidget {
     return IconButton(
       tooltip: 'Notification settings',
       onPressed: () => context.push('/you/notifications'),
-      icon: const Icon(LucideIcons.settings),
+      icon: const Icon(CircleIcons.settings),
     );
   }
 }
@@ -386,15 +384,23 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/capsules',
-        builder: (context, _) =>
-            _page(context, 'Memory Capsules', const CapsuleListScreen()),
+        builder: (context, _) => _page(
+          context,
+          'Memory Capsules',
+          _gate(CircleFeature.capsules, const CapsuleListScreen()),
+        ),
         routes: [
           GoRoute(
             path: 'new',
             builder: (context, state) => _page(
               context,
               'New capsule',
-              CapsuleCreateScreen(groupId: state.uri.queryParameters['group']),
+              _gate(
+                CircleFeature.capsules,
+                CapsuleCreateScreen(
+                  groupId: state.uri.queryParameters['group'],
+                ),
+              ),
             ),
           ),
           GoRoute(
@@ -402,7 +408,10 @@ final circleRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => _page(
               context,
               'Capsule',
-              _idRoute(state, (id) => CapsuleDetailScreen(id: id)),
+              _gate(
+                CircleFeature.capsules,
+                _idRoute(state, (id) => CapsuleDetailScreen(id: id)),
+              ),
             ),
           ),
         ],
@@ -951,36 +960,31 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                         child: _DockLayout(
                           children: [
                             _DockTab(
-                              icon: CircleIcons.home,
-                              activeIcon: CircleIcons.home,
+                              type: CircleActionIconType.home,
                               label: 'Home',
                               selected: index == 0,
                               onTap: () => shell.goBranch(0),
                             ),
                             _DockTab(
-                              icon: CircleIcons.circles,
-                              activeIcon: CircleIcons.circles,
+                              type: CircleActionIconType.circles,
                               label: 'Circles',
                               selected: index == 2,
                               onTap: () => shell.goBranch(2),
                             ),
                             _DockTab(
-                              icon: CircleIcons.chat,
-                              activeIcon: CircleIcons.chat,
+                              type: CircleActionIconType.chats,
                               label: 'Chats',
                               selected: index == 1,
                               onTap: () => shell.goBranch(1),
                             ),
                             _DockTab(
-                              icon: CircleIcons.events,
-                              activeIcon: CircleIcons.events,
+                              type: CircleActionIconType.events,
                               label: 'Events',
                               selected: index == 3,
                               onTap: () => shell.goBranch(3),
                             ),
                             _DockTab(
-                              icon: CircleIcons.profile,
-                              activeIcon: CircleIcons.profile,
+                              type: CircleActionIconType.home,
                               label: 'Profile',
                               leading: PersonAvatar(
                                 person: account?.id ?? workspace?.viewer ?? '',
@@ -1116,7 +1120,9 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                   IconButton(
                     tooltip: 'Account settings',
                     onPressed: () => context.push('/you/account'),
-                    icon: const Icon(LucideIcons.settings),
+                    icon: const CircleActionIcon(
+                      type: CircleActionIconType.settings,
+                    ),
                   ),
               ],
               fab: fab,
@@ -1132,15 +1138,16 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
 
 class _DockTab extends StatelessWidget {
   const _DockTab({
-    required this.icon,
-    required this.activeIcon,
+    required this.type,
     required this.label,
     required this.selected,
     required this.onTap,
     this.leading,
   });
   final Widget? leading;
-  final IconData icon, activeIcon;
+
+  /// Coloured tile: solid when selected, tinted otherwise (style A).
+  final CircleActionIconType type;
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -1173,19 +1180,10 @@ class _DockTab extends StatelessWidget {
                     : const Duration(milliseconds: 200),
                 width: CircleLayout.navigationHighlightWidth,
                 height: CircleLayout.navigationHighlightHeight,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? CircleAccents.of(context).calmContainer
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(CircleRadius.pill),
-                ),
+
                 alignment: Alignment.center,
                 child: leading == null
-                    ? Icon(
-                        selected ? activeIcon : icon,
-                        color: color,
-                        size: Space.section,
-                      )
+                    ? CircleActionIcon(type: type, tinted: !selected)
                     : DecoratedBox(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,

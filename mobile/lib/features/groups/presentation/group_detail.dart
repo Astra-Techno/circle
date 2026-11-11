@@ -1,4 +1,3 @@
-import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import 'group_photos.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +12,6 @@ import '../../workspace/application/workspace_providers.dart';
 import '../../workspace/presentation/feature_gate.dart';
 import '../../workspace/presentation/group_visuals.dart';
 import '../../workspace/presentation/workspace_view.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import '../domain/group_tree.dart';
 import '../domain/membership_rules.dart';
 import 'circle_groups.dart';
@@ -33,7 +31,7 @@ class CircleGroupDetail extends StatelessWidget {
         if (pending != null) return PendingGroupView(pending: pending);
         return const ReadingPane(
           child: CircleEmpty(
-            icon: LucideIcons.users,
+            icon: CircleIcons.members,
             title: 'This circle is private',
             message:
                 'You need membership in this exact Circle to see what is shared here.',
@@ -107,7 +105,7 @@ class _GroupMemories extends ConsumerWidget {
             child: ScopedMemoryList(
               query: MemoryQuery(groupId: group.id),
               empty: const CircleEmpty(
-                icon: LucideIcons.image,
+                icon: CircleIcons.photo,
                 title: 'The first Memory is yours to make',
                 message: 'Use Memory to share a moment with this Circle.',
               ),
@@ -232,32 +230,32 @@ class _GroupHeader extends ConsumerWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               _StatPill(
-                icon: LucideIcons.users,
+                icon: CircleIcons.members,
                 label:
                     '${group.roles.length} ${group.roles.length == 1 ? 'member' : 'members'}',
                 onTap: () => context.push('/groups/g/${group.id}/members'),
               ),
               const ExcludeSemantics(child: Text('·')),
               _StatPill(
-                icon: LucideIcons.layers,
+                icon: CircleIcons.layers,
                 label: 'InCircles',
                 onTap: () => context.push('/groups/g/${group.id}/incircles'),
               ),
               if (group.isSubgroup)
                 _StatPill(
-                  icon: group.hidden ? LucideIcons.lock : LucideIcons.link,
+                  icon: group.hidden ? CircleIcons.lock : CircleIcons.link,
                   label: group.hidden ? 'Hidden' : 'Listed',
                 ),
               if (requests > 0)
                 _StatPill(
-                  icon: LucideIcons.user_check,
+                  icon: CircleIcons.userCheck,
                   label: '$requests ${requests == 1 ? 'request' : 'requests'}',
                   highlight: true,
                   onTap: () => context.push('/groups/g/${group.id}/members'),
                 ),
               if (reports > 0)
                 _StatPill(
-                  icon: LucideIcons.flag,
+                  icon: CircleIcons.flag,
                   label: '$reports ${reports == 1 ? 'report' : 'reports'}',
                   highlight: true,
                   onTap: () => context.push('/groups/g/${group.id}/reports'),
@@ -274,42 +272,42 @@ class _GroupHeader extends ConsumerWidget {
             children: [
               if (features.has(CircleFeature.liveChat))
                 _QuickAction(
-                  icon: LucideIcons.messages_square,
+                  icon: CircleIcons.messagesSquare,
                   label: 'Chat',
                   primary: true,
                   onTap: () => context.push('/chats/g/${group.id}'),
                 ),
               if (canInvite)
                 _QuickAction(
-                  icon: LucideIcons.user_plus,
+                  icon: CircleIcons.invite,
                   label: 'Invite',
                   onTap: () => context.push('/groups/g/${group.id}/invite'),
                 ),
               if (features.has(CircleFeature.liveEvents))
                 _QuickAction(
-                  icon: LucideIcons.calendar,
+                  icon: CircleIcons.calendar,
                   label: 'Events',
                   onTap: () => context.push('/groups/g/${group.id}/events'),
                 ),
               if (features.has(CircleFeature.livePolls))
                 _QuickAction(
-                  icon: LucideIcons.chart_bar,
+                  icon: CircleIcons.chartBar,
                   label: 'Polls',
                   onTap: () => context.push('/polls?group=${group.id}'),
                 ),
               _QuickAction(
-                icon: LucideIcons.plus,
+                icon: CircleIcons.create,
                 label: 'Memory',
                 onTap: () => context.push(composeLocation(group.id)),
               ),
               if (features.has(CircleFeature.albums))
                 _QuickAction(
-                  icon: LucideIcons.images,
+                  icon: CircleIcons.images,
                   label: 'Albums',
                   onTap: () => context.push('/groups/g/${group.id}/albums'),
                 ),
               _QuickAction(
-                icon: LucideIcons.settings,
+                icon: CircleIcons.settings,
                 label: 'Settings',
                 onTap: () => context.push('/groups/g/${group.id}/settings'),
               ),
@@ -373,7 +371,7 @@ class _RoleBadge extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              role == CircleRole.owner ? LucideIcons.crown : LucideIcons.shield,
+              role == CircleRole.owner ? CircleIcons.crown : CircleIcons.shield,
               size: CircleSizes.iconInline,
               color: colors.primary,
             ),
@@ -652,7 +650,7 @@ class _CreateSubgroupSheetState extends ConsumerState<_CreateSubgroupSheet> {
                       dimension: Space.md,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(LucideIcons.plus),
+                  : const Icon(CircleIcons.create),
               label: Text(_busy ? 'Creating\u2026' : 'Create InCircle'),
             ),
           ],
@@ -683,7 +681,7 @@ class SubgroupsTab extends ConsumerWidget {
       children: [
         if (mine.isEmpty && joinable.isEmpty)
           const CircleEmpty(
-            icon: LucideIcons.users,
+            icon: CircleIcons.members,
             title: 'A smaller circle, when you need one',
             message: 'Each InCircle has its own members.',
           ),
@@ -710,7 +708,7 @@ class SubgroupsTab extends ConsumerWidget {
             alignment: AlignmentDirectional.centerStart,
             child: OutlinedButton.icon(
               onPressed: () => _showCreateSubgroupSheet(context, ref, group),
-              icon: const Icon(LucideIcons.plus),
+              icon: const Icon(CircleIcons.create),
               label: const Text('Create InCircle'),
             ),
           )

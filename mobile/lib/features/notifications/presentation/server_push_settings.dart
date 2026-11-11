@@ -1,4 +1,3 @@
-import '../../../core/design/circle_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
@@ -6,7 +5,6 @@ import '../../../core/design.dart';
 import '../../../core/notifications/push_config.dart';
 import '../application/push_settings.dart';
 import '../application/push_session_coordinator.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 class ServerPushSettingsScreen extends ConsumerWidget {
   const ServerPushSettingsScreen({super.key});
@@ -20,7 +18,7 @@ class ServerPushSettingsScreen extends ConsumerWidget {
           const CircleSkeletonPage(label: 'Loading notification choices'),
       error: (_, _) => ReadingPane(
         child: CircleEmpty(
-          icon: LucideIcons.wifi_off,
+          icon: CircleIcons.wifiOff,
           title: 'Your choices couldn’t load',
           message: 'Check your connection and try again.',
           action: FilledButton(
@@ -165,7 +163,7 @@ class _Choices extends ConsumerWidget {
             if (preferences.enabled && !coordinator.active)
               FilledButton.icon(
                 onPressed: busy ? null : () => _enable(context, ref),
-                icon: const Icon(LucideIcons.bell),
+                icon: const Icon(CircleIcons.notifications),
                 label: const Text('Connect this phone'),
               ),
             ExpansionTile(
@@ -317,7 +315,7 @@ class _Choices extends ConsumerWidget {
                   );
                 }
               },
-              icon: const Icon(LucideIcons.settings),
+              icon: const Icon(CircleIcons.settings),
               label: const Text('Phone notification settings'),
             ),
           ],

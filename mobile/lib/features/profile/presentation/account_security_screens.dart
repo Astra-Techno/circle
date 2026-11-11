@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../application/account_security.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 class SessionsScreen extends ConsumerStatefulWidget {
   const SessionsScreen({super.key});
@@ -109,7 +108,7 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
           if (_notice != null) Text(_notice!),
           if (_error != null)
             CircleEmpty(
-              icon: LucideIcons.wifi_off,
+              icon: CircleIcons.wifiOff,
               title: 'Your devices couldn’t load',
               message: _error!,
               action: OutlinedButton(
@@ -120,12 +119,12 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
           if (_error == null)
             TextButton.icon(
               onPressed: _busy ? null : _load,
-              icon: const Icon(LucideIcons.refresh_cw),
+              icon: const Icon(CircleIcons.refreshCw),
               label: const Text('Refresh devices'),
             ),
           if (!_busy && _error == null && _items.isEmpty)
             const CircleEmpty(
-              icon: LucideIcons.user_round,
+              icon: CircleIcons.profile,
               title: 'No active sessions',
               message: 'Sign in again to review your devices.',
             ),
@@ -143,7 +142,7 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
                     if (session.current)
                       const CirclePill(
                         'This device',
-                        icon: LucideIcons.smartphone,
+                        icon: CircleIcons.smartphone,
                       ),
                     const SizedBox(height: Space.sm),
                     Text(
@@ -205,7 +204,7 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
                                       await _action((s) => s.shareLocation());
                                     }
                                   },
-                            icon: const Icon(LucideIcons.map_pin),
+                            icon: const Icon(CircleIcons.location),
                             label: Text(
                               session.location == null
                                   ? 'Add location'
@@ -239,7 +238,7 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
                                 await _action((s) => s.revoke(session));
                               }
                             },
-                      icon: const Icon(LucideIcons.log_out),
+                      icon: const Icon(CircleIcons.logOut),
                       label: Text(
                         session.current
                             ? 'Log out this device'

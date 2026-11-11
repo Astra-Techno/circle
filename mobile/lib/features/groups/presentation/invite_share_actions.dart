@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
@@ -36,12 +35,12 @@ class _InviteShareActionsState extends ConsumerState<InviteShareActions> {
               ),
               const SizedBox(height: Space.md),
               ListTile(
-                leading: const Icon(LucideIcons.contact),
+                leading: const Icon(CircleIcons.contact),
                 title: const Text('Choose a contact'),
                 onTap: () => Navigator.pop(sheet, InviteShareTarget.smsContact),
               ),
               ListTile(
-                leading: const Icon(LucideIcons.pencil),
+                leading: const Icon(CircleIcons.pencil),
                 title: const Text('Enter number in SMS app'),
                 onTap: () => Navigator.pop(sheet, InviteShareTarget.smsManual),
               ),
@@ -97,19 +96,19 @@ class _InviteShareActionsState extends ConsumerState<InviteShareActions> {
               onPressed: _busy
                   ? null
                   : () => _share(InviteShareTarget.whatsapp),
-              icon: const Icon(LucideIcons.message_circle),
+              icon: const Icon(CircleIcons.chat),
               label: const Text('WhatsApp'),
             ),
             OutlinedButton.icon(
               onPressed: _busy
                   ? null
                   : () => _share(InviteShareTarget.smsContact),
-              icon: const Icon(LucideIcons.smartphone),
+              icon: const Icon(CircleIcons.smartphone),
               label: const Text('SMS'),
             ),
             OutlinedButton.icon(
               onPressed: _busy ? null : () => _share(InviteShareTarget.other),
-              icon: const Icon(LucideIcons.share_2),
+              icon: const Icon(CircleIcons.share),
               label: const Text('More apps'),
             ),
           ],

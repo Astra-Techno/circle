@@ -7,7 +7,6 @@ import '../../memories/presentation/memory_photos.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../application/album_providers.dart';
 import 'albums_tab.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// On a past event's page: "Photos from …" (the event's title). The album is created the
 /// first time someone adds photos, inside the event's own group.
@@ -51,7 +50,7 @@ class EventAlbumSection extends ConsumerWidget {
             child: ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const CircleInitialAvatar(
-                icon: LucideIcons.images,
+                icon: CircleIcons.images,
                 tone: CircleTone.neutral,
               ),
               title: Text(title),
@@ -71,7 +70,7 @@ class EventAlbumSection extends ConsumerWidget {
               contentPadding: EdgeInsets.zero,
               leading: CircleInitialAvatar(
                 icon: album.cover == null
-                    ? LucideIcons.images
+                    ? CircleIcons.images
                     : memorySceneIcon(album.cover!.photo.scene),
                 tone: CircleTone.neutral,
               ),

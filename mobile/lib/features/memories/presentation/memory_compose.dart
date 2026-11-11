@@ -1,4 +1,3 @@
-import '../../../core/design/circle_icons.dart';
 import '../../../core/design/circle_typography.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -8,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_signed_image.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../groups/domain/group_tree.dart';
@@ -263,7 +261,7 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
       if (workspace.groups.isEmpty) {
         return ReadingPane(
           child: CircleEmpty(
-            icon: LucideIcons.image,
+            icon: CircleIcons.photo,
             title: 'Choose your people first',
             message: 'Create a group before sharing a Memory.',
             action: FilledButton(
@@ -403,13 +401,13 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
 
           // Action rows.
           _ActionRow(
-            icon: LucideIcons.map_pin,
+            icon: CircleIcons.location,
             label: 'Add location',
             onTap: () => _showLocationSheet(context),
           ),
           if (ref.watch(circleFeaturesProvider).has(CircleFeature.liveEvents))
             _ActionRow(
-              icon: LucideIcons.calendar,
+              icon: CircleIcons.calendar,
               label: 'Create an event',
               onTap: () => context.push(
                 Uri(
@@ -420,7 +418,7 @@ class _CircleComposeState extends ConsumerState<CircleCompose>
             ),
           if (ref.watch(circleFeaturesProvider).has(CircleFeature.livePolls))
             _ActionRow(
-              icon: LucideIcons.chart_bar,
+              icon: CircleIcons.chartBar,
               label: 'Create a poll',
               onTap: () => context.push(
                 Uri(
@@ -713,7 +711,7 @@ class _GroupSelector extends ConsumerWidget {
                 )
               else
                 CircleInitialAvatar(
-                  icon: LucideIcons.users,
+                  icon: CircleIcons.members,
                   tone: CircleTone.calm,
                   size: CircleAvatarSize.medium,
                 ),
@@ -727,7 +725,7 @@ class _GroupSelector extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(LucideIcons.chevron_down, color: accents.caption),
+              Icon(CircleIcons.chevronDown, color: accents.caption),
             ],
           ),
         ),
@@ -817,14 +815,14 @@ class _CompactPhotoRow extends StatelessWidget {
                             IconButton.filled(
                               tooltip: 'Retry photo ${index + 1}',
                               onPressed: () => onRetry?.call(item),
-                              icon: const Icon(LucideIcons.refresh_cw),
+                              icon: const Icon(CircleIcons.refreshCw),
                             ),
                           UploadStatus.failed => Icon(
-                            LucideIcons.circle_alert,
+                            CircleIcons.circleAlert,
                             color: theme.colorScheme.error,
                           ),
                           _ => Icon(
-                            LucideIcons.clock,
+                            CircleIcons.clock,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         },
@@ -875,7 +873,7 @@ class _CompactPhotoRow extends StatelessWidget {
                     ),
                     child: Center(
                       child: Icon(
-                        LucideIcons.plus,
+                        CircleIcons.create,
                         size: Space.hero,
                         color: theme.colorScheme.primary,
                       ),
@@ -1003,13 +1001,13 @@ class _UploadTile extends StatelessWidget {
                   UploadStatus.failed when item.retryable => IconButton.filled(
                     tooltip: 'Retry photo $number',
                     onPressed: onRetry,
-                    icon: const Icon(LucideIcons.refresh_cw),
+                    icon: const Icon(CircleIcons.refreshCw),
                   ),
                   UploadStatus.failed => Icon(
-                    LucideIcons.circle_alert,
+                    CircleIcons.circleAlert,
                     color: colors.error,
                   ),
-                  _ => Icon(LucideIcons.clock, color: colors.onSurfaceVariant),
+                  _ => Icon(CircleIcons.clock, color: colors.onSurfaceVariant),
                 },
               ),
             ),
