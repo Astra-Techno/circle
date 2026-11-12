@@ -96,6 +96,12 @@ void main() {
   testWidgets(
     'Saved uses Home cards; another author is excluded from Your Memories',
     (tester) async {
+      // This journey checks data and navigation, not the repeating shimmer.
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
       final fixture = RootStyleFixture();
       final id = fixture.server.addMemory(
         fixture.group,

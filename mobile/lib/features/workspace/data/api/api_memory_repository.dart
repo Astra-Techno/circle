@@ -139,8 +139,14 @@ mixin ApiMemoryRepository on ApiRepositoryBase
   }
 
   /// `GET /memories/{id}`: comments, every reaction, the latest text.
-  Future<void> _fetchDetails(String memoryId) async {
-    final json = ApiJson.map(await api.get('/memories/$memoryId'));
+  Future<void> _fetchDetails(String memoryId, {int? session}) async {
+    final json = ApiJson.map(
+      await api.get(
+        '/memories/$memoryId',
+        expectedAccount: session == null ? null : viewer,
+        expectedSession: session,
+      ),
+    );
     final entry = _memories[memoryId] ?? _MemoryEntry(json);
     final comments = [
       for (final item in ApiJson.list(json['comments']))
@@ -384,14 +390,32 @@ mixin ApiMemoryRepository on ApiRepositoryBase
     String viewer,
     String memoryId,
     String commentId,
-  ) => Future.error(notOnServerYet(CircleFeature.commentDeletion));
+  ) async {
+    _checkViewer(viewer);
+    final session = api.sessionRevision;
+    await api.delete(
+      '/memories/$memoryId/comments/$commentId',
+      expectedAccount: viewer,
+      expectedSession: session,
+    );
+    await _fetchDetails(memoryId, session: session);
+  }
 
   @override
   Future<void> restoreComment(
     String viewer,
     String memoryId,
     String commentId,
-  ) => Future.error(notOnServerYet(CircleFeature.commentDeletion));
+  ) async {
+    _checkViewer(viewer);
+    final session = api.sessionRevision;
+    await api.post(
+      '/memories/$memoryId/comments/$commentId/restore',
+      expectedAccount: viewer,
+      expectedSession: session,
+    );
+    await _fetchDetails(memoryId, session: session);
+  }
 
   @override
   Future<void> vote(String viewer, String memoryId, Set<String> optionIds) =>

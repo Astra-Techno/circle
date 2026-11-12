@@ -206,7 +206,8 @@ class _CapsuleCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    if (capsule.message.isNotEmpty) ...[
+                    if (capsule.message.isNotEmpty &&
+                        (!isSealed || isUnlocked)) ...[
                       Expanded(
                         child: Text(
                           capsule.message,
@@ -264,7 +265,7 @@ class CapsuleDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(capsulesProvider);
+    final state = ref.watch(capsuleDetailProvider(id));
     final accents = CircleAccents.of(context);
     final theme = Theme.of(context);
 
@@ -272,8 +273,7 @@ class CapsuleDetailScreen extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) =>
           CircleEmpty(title: 'Could not load capsule', message: '$e'),
-      data: (capsules) {
-        final capsule = capsules.where((c) => c.id == id).firstOrNull;
+      data: (capsule) {
         if (capsule == null) {
           return const CircleEmpty(
             title: 'Capsule not found',
@@ -377,7 +377,7 @@ class CapsuleDetailScreen extends ConsumerWidget {
               const SizedBox(height: Space.section),
 
               // Message
-              if (capsule.message.isNotEmpty) ...[
+              if (capsule.message.isNotEmpty && (!isSealed || isUnlocked)) ...[
                 Text(
                   capsule.message,
                   style: theme.textTheme.bodyLarge?.copyWith(
@@ -387,6 +387,14 @@ class CapsuleDetailScreen extends ConsumerWidget {
                 const SizedBox(height: Space.section),
               ],
 
+              if (isUnlocked) ...[
+                for (final entry in capsule.entries) ...[
+                  Text(entry.author, style: theme.textTheme.titleSmall),
+                  const SizedBox(height: Space.sm),
+                  Text(entry.text, style: theme.textTheme.bodyLarge),
+                  const SizedBox(height: Space.md),
+                ],
+              ],
               // Status info
               if (!isUnlocked && !isSealed)
                 _InfoTile(

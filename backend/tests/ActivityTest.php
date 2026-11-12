@@ -116,4 +116,34 @@ final class ActivityTest extends ApiTestCase
         self::assertCount(1, $r->data()['items']);
         self::assertSame('For Bob', $r->data()['items'][0]['summary']);
     }
+    public function testRealMemoryAndReplyProduceActivityWithoutPushDevices(): void
+    {
+        $owner = $this->user('Fictional owner');
+        $member = $this->user('Fictional member');
+        $group = $this->createGroup($owner, 'Fictional Circle');
+        $this->join($owner, $member, $group);
+        $memory = $this->createMemory($owner, $group, 'Fictional memory');
+        $items = $this->request('GET', '/api/v1/me/activity', [], $member['token'])->data();
+        self::assertCount(1, $items['items']);
+        self::assertSame($memory, $items['items'][0]['memory_id']);
+        self::assertSame(1, $items['unread_count']);
+        $this->request('POST', "/api/v1/memories/$memory/comments", ['body'=>'Fictional reply'], $member['token']);
+        $ownerItems = $this->request('GET', '/api/v1/me/activity', [], $owner['token'])->data();
+        self::assertSame('comment.created', $ownerItems['items'][0]['kind']);
+        Database::execute("UPDATE memories SET status='hidden' WHERE id=:m", ['m'=>$memory]);
+        foreach ([$owner, $member] as $user) {
+            $items = $this->request('GET', '/api/v1/me/activity', [], $user['token'])->data();
+            self::assertSame([], $items['items']);
+            self::assertSame(0, $items['unread_count']);
+        }
+    }
+
+    public function testEmptyIdsNeverMarksEverythingRead(): void
+    {
+        $owner = $this->user('Fictional owner');
+        ActivityController::record($owner['id'], 'memory.created');
+        self::assertSame(200, $this->request('POST', '/api/v1/me/activity/read', ['ids'=>[]], $owner['token'])->status());
+        self::assertSame(1, $this->request('GET', '/api/v1/me/activity', [], $owner['token'])->data()['unread_count']);
+        self::assertSame(422, $this->request('POST', '/api/v1/me/activity/read', ['ids'=>['bad']], $owner['token'])->status());
+    }
 }

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.4.7
+  version: 0.4.8
   x-event-memory-publication: >-
     Event creation atomically publishes one Memory with its original author, group
     and creation time. Migration025 backfills previous events. Memory pages/detail
@@ -99,7 +99,7 @@ info:
 
     ## Not yet implemented (planned, not part of this contract)
     Video/document attachments, direct-chat polls, structured event date polls,
-    albums, content forwarding/sharing, general idempotency outside the documented
+    content forwarding/sharing, general idempotency outside the documented
     operation-specific send/upload ids, account recovery/number change and OTP.
 servers:
   - url: http://localhost:8080/api/v1
@@ -3834,6 +3834,1257 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimited'
 
+  /groups/{id}/capsules:
+    get:
+      operationId: listCapsules
+      summary: Exact active membership in the capsule Circle is required
+      description: Exact active membership in the capsule Circle is required. Contents are server-locked until unlock
+        time; no inherited membership. Lists newest first.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Capsule'
+                        has_more:
+                          type: boolean
+                      required:
+                      - items
+                      - has_more
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 30
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+    post:
+      operationId: createCapsule
+      summary: Exact active membership in the capsule Circle is required
+      description: Exact active membership in the capsule Circle is required. Contents are server-locked until unlock
+        time; no inherited membership. Supply exactly one of unlock_at (UTC ISO 8601, 1–3650 days ahead) or unlock_days.
+        No automatic Memory publication or unlock notification is promised.
+      tags:
+      - Memories
+      responses:
+        '201':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          minimum: 1
+                        group_id:
+                          type: integer
+                          minimum: 1
+                      required:
+                      - id
+                      - group_id
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+                message:
+                  type: string
+                  maxLength: 500
+                unlock_at:
+                  type: string
+                  format: date-time
+                unlock_days:
+                  type: integer
+                  minimum: 1
+                  maximum: 3650
+              required:
+              - title
+  /capsules/{capsuleId}:
+    get:
+      operationId: getCapsule
+      summary: Exact active membership in the capsule Circle is required
+      description: Exact active membership in the capsule Circle is required. Contents are server-locked until unlock
+        time; no inherited membership. Includes contributor names and message counts.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/Capsule'
+                      - type: object
+                        properties:
+                          contributors:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                author_id:
+                                  type: integer
+                                  minimum: 1
+                                display_name:
+                                  type: string
+                                message_count:
+                                  type: integer
+                              required:
+                              - author_id
+                              - display_name
+                              - message_count
+                        required:
+                        - contributors
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: capsuleId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    delete:
+      operationId: deleteCapsule
+      summary: Exact active membership in the capsule Circle is required
+      description: Exact active membership in the capsule Circle is required. Contents are server-locked until unlock
+        time; no inherited membership. Creator only. Deletes entries with the capsule.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: capsuleId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+  /capsules/{capsuleId}/seal:
+    post:
+      operationId: sealCapsule
+      summary: Exact active membership in the capsule Circle is required
+      description: Exact active membership in the capsule Circle is required. Contents are server-locked until unlock
+        time; no inherited membership. Creator only while open. Sealing prevents further entries.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: capsuleId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+  /capsules/{capsuleId}/entries:
+    get:
+      operationId: listCapsuleEntries
+      summary: Exact active membership in the capsule Circle is required
+      description: Exact active membership in the capsule Circle is required. Contents are server-locked until unlock
+        time; no inherited membership. Returns 403 capsule_locked until server unlock time.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/CapsuleEntry'
+                        has_more:
+                          type: boolean
+                      required:
+                      - items
+                      - has_more
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: capsuleId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+    post:
+      operationId: contributeToCapsule
+      summary: Exact active membership in the capsule Circle is required
+      description: Exact active membership in the capsule Circle is required. Contents are server-locked until unlock
+        time; no inherited membership. Open capsules only. Maximum 100 entries and 50 contributors, enforced under
+        a row lock.
+      tags:
+      - Memories
+      responses:
+        '201':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/CapsuleEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: capsuleId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+              required:
+              - body
+  /groups/{id}/albums:
+    get:
+      operationId: listAlbums
+      summary: Exact active Circle membership is required
+      description: Exact active Circle membership is required. Photos must be ready, nondeleted, nonhidden media attached
+        to an active Memory in the same exact Circle. Hidden or removed source photos are excluded from photos, cover
+        and count. Lists newest first.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Album'
+                        has_more:
+                          type: boolean
+                      required:
+                      - items
+                      - has_more
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 30
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+    post:
+      operationId: createAlbum
+      summary: Exact active Circle membership is required
+      description: Exact active Circle membership is required. Photos must be ready, nondeleted, nonhidden media attached
+        to an active Memory in the same exact Circle. Hidden or removed source photos are excluded from photos, cover
+        and count. Any member may create; optional event must belong to this Circle. One album per event.
+      tags:
+      - Memories
+      responses:
+        '201':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          minimum: 1
+                        group_id:
+                          type: integer
+                          minimum: 1
+                      required:
+                      - id
+                      - group_id
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                description:
+                  type: string
+                  maxLength: 1000
+                event_id:
+                  type:
+                  - integer
+                  - 'null'
+              required:
+              - title
+  /albums/{albumId}:
+    get:
+      operationId: getAlbum
+      summary: Exact active Circle membership is required
+      description: Exact active Circle membership is required. Photos must be ready, nondeleted, nonhidden media attached
+        to an active Memory in the same exact Circle. Hidden or removed source photos are excluded from photos, cover
+        and count. Photo pages are ordered by sort_order then id.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      allOf:
+                      - $ref: '#/components/schemas/Album'
+                      - type: object
+                        properties:
+                          photos:
+                            type: object
+                            properties:
+                              items:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/AlbumPhoto'
+                              has_more:
+                                type: boolean
+                            required:
+                            - items
+                            - has_more
+                        required:
+                        - photos
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: albumId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+    patch:
+      operationId: updateAlbum
+      summary: Exact active Circle membership is required
+      description: Exact active Circle membership is required. Photos must be ready, nondeleted, nonhidden media attached
+        to an active Memory in the same exact Circle. Hidden or removed source photos are excluded from photos, cover
+        and count. Creator or exact Circle admin only. Nonempty cover must already belong to this album; empty string
+        clears.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: albumId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                description:
+                  type: string
+                  maxLength: 1000
+                cover_media_id:
+                  type: string
+              required: []
+    delete:
+      operationId: deleteAlbum
+      summary: Exact active Circle membership is required
+      description: Exact active Circle membership is required. Photos must be ready, nondeleted, nonhidden media attached
+        to an active Memory in the same exact Circle. Hidden or removed source photos are excluded from photos, cover
+        and count. Creator or exact Circle admin only. Original Memories and media are preserved.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: albumId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+  /albums/{albumId}/photos:
+    post:
+      operationId: addAlbumPhoto
+      summary: Exact active Circle membership is required
+      description: Exact active Circle membership is required. Photos must be ready, nondeleted, nonhidden media attached
+        to an active Memory in the same exact Circle. Hidden or removed source photos are excluded from photos, cover
+        and count. Any member may add. Repeated media ID returns the existing album-photo ID.
+      tags:
+      - Memories
+      responses:
+        '201':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          minimum: 1
+                      required:
+                      - id
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: albumId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                media_id:
+                  type: string
+                  format: uuid
+                caption:
+                  type: string
+                  maxLength: 200
+              required:
+              - media_id
+  /albums/{albumId}/photos/{photoId}:
+    patch:
+      operationId: updateAlbumPhoto
+      summary: Exact active Circle membership is required
+      description: Exact active Circle membership is required. Photos must be ready, nondeleted, nonhidden media attached
+        to an active Memory in the same exact Circle. Hidden or removed source photos are excluded from photos, cover
+        and count. Adder, album creator or exact Circle admin only.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: albumId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: photoId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                caption:
+                  type: string
+                  maxLength: 200
+              required: []
+    delete:
+      operationId: removeAlbumPhoto
+      summary: Exact active Circle membership is required
+      description: Exact active Circle membership is required. Photos must be ready, nondeleted, nonhidden media attached
+        to an active Memory in the same exact Circle. Hidden or removed source photos are excluded from photos, cover
+        and count. Adder, album creator or exact Circle admin only. Clears matching cover; original media remains.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: albumId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: photoId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+  /memories/{id}/comments/{commentId}:
+    delete:
+      operationId: deleteMemoryComment
+      summary: Active Memory exact member; comment author or exact Circle admin only
+      description: Active Memory exact member; comment author or exact Circle admin only. Soft hides the comment,
+        preserving descendants.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: commentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+  /memories/{id}/comments/{commentId}/restore:
+    post:
+      operationId: restoreMemoryComment
+      summary: Active Memory exact member; only the actor who removed this comment may Undo
+      description: Active Memory exact member; only the actor who removed this comment may Undo. Moderation clears
+        Undo ownership. Legacy hidden comments cannot be restored here.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+      - name: commentId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+  /search:
+    get:
+      operationId: searchCircleContent
+      summary: Searches only current exact memberships and active shared people
+      description: Searches only current exact memberships and active shared people. Hidden Memory/poll contexts are
+        excluded. Literal %, underscore and backslash are escaped. Each category has independent has_more; offset
+        applies to every category.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        memories:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                minimum: 1
+                              group_id:
+                                type: integer
+                                minimum: 1
+                              group_name:
+                                type:
+                                - string
+                                - 'null'
+                              author_id:
+                                type: integer
+                                minimum: 1
+                              author_name:
+                                type:
+                                - string
+                                - 'null'
+                              body:
+                                type:
+                                - string
+                                - 'null'
+                              created_at:
+                                type:
+                                - string
+                                - 'null'
+                            required:
+                            - id
+                            - group_id
+                            - group_name
+                            - author_id
+                            - author_name
+                            - body
+                            - created_at
+                        people:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                minimum: 1
+                              display_name:
+                                type:
+                                - string
+                                - 'null'
+                              about:
+                                type:
+                                - string
+                                - 'null'
+                            required:
+                            - id
+                            - display_name
+                            - about
+                        events:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                minimum: 1
+                              group_id:
+                                type: integer
+                                minimum: 1
+                              group_name:
+                                type:
+                                - string
+                                - 'null'
+                              title:
+                                type:
+                                - string
+                                - 'null'
+                              venue:
+                                type:
+                                - string
+                                - 'null'
+                              start_at:
+                                type:
+                                - string
+                                - 'null'
+                              status:
+                                type:
+                                - string
+                                - 'null'
+                            required:
+                            - id
+                            - group_id
+                            - group_name
+                            - title
+                            - venue
+                            - start_at
+                            - status
+                        polls:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                minimum: 1
+                              group_id:
+                                type: integer
+                                minimum: 1
+                              group_name:
+                                type:
+                                - string
+                                - 'null'
+                              question:
+                                type:
+                                - string
+                                - 'null'
+                              closed_at:
+                                type:
+                                - string
+                                - 'null'
+                              created_at:
+                                type:
+                                - string
+                                - 'null'
+                            required:
+                            - id
+                            - group_id
+                            - group_name
+                            - question
+                            - closed_at
+                            - created_at
+                        groups:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                minimum: 1
+                              name:
+                                type:
+                                - string
+                                - 'null'
+                              type:
+                                type:
+                                - string
+                                - 'null'
+                              description:
+                                type:
+                                - string
+                                - 'null'
+                            required:
+                            - id
+                            - name
+                            - type
+                            - description
+                        has_more:
+                          type: object
+                          properties:
+                            memories:
+                              type: boolean
+                            people:
+                              type: boolean
+                            events:
+                              type: boolean
+                            polls:
+                              type: boolean
+                            groups:
+                              type: boolean
+                          required:
+                          - memories
+                          - people
+                          - events
+                          - polls
+                          - groups
+                      required:
+                      - memories
+                      - people
+                      - events
+                      - polls
+                      - groups
+                      - has_more
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 10
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+  /me/activity:
+    get:
+      operationId: listActivity
+      summary: Recipient-only persistent inbox
+      description: Recipient-only persistent inbox. Rechecks exact membership, active content, actor status and mutual
+        blocks on every read and unread count. Current producers are Memories and comments; no synthetic history or
+        guaranteed push delivery.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/ActivityItem'
+                        has_more:
+                          type: boolean
+                        unread_count:
+                          type: integer
+                          minimum: 0
+                      required:
+                      - items
+                      - has_more
+                      - unread_count
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 30
+      - name: offset
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+      - name: unread
+        in: query
+        schema:
+          type: boolean
+  /me/activity/read:
+    post:
+      operationId: markActivityRead
+      summary: Recipient-only
+      description: Recipient-only. Omitted ids marks all read; empty ids is a no-op. Invalid or more than 100 IDs
+        returns 422.
+      tags:
+      - Memories
+      responses:
+        '200':
+          description: Success. Private, authenticated response.
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Success'
+                - type: object
+                  properties:
+                    data:
+                      type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: integer
+                    minimum: 1
+              required: []
+
 components:
   securitySchemes:
     bearerAuth:
@@ -3969,6 +5220,254 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
+    CapsuleEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        author_id:
+          type: integer
+          minimum: 1
+        author_name:
+          type: string
+        body:
+          type: string
+          maxLength: 500
+        added_at:
+          type: string
+          description: UTC timestamp in YYYY-MM-DD HH:MM:SS format.
+      required:
+      - id
+      - author_id
+      - author_name
+      - body
+      - added_at
+    Capsule:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        group_id:
+          type: integer
+          minimum: 1
+        creator_id:
+          type: integer
+          minimum: 1
+        creator_name:
+          type:
+          - string
+          - 'null'
+        title:
+          type: string
+          maxLength: 60
+        message:
+          type: string
+          maxLength: 500
+          description: Empty while sealed until server unlock time.
+        unlock_at:
+          type: string
+          description: UTC timestamp in YYYY-MM-DD HH:MM:SS format.
+        sealed_at:
+          type:
+          - string
+          - 'null'
+        created_at:
+          type: string
+          description: UTC timestamp in YYYY-MM-DD HH:MM:SS format.
+        is_sealed:
+          type: boolean
+        is_unlocked:
+          type: boolean
+        is_open:
+          type: boolean
+        entry_count:
+          type: integer
+          minimum: 0
+      required:
+      - id
+      - group_id
+      - creator_id
+      - creator_name
+      - title
+      - message
+      - unlock_at
+      - sealed_at
+      - created_at
+      - is_sealed
+      - is_unlocked
+      - is_open
+      - entry_count
+    AlbumPhoto:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        media_id:
+          type: string
+          format: uuid
+        added_by:
+          type: integer
+          minimum: 1
+        added_by_name:
+          type: string
+        caption:
+          type: string
+          maxLength: 200
+        sort_order:
+          type: integer
+        added_at:
+          type: string
+          description: UTC timestamp in YYYY-MM-DD HH:MM:SS format.
+      required:
+      - id
+      - media_id
+      - added_by
+      - added_by_name
+      - caption
+      - sort_order
+      - added_at
+    Album:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        group_id:
+          type: integer
+          minimum: 1
+        created_by:
+          type: integer
+          minimum: 1
+        creator_name:
+          type:
+          - string
+          - 'null'
+        event_id:
+          type:
+          - integer
+          - 'null'
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        cover_media_id:
+          type:
+          - string
+          - 'null'
+          description: Only a currently visible photo belonging to this album; unavailable covers return null.
+        photo_count:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          description: UTC timestamp in YYYY-MM-DD HH:MM:SS format.
+        updated_at:
+          type: string
+          description: UTC timestamp in YYYY-MM-DD HH:MM:SS format.
+      required:
+      - id
+      - group_id
+      - created_by
+      - creator_name
+      - event_id
+      - title
+      - description
+      - cover_media_id
+      - photo_count
+      - created_at
+      - updated_at
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+        kind:
+          type: string
+          enum:
+          - memory.created
+          - comment.created
+          - comment.reply
+          - reaction
+          - group.invitation
+          - group.join
+          - event.created
+          - event.updated
+          - event.cancelled
+          - event.rsvp
+          - poll.created
+          - poll.closed
+          - role.changed
+          - capsule.unlocked
+        actor_id:
+          type:
+          - integer
+          - 'null'
+        actor_name:
+          type:
+          - string
+          - 'null'
+        group_id:
+          type:
+          - integer
+          - 'null'
+        group_name:
+          type:
+          - string
+          - 'null'
+        memory_id:
+          type:
+          - integer
+          - 'null'
+        comment_id:
+          type:
+          - integer
+          - 'null'
+        event_id:
+          type:
+          - integer
+          - 'null'
+        poll_id:
+          type:
+          - integer
+          - 'null'
+        capsule_id:
+          type:
+          - integer
+          - 'null'
+        invitation_id:
+          type:
+          - integer
+          - 'null'
+        summary:
+          type: string
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+          description: UTC timestamp in YYYY-MM-DD HH:MM:SS format.
+      required:
+      - id
+      - kind
+      - actor_id
+      - actor_name
+      - group_id
+      - group_name
+      - memory_id
+      - comment_id
+      - event_id
+      - poll_id
+      - capsule_id
+      - invitation_id
+      - summary
+      - is_read
+      - created_at
+
     LoginSession:
       type: object
       additionalProperties: false
@@ -4142,6 +5641,14 @@ components:
     ErrorCode:
       type: string
       enum:
+        - album_exists
+        - already_sealed
+        - capsule_contributors_full
+        - capsule_full
+        - capsule_locked
+        - capsule_sealed
+        - capsule_unlocked
+        - not_creator
         - validation_error
         - invalid_cursor
         - unauthorized

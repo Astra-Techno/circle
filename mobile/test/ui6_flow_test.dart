@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/circle_harness.dart';
+import 'package:mobile/features/notifications/presentation/activity_screen.dart';
 
 final fixed = DateTime.utc(2026, 10, 23, 12);
 
@@ -66,8 +67,8 @@ void main() {
       await reveal(tester, find.text(entry));
       expect(find.text(entry), findsOneWidget, reason: entry);
     }
-    // Activity isn't on the server yet, so it is hidden, not a placeholder.
-    expect(find.text('Activity'), findsNothing);
+    await reveal(tester, find.text('Activity'));
+    expect(find.text('Activity'), findsOneWidget);
     expect(find.text('Comes before launch'), findsNothing);
     await reveal(tester, find.text('Log out'));
     expect(find.text('Log out'), findsOneWidget);
@@ -81,7 +82,8 @@ void main() {
     await go(tester, container, '/groups/g/club');
     expect(find.widgetWithText(Tab, 'Albums'), findsNothing);
     await go(tester, container, '/activity');
-    expect(find.text('This page is unavailable'), findsOneWidget);
+    expect(find.byType(ActivityScreen), findsOneWidget);
+    expect(find.text('This page is unavailable'), findsNothing);
     expect(find.textContaining('on the server yet'), findsNothing);
   });
 

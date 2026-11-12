@@ -187,8 +187,27 @@ void main() {
       final replyX = tester.getTopLeft(find.byType(CommentBubble).last).dx;
       expect(replyX, greaterThan(parentX));
 
-      // Deleting comments isn't on the server yet, so it isn't offered.
-      expect(find.text('Delete'), findsNothing);
+      await reveal(tester, find.text('Delete').last);
+      await tester.tap(find.text('Delete').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+      expect(
+        memoryOf(
+          container,
+          'table',
+        ).comments.any((c) => c.text == 'Count me in.'),
+        isFalse,
+      );
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(
+        memoryOf(
+          container,
+          'table',
+        ).comments.any((c) => c.text == 'Count me in.'),
+        isTrue,
+      );
     });
 
     testWidgets('comment count opens the Memory comments', (tester) async {

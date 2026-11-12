@@ -9,7 +9,7 @@
  *
  * Usage:
  *   php run.php                          # Against local dev (default)
- *   php run.php --api=https://circle.cloudkart24.com/api/v1
+ *   php run.php --api=http://127.0.0.1:8089/api/v1
  *   php run.php --phase=setup            # Only register + create groups
  *   php run.php --phase=simulate         # Only run activity (accounts must exist)
  *   php run.php --phase=all              # Full run (default)
@@ -47,8 +47,11 @@ class ApiClient
 {
     private string $base;
     private bool $verbose;
+    /** @var list<array<string, mixed>> */
     private array $log = [];
+    /** @var list<array<string, mixed>> */
     private array $errors = [];
+    /** @var list<float> */
     private array $timings = [];
     private int $requestCount = 0;
 
@@ -88,8 +91,8 @@ class ApiClient
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 30,
             CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
         ]);
 
         if (!empty($body) && in_array(strtoupper($method), ['POST', 'PUT', 'PATCH'])) {
@@ -134,34 +137,54 @@ class ApiClient
         return ['status' => $status, 'body' => $decoded, 'time_ms' => $elapsed];
     }
 
+    /**
+     * @return array{status: int, body: array<string, mixed>, time_ms: float}
+     */
     public function get(string $path, ?string $token = null): array
     {
         return $this->request('GET', $path, [], $token);
     }
 
-    public function post(string $path, array $body = [], ?string $token = null): array
+    /**
+     * @param array<string, mixed> $body
+     * @param array<string, string> $headers
+     * @return array{status: int, body: array<string, mixed>, time_ms: float}
+     */
+    public function post(string $path, array $body = [], ?string $token = null, array $headers = []): array
     {
-        return $this->request('POST', $path, $body, $token);
+        return $this->request('POST', $path, $body, $token, $headers);
     }
 
+    /**
+     * @param array<string, mixed> $body
+     * @return array{status: int, body: array<string, mixed>, time_ms: float}
+     */
     public function patch(string $path, array $body, ?string $token = null): array
     {
         return $this->request('PATCH', $path, $body, $token);
     }
 
+    /**
+     * @param array<string, mixed> $body
+     * @return array{status: int, body: array<string, mixed>, time_ms: float}
+     */
     public function put(string $path, array $body = [], ?string $token = null): array
     {
         return $this->request('PUT', $path, $body, $token);
     }
 
+    /** @return list<array<string, mixed>> */
     public function getLog(): array { return $this->log; }
+    /** @return list<array<string, mixed>> */
     public function getErrors(): array { return $this->errors; }
+    /** @return list<float> */
     public function getTimings(): array { return $this->timings; }
     public function getRequestCount(): int { return $this->requestCount; }
 }
 
 // ─── State Management ───────────────────────────────────────────────
 
+/** @return array<string, mixed> */
 function loadState(string $file): array
 {
     if (file_exists($file)) {
@@ -170,9 +193,19 @@ function loadState(string $file): array
     return ['accounts' => [], 'groups' => [], 'memories' => [], 'polls' => [], 'events' => []];
 }
 
+/** @param array<string, mixed> $state */
 function saveState(string $file, array $state): void
 {
-    file_put_contents($file, json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    $temporary = tempnam(dirname($file), '.state-');
+    if ($temporary === false) throw new RuntimeException('Cannot create private state.');
+    try {
+        chmod($temporary, 0600);
+        if (file_put_contents($temporary, json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) === false || !rename($temporary, $file)) {
+            throw new RuntimeException('Cannot save private state.');
+        }
+    } finally {
+        if (file_exists($temporary)) unlink($temporary);
+    }
 }
 
 // ─── Rate-limit pacer ───────────────────────────────────────────────
@@ -213,6 +246,8 @@ function clientId(): string
 
 // ─── Phase 1: Setup ─────────────────────────────────────────────────
 
+/** @param array<string, mixed> $personas
+ * @return array<string, mixed> */
 function phaseSetup(ApiClient $api, array $personas, string $password, string $speed): array
 {
     $state = ['accounts' => [], 'groups' => [], 'memories' => [], 'polls' => [], 'events' => []];
@@ -392,6 +427,8 @@ function phaseSetup(ApiClient $api, array $personas, string $password, string $s
 
 // ─── Phase 2: Simulate Activity ─────────────────────────────────────
 
+/** @param array<string, mixed> $personas
+ * @param array<string, mixed> $state */
 function phaseSimulate(ApiClient $api, array $personas, array &$state, string $speed): void
 {
     // ── Post Memories ───────────────────────────────────────────────
@@ -462,7 +499,6 @@ function phaseSimulate(ApiClient $api, array $personas, array &$state, string $s
         // 3-8 people react to each memory
         $reactCount = random_int(3, min(8, count($personas['personas'])));
         $reactors = array_rand(array_flip(array_keys($state['accounts'])), $reactCount);
-        if (!is_array($reactors)) $reactors = [$reactors];
 
         foreach ($reactors as $reactorKey) {
             // Only react if the person is in the same group
@@ -771,6 +807,7 @@ function phaseSimulate(ApiClient $api, array $personas, array &$state, string $s
 
 // ─── Report ─────────────────────────────────────────────────────────
 
+/** @param array<string, mixed> $state */
 function generateReport(ApiClient $api, array $state, float $totalTime): string
 {
     $errors = $api->getErrors();
@@ -860,6 +897,22 @@ function generateReport(ApiClient $api, array $state, float $totalTime): string
 fprintf(STDERR, "\nCIRCLE AI Agent Test Harness\n");
 fprintf(STDERR, "API: %s\n", $API_BASE);
 fprintf(STDERR, "Phase: %s | Speed: %s\n\n", $PHASE, $SPEED);
+
+// This mutating simulation is restricted to a dedicated local test server.
+$host = parse_url($API_BASE, PHP_URL_HOST);
+if (!in_array($host, ['127.0.0.1', 'localhost', '::1'], true) || getenv('DB_DATABASE') !== 'circle_test') {
+    fwrite(STDERR, "Use a loopback API backed by the dedicated circle_test database.\n");
+    exit(2);
+}
+if ($CLEANUP) {
+    fwrite(STDERR, "Cleanup is not implemented; no requests sent.\n");
+    exit(2);
+}
+if ($DRY_RUN) {
+    fwrite(STDERR, "Dry run: no API requests or state writes.\n");
+    exit(0);
+}
+if (!in_array($PHASE, ['all', 'setup', 'simulate'], true)) exit(2);
 
 // Health check
 $api = new ApiClient($API_BASE, $VERBOSE);

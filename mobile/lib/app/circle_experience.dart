@@ -923,87 +923,88 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
     if (RegExp(r'^/chats/[cg]/[^/]+$').hasMatch(path)) {
       return Scaffold(body: SafeArea(child: shell));
     }
-    final bottomNav = AnimatedSize(
-      duration: MediaQuery.disableAnimationsOf(context)
-          ? Duration.zero
-          : const Duration(milliseconds: 180),
-      alignment: Alignment.bottomCenter,
-      child:
-          detail ||
-              _navigationVisible ||
-              MediaQuery.accessibleNavigationOf(context)
-          ? SafeArea(
-              top: false,
-              bottom: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  CircleLayout.navigationSideInset,
-                  Space.sm,
-                  CircleLayout.navigationSideInset,
-                  CircleLayout.navigationBottomPadding(
-                    MediaQuery.viewPaddingOf(context).bottom,
-                  ),
+    final dockContent =
+        detail ||
+            _navigationVisible ||
+            MediaQuery.accessibleNavigationOf(context)
+        ? SafeArea(
+            top: false,
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                CircleLayout.navigationSideInset,
+                Space.sm,
+                CircleLayout.navigationSideInset,
+                CircleLayout.navigationBottomPadding(
+                  MediaQuery.viewPaddingOf(context).bottom,
                 ),
-                child: Align(
-                  heightFactor: 1,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: CircleLayout.homeDockMaxWidth,
-                    ),
-                    child: DecoratedBox(
-                      key: const ValueKey('circle-navigation-dock'),
-                      decoration: CircleDepth.dock(context),
-                      child: Material(
-                        type: MaterialType.transparency,
-                        borderRadius: BorderRadius.circular(CircleRadius.pill),
-                        clipBehavior: Clip.antiAlias,
-                        child: _DockLayout(
-                          children: [
-                            _DockTab(
-                              type: CircleActionIconType.home,
-                              label: 'Home',
-                              selected: index == 0,
-                              onTap: () => shell.goBranch(0),
+              ),
+              child: Align(
+                heightFactor: 1,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: CircleLayout.homeDockMaxWidth,
+                  ),
+                  child: DecoratedBox(
+                    key: const ValueKey('circle-navigation-dock'),
+                    decoration: CircleDepth.dock(context),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      borderRadius: BorderRadius.circular(CircleRadius.pill),
+                      clipBehavior: Clip.antiAlias,
+                      child: _DockLayout(
+                        children: [
+                          _DockTab(
+                            type: CircleActionIconType.home,
+                            label: 'Home',
+                            selected: index == 0,
+                            onTap: () => shell.goBranch(0),
+                          ),
+                          _DockTab(
+                            type: CircleActionIconType.circles,
+                            label: 'Circles',
+                            selected: index == 2,
+                            onTap: () => shell.goBranch(2),
+                          ),
+                          _DockTab(
+                            type: CircleActionIconType.chats,
+                            label: 'Chats',
+                            selected: index == 1,
+                            onTap: () => shell.goBranch(1),
+                          ),
+                          _DockTab(
+                            type: CircleActionIconType.events,
+                            label: 'Events',
+                            selected: index == 3,
+                            onTap: () => shell.goBranch(3),
+                          ),
+                          _DockTab(
+                            type: CircleActionIconType.home,
+                            label: 'Profile',
+                            leading: PersonAvatar(
+                              person: account?.id ?? workspace?.viewer ?? '',
+                              name: account?.displayName ?? 'You',
+                              size: CircleAvatarSize.navigation,
                             ),
-                            _DockTab(
-                              type: CircleActionIconType.circles,
-                              label: 'Circles',
-                              selected: index == 2,
-                              onTap: () => shell.goBranch(2),
-                            ),
-                            _DockTab(
-                              type: CircleActionIconType.chats,
-                              label: 'Chats',
-                              selected: index == 1,
-                              onTap: () => shell.goBranch(1),
-                            ),
-                            _DockTab(
-                              type: CircleActionIconType.events,
-                              label: 'Events',
-                              selected: index == 3,
-                              onTap: () => shell.goBranch(3),
-                            ),
-                            _DockTab(
-                              type: CircleActionIconType.home,
-                              label: 'Profile',
-                              leading: PersonAvatar(
-                                person: account?.id ?? workspace?.viewer ?? '',
-                                name: account?.displayName ?? 'You',
-                                size: CircleAvatarSize.navigation,
-                              ),
-                              selected: index == 4,
-                              onTap: () => shell.goBranch(4),
-                            ),
-                          ],
-                        ),
+                            selected: index == 4,
+                            onTap: () => shell.goBranch(4),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
               ),
-            )
-          : const SizedBox(width: double.infinity, height: 0),
-    );
+            ),
+          )
+        : const SizedBox(width: double.infinity, height: 0);
+    final bottomNav = MediaQuery.disableAnimationsOf(context)
+        ? dockContent
+        : AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            alignment: Alignment.bottomCenter,
+            child: dockContent,
+          );
 
     // The immersive viewer owns its close/counter toolbar and safe areas.
     if (path.endsWith('/photos')) {

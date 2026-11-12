@@ -24,7 +24,7 @@ class AlbumsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final load = ref.watch(groupAlbumsProvider(group.id));
-    final albums = load.value?.value;
+    final albums = load.isLoading ? null : load.value?.value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -265,7 +265,7 @@ class _AlbumFormSheetState extends ConsumerState<AlbumFormSheet> {
                 errorText: _eraError,
               ),
             ),
-            if (!_editing) ...[
+            if (!_editing && ref.watch(serverAccountProvider) == null) ...[
               const SizedBox(height: Space.sm),
               if (_scenes.isNotEmpty)
                 Wrap(

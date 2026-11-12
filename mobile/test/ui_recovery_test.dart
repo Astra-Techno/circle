@@ -51,7 +51,7 @@ void main() {
       'fictional-password',
       'Audit Person',
     );
-    server.adapter.handler = (request) => request.path == '/groups'
+    server.adapter.handler = (request) => request.path == '/search'
         ? FakeResponse.error(503, 'server_error')
         : server.handle(request);
     final container = await openServerCircle(

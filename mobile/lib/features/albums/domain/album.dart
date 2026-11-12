@@ -34,6 +34,7 @@ class Album {
     this.era,
     this.coverPhotoId,
     this.eventId,
+    this.photoCount,
   }) : photos = List.unmodifiable(photos);
 
   final String id, groupId, title, createdBy;
@@ -42,6 +43,7 @@ class Album {
   final String? era;
   final DateTime createdAt;
   final List<AlbumPhoto> photos;
+  final int? photoCount;
 
   /// The chosen cover; the first photo when unset or removed.
   final String? coverPhotoId;
@@ -57,7 +59,9 @@ class Album {
 
   /// "4 photos · 2005–2009".
   String get details => [
-    photos.length == 1 ? '1 photo' : '${photos.length} photos',
+    (photoCount ?? photos.length) == 1
+        ? '1 photo'
+        : '${photoCount ?? photos.length} photos',
     ?era,
   ].join(' · ');
 }

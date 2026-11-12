@@ -95,4 +95,19 @@ final class CommentDeletionTest extends ApiTestCase
         $r = $this->request('DELETE', "/api/v1/memories/{$memoryId}/comments/99999", [], $owner['token']);
         self::assertSame(404, $r->status());
     }
+    public function testOnlyRemovingActorCanUndo(): void
+    {
+        $owner = $this->user('Fictional admin');
+        $member = $this->user('Fictional member');
+        $group = $this->createGroup($owner, 'Fictional Circle');
+        $this->join($owner, $member, $group);
+        $memory = $this->createMemory($owner, $group, 'Fictional memory');
+        $comment = $this->request('POST', "/api/v1/memories/$memory/comments", ['body'=>'Fictional comment'], $member['token'])->data()['id'];
+        $path = "/api/v1/memories/$memory/comments/$comment";
+        self::assertSame(200, $this->request('DELETE', $path, [], $owner['token'])->status());
+        self::assertSame(404, $this->request('POST', "$path/restore", [], $member['token'])->status());
+        self::assertSame(200, $this->request('POST', "$path/restore", [], $owner['token'])->status());
+        self::assertSame(404, $this->request('POST', "$path/restore", [], $owner['token'])->status());
+        self::assertCount(1, $this->request('GET', "/api/v1/memories/$memory", [], $member['token'])->data()['comments']);
+    }
 }

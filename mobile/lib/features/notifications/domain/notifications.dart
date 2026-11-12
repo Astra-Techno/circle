@@ -614,11 +614,18 @@ class ActivityEntry {
 }
 
 class ActivityFeed {
-  ActivityFeed({required List<ActivityEntry> entries})
-    : entries = List.unmodifiable(entries);
+  ActivityFeed({
+    required List<ActivityEntry> entries,
+    this.hasMore = false,
+    this.serverUnread,
+  }) : entries = List.unmodifiable(entries);
   final List<ActivityEntry> entries;
-  int get badge => entries.where((entry) => entry.badged).length;
-  int get unread => entries.where((entry) => !entry.read).length;
+  final bool hasMore;
+  final int? serverUnread;
+  int get badge =>
+      serverUnread ?? entries.where((entry) => entry.badged).length;
+  int get unread =>
+      serverUnread ?? entries.where((entry) => !entry.read).length;
 }
 
 /// A group in the settings list, with its effective level.

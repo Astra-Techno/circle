@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Circle\Tests;
 
-final class AlbumTest extends ApiTestCase
+final class AlbumTest extends MediaTestCase
 {
     public function testCreateAlbum(): void
     {
@@ -86,8 +86,11 @@ final class AlbumTest extends ApiTestCase
         $create = $this->request('POST', "/api/v1/groups/{$groupId}/albums", ['title' => 'Photos'], $owner['token']);
         $albumId = $create->data()['id'];
 
+        $media = $this->readyMedia($owner, $groupId);
+        $memory = $this->request('POST', "/api/v1/groups/{$groupId}/memories", ['body'=>'Fictional photo', 'media_ids'=>[$media]], $owner['token']);
+        self::assertSame(201, $memory->status());
         $r = $this->request('POST', "/api/v1/albums/{$albumId}/photos", [
-            'media_id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'media_id' => $media,
             'caption' => 'Beach sunset',
         ], $owner['token']);
         self::assertSame(201, $r->status());
@@ -138,5 +141,28 @@ final class AlbumTest extends ApiTestCase
         // Owner can delete
         $r = $this->request('DELETE', "/api/v1/albums/{$albumId}", [], $owner['token']);
         self::assertSame(200, $r->status());
+    }
+    public function testMediaMustBeReadySharedAndInExactCircle(): void
+    {
+        $owner = $this->user('Fictional owner');
+        $group = $this->createGroup($owner, 'Fictional Circle');
+        $other = $this->createGroup($owner, 'Fictional other Circle');
+        $album = $this->request('POST', "/api/v1/groups/$group/albums", ['title'=>'Fictional album'], $owner['token'])->data()['id'];
+        $foreign = $this->readyMedia($owner, $other);
+        $this->memoryWithMedia($owner, $other, [$foreign]);
+        $media = $this->readyMedia($owner, $group);
+        foreach ([$foreign, $media] as $invalid) {
+            self::assertSame(422, $this->request('POST', "/api/v1/albums/$album/photos", ['media_id'=>$invalid], $owner['token'])->status());
+        }
+        $memory = $this->memoryWithMedia($owner, $group, [$media])->data()['id'];
+        self::assertSame(422, $this->request('PATCH', "/api/v1/albums/$album", ['cover_media_id'=>$media], $owner['token'])->status());
+        self::assertSame(201, $this->request('POST', "/api/v1/albums/$album/photos", ['media_id'=>$media], $owner['token'])->status());
+        self::assertSame(200, $this->request('PATCH', "/api/v1/albums/$album", ['cover_media_id'=>$media], $owner['token'])->status());
+        self::assertCount(1, $this->request('GET', "/api/v1/albums/$album", [], $owner['token'])->data()['photos']['items']);
+        \Circle\Core\Database::execute("UPDATE memories SET status='hidden' WHERE id=:id", ['id'=>$memory]);
+        $detail = $this->request('GET', "/api/v1/albums/$album", [], $owner['token'])->data();
+        self::assertSame([], $detail['photos']['items']);
+        self::assertNull($detail['cover_media_id']);
+        self::assertSame(0, $detail['photo_count']);
     }
 }

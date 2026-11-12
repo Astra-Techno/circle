@@ -124,7 +124,8 @@ final class ModerationController
                 if ($target['kind']==='member') Response::validationError('Members cannot be hidden. Use group member controls.');
                 if ($content===null || !in_array($content['status'],['active','hidden'],true)) Response::error('conflict','This content is no longer available.',409);
                 $table=$target['kind']==='memory'?'memories':'comments';
-                Database::execute("UPDATE $table SET status=:status WHERE id=:id",['status'=>$action==='hide'?'hidden':'active','id'=>$target['target_id']]);
+                $clearUndo = $target['kind']==='comment' ? ', hidden_by=NULL' : '';
+                Database::execute("UPDATE $table SET status=:status $clearUndo WHERE id=:id",['status'=>$action==='hide'?'hidden':'active','id'=>$target['target_id']]);
                 if ($target['kind']==='memory') Database::execute('UPDATE media_assets ma JOIN memory_media_assets mma ON mma.media_id=ma.id SET ma.hidden_at=:hidden WHERE mma.memory_id=:mid AND ma.status=\'ready\'',['hidden'=>$action==='hide'?gmdate('Y-m-d H:i:s'):null,'mid'=>$target['target_id']]);
             } else {
                 Database::execute('UPDATE reports SET dismissed=:dismissed WHERE target_id=:id',['dismissed'=>$action==='dismiss'?1:0,'id'=>$target['id']]);

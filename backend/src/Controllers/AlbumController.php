@@ -15,6 +15,7 @@ final class AlbumController
     /** List albums in a group. */
     public static function index(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $groupId = (int) $r->param('id');
         $userId = $r->userId();
         MemberRepository::requireActiveMember($groupId, $userId);
@@ -23,13 +24,20 @@ final class AlbumController
         $offset = $r->queryInt('offset', 0, 0, 1000000);
 
         $rows = Database::query(
-            'SELECT a.*, u.display_name AS creator_name,
-                (SELECT COUNT(*) FROM album_photos WHERE album_id = a.id) AS photo_count
+            "SELECT a.*, (SELECT ap.media_id FROM album_photos ap JOIN media_assets ma ON ma.id=ap.media_id
+                 WHERE ap.album_id=a.id AND ap.media_id=a.cover_media_id AND ma.group_id=a.group_id
+                 AND ma.status='ready' AND ma.deleted_at IS NULL AND ma.hidden_at IS NULL
+                 AND EXISTS (SELECT 1 FROM memory_media_assets mma JOIN memories m ON m.id=mma.memory_id
+                    WHERE mma.media_id=ma.id AND m.group_id=a.group_id AND m.status='active') LIMIT 1) AS visible_cover_media_id, u.display_name AS creator_name,
+                (SELECT COUNT(*) FROM album_photos ap JOIN media_assets ma ON ma.id=ap.media_id
+                 WHERE ap.album_id=a.id AND ma.group_id=a.group_id AND ma.status='ready' AND ma.deleted_at IS NULL AND ma.hidden_at IS NULL
+                 AND EXISTS (SELECT 1 FROM memory_media_assets mma JOIN memories m ON m.id=mma.memory_id
+                    WHERE mma.media_id=ma.id AND m.group_id=a.group_id AND m.status='active')) AS photo_count
              FROM albums a
              JOIN users u ON u.id = a.created_by
              WHERE a.group_id = :g
-             ORDER BY a.created_at DESC
-             LIMIT :lim OFFSET :off',
+             ORDER BY a.created_at DESC, a.id DESC
+             LIMIT :lim OFFSET :off",
             ['g' => $groupId, 'lim' => $limit + 1, 'off' => $offset]
         );
         $more = count($rows) > $limit;
@@ -42,19 +50,23 @@ final class AlbumController
     /** Get album detail with photos. */
     public static function show(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $album = self::access($r);
 
         $limit = $r->queryInt('limit', 50, 1, 200);
         $offset = $r->queryInt('offset', 0, 0, 1000000);
 
         $photos = Database::query(
-            'SELECT ap.id, ap.media_id, ap.added_by, u.display_name AS added_by_name,
+            "SELECT ap.id, ap.media_id, ap.added_by, u.display_name AS added_by_name,
                     ap.caption, ap.sort_order, ap.added_at
              FROM album_photos ap
              JOIN users u ON u.id = ap.added_by
-             WHERE ap.album_id = :id
+             JOIN albums a ON a.id=ap.album_id
+             JOIN media_assets ma ON ma.id=ap.media_id AND ma.group_id=a.group_id AND ma.status='ready' AND ma.deleted_at IS NULL AND ma.hidden_at IS NULL
+             WHERE ap.album_id = :id AND EXISTS (SELECT 1 FROM memory_media_assets mma JOIN memories m ON m.id=mma.memory_id
+                 WHERE mma.media_id=ma.id AND m.group_id=a.group_id AND m.status='active')
              ORDER BY ap.sort_order, ap.id
-             LIMIT :lim OFFSET :off',
+             LIMIT :lim OFFSET :off",
             ['id' => $album['id'], 'lim' => $limit + 1, 'off' => $offset]
         );
         $more = count($photos) > $limit;
@@ -69,6 +81,7 @@ final class AlbumController
     /** Create an album in a group. */
     public static function create(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $groupId = (int) $r->param('id');
         $userId = $r->userId();
         MemberRepository::requireActiveMember($groupId, $userId);
@@ -107,6 +120,7 @@ final class AlbumController
     /** Update album title/description. */
     public static function update(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $album = self::access($r);
         $userId = $r->userId();
 
@@ -132,6 +146,12 @@ final class AlbumController
         }
         $coverId = $r->input('cover_media_id');
         if ($coverId !== null) {
+            if ($coverId !== '') {
+                self::requireMedia((string) $coverId, (int) $album['group_id']);
+                if (Database::queryOne('SELECT id FROM album_photos WHERE album_id=:a AND media_id=:m', ['a'=>$album['id'], 'm'=>(string) $coverId]) === null) {
+                    Response::validationError('Choose a photo in this album.');
+                }
+            }
             $fields[] = 'cover_media_id = :cover';
             $params['cover'] = $coverId === '' ? null : (string) $coverId;
         }
@@ -145,6 +165,7 @@ final class AlbumController
     /** Delete album (creator or admin). */
     public static function delete(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $album = self::access($r);
         self::requireEditor($album, $r->userId());
         Database::execute('DELETE FROM albums WHERE id = :id', ['id' => $album['id']]);
@@ -154,6 +175,7 @@ final class AlbumController
     /** Add a photo to an album. */
     public static function addPhoto(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $album = self::access($r);
         $userId = $r->userId();
 
@@ -165,25 +187,24 @@ final class AlbumController
         if ($caption !== '') $v->string('caption', $caption, 0, 200);
         $v->bail();
 
-        // Get next sort_order
-        $maxSort = Database::queryOne(
-            'SELECT COALESCE(MAX(sort_order), 0) AS m FROM album_photos WHERE album_id = :id',
-            ['id' => $album['id']]
-        )['m'];
-
-        Database::execute(
-            'INSERT INTO album_photos (album_id, media_id, added_by, caption, sort_order)
-             VALUES (:a, :m, :u, :c, :s)',
-            ['a' => $album['id'], 'm' => $mediaId, 'u' => $userId, 'c' => $caption, 's' => (int) $maxSort + 1]
-        );
-
-        $id = Database::lastInsertId();
+        $id = Database::transaction(static function () use ($album, $mediaId, $caption, $userId): int {
+            Database::queryOne('SELECT id FROM albums WHERE id=:id FOR UPDATE', ['id'=>$album['id']]);
+            MemberRepository::requireActiveMember((int) $album['group_id'], $userId);
+            self::requireMedia($mediaId, (int) $album['group_id']);
+            $existing = Database::queryOne('SELECT id FROM album_photos WHERE album_id=:a AND media_id=:m', ['a'=>$album['id'],'m'=>$mediaId]);
+            if ($existing !== null) return (int) $existing['id'];
+            $maxSort = Database::queryOne('SELECT COALESCE(MAX(sort_order),0) AS m FROM album_photos WHERE album_id=:a', ['a'=>$album['id']]);
+            Database::execute('INSERT INTO album_photos (album_id,media_id,added_by,caption,sort_order) VALUES (:a,:m,:u,:c,:s)',
+                ['a'=>$album['id'],'m'=>$mediaId,'u'=>$userId,'c'=>$caption,'s'=>(int) $maxSort['m']+1]);
+            return Database::lastInsertId();
+        });
         Response::created(['id' => $id], 'Photo added.');
     }
 
     /** Update photo caption. */
     public static function updatePhoto(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $album = self::access($r);
         $photoId = (int) $r->param('photoId');
 
@@ -208,6 +229,7 @@ final class AlbumController
     /** Remove a photo from an album. */
     public static function removePhoto(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $album = self::access($r);
         $photoId = (int) $r->param('photoId');
 
@@ -222,7 +244,10 @@ final class AlbumController
             self::requireEditor($album, $userId);
         }
 
-        Database::execute('DELETE FROM album_photos WHERE id = :id', ['id' => $photoId]);
+        Database::transaction(static function () use ($photoId, $album, $photo): void {
+            Database::execute('UPDATE albums SET cover_media_id=NULL WHERE id=:a AND cover_media_id=:m', ['a'=>$album['id'], 'm'=>$photo['media_id']]);
+            Database::execute('DELETE FROM album_photos WHERE id = :id', ['id' => $photoId]);
+        });
         Response::ok(null, 'Photo removed.');
     }
 
@@ -233,14 +258,33 @@ final class AlbumController
     {
         $albumId = (int) $r->param('albumId');
         $album = Database::queryOne(
-            'SELECT a.*, u.display_name AS creator_name,
-                (SELECT COUNT(*) FROM album_photos WHERE album_id = a.id) AS photo_count
-             FROM albums a JOIN users u ON u.id = a.created_by WHERE a.id = :id',
+            "SELECT a.*, (SELECT ap.media_id FROM album_photos ap JOIN media_assets ma ON ma.id=ap.media_id
+                 WHERE ap.album_id=a.id AND ap.media_id=a.cover_media_id AND ma.group_id=a.group_id
+                 AND ma.status='ready' AND ma.deleted_at IS NULL AND ma.hidden_at IS NULL
+                 AND EXISTS (SELECT 1 FROM memory_media_assets mma JOIN memories m ON m.id=mma.memory_id
+                    WHERE mma.media_id=ma.id AND m.group_id=a.group_id AND m.status='active') LIMIT 1) AS visible_cover_media_id, u.display_name AS creator_name,
+                (SELECT COUNT(*) FROM album_photos ap JOIN media_assets ma ON ma.id=ap.media_id
+                 WHERE ap.album_id=a.id AND ma.group_id=a.group_id AND ma.status='ready' AND ma.deleted_at IS NULL AND ma.hidden_at IS NULL
+                 AND EXISTS (SELECT 1 FROM memory_media_assets mma JOIN memories m ON m.id=mma.memory_id
+                    WHERE mma.media_id=ma.id AND m.group_id=a.group_id AND m.status='active')) AS photo_count
+             FROM albums a JOIN users u ON u.id = a.created_by WHERE a.id = :id",
             ['id' => $albumId]
         );
         if ($album === null) Response::notFound('Album not found.');
         MemberRepository::requireActiveMember((int) $album['group_id'], $r->userId());
         return $album;
+    }
+
+    private static function requireMedia(string $id, int $group): void
+    {
+        $media = Database::queryOne(
+            "SELECT ma.id FROM media_assets ma
+             WHERE ma.id=:id AND ma.group_id=:g AND ma.status='ready' AND ma.deleted_at IS NULL AND ma.hidden_at IS NULL
+             AND EXISTS (SELECT 1 FROM memory_media_assets mma JOIN memories m ON m.id=mma.memory_id
+                         WHERE mma.media_id=ma.id AND m.group_id=ma.group_id AND m.status='active')",
+            ['id'=>$id, 'g'=>$group]
+        );
+        if ($media === null) Response::validationError('Choose an available photo shared in this Circle.');
     }
 
     /** @param array<string, mixed> $album */
@@ -270,7 +314,7 @@ final class AlbumController
             'event_id'       => $row['event_id'] !== null ? (int) $row['event_id'] : null,
             'title'          => $row['title'],
             'description'    => $row['description'],
-            'cover_media_id' => $row['cover_media_id'],
+            'cover_media_id' => $row['visible_cover_media_id'] ?? null,
             'photo_count'    => (int) ($row['photo_count'] ?? 0),
             'created_at'     => $row['created_at'],
             'updated_at'     => $row['updated_at'],

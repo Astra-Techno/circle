@@ -254,7 +254,8 @@ class FakeCircleServer {
     return {
       ...memory,
       'reaction_count': reactions[id]?.length ?? 0,
-      'comment_count': comments[id]?.length ?? 0,
+      'comment_count':
+          comments[id]?.where((c) => c['status'] != 'hidden').length ?? 0,
       'user_reacted': reactions[id]?.containsKey(viewer) ?? false ? 1 : 0,
       'user_saved': saves[id]?.contains(viewer) ?? false,
     };
@@ -319,6 +320,59 @@ class FakeCircleServer {
       return FakeResponse.error(401, 'invalid_token');
     }
     final me = access[token]!;
+    if (path == '/me/activity' && r.method == 'GET') {
+      return FakeResponse.ok({
+        'items': <Object?>[],
+        'has_more': false,
+        'unread_count': 0,
+      });
+    }
+    if (path == '/me/activity/read' && r.method == 'POST') {
+      return FakeResponse.ok(null);
+    }
+    if (path == '/search' && r.method == 'GET') {
+      final query = (r.query['q'] ?? '').toLowerCase();
+      final limit = int.tryParse(r.query['limit'] ?? '') ?? 10;
+      final offset = int.tryParse(r.query['offset'] ?? '') ?? 0;
+      final mine = members.entries
+          .where((entry) => entry.value.containsKey(me))
+          .map((entry) => entry.key)
+          .toSet();
+      final categories = <String, List<Map<String, Object?>>>{
+        'groups': [
+          for (final group in groups.values)
+            if (mine.contains(group['id']) &&
+                (group['name'] as String).toLowerCase().contains(query))
+              group,
+        ],
+        'people': [
+          for (final user in users.values)
+            if (user['id'] != me &&
+                (user['display_name'] as String).toLowerCase().contains(
+                  query,
+                ) &&
+                mine.any((group) => members[group]!.containsKey(user['id'])))
+              user,
+        ],
+        'memories': [
+          for (final memory in memories)
+            if (mine.contains(memory['group_id']) &&
+                !hiddenMemories.contains(memory['id']) &&
+                (memory['body'] as String).toLowerCase().contains(query))
+              memory,
+        ],
+        'events': [],
+        'polls': [],
+      };
+      return FakeResponse.ok({
+        for (final entry in categories.entries)
+          entry.key: entry.value.skip(offset).take(limit).toList(),
+        'has_more': {
+          for (final entry in categories.entries)
+            entry.key: entry.value.length > offset + limit,
+        },
+      });
+    }
     if (path == '/me/notification-preferences') {
       final preferences = notificationPreferences.putIfAbsent(
         me,
@@ -896,11 +950,41 @@ class FakeCircleServer {
           !(members[json['group_id']]?.containsKey(me) ?? false)) {
         return FakeResponse.error(404, 'not_found');
       }
+      final commentPath = RegExp(
+        r'^/comments/(\d+)(/restore)?$',
+      ).firstMatch(memory[2] ?? '');
+      if (commentPath != null) {
+        final cid = int.parse(commentPath[1]!);
+        final comment = comments[id]?.where((c) => c['id'] == cid).firstOrNull;
+        if (comment == null) return FakeResponse.error(404, 'not_found');
+        if (r.method == 'DELETE' && commentPath[2] == null) {
+          if (comment['author_id'] != me &&
+              members[json['group_id']]?[me] != 'admin') {
+            return FakeResponse.error(403, 'forbidden');
+          }
+          if (comment['status'] == 'hidden') {
+            return FakeResponse.error(404, 'not_found');
+          }
+          comment['status'] = 'hidden';
+          comment['hidden_by'] = me;
+          return FakeResponse.ok(null);
+        }
+        if (r.method == 'POST' && commentPath[2] != null) {
+          if (comment['status'] != 'hidden' || comment['hidden_by'] != me) {
+            return FakeResponse.error(404, 'not_found');
+          }
+          comment['status'] = 'active';
+          comment['hidden_by'] = null;
+          return FakeResponse.ok(null);
+        }
+      }
       switch ((r.method, memory[2] ?? '')) {
         case ('GET', ''):
           return FakeResponse.ok({
             ...json,
-            'comments': comments[id] ?? const [],
+            'comments':
+                comments[id]?.where((c) => c['status'] != 'hidden').toList() ??
+                const [],
             'reactions': [
               for (final entry
                   in (reactions[id] ?? const <int, String>{}).entries)

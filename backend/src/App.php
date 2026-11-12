@@ -239,6 +239,7 @@ final class App
             // Comments, reactions, saves
             $r->post('/memories/{id}/comments', MemoryController::addComment(...));
             $r->delete('/memories/{id}/comments/{commentId}', MemoryController::deleteComment(...));
+            $r->post('/memories/{id}/comments/{commentId}/restore', MemoryController::restoreComment(...));
             $r->post('/memories/{id}/reactions', MemoryController::react(...));
             $r->post('/memories/{id}/save', MemoryController::save(...));
 

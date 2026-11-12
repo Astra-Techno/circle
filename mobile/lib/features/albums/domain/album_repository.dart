@@ -25,6 +25,12 @@ abstract interface class AlbumRepository {
     List<MemoryScene> scenes,
   );
 
+  Future<void> addSharedPhotos(
+    String viewer,
+    String albumId,
+    List<String> mediaIds,
+  );
+
   /// Reversible with [restorePhoto] (Undo).
   Future<void> removePhoto(String viewer, String albumId, String photoId);
   Future<void> restorePhoto(String viewer, String albumId, String photoId);

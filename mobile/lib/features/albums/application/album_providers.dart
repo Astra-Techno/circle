@@ -1,13 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../data/mock_album_repository.dart';
+import '../data/api_album_repository.dart';
+import '../../../core/api/api_providers.dart';
+import '../../../core/api/scoped_api.dart';
 import '../domain/album_repository.dart';
 
 export '../domain/album_repository.dart';
 
-/// Albums aren't on the server yet: this session-local store backs the
-/// hidden Albums feature until a server album API exists.
+/// Authenticated sessions use the exact-Circle album API; fictional fixtures
+/// retain their isolated repository for offline tests.
 final albumRepositoryProvider = Provider<AlbumRepository>((ref) {
+  final api = ref.watch(apiClientProvider);
+  final account = ref.watch(serverAccountProvider)?.id;
+  if (api != null && account != null) {
+    return ApiAlbumRepository(
+      ScopedApi(
+        api,
+        account,
+        api.sessionRevision,
+        () =>
+            ref.mounted &&
+            identical(ref.read(apiClientProvider), api) &&
+            ref.read(serverAccountProvider)?.id == account,
+      ),
+    );
+  }
   return MockAlbumRepository(
     groups: ref.watch(circleRepositoryProvider),
     showcase: false,
@@ -91,6 +109,8 @@ class AlbumController extends Notifier<int> {
     (repo, viewer) =>
         repo.createAlbum(viewer, groupId, title, era: era, scenes: scenes),
   );
+  Future<void> addSharedPhotos(String albumId, List<String> ids) =>
+      _run((repo, viewer) => repo.addSharedPhotos(viewer, albumId, ids));
   Future<void> addPhotos(String albumId, List<MemoryScene> scenes) =>
       _run((repo, viewer) => repo.addPhotos(viewer, albumId, scenes));
   Future<void> removePhoto(String albumId, String photoId) =>

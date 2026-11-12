@@ -79,4 +79,15 @@ final class SearchTest extends ApiTestCase
         self::assertArrayHasKey('polls', $data);
         self::assertArrayHasKey('groups', $data);
     }
+    public function testSearchTreatsWildcardsLiterally(): void
+    {
+        $owner = $this->user('Fictional owner');
+        $group = $this->createGroup($owner, 'Fictional Circle');
+        $this->createMemory($owner, $group, 'Fictional 100% complete');
+        $this->createMemory($owner, $group, 'Fictional other');
+        $response = $this->request('GET', '/api/v1/search?q=%25', [], $owner['token']);
+        self::assertSame(200, $response->status());
+        self::assertCount(1, $response->data()['memories']);
+        self::assertSame('Fictional 100% complete', $response->data()['memories'][0]['body']);
+    }
 }

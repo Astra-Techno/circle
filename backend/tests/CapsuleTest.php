@@ -195,4 +195,23 @@ final class CapsuleTest extends ApiTestCase
         $r = $this->request('GET', "/api/v1/groups/{$groupId}/capsules", [], $outsider['token']);
         self::assertSame(403, $r->status());
     }
+    public function testAbsoluteUnlockDateCountsAndSealedMessagePrivacy(): void
+    {
+        $owner = $this->user('Fictional owner');
+        $group = $this->createGroup($owner, 'Fictional Circle');
+        $date = gmdate('Y-m-d\TH:i:s\Z', time()+3*86400);
+        $created = $this->request('POST', "/api/v1/groups/$group/capsules", ['title'=>'Fictional future','message'=>'Private note','unlock_at'=>$date], $owner['token']);
+        self::assertSame(201, $created->status());
+        $id = $created->data()['id'];
+        self::assertSame(201, $this->request('POST', "/api/v1/capsules/$id/entries", ['body'=>'Keep this text'], $owner['token'])->status());
+        self::assertSame(1, $this->request('GET', "/api/v1/capsules/$id", [], $owner['token'])->data()['entry_count']);
+        self::assertSame(200, $this->request('POST', "/api/v1/capsules/$id/seal", [], $owner['token'])->status());
+        self::assertSame('', $this->request('GET', "/api/v1/capsules/$id", [], $owner['token'])->data()['message']);
+        self::assertSame(403, $this->request('GET', "/api/v1/capsules/$id/entries", [], $owner['token'])->status());
+        self::assertSame(422, $this->request('POST', "/api/v1/capsules/$id/entries", ['body'=>'Too late'], $owner['token'])->status());
+        \Circle\Core\Database::execute('UPDATE capsules SET unlock_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 DAY) WHERE id=:id', ['id'=>$id]);
+        $entries = $this->request('GET', "/api/v1/capsules/$id/entries", [], $owner['token'])->data();
+        self::assertSame('Keep this text', $entries['items'][0]['body']);
+        self::assertSame('Private note', $this->request('GET', "/api/v1/capsules/$id", [], $owner['token'])->data()['message']);
+    }
 }

@@ -5,7 +5,7 @@ import 'support/server_harness.dart';
 import 'live_chat_events_test.dart' show LiveFixture;
 
 void main() {
-  testWidgets('typing sends only the settled remote Memory query', (
+  testWidgets('typing sends only the settled remote search query', (
     tester,
   ) async {
     final fixture = LiveFixture();
@@ -23,14 +23,14 @@ void main() {
     }
     final requests = fixture.server.adapter.requests;
     expect(
-      requests.where((r) => r.path == '/memories' && r.query.containsKey('q')),
+      requests.where((r) => r.path == '/search' && r.query.containsKey('q')),
       isEmpty,
     );
     await tester.pump(const Duration(milliseconds: 320));
     await settle(tester);
     expect(
       requests
-          .where((r) => r.path == '/memories' && r.query.containsKey('q'))
+          .where((r) => r.path == '/search' && r.query.containsKey('q'))
           .map((r) => r.query['q']),
       ['party'],
     );

@@ -24,7 +24,15 @@ Future<ApiCircleRepository> signedIn(
     auth: false,
     body: {'mobile': mobile, 'password': server.passwords[mobile]},
   );
-  await api.saveTokens(api.tokensFrom(login));
+  await api.saveTokens(
+    api.tokensFrom(
+      login,
+      account: StoredAccount(
+        id: '$user',
+        displayName: server.users[user]!['display_name'] as String,
+      ),
+    ),
+  );
   return ApiCircleRepository(
     api: api,
     viewer: '$user',
@@ -42,6 +50,36 @@ void main() {
     asha = server.addUser('+15550000001', 'a' * 20, 'Asha');
     dev = server.addUser('+15550000002', 'd' * 20, 'Dev');
   });
+
+  test(
+    'comment removal and Undo persist through the authenticated API',
+    () async {
+      final group = server.addGroup('Fictional Circle', asha);
+      final memory = server.addMemory(group, asha, 'Fictional Memory');
+      final repository = await signedIn(server, asha);
+      await repository.load('$asha');
+      final comment = await repository.comment(
+        '$asha',
+        '$memory',
+        'Fictional reply',
+      );
+      await repository.deleteComment('$asha', '$memory', comment);
+      expect(server.comments[memory]!.single['status'], 'hidden');
+      await repository.restoreComment('$asha', '$memory', comment);
+      expect(server.comments[memory]!.single['status'], 'active');
+      expect(
+        server.adapter.count('DELETE', '/memories/$memory/comments/$comment'),
+        1,
+      );
+      expect(
+        server.adapter.count(
+          'POST',
+          '/memories/$memory/comments/$comment/restore',
+        ),
+        1,
+      );
+    },
+  );
 
   test(
     'startup overlaps independent requests but waits for authorized workspace',

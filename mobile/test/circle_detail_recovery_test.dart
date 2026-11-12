@@ -125,6 +125,11 @@ void main() {
       expect(find.byTooltip('Retry group banner'), findsNothing);
       expect(find.byKey(ValueKey('group-cover-${f.group}')), findsOneWidget);
       failPage = false;
+      await Scrollable.ensureVisible(
+        tester.element(find.widgetWithText(FilledButton, 'Try again')),
+        alignment: 0.5,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Try again'));
       await settle(tester);
       expect(pageCalls, 2);

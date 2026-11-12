@@ -18,6 +18,7 @@ final class CapsuleController
     /** List capsules in a group. */
     public static function index(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $groupId = (int) $r->param('id');
         $userId = $r->userId();
         MemberRepository::requireActiveMember($groupId, $userId);
@@ -31,7 +32,7 @@ final class CapsuleController
              FROM capsules c
              JOIN users u ON u.id = c.creator_id
              WHERE c.group_id = :g
-             ORDER BY c.created_at DESC
+             ORDER BY c.created_at DESC, c.id DESC
              LIMIT :lim OFFSET :off',
             ['g' => $groupId, 'lim' => $limit + 1, 'off' => $offset]
         );
@@ -47,6 +48,7 @@ final class CapsuleController
     /** Get capsule detail. */
     public static function show(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $capsule = self::access($r);
         $now = gmdate('Y-m-d H:i:s');
         $detail = self::format($capsule, $now);
@@ -69,6 +71,7 @@ final class CapsuleController
     /** Create a capsule in a group. */
     public static function create(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $groupId = (int) $r->param('id');
         $userId = $r->userId();
         MemberRepository::requireActiveMember($groupId, $userId);
@@ -83,6 +86,21 @@ final class CapsuleController
 
         $v->bail();
 
+        $absolute = $r->input('unlock_at');
+        if ($absolute !== null) {
+            if ($unlockDays !== null || !is_string($absolute) || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/D', $absolute)) {
+                Response::validationError('Choose one valid UTC unlock date.');
+            }
+            try { $date = new \DateTimeImmutable($absolute); }
+            catch (\Exception) { Response::validationError('Choose a valid unlock date.'); }
+            $errors = \DateTimeImmutable::getLastErrors();
+            if ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0)) Response::validationError('Choose a valid calendar date.');
+            $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+            if ($date < $now->modify('+1 day') || $date > $now->modify('+3650 days')) {
+                Response::validationError('Choose an unlock date between 1 and 3650 days ahead.');
+            }
+            $unlockAt = $date->format('Y-m-d H:i:s');
+        } else {
         if (!is_int($unlockDays) && !(is_string($unlockDays) && ctype_digit($unlockDays))) {
             Response::validationError('unlock_days must be an integer (1-3650).');
         }
@@ -93,6 +111,7 @@ final class CapsuleController
 
         $unlockAt = (new \DateTimeImmutable('+' . $unlockDays . ' days', new \DateTimeZone('UTC')))
             ->format('Y-m-d H:i:s');
+        }
 
         $id = Database::transaction(static function () use ($groupId, $userId, $title, $message, $unlockAt): int {
             Database::execute(
@@ -109,7 +128,9 @@ final class CapsuleController
     /** Add an entry (contribution) to an open capsule. */
     public static function addEntry(Request $r): void
     {
-        $capsule = self::access($r);
+        Response::header('Cache-Control', 'private, no-store');
+        $entryId = Database::transaction(static function () use ($r): int {
+        $capsule = self::access($r, true);
         $userId = $r->userId();
         $now = gmdate('Y-m-d H:i:s');
 
@@ -147,7 +168,6 @@ final class CapsuleController
         $v->required('body', $body)->string('body', $body, 1, 500);
         $v->bail();
 
-        $entryId = Database::transaction(static function () use ($capsule, $userId, $body): int {
             Database::execute(
                 'INSERT INTO capsule_entries (capsule_id, author_id, body) VALUES (:c, :u, :b)',
                 ['c' => $capsule['id'], 'u' => $userId, 'b' => $body]
@@ -167,6 +187,7 @@ final class CapsuleController
     /** List entries (only if capsule is unlocked). */
     public static function entries(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $capsule = self::access($r);
         $now = gmdate('Y-m-d H:i:s');
 
@@ -195,6 +216,7 @@ final class CapsuleController
     /** Seal capsule (creator only). */
     public static function seal(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $capsule = self::access($r);
         $userId = $r->userId();
 
@@ -210,7 +232,7 @@ final class CapsuleController
             Response::error('capsule_unlocked', 'This capsule has already been unlocked.', 422);
         }
 
-        Database::execute('UPDATE capsules SET sealed_at = UTC_TIMESTAMP() WHERE id = :id', ['id' => $capsule['id']]);
+        Database::execute('UPDATE capsules SET sealed_at = UTC_TIMESTAMP() WHERE id = :id AND sealed_at IS NULL AND unlock_at>UTC_TIMESTAMP()', ['id' => $capsule['id']]);
 
         Response::ok(null, 'Capsule sealed.');
     }
@@ -218,6 +240,7 @@ final class CapsuleController
     /** Delete capsule (creator only). */
     public static function delete(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $capsule = self::access($r);
         $userId = $r->userId();
 
@@ -233,10 +256,10 @@ final class CapsuleController
     // ── Helpers ─────────────────────────────────────────────────
 
     /** @return array<string, mixed> */
-    private static function access(Request $r): array
+    private static function access(Request $r, bool $lock = false): array
     {
         $capsuleId = (int) $r->param('capsuleId');
-        $capsule = Database::queryOne('SELECT * FROM capsules WHERE id = :id', ['id' => $capsuleId]);
+        $capsule = Database::queryOne('SELECT c.*, (SELECT COUNT(*) FROM capsule_entries ce WHERE ce.capsule_id=c.id) AS entry_count FROM capsules c WHERE c.id = :id' . ($lock ? ' FOR UPDATE' : ''), ['id' => $capsuleId]);
         if ($capsule === null) Response::notFound('Capsule not found.');
         MemberRepository::requireActiveMember((int) $capsule['group_id'], $r->userId());
         return $capsule;
@@ -256,7 +279,7 @@ final class CapsuleController
             'creator_id'   => (int) $row['creator_id'],
             'creator_name' => $row['creator_name'] ?? null,
             'title'        => $row['title'],
-            'message'      => $row['message'],
+            'message'      => $sealed && !$unlocked ? '' : $row['message'],
             'unlock_at'    => $row['unlock_at'],
             'sealed_at'    => $row['sealed_at'],
             'created_at'   => $row['created_at'],

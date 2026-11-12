@@ -16,12 +16,14 @@ final class SearchController
 {
     public static function search(Request $r): void
     {
+        Response::header('Cache-Control', 'private, no-store');
         $userId = $r->userId();
         $q = trim($r->query('q'));
         if ($q === '' || mb_strlen($q) > 200) {
             Response::validationError('q is required (1-200 characters).');
         }
         $limit = $r->queryInt('limit', 10, 1, 20);
+        $offset = $r->queryInt('offset', 0, 0, 1000000);
         $like = '%' . self::escapeLike($q) . '%';
 
         // Memories
@@ -33,8 +35,8 @@ final class SearchController
              JOIN `groups` g ON g.id = m.group_id
              JOIN users u ON u.id = m.author_id
              WHERE m.status = 'active' AND m.body LIKE :q
-             ORDER BY m.created_at DESC LIMIT :lim",
-            ['u' => $userId, 'q' => $like, 'lim' => $limit]
+             ORDER BY m.created_at DESC, m.id DESC LIMIT :lim OFFSET :off",
+            ['u' => $userId, 'q' => $like, 'lim' => $limit + 1, 'off' => $offset]
         );
 
         // People (shared group members)
@@ -44,8 +46,8 @@ final class SearchController
              JOIN group_members gm ON gm.user_id = u.id AND gm.status = 'active'
              JOIN group_members my ON my.group_id = gm.group_id AND my.user_id = :u AND my.status = 'active'
              WHERE u.id != :u2 AND u.status = 'active' AND u.display_name LIKE :q
-             ORDER BY u.display_name LIMIT :lim",
-            ['u' => $userId, 'u2' => $userId, 'q' => $like, 'lim' => $limit]
+             ORDER BY u.display_name, u.id LIMIT :lim OFFSET :off",
+            ['u' => $userId, 'u2' => $userId, 'q' => $like, 'lim' => $limit + 1, 'off' => $offset]
         );
 
         // Events
@@ -55,8 +57,8 @@ final class SearchController
              JOIN group_members gm ON gm.group_id = e.group_id AND gm.user_id = :u AND gm.status = 'active'
              JOIN `groups` g ON g.id = e.group_id
              WHERE (e.title LIKE :q OR e.venue LIKE :q2 OR e.description LIKE :q3)
-             ORDER BY e.start_at DESC LIMIT :lim",
-            ['u' => $userId, 'q' => $like, 'q2' => $like, 'q3' => $like, 'lim' => $limit]
+             ORDER BY e.start_at DESC, e.id DESC LIMIT :lim OFFSET :off",
+            ['u' => $userId, 'q' => $like, 'q2' => $like, 'q3' => $like, 'lim' => $limit + 1, 'off' => $offset]
         );
 
         // Polls
@@ -66,8 +68,10 @@ final class SearchController
              JOIN group_members gm ON gm.group_id = p.group_id AND gm.user_id = :u AND gm.status = 'active'
              JOIN `groups` g ON g.id = p.group_id
              WHERE p.question LIKE :q
-             ORDER BY p.created_at DESC LIMIT :lim",
-            ['u' => $userId, 'q' => $like, 'lim' => $limit]
+               AND (p.memory_id IS NULL OR EXISTS (SELECT 1 FROM memories pm WHERE pm.id=p.memory_id AND pm.group_id=p.group_id AND pm.status='active'))
+               AND (p.event_id IS NULL OR EXISTS (SELECT 1 FROM events pe WHERE pe.id=p.event_id AND pe.group_id=p.group_id))
+             ORDER BY p.created_at DESC, p.id DESC LIMIT :lim OFFSET :off",
+            ['u' => $userId, 'q' => $like, 'lim' => $limit + 1, 'off' => $offset]
         );
 
         // Groups the user belongs to
@@ -76,21 +80,22 @@ final class SearchController
              FROM `groups` g
              JOIN group_members gm ON gm.group_id = g.id AND gm.user_id = :u AND gm.status = 'active'
              WHERE g.name LIKE :q
-             ORDER BY g.name LIMIT :lim",
-            ['u' => $userId, 'q' => $like, 'lim' => $limit]
+             ORDER BY g.name, g.id LIMIT :lim OFFSET :off",
+            ['u' => $userId, 'q' => $like, 'lim' => $limit + 1, 'off' => $offset]
         );
 
-        Response::ok([
-            'memories' => $memories,
-            'people'   => $people,
-            'events'   => $events,
-            'polls'    => $polls,
-            'groups'   => $groups,
-        ]);
+        $categories = compact('memories', 'people', 'events', 'polls', 'groups');
+        $more = [];
+        foreach ($categories as $name => &$items) {
+            $more[$name] = count($items) > $limit;
+            if ($more[$name]) array_pop($items);
+        }
+        unset($items);
+        Response::ok([...$categories, 'has_more'=>$more]);
     }
 
     private static function escapeLike(string $s): string
     {
-        return str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $s);
+        return strtr($s, ['\\' => '\\\\', '%' => '\\%', '_' => '\\_']);
     }
 }

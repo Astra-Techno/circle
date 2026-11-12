@@ -5,6 +5,15 @@ import '../domain/album_repository.dart';
 /// is uploaded or stored. Membership always comes from [WorkspaceReader],
 /// so every read and change re-checks the exact group.
 class MockAlbumRepository implements AlbumRepository {
+  @override
+  Future<void> addSharedPhotos(
+    String viewer,
+    String albumId,
+    List<String> mediaIds,
+  ) async {
+    throw const CircleFailure('Shared media requires a server.');
+  }
+
   MockAlbumRepository({
     required WorkspaceReader groups,
     bool showcase = false,

@@ -19,9 +19,7 @@ enum CircleFeature {
   directInvitations('Direct invitations', plural: true),
   joinListedSubgroups('Asking to join from the subgroup list'),
 
-  /// Memory Capsules. Owner decision (10 Nov 2026): shown without a label
-  /// even though they are stored only on this phone until the server
-  /// offers them.
+  /// New Memory Capsules use the server; legacy device records are preserved.
   capsules('Memory Capsules', plural: true),
   commentDeletion('Deleting comments');
 
@@ -51,9 +49,15 @@ class CircleFeatures {
               CircleFeature.notificationSettings,
               CircleFeature.contactInvitations,
               CircleFeature.capsules,
+              CircleFeature.commentDeletion,
+              CircleFeature.activity,
+              CircleFeature.albums,
             }
           : const {
               CircleFeature.capsules,
+              CircleFeature.commentDeletion,
+              CircleFeature.activity,
+              CircleFeature.albums,
               CircleFeature.contactInvitations,
               CircleFeature.moderation,
               CircleFeature.liveChat,

@@ -13,12 +13,14 @@ final class NotificationOutbox
 {
     public static function memoryCreated(int $memoryId): void
     {
+        ActivityCapture::memory($memoryId);
         self::capture($memoryId, null);
         NotificationDispatcher::scheduleFlush();
     }
 
     public static function commentCreated(int $memoryId, int $commentId): void
     {
+        ActivityCapture::memory($memoryId, $commentId);
         self::capture($memoryId, $commentId);
         NotificationDispatcher::scheduleFlush();
     }

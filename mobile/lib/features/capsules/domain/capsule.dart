@@ -2,11 +2,7 @@ import '../../../core/rule_result.dart';
 
 export '../../../core/rule_result.dart';
 
-/// A Memory Capsule: a time-locked memory that stays sealed until its
-/// unlock date. Contributors add photos and messages before sealing;
-/// once sealed, nobody can see or change the contents until the date
-/// arrives. When it unlocks, every contributor is notified and the
-/// capsule becomes a shared Memory in the group.
+/// A time-locked collection of messages.
 class Capsule {
   const Capsule({
     required this.id,
@@ -19,6 +15,8 @@ class Capsule {
     required this.createdAt,
     this.sealedAt,
     this.contributors = const [],
+    this.entries = const [],
+    this.serverUnlocked,
     this.photoCount = 0,
     this.messageCount = 0,
   });
@@ -34,10 +32,12 @@ class Capsule {
 
   /// People who added something to this capsule.
   final List<CapsuleContributor> contributors;
+  final List<CapsuleEntry> entries;
+  final bool? serverUnlocked;
   final int photoCount, messageCount;
 
   bool get isSealed => sealedAt != null;
-  bool get isUnlocked => DateTime.now().isAfter(unlockAt);
+  bool get isUnlocked => serverUnlocked ?? !DateTime.now().isBefore(unlockAt);
   bool get isOpen => !isSealed && !isUnlocked;
 
   /// How long until unlock, as a human-readable label.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'shared_photo_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
@@ -46,9 +47,9 @@ class AlbumDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final load = ref.watch(albumProvider(albumId));
     final workspace = ref.watch(circleWorkspaceProvider).value;
-    final album = load.value?.value;
+    final album = load.isLoading ? null : load.value?.value;
     if (album == null || workspace == null || album.groupId != groupId) {
-      if (load.isLoading && load.value == null) {
+      if (load.isLoading) {
         return const CircleSkeletonPage(
           shape: CircleSkeletonShape.grid,
           count: 6,
@@ -71,6 +72,24 @@ class AlbumDetailScreen extends ConsumerWidget {
     final controller = ref.read(albumControllerProvider.notifier);
 
     Future<void> add() async {
+      if (ref.read(serverAccountProvider) != null) {
+        final selected = await pickSharedPhotos(
+          context,
+          album.groupId,
+          max: room,
+          excluded: {
+            for (final photo in album.photos)
+              if (photo.photo.mediaId != null) photo.photo.mediaId!,
+          },
+        );
+        if (selected == null || selected.isEmpty || !context.mounted) return;
+        await runCalmly(
+          context,
+          () => controller.addSharedPhotos(album.id, selected),
+          success: 'Photos added.',
+        );
+        return;
+      }
       final scenes = await pickScenes(context, max: room, action: 'Add');
       if (scenes == null || scenes.isEmpty || !context.mounted) return;
       await runCalmly(
@@ -564,9 +583,9 @@ class AlbumPhotoViewer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final load = ref.watch(albumProvider(albumId));
     final workspace = ref.watch(circleWorkspaceProvider).value;
-    final album = load.value?.value;
+    final album = load.isLoading ? null : load.value?.value;
     if (album == null || workspace == null || album.groupId != groupId) {
-      if (load.isLoading && load.value == null) {
+      if (load.isLoading) {
         return const CircleSkeletonPage(
           shape: CircleSkeletonShape.grid,
           count: 6,

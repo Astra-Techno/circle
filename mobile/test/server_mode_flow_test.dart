@@ -193,10 +193,10 @@ void main() {
 
     container.read(circleRouterProvider).go('/groups/g/$family');
     await settle(tester);
-    // Albums aren't on the server yet: hidden, not a placeholder tab.
+    // Circle actions replace the old tab bar.
     expect(find.widgetWithText(Tab, 'Albums'), findsNothing);
     // Deep links to features the server lacks say so plainly.
-    for (final location in ['/activity', '/you/notifications']) {
+    for (final location in ['/you/notifications']) {
       container.read(circleRouterProvider).go(location);
       await settle(tester);
       expect(
@@ -206,6 +206,10 @@ void main() {
       );
       expect(find.text('Not on the server yet'), findsNothing);
     }
+    container.read(circleRouterProvider).go('/activity');
+    await settle(tester);
+    expect(find.text('All quiet'), findsOneWidget);
+    expect(server.adapter.count('GET', '/me/activity'), greaterThan(0));
     // No fictional data was mixed in.
     expect(find.text('Mira (fictional)'), findsNothing);
     expect(server.adapter.count('GET', '/events'), greaterThan(0));

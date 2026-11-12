@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/api/api_providers.dart';
+import '../../../core/api/scoped_api.dart';
+import '../data/server_search.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../domain/search_rules.dart';
 
@@ -35,3 +38,28 @@ class RecentSearches extends Notifier<List<String>> {
 
   void clear() => state = const [];
 }
+
+final serverSearchApiProvider = Provider<ServerSearch>((ref) {
+  final api = ref.watch(apiClientProvider);
+  final account = ref.watch(serverAccountProvider)?.id;
+  if (api == null || account == null) {
+    throw const CircleFailure('Sign in to search.');
+  }
+  return ServerSearch(
+    ScopedApi(
+      api,
+      account,
+      api.sessionRevision,
+      () =>
+          ref.mounted &&
+          identical(ref.read(apiClientProvider), api) &&
+          ref.read(serverAccountProvider)?.id == account,
+    ),
+  );
+});
+final serverSearchProvider = FutureProvider.autoDispose
+    .family<ServerSearchPage, ({String query, int pages})>(
+      (ref, request) =>
+          ref.watch(serverSearchApiProvider).find(request.query, request.pages),
+      retry: (_, _) => null,
+    );

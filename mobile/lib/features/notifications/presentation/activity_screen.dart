@@ -49,15 +49,29 @@ IconData _icon(ActivityKind kind) => switch (kind) {
 
 /// I1: what happened in your circles, Today and Earlier. Personal items
 /// carry a dot until read; everything else is quiet information.
-class ActivityScreen extends ConsumerWidget {
+class ActivityScreen extends ConsumerStatefulWidget {
   const ActivityScreen({super.key});
+  @override
+  ConsumerState<ActivityScreen> createState() => _ActivityScreenState();
+}
+
+class _ActivityScreenState extends ConsumerState<ActivityScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted && ref.read(activityFeedProvider).hasValue) {
+        ref.invalidate(activityFeedProvider);
+      }
+    });
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final load = ref.watch(activityFeedProvider);
     final now = ref.watch(circleClockProvider)();
     return load.when(
-      skipLoadingOnReload: true,
+      skipLoadingOnReload: false,
       loading: () => const CircleSkeletonPage(label: 'Loading activity'),
       error: (_, _) => CircleErrorState(
         title: "Activity couldn't load",
@@ -73,43 +87,57 @@ class ActivityScreen extends ConsumerWidget {
           for (final entry in feed.entries)
             if (!ActivityInboxRules.isToday(entry.item.at, now)) entry,
         ];
-        return ReadingPane(
-          child: ListView(
-            padding: CircleInsets.form,
-            children: [
-              if (feed.unread > 0)
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: TextButton.icon(
-                    onPressed: () => runCalmly(
-                      context,
-                      () => ref
-                          .read(notificationControllerProvider.notifier)
-                          .markAllRead(),
-                      success: 'All caught up.',
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(activityFeedProvider);
+            await ref.read(activityFeedProvider.future);
+          },
+          child: ReadingPane(
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: CircleInsets.form,
+              children: [
+                if (feed.unread > 0)
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: TextButton.icon(
+                      onPressed: () => runCalmly(
+                        context,
+                        () => ref
+                            .read(notificationControllerProvider.notifier)
+                            .markAllRead(),
+                        success: 'All caught up.',
+                      ),
+                      icon: const Icon(CircleIcons.checkCheck),
+                      label: const Text('Mark all read'),
                     ),
-                    icon: const Icon(CircleIcons.checkCheck),
-                    label: const Text('Mark all read'),
                   ),
-                ),
-              if (feed.entries.isEmpty)
-                const CircleEmpty(
-                  icon: CircleIcons.notifications,
-                  title: 'All quiet',
-                  message:
-                      'Mentions, replies, invitations and event updates will '
-                      'show up here.',
-                ),
-              if (today.isNotEmpty) ...[
-                const CircleSectionTitle('Today'),
-                for (final entry in today) _ActivityRow(entry: entry, now: now),
+                if (feed.hasMore)
+                  TextButton(
+                    onPressed: () =>
+                        ref.read(activityPagesProvider.notifier).more(),
+                    child: const Text('Load older activity'),
+                  ),
+                if (feed.entries.isEmpty)
+                  const CircleEmpty(
+                    icon: CircleIcons.notifications,
+                    title: 'All quiet',
+                    message:
+                        'Mentions, replies, invitations and event updates will '
+                        'show up here.',
+                  ),
+                if (today.isNotEmpty) ...[
+                  const CircleSectionTitle('Today'),
+                  for (final entry in today)
+                    _ActivityRow(entry: entry, now: now),
+                ],
+                if (earlier.isNotEmpty) ...[
+                  const CircleSectionTitle('Earlier'),
+                  for (final entry in earlier)
+                    _ActivityRow(entry: entry, now: now),
+                ],
               ],
-              if (earlier.isNotEmpty) ...[
-                const CircleSectionTitle('Earlier'),
-                for (final entry in earlier)
-                  _ActivityRow(entry: entry, now: now),
-              ],
-            ],
+            ),
           ),
         );
       },
@@ -128,16 +156,18 @@ class _ActivityRow extends ConsumerWidget {
     final item = entry.item;
     await ref.read(notificationControllerProvider.notifier).markRead(item.id);
     final workspace = ref.read(circleWorkspaceProvider).value;
-    final inbox = await ref.read(chatInboxProvider.future);
+    final inbox = item.target.kind == ActivityTargetKind.conversation
+        ? await ref.read(chatInboxProvider.future)
+        : null;
     if (workspace == null) return;
     final location = ActivityInboxRules.location(
       item.target,
       workspace,
       conversations: {
         for (final chat in [
-          ...inbox.chats,
-          ...inbox.requests,
-          ...inbox.archived,
+          ...?inbox?.chats,
+          ...?inbox?.requests,
+          ...?inbox?.archived,
         ])
           chat.id,
       },

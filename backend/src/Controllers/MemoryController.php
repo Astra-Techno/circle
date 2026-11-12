@@ -452,11 +452,26 @@ final class MemoryController
         }
 
         Database::execute(
-            "UPDATE comments SET status = 'hidden' WHERE id = :id",
-            ['id' => $commentId]
+            "UPDATE comments SET status = 'hidden', hidden_by=:actor WHERE id = :id AND status='active'",
+            ['id' => $commentId, 'actor'=>$userId]
         );
 
         Response::ok(null, 'Comment removed.');
+    }
+
+    /** Restore only a removal performed by this account, never moderation. */
+    public static function restoreComment(Request $request): void
+    {
+        $user = $request->userId();
+        $memory = (int) $request->param('id');
+        self::findMemoryForMember($memory, $user);
+        $changed = Database::execute(
+            "UPDATE comments SET status='active', hidden_by=NULL
+             WHERE id=:id AND memory_id=:m AND status='hidden' AND hidden_by=:u",
+            ['id'=>(int) $request->param('commentId'), 'm'=>$memory, 'u'=>$user]
+        );
+        if ($changed === 0) Response::notFound('This comment cannot be restored.');
+        Response::ok(null, 'Comment restored.');
     }
 
     // --- Reactions ---

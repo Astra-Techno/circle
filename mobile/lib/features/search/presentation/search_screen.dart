@@ -7,8 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../workspace/application/workspace_providers.dart';
-import '../../memories/presentation/scoped_memory_list.dart';
 import '../application/search_providers.dart';
+import 'server_search_results.dart';
 
 /// I2: one field; results grouped by kind, only from your own circles.
 class SearchScreen extends ConsumerStatefulWidget {
@@ -110,6 +110,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   ),
                 ),
             ],
+          ] else if (server) ...[
+            if (_serverQuery != _query.trim())
+              const LinearProgressIndicator(semanticsLabel: 'Searching')
+            else
+              ServerSearchResults(query: _serverQuery, onOpen: _open),
           ] else if (corpus.hasError || workspaceFailed)
             CircleErrorState(
               title: "Couldn't load results",
@@ -131,37 +136,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             )
           else
             ..._results(results, includeMemories: !server),
-          if (ready && server) ...[
-            const CircleSectionTitle('Memories'),
-            if (_serverQuery != _query.trim())
-              const LinearProgressIndicator(
-                semanticsLabel: 'Searching Memories',
-              )
-            else
-              ScopedMemoryList(
-                query: MemoryQuery(text: _serverQuery),
-                empty: const CircleEmpty(
-                  icon: CircleIcons.info,
-                  title: 'No matching Memories',
-                  message: 'Try another word from the Memory or its place.',
-                ),
-                itemBuilder: (_, memory) => CircleRow(
-                  child: ListTile(
-                    leading: PersonAvatar(
-                      person: memory.authorId,
-                      name: memory.author,
-                    ),
-                    title: Text(
-                      memory.summary,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(memory.author),
-                    onTap: () => _open('/home/memory/${memory.id}'),
-                  ),
-                ),
-              ),
-          ],
         ],
       ),
     );
