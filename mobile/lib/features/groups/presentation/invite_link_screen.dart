@@ -142,17 +142,13 @@ class _InviteLinkScreenState extends ConsumerState<InviteLinkScreen> {
               padding: CircleInsets.form,
               children: [
                 if (snapshot.hasError)
-                  CircleEmpty(
-                    icon: CircleIcons.wifiOff,
-                    title: 'This invite couldn’t load',
+                  CircleErrorState(
+                    title: "This invite couldn’t load",
                     message:
-                        'Check your connection and try again. Your invitation has not been changed.',
-                    action: FilledButton(
-                      onPressed: () => setState(() {
-                        _preview = _load();
-                      }),
-                      child: const Text('Try again'),
-                    ),
+                        "Check your connection and try again. Your invitation has not been changed.",
+                    onRetry: () => setState(() {
+                      _preview = _load();
+                    }),
                   )
                 else if (preview == null)
                   const CircleSkeleton(

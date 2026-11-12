@@ -171,14 +171,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     }
     if (_accountId == null) {
       return ReadingPane(
-        child: CircleEmpty(
-          icon: CircleIcons.wifiOff,
-          title: 'Your profile couldn’t load',
-          message: _error ?? 'Please try again.',
-          action: OutlinedButton(
-            onPressed: _load,
-            child: const Text('Try again'),
-          ),
+        child: CircleErrorState(
+          title: "Your profile couldn’t load",
+          message: _error ?? "Please try again.",
+          onRetry: _load,
         ),
       );
     }

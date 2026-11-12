@@ -180,14 +180,10 @@ class _LiveEventsState extends ConsumerState<LiveEventsScreen> {
                 ),
               ),
         error: (_, _) => CircleStatePanel(
-          child: CircleEmpty(
-            icon: CircleIcons.wifiOff,
-            title: 'Events couldn’t load',
-            message: 'Check your connection and group access.',
-            action: TextButton(
-              onPressed: () => refreshLiveEvents(ref),
-              child: const Text('Try again'),
-            ),
+          child: CircleErrorState(
+            title: "Events couldn’t load",
+            message: "Check your connection and group access.",
+            onRetry: () => refreshLiveEvents(ref),
           ),
         ),
         data: (e) {
@@ -791,14 +787,10 @@ class LiveEventForm extends ConsumerWidget {
         .watch(liveEventProvider(id!))
         .when(
           loading: () => const CircleSkeletonPage(label: 'Loading event'),
-          error: (_, _) => CircleEmpty(
-            icon: CircleIcons.wifiOff,
-            title: 'Event couldn’t load',
-            message: 'Refresh and try again.',
-            action: TextButton(
-              onPressed: () => ref.invalidate(liveEventProvider(id!)),
-              child: const Text('Try again'),
-            ),
+          error: (_, _) => CircleErrorState(
+            title: "Event couldn’t load",
+            message: "Refresh and try again.",
+            onRetry: () => ref.invalidate(liveEventProvider(id!)),
           ),
           data: (e) => e['can_manage'] == true && e['status'] == 'active'
               ? _EventEditor(
@@ -1478,14 +1470,10 @@ class _AttendeesState extends ConsumerState<LiveAttendeesScreen> {
                   ),
                 )
               : const CircleSkeletonPage(label: 'Loading attendees'),
-          error: (_, _) => CircleEmpty(
-            icon: CircleIcons.wifiOff,
-            title: 'Attendees couldn’t load',
-            message: 'Check your connection and membership.',
-            action: TextButton(
-              onPressed: () => ref.invalidate(liveAttendeesProvider),
-              child: const Text('Try again'),
-            ),
+          error: (_, _) => CircleErrorState(
+            title: "Attendees couldn’t load",
+            message: "Check your connection and membership.",
+            onRetry: () => ref.invalidate(liveAttendeesProvider),
           ),
           data: (data) {
             final people = ApiJson.list(

@@ -107,14 +107,10 @@ class _SessionsState extends ConsumerState<SessionsScreen> {
           if (_busy) const LinearProgressIndicator(),
           if (_notice != null) Text(_notice!),
           if (_error != null)
-            CircleEmpty(
-              icon: CircleIcons.wifiOff,
-              title: 'Your devices couldn’t load',
+            CircleErrorState(
+              title: "Your devices couldn’t load",
               message: _error!,
-              action: OutlinedButton(
-                onPressed: _busy ? null : _load,
-                child: const Text('Try again'),
-              ),
+              onRetry: _load,
             ),
           if (_error == null)
             TextButton.icon(

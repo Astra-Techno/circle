@@ -109,14 +109,10 @@ class _BlockingState extends ConsumerState<ServerBlockingScreen> {
           count: 2,
           label: 'Loading blocked people',
         ),
-        error: (_, _) => CircleEmpty(
-          icon: CircleIcons.wifiOff,
-          title: 'Blocked people couldn’t load',
-          message: 'Check your connection and try again.',
-          action: OutlinedButton(
-            onPressed: () => ref.invalidate(blockPageProvider(_offset)),
-            child: const Text('Try again'),
-          ),
+        error: (_, _) => CircleErrorState(
+          title: "Blocked people couldn’t load",
+          message: "Check your connection and try again.",
+          onRetry: () => ref.invalidate(blockPageProvider(_offset)),
         ),
         data: (page) => ListView(
           padding: CircleInsets.form,

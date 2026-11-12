@@ -59,21 +59,10 @@ class ActivityScreen extends ConsumerWidget {
     return load.when(
       skipLoadingOnReload: true,
       loading: () => const CircleSkeletonPage(label: 'Loading activity'),
-      error: (_, _) => ReadingPane(
-        child: ListView(
-          padding: CircleInsets.form,
-          children: [
-            CircleEmpty(
-              icon: CircleIcons.wifiOff,
-              title: 'Activity couldn’t load',
-              message: 'Try again in a moment.',
-              action: FilledButton(
-                onPressed: () => ref.invalidate(activityFeedProvider),
-                child: const Text('Try again'),
-              ),
-            ),
-          ],
-        ),
+      error: (_, _) => CircleErrorState(
+        title: "Activity couldn't load",
+        message: 'Check your connection and try again.',
+        onRetry: () => ref.invalidate(activityFeedProvider),
       ),
       data: (feed) {
         final today = [
@@ -157,7 +146,7 @@ class _ActivityRow extends ConsumerWidget {
       messenger
         ?..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('That’s no longer available to you.')),
+          const SnackBar(content: Text("That's no longer available to you.")),
         );
       return;
     }

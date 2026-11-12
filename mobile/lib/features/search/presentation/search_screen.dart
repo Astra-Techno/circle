@@ -111,18 +111,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
             ],
           ] else if (corpus.hasError || workspaceFailed)
-            CircleEmpty(
-              icon: CircleIcons.wifiOff,
-              title: 'Groups and people couldn’t load',
+            CircleErrorState(
+              title: "Couldn't load results",
               message:
-                  'Your search is kept. Retry this section when connected.',
-              action: TextButton(
-                onPressed: () {
-                  ref.invalidate(circleWorkspaceProvider);
-                  ref.invalidate(searchCorpusProvider);
-                },
-                child: const Text('Retry groups and people'),
-              ),
+                  'Your search is kept. Try again when connected.',
+              onRetry: () {
+                ref.invalidate(circleWorkspaceProvider);
+                ref.invalidate(searchCorpusProvider);
+              },
             )
           else if (results == null)
             const CircleSkeleton(count: 3, label: 'Searching')
@@ -131,8 +127,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               icon: CircleIcons.info,
               title: 'No results',
               message:
-                  'Nothing in your circles matches “${_query.trim()}”. Search '
-                  'only looks inside groups you’re in.',
+                  'Nothing in your circles matches "${_query.trim()}". Search '
+                  "only looks inside groups you're in.",
             )
           else
             ..._results(results, includeMemories: !server),

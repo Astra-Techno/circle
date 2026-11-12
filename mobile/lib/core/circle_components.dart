@@ -741,39 +741,48 @@ class CircleEmpty extends StatelessWidget {
   final Widget? action;
   final IconData icon;
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(Space.section),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            size: Space.section,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: Space.lg),
-          Semantics(
-            header: true,
-            child: Text(title, style: Theme.of(context).textTheme.titleMedium),
-          ),
-          const SizedBox(height: Space.sm),
-          Text(
-            message,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: CircleAccents.of(context).caption,
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(Space.section),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(Space.sm + Space.xs),
+              decoration: BoxDecoration(
+                color: colors.primaryContainer.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(CircleRadius.card),
+              ),
+              child: Icon(icon, size: Space.section, color: colors.primary),
             ),
-          ),
-          if (action != null)
-            Padding(
-              padding: const EdgeInsets.only(top: Space.lg),
-              child: action,
+            const SizedBox(height: Space.lg),
+            Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
-        ],
+            const SizedBox(height: Space.sm),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: CircleAccents.of(context).caption,
+              ),
+            ),
+            if (action != null)
+              Padding(
+                padding: const EdgeInsets.only(top: Space.lg),
+                child: action,
+              ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// A quiet one-line notice with an info icon (session ended, what the
@@ -1009,6 +1018,8 @@ enum CircleSkeletonShape {
 }
 
 /// One quiet placeholder block: a flat recessed shape with no text.
+/// When placed inside a [CircleSkeleton] the shimmer gradient sweeps across
+/// all blocks together; standalone blocks stay static.
 class CircleSkeletonBlock extends StatelessWidget {
   const CircleSkeletonBlock({
     super.key,
@@ -1029,10 +1040,10 @@ class CircleSkeletonBlock extends StatelessWidget {
   );
 }
 
-/// README §4.4: lists load with skeletons, not spinners. The shapes are
-/// static on purpose (calm, nothing pulses, so reduced-motion settings and
-/// screen readers are respected); screen readers hear [label] once.
-class CircleSkeleton extends StatelessWidget {
+/// README §4.4: lists load with skeletons, not spinners. A gentle shimmer
+/// sweeps across the blocks (static when reduced-motion is on);
+/// screen readers hear [label] once.
+class CircleSkeleton extends StatefulWidget {
   const CircleSkeleton({
     super.key,
     this.shape = CircleSkeletonShape.rows,
@@ -1046,27 +1057,85 @@ class CircleSkeleton extends StatelessWidget {
   final String label;
 
   @override
+  State<CircleSkeleton> createState() => _CircleSkeletonState();
+}
+
+class _CircleSkeletonState extends State<CircleSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _shimmer;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmer = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _shimmer.stop();
+    } else {
+      _shimmer.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _shimmer.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final children = switch (shape) {
+    final children = switch (widget.shape) {
       CircleSkeletonShape.rows => [
-        for (var i = 0; i < count; i++) _row(context, i),
+        for (var i = 0; i < widget.count; i++) _row(context, i),
       ],
       CircleSkeletonShape.cards => [
-        for (var i = 0; i < count; i++) _card(context, i),
+        for (var i = 0; i < widget.count; i++) _card(context, i),
       ],
       CircleSkeletonShape.grid => [_grid(context)],
     };
+    final body = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    );
     return Semantics(
       key: const ValueKey('circle-skeleton'),
       container: true,
       liveRegion: true,
-      label: label,
+      label: widget.label,
       child: ExcludeSemantics(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
-        ),
+        child: MediaQuery.disableAnimationsOf(context)
+            ? body
+            : AnimatedBuilder(
+                animation: _shimmer,
+                builder: (context, child) => ShaderMask(
+                  blendMode: BlendMode.srcATop,
+                  shaderCallback: (rect) {
+                    final dx = _shimmer.value * rect.width * 2 - rect.width;
+                    final base = CircleAccents.of(context).recessed;
+                    final highlight = Theme.of(context).brightness ==
+                            Brightness.light
+                        ? base.withValues(alpha: 0.4)
+                        : base.withValues(alpha: 0.7);
+                    return LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [base, highlight, base],
+                      stops: const [0.0, 0.5, 1.0],
+                      transform: _ShimmerTransform(dx),
+                    ).createShader(rect);
+                  },
+                  child: child,
+                ),
+                child: body,
+              ),
       ),
     );
   }
@@ -1143,7 +1212,7 @@ class CircleSkeleton extends StatelessWidget {
         spacing: Space.sm,
         runSpacing: Space.sm,
         children: [
-          for (var i = 0; i < count; i++)
+          for (var i = 0; i < widget.count; i++)
             CircleSkeletonBlock(
               width: size,
               height: size,
@@ -1153,6 +1222,72 @@ class CircleSkeleton extends StatelessWidget {
       );
     },
   );
+}
+
+/// Translates a gradient by [dx] pixels along the x-axis.
+class _ShimmerTransform extends GradientTransform {
+  const _ShimmerTransform(this.dx);
+  final double dx;
+  @override
+  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) =>
+      Matrix4.translationValues(dx, 0, 0);
+}
+
+/// A network-error or failure state with a retry button.
+/// Use instead of [CircleEmpty] when the problem is transient and retryable.
+class CircleErrorState extends StatelessWidget {
+  const CircleErrorState({
+    super.key,
+    required this.message,
+    required this.onRetry,
+    this.title = 'Something went wrong',
+    this.icon = CircleIcons.alertTriangle,
+  });
+  final String title, message;
+  final VoidCallback onRetry;
+  final IconData icon;
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(Space.section),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(Space.md),
+              decoration: BoxDecoration(
+                color: colors.errorContainer.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: Space.hero, color: colors.error),
+            ),
+            const SizedBox(height: Space.lg),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: Space.sm),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: CircleAccents.of(context).caption,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: Space.xl),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(CircleIcons.refreshCw),
+              label: const Text('Try again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -234,14 +234,10 @@ class _ContactInvitationInboxState
               ),
             ),
           if (_error != null)
-            CircleEmpty(
-              icon: CircleIcons.wifiOff,
-              title: 'Could not load invitations',
-              message: 'Please check your connection and try again.',
-              action: OutlinedButton(
-                onPressed: _busy ? null : () => _load(),
-                child: const Text('Try again'),
-              ),
+            CircleErrorState(
+              title: "Could not load invitations",
+              message: "Please check your connection and try again.",
+              onRetry: () => _load(),
             ),
           if (!_busy && _error == null && filtered.isEmpty)
             CircleEmpty(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/design/circle_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/circle_components.dart';
 import '../application/workspace_providers.dart';
@@ -24,20 +23,12 @@ class WorkspaceView extends ConsumerWidget {
           ),
         ),
         error: (error, _) => CircleStatePanel(
-          child: Column(
-            children: [
-              CircleEmpty(
-                icon: CircleIcons.wifiOff,
-                title: 'Your circles couldn’t load',
-                message: error is CircleFailure
-                    ? error.message
-                    : 'Check your connection and try again.',
-                action: FilledButton(
-                  onPressed: () => ref.invalidate(circleWorkspaceProvider),
-                  child: const Text('Try again'),
-                ),
-              ),
-            ],
+          child: CircleErrorState(
+            title: "Your circles couldn't load",
+            message: error is CircleFailure
+                ? error.message
+                : 'Check your connection and try again.',
+            onRetry: () => ref.invalidate(circleWorkspaceProvider),
           ),
         ),
       );

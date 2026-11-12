@@ -70,7 +70,7 @@ void main() {
       ),
       findsNothing,
     );
-    expect(find.text('Groups and people couldn’t load'), findsOneWidget);
+    expect(find.text("Couldn't load results"), findsOneWidget);
     expect(find.text('park'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     container.dispose();

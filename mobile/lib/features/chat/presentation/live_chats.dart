@@ -1234,17 +1234,13 @@ class _LiveChatsState extends ConsumerState<LiveChatsScreen>
                   alignment: AlignmentDirectional.centerStart,
                   child: BackButton(onPressed: _back),
                 ),
-              CircleEmpty(
-                icon: CircleIcons.wifiOff,
-                title: 'Chats couldn’t load',
-                message: 'Check your connection and access.',
-                action: TextButton(
-                  onPressed: () {
-                    _refresh();
-                    ref.invalidate(liveChatContactsProvider);
-                  },
-                  child: const Text('Try again'),
-                ),
+              CircleErrorState(
+                title: "Chats couldn’t load",
+                message: "Check your connection and access.",
+                onRetry: () {
+                  _refresh();
+                  ref.invalidate(liveChatContactsProvider);
+                },
               ),
             ],
           ),
@@ -1277,14 +1273,10 @@ class LiveChatPrivacyScreen extends ConsumerWidget {
           error: (_, _) => ListView(
             padding: CircleInsets.form,
             children: [
-              CircleEmpty(
-                icon: CircleIcons.wifiOff,
-                title: 'Choices couldn’t load',
-                message: 'Try again when connected.',
-                action: OutlinedButton(
-                  onPressed: () => ref.invalidate(liveChatPrivacyProvider),
-                  child: const Text('Try again'),
-                ),
+              CircleErrorState(
+                title: "Choices couldn’t load",
+                message: "Try again when connected.",
+                onRetry: () => ref.invalidate(liveChatPrivacyProvider),
               ),
             ],
           ),

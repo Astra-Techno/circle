@@ -297,7 +297,12 @@ class _ActionIconStrip extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) Container(width: 1, height: 20, color: accents.hairline),
+            if (i > 0)
+              Container(
+                width: CircleMemoryLayout.dividerThickness * 4,
+                height: CircleSizes.iconDefault,
+                color: accents.hairline,
+              ),
             Tooltip(
               message: items[i].tooltip,
               child: InkWell(
@@ -361,15 +366,32 @@ class _LoadOlderState extends ConsumerState<_LoadOlderMemories> {
       child: _error == null
           ? Semantics(
               label: 'Loading older Memories',
-              child: const CircularProgressIndicator(),
+              child: const SizedBox.square(
+                dimension: Space.section,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
             )
           : Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(_error!, textAlign: TextAlign.center),
+                Icon(
+                  CircleIcons.circleAlert,
+                  size: CircleSizes.iconDefault,
+                  color: CircleAccents.of(context).caption,
+                ),
                 const SizedBox(height: Space.sm),
-                OutlinedButton(
+                Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: CircleAccents.of(context).caption,
+                  ),
+                ),
+                const SizedBox(height: Space.sm),
+                OutlinedButton.icon(
                   onPressed: _load,
-                  child: const Text('Try again'),
+                  icon: const Icon(CircleIcons.refreshCw),
+                  label: const Text('Try again'),
                 ),
               ],
             ),

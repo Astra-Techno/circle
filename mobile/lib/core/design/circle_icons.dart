@@ -143,6 +143,9 @@ abstract final class CircleIcons {
   static const volumeOff = LucideIcons.volume_off;
   static const vote = LucideIcons.vote;
   static const wifiOff = LucideIcons.wifi_off;
+
+  // Error and retry
+  static const alertTriangle = LucideIcons.triangle_alert;
 }
 
 /// Tokenized icon sizes from the blueprint.

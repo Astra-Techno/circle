@@ -371,3 +371,33 @@ class _RingPainter extends CustomPainter {
   bool shouldRepaint(_RingPainter old) =>
       old.progress != progress || old.color != color;
 }
+
+/// Cross-fade with a subtle slide for content that swaps in place (tab
+/// bodies, filter results, async states). Respects reduced-motion.
+class CircleAnimatedSwitcher extends StatelessWidget {
+  const CircleAnimatedSwitcher({
+    super.key,
+    required this.child,
+    this.duration = CircleMotion.standard,
+  });
+  final Widget child;
+  final Duration duration;
+  @override
+  Widget build(BuildContext context) => AnimatedSwitcher(
+    duration: duration,
+    switchInCurve: CircleMotion.enterCurve,
+    switchOutCurve: CircleMotion.exitCurve,
+    transitionBuilder: (child, animation) {
+      if (MediaQuery.disableAnimationsOf(context)) return child;
+      final slide = Tween<Offset>(
+        begin: const Offset(0, 0.02),
+        end: Offset.zero,
+      ).animate(animation);
+      return FadeTransition(
+        opacity: animation,
+        child: SlideTransition(position: slide, child: child),
+      );
+    },
+    child: child,
+  );
+}
