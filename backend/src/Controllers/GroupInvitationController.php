@@ -37,11 +37,11 @@ final class GroupInvitationController
             }
             if ($sender['role'] !== 'admin' && $group['link_sharing'] !== 'members') Response::forbidden('Admin access required.');
             $recipient = Database::queryOne('SELECT id FROM users WHERE mobile = :mobile', ['mobile' => $mobile]);
-            if ($recipient === null) return ['outcome' => 'share_link'];
+            if ($recipient === null) return ['outcome' => 'share_link', 'token' => MemberController::contactInviteLink($gid, $request->userId(), $mobile)['token']];
             $uid = (int) $recipient['id'];
             $users = self::users($request->userId(), $uid, true);
             if (($users[$request->userId()]['status'] ?? '') !== 'active') Response::forbidden('This account is not active.', 'account_inactive');
-            if (($users[$uid]['status'] ?? '') !== 'active' || ($users[$uid]['mobile'] ?? '') !== $mobile) return ['outcome' => 'share_link'];
+            if (($users[$uid]['status'] ?? '') !== 'active' || ($users[$uid]['mobile'] ?? '') !== $mobile) return ['outcome' => 'share_link', 'token' => MemberController::contactInviteLink($gid, $request->userId(), $mobile)['token']];
             if (\Circle\Repositories\BlockRepository::either($uid,$request->userId())) return ['outcome'=>'unavailable'];
             $member = self::member($gid, $uid, true);
             if ($uid === $request->userId() || ($member['status'] ?? '') === 'active') return ['outcome' => 'already_member'];

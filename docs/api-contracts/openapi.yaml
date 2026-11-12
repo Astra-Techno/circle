@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: CIRCLE API
-  version: 0.4.8
+  version: 0.4.9
   x-event-memory-publication: >-
     Event creation atomically publishes one Memory with its original author, group
     and creation time. Migration025 backfills previous events. Memory pages/detail
@@ -242,7 +242,11 @@ paths:
       description: |
         Requires active exact membership and admin role or member link-sharing permission.
         Only the selected E164 number is submitted; no address-book upload or public lookup.
-        Unknown/inactive accounts return share_link without account details. Invited recipients
+        Unknown/inactive accounts return share_link with a random token restricted to the selected
+        registered account mobile (not SIM ownership verification). Links expire after seven days,
+        allow one use, and preserve approval/parent/ban rules. Forwarded links reject other accounts
+        with invitation_recipient_mismatch without consuming a use. Public previews return
+        recipient_restricted=true and hide the group name, cover and member count. Invited recipients
         must accept. Pending invitations last seven days; duplicate live invitations reuse the
         same id. Terminal invitations have a 24-hour cooldown; later invitations get new ids.
         Each sender has 20 attempts/hour including misses and forbidden attempts after validation.
@@ -273,6 +277,7 @@ paths:
                     properties:
                       outcome: {type: string, enum: [invited, already_pending, share_link, already_member, unavailable]}
                       invitation_id: {type: integer, description: Present only for invited or already_pending.}
+                      token: {type: string, pattern: '^[A-Za-z0-9_-]{43}$', description: Required for share_link only. Store no raw mobile in the URL.}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '422': {$ref: '#/components/responses/ValidationError'}
@@ -2717,6 +2722,7 @@ paths:
                           is_subgroup: { type: boolean }
                           approval_required: { type: boolean }
                           member_count: { type: integer }
+                          recipient_restricted: { type: boolean, description: Selected-number link; name is Private circle, cover null and member count 0 until authenticated join. }
         '404': { $ref: '#/components/responses/NotFound' }
         '410': { $ref: '#/components/responses/LinkGone' }
         '429': { $ref: '#/components/responses/RateLimited' }
@@ -2729,6 +2735,7 @@ paths:
       tags: [Invites]
       summary: Join (or request to join) via an invite link
       description: |
+        - Selected-contact links require an active signed-in account matching the selected registered mobile; otherwise `403 invitation_recipient_mismatch`, without consuming the link.
         - Subgroup links require active membership of the **direct parent** (`403 not_parent_member`).
         - `approval_mode=auto` joins immediately; `manual` creates one pending request
           (repeating the call while pending is a no-op).
@@ -5665,6 +5672,7 @@ components:
         - subgroup_handover_required
         - depth_limit
         - already_member
+        - invitation_recipient_mismatch
         - not_parent_member
         - join_not_allowed
         - link_revoked

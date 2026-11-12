@@ -9,13 +9,15 @@ class InviteShareBridge {
   const InviteShareBridge();
   static const _channel = MethodChannel('circle/invite_share');
   bool get supported =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
   Future<String?> pickPhone() async {
     try {
       return await _channel.invokeMethod<String>('pickPhone');
     } catch (_) {
       throw const CircleFailure(
-        'The contact picker couldn’t open. Choose “Enter number in SMS app” instead.',
+        'The contact picker couldn’t open. Enter the phone number instead.',
       );
     }
   }

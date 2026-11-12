@@ -9,6 +9,65 @@ use Circle\Core\Database;
 
 final class GroupInvitationTest extends ApiTestCase
 {
+    public function testSelectedPhoneLinkRejectsForwardingAndIsSingleUse(): void
+    {
+        $owner = $this->user();
+        $outsider = $this->user();
+        $gid = $this->createGroup($owner, 'Secret group');
+        Database::execute("UPDATE `groups` SET approval_mode = 'auto' WHERE id = :id", ['id' => $gid]);
+        $phone = $this->nextMobile();
+        $result = $this->invite($owner, $phone, $gid)->data();
+        self::assertSame('share_link', $result['outcome']);
+        $token = $result['token'];
+        self::assertMatchesRegularExpression('/^[A-Za-z0-9_-]{43}$/', $token);
+        $stored = Database::queryOne('SELECT * FROM invite_links WHERE token_hash=:hash', ['hash' => hash('sha256', $token)]);
+        self::assertNotNull($stored);
+        self::assertSame(1, (int) $stored['max_uses']);
+        self::assertNotSame($phone, $stored['recipient_mobile_hash']);
+        self::assertSame(64, strlen($stored['recipient_mobile_hash']));
+        $preview = $this->request('GET', "/api/v1/invites/{$token}")->data();
+        self::assertTrue($preview['recipient_restricted']);
+        self::assertSame('Private circle', $preview['group_name']);
+        self::assertStringNotContainsString($phone, json_encode($preview) ?: '');
+        $wrong = $this->request('POST', "/api/v1/invites/{$token}/join", [], $outsider['token']);
+        self::assertSame(403, $wrong->status());
+        self::assertSame('invitation_recipient_mismatch', $wrong->errorCode());
+        self::assertSame(0, (int) Database::queryOne('SELECT use_count FROM invite_links WHERE id=:id', ['id' => $stored['id']])['use_count']);
+        self::assertNull($this->membership($gid, $outsider['id']));
+        self::assertSame(202, $this->request('POST', '/api/v1/auth/register', ['mobile' => $phone, 'password' => self::PASSWORD, 'display_name' => 'Selected person'])->status());
+        $selected = $this->request('POST', '/api/v1/auth/login', ['mobile' => $phone, 'password' => self::PASSWORD])->data();
+        $joined = $this->request('POST', "/api/v1/invites/{$token}/join", [], $selected['access_token']);
+        self::assertSame(200, $joined->status(), json_encode($joined->json()) ?: '');
+        self::assertSame('joined', $joined->data()['status']);
+        self::assertSame('active', $this->membership($gid, (int) $selected['user']['id'])['status']);
+        self::assertSame(1, (int) Database::queryOne('SELECT use_count FROM invite_links WHERE id=:id', ['id' => $stored['id']])['use_count']);
+        self::assertNotSame(200, $this->request('POST', "/api/v1/invites/{$token}/join", [], $outsider['token'])->status());
+    }
+
+    public function testSelectedPhoneLinkPreservesApprovalParentAndRevocation(): void
+    {
+        $owner = $this->user();
+        $parent = $this->createGroup($owner);
+        $child = $this->createGroup($owner, 'Child', $parent);
+        Database::execute("UPDATE `groups` SET approval_mode = 'manual' WHERE id = :id", ['id' => $child]);
+        $phone = $this->nextMobile();
+        $token = $this->invite($owner, $phone, $child)->data()['token'];
+        $this->request('POST', '/api/v1/auth/register', ['mobile' => $phone, 'password' => self::PASSWORD, 'display_name' => 'Selected person']);
+        $selected = $this->request('POST', '/api/v1/auth/login', ['mobile' => $phone, 'password' => self::PASSWORD])->data();
+        $auth = $selected['access_token'];
+        self::assertSame('not_parent_member', $this->request('POST', "/api/v1/invites/{$token}/join", [], $auth)->errorCode());
+        $uid = (int) $selected['user']['id'];
+        Database::execute("INSERT INTO group_members (group_id,user_id,role,status) VALUES (:g,:u,'member','active')", ['g' => $parent, 'u' => $uid]);
+        $response = $this->request('POST', "/api/v1/invites/{$token}/join", [], $auth);
+        self::assertSame('pending_approval', $response->data()['status']);
+        self::assertNull($this->membership($child, $uid));
+        self::assertSame('pending', Database::queryOne('SELECT status FROM join_requests WHERE group_id=:g AND user_id=:u', ['g' => $child, 'u' => $uid])['status']);
+        $otherPhone = $this->nextMobile();
+        $other = $this->invite($owner, $otherPhone, $parent)->data()['token'];
+        Database::execute('UPDATE invite_links SET revoked_at=NOW() WHERE token_hash=:h', ['h' => hash('sha256', $other)]);
+        self::assertSame('link_revoked', $this->request('POST', "/api/v1/invites/{$other}/join", [], $auth)->errorCode());
+    }
+
     public function testConsentRecipientPrivacyAndReplay(): void
     {
         $owner = $this->user('Fictional Host');
@@ -54,9 +113,9 @@ final class GroupInvitationTest extends ApiTestCase
         $gid = $this->createGroup($owner);
         $first = $this->invite($owner, $recipient['mobile'], $gid)->data();
         self::assertSame(['outcome' => 'already_pending', 'invitation_id' => $first['invitation_id']], $this->invite($owner, $recipient['mobile'], $gid)->data());
-        self::assertSame(['outcome' => 'share_link'], $this->invite($owner, $this->nextMobile(), $gid)->data());
+        self::assertSame('share_link', $this->invite($owner, $this->nextMobile(), $gid)->data()['outcome']);
         Database::execute("UPDATE users SET status = 'suspended' WHERE id = :id", ['id' => $recipient['id']]);
-        self::assertSame(['outcome' => 'share_link'], $this->invite($owner, $recipient['mobile'], $gid)->data());
+        self::assertSame('share_link', $this->invite($owner, $recipient['mobile'], $gid)->data()['outcome']);
         self::assertSame(['outcome' => 'already_member'], $this->invite($owner, $owner['mobile'], $gid)->data());
     }
 

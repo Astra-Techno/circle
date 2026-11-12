@@ -73,31 +73,31 @@ class ContactInvitations {
     return result;
   }
 
-  Future<String> link(ContactInviteScope scope) async {
+  String link(ContactInviteScope scope, String token) {
     validate(scope);
-    var link = ref.read(inviteSharingProvider).linkFor(scope.group);
-    final group = ref.read(circleWorkspaceProvider).value!.group(scope.group)!;
-    if (group.inviteLink == null ||
-        group.inviteLink!.expiredAt(DateTime.now().toUtc()) ||
-        group.inviteLink!.exhausted) {
-      await ref
-          .read(circleWorkspaceProvider.notifier)
-          .createInviteLink(scope.group);
-      validate(scope);
-      link = ref.read(inviteSharingProvider).linkFor(scope.group);
+    if (!RegExp(r'^[A-Za-z0-9_-]{43}$').hasMatch(token)) {
+      throw const CircleFailure(
+        'Choose the contact again to create an invitation.',
+      );
     }
-    if (link == null) {
-      throw const CircleFailure('The invite link is unavailable. Try again.');
+    final origin = scope.client.api.config.baseUrl;
+    if (origin.scheme != 'https') {
+      throw const CircleFailure(
+        'A secure server is required to share invitations.',
+      );
     }
-    return link;
+    return origin
+        .replace(path: '/invite.html', query: null, fragment: token)
+        .toString();
   }
 
   Future<bool> share(
     ContactInviteScope scope,
     InviteShareTarget target,
     String phone,
+    String token,
   ) async {
-    final url = await link(scope);
+    final url = link(scope, token);
     validate(scope);
     return ref
         .read(inviteShareBridgeProvider)

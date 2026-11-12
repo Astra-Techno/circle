@@ -2,6 +2,8 @@ import Flutter
 import UIKit
 import UserNotifications
 import FirebaseMessaging
+import ContactsUI
+import MessageUI
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -35,6 +37,7 @@ import FirebaseMessaging
   }
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "CircleInviteShare") { CircleInviteShare.register(with: registrar) }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "CirclePushBridge") { CirclePushBridge.register(with: registrar) }
   }
 }
@@ -147,4 +150,75 @@ final class CirclePushBridge: NSObject, FlutterPlugin, FlutterStreamHandler {
   }
   func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? { sink = events; return nil }
   func onCancel(withArguments arguments: Any?) -> FlutterError? { sink = nil; return nil }
+}
+
+
+/// System-owned one-number picker. No CNContactStore access or address-book upload.
+final class CircleInviteShare: NSObject, FlutterPlugin, CNContactPickerDelegate, MFMessageComposeViewControllerDelegate {
+  private static var shared: CircleInviteShare?
+  private let registrar: FlutterPluginRegistrar
+  private var pickerResult: FlutterResult?
+  init(_ registrar: FlutterPluginRegistrar) { self.registrar = registrar; super.init() }
+  static func register(with registrar: FlutterPluginRegistrar) {
+    let bridge = CircleInviteShare(registrar); shared = bridge
+    registrar.addMethodCallDelegate(bridge, channel: FlutterMethodChannel(name: "circle/invite_share", binaryMessenger: registrar.messenger()))
+  }
+  private var presenter: UIViewController? {
+    var root = registrar.viewController()
+    while let presented = root?.presentedViewController { root = presented }
+    return root
+  }
+  func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard let view = presenter else { result(FlutterError(code: "unavailable", message: "Open the invitation again.", details: nil)); return }
+    switch call.method {
+    case "pickPhone":
+      guard pickerResult == nil else { result(FlutterError(code: "busy", message: "Finish selecting a contact.", details: nil)); return }
+      pickerResult = result
+      let picker = CNContactPickerViewController()
+      picker.delegate = self
+      picker.displayedPropertyKeys = [CNContactPhoneNumbersKey]
+      picker.predicateForEnablingContact = NSPredicate(format: "phoneNumbers.@count > 0")
+      picker.predicateForSelectionOfContact = NSPredicate(value: false)
+      picker.predicateForSelectionOfProperty = NSPredicate(format: "key == %@", CNContactPhoneNumbersKey)
+      view.present(picker, animated: true)
+    case "compose":
+      let args = call.arguments as? [String: Any] ?? [:]
+      guard let text = args["text"] as? String, text.utf8.count <= 4096 else { result(false); return }
+      let target = args["target"] as? String ?? "other"
+      if target == "sms" {
+        guard MFMessageComposeViewController.canSendText() else { result(false); return }
+        let composer = MFMessageComposeViewController()
+        composer.messageComposeDelegate = self
+        composer.body = text
+        if let phone = args["phone"] as? String { composer.recipients = [phone] }
+        view.present(composer, animated: true)
+        result(true)
+      } else if target == "whatsapp" {
+        var parts = URLComponents(); parts.scheme = "whatsapp"; parts.host = "send"
+        parts.queryItems = [URLQueryItem(name: "text", value: text)]
+        guard let url = parts.url else { result(false); return }
+        UIApplication.shared.open(url, options: [:]) { opened in result(opened) }
+      } else {
+        let sheet = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+        sheet.popoverPresentationController?.sourceView = view.view
+        sheet.popoverPresentationController?.sourceRect = CGRect(x: view.view.bounds.midX, y: view.view.bounds.midY, width: 1, height: 1)
+        view.present(sheet, animated: true)
+        result(true)
+      }
+    default: result(FlutterMethodNotImplemented)
+    }
+  }
+  func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
+    let result = pickerResult; pickerResult = nil
+    // CNContactPickerViewController dismisses itself on cancel/selection.
+    result?(nil)
+  }
+  func contactPicker(_ picker: CNContactPickerViewController, didSelect contactProperty: CNContactProperty) {
+    let result = pickerResult; pickerResult = nil
+    let phone = (contactProperty.value as? CNPhoneNumber)?.stringValue
+    result?(phone)
+  }
+  func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
+    controller.dismiss(animated: true)
+  }
 }

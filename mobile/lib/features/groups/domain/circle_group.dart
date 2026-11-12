@@ -236,6 +236,7 @@ class InvitePreview {
     this.token,
     this.group,
     this.inviterName,
+    this.recipientRestricted = false,
   });
   final InviteLinkStatus status;
   final String? token;
@@ -243,6 +244,7 @@ class InvitePreview {
   /// Present only when the link is still valid for someone.
   final GroupPreview? group;
   final String? inviterName;
+  final bool recipientRestricted;
 }
 
 enum JoinOutcome { joined, requested }

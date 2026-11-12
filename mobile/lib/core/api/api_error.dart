@@ -172,6 +172,8 @@ class ApiError extends CircleFailure {
         return 'Groups can nest up to 10 levels.';
       case 'already_member':
         return 'You’re already in this group.';
+      case 'invitation_recipient_mismatch':
+        return 'Sign in with the phone number this invitation was sent to.';
       case 'not_parent_member':
         return 'Join the group it belongs to first.';
       case 'join_not_allowed':

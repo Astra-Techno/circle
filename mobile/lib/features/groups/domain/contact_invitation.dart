@@ -41,7 +41,12 @@ class ContactInvitation {
 }
 
 class ContactInviteOutcome {
-  const ContactInviteOutcome(this.outcome, this.invitationId);
+  const ContactInviteOutcome(
+    this.outcome,
+    this.invitationId, {
+    this.shareToken,
+  });
   final String outcome;
   final String? invitationId;
+  final String? shareToken;
 }

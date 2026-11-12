@@ -6,6 +6,45 @@ import 'package:mobile/features/groups/domain/contact_invitation.dart';
 import 'package:mobile/features/auth/domain/access_validation.dart';
 
 void main() {
+  for (final token in [
+    null,
+    'invalid',
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  ]) {
+    test('unknown recipient requires a bound token: $token', () async {
+      final api = ApiClient(
+        config: ApiConfig.parse('https://fictional.example/api/v1')!,
+        tokens: MemoryTokenStore(),
+      );
+      api.dio.interceptors.insert(
+        0,
+        InterceptorsWrapper(
+          onRequest: (request, handler) {
+            handler.resolve(
+              Response(
+                requestOptions: request,
+                statusCode: 200,
+                data: {
+                  'success': true,
+                  'data': {'outcome': 'share_link', 'token': ?token},
+                },
+              ),
+            );
+          },
+        ),
+      );
+      final future = ContactInvitationClient(
+        api,
+        '7',
+        api.sessionRevision,
+      ).invite('9', '+15551234567');
+      if (token != null && token.length == 43) {
+        expect((await future).shareToken, token);
+      } else {
+        await expectLater(future, throwsA(anything));
+      }
+    });
+  }
   test('local numbers require explicit international correction', () {
     expect(AccessValidation.mobile('5551234567'), isNotNull);
     expect(AccessValidation.mobile('+1 (555) 123-4567'), isNull);

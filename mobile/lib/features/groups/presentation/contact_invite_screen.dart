@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/circle_components.dart';
 import '../../../core/design.dart';
 import '../../auth/domain/access_validation.dart';
@@ -20,17 +19,9 @@ class ContactInviteScreen extends ConsumerStatefulWidget {
 
 class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
   bool _busy = false;
-  String? _status, _phone;
+  String? _status, _phone, _token;
   ContactInviteScope? _scope;
   bool _share = false;
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && ref.read(inviteShareBridgeProvider).supported) _choose();
-    });
-  }
-
   Future<void> _run(Future<void> Function() action) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -43,10 +34,10 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
     }
   }
 
-  Future<void> _choose() => _run(() async {
+  Future<void> _choose({bool manual = false}) => _run(() async {
     final service = ref.read(contactInvitationsProvider);
     final scope = service.capture(widget.groupId);
-    final raw = await service.pick(scope);
+    final raw = manual ? '' : await service.pick(scope);
     if (!mounted || raw == null) return;
     final phone = await _confirmNumber(raw);
     if (!mounted || phone == null) return;
@@ -64,6 +55,7 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
     setState(() {
       _phone = phone;
       _scope = scope;
+      _token = result.shareToken;
       _share = result.outcome == 'share_link';
       _status = switch (result.outcome) {
         'invited' => 'Invitation sent. They choose whether to accept.',
@@ -122,8 +114,10 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
 
   Future<void> _copy() => _run(() async {
     final service = ref.read(contactInvitationsProvider);
-    final scope = service.capture(widget.groupId);
-    final link = await service.link(scope);
+    final scope = _scope;
+    final token = _token;
+    if (scope == null || token == null) return;
+    final link = service.link(scope, token);
     service.validate(scope);
     await Clipboard.setData(ClipboardData(text: link));
     if (mounted) showCircleMessage(context, 'Invite link copied.');
@@ -131,7 +125,7 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
   Future<void> _compose(InviteShareTarget target) => _run(() async {
     final opened = await ref
         .read(contactInvitationsProvider)
-        .share(_scope!, target, _phone!);
+        .share(_scope!, target, _phone!, _token!);
     if (!opened && mounted) {
       showCircleMessage(
         context,
@@ -142,6 +136,18 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
   @override
   Widget build(BuildContext context) => WorkspaceView(
     builder: (workspace) {
+      final current = ref.watch(contactInvitationClientProvider);
+      final previous = _scope;
+      if (previous != null &&
+          (current == null ||
+              !identical(current.api, previous.client.api) ||
+              current.account != previous.client.account ||
+              current.session != previous.client.session ||
+              previous.group != widget.groupId)) {
+        _scope = null;
+        _status = _phone = _token = null;
+        _share = false;
+      }
       final group = workspace.group(widget.groupId);
       if (group == null ||
           !MembershipRules.canInvite(group, workspace.viewer).allowed) {
@@ -171,24 +177,28 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
               ),
             if (ref.watch(inviteShareBridgeProvider).supported)
               FilledButton.icon(
-                onPressed: _busy ? null : _choose,
+                onPressed: _busy ? null : () => _choose(),
                 icon: const Icon(CircleIcons.invite),
                 label: const Text('Choose contact'),
-              )
-            else ...[
-              const CircleNote(
-                'Copy the invitation and paste it into Messages or WhatsApp. You choose who receives it.',
               ),
-              const SizedBox(height: Space.sm),
-            ],
             const SizedBox(height: Space.sm),
             OutlinedButton.icon(
-              onPressed: _busy ? null : _copy,
-              icon: const Icon(CircleIcons.copy),
-              label: const Text('Copy invite link'),
+              onPressed: _busy ? null : () => _choose(manual: true),
+              icon: const Icon(CircleIcons.smartphone),
+              label: const Text('Enter phone number'),
             ),
             if (_share) ...[
               const SizedBox(height: Space.lg),
+              Text(
+                'Only the signed-in account with $_phone can use this invitation.',
+              ),
+              const SizedBox(height: Space.sm),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _copy,
+                icon: const Icon(CircleIcons.copy),
+                label: const Text('Copy invite link'),
+              ),
+              const SizedBox(height: Space.sm),
               Wrap(
                 spacing: Space.sm,
                 runSpacing: Space.sm,
@@ -198,6 +208,12 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
                         ? null
                         : () => _compose(InviteShareTarget.whatsapp),
                     child: const Text('WhatsApp'),
+                  ),
+                  OutlinedButton(
+                    onPressed: _busy
+                        ? null
+                        : () => _compose(InviteShareTarget.other),
+                    child: const Text('Share link'),
                   ),
                   OutlinedButton(
                     onPressed: _busy
@@ -214,11 +230,6 @@ class _ContactInviteScreenState extends ConsumerState<ContactInviteScreen> {
             const SizedBox(height: Space.lg),
             const Text(
               'Only the selected number is checked after you confirm. Your address book is never uploaded.',
-            ),
-            TextButton(
-              onPressed: () =>
-                  context.push('/groups/g/${widget.groupId}/invite/link'),
-              child: const Text('Manage invite link'),
             ),
           ],
         ),

@@ -119,6 +119,7 @@ abstract final class ApiMappers {
     return InvitePreview(
       status: InviteLinkStatus.valid,
       token: token,
+      recipientRestricted: ApiJson.boolean(json['recipient_restricted']),
       group: GroupPreview(
         // The preview never reveals the group's id.
         id: '',

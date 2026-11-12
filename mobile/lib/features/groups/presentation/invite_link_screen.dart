@@ -257,7 +257,10 @@ class _InviteLinkScreenState extends ConsumerState<InviteLinkScreen> {
           Text(
             [
               circleTypeLabel(g.type),
-              '${g.memberCount} ${g.memberCount == 1 ? 'member' : 'members'}',
+              if (preview.recipientRestricted)
+                'For the invited phone number only'
+              else
+                '${g.memberCount} ${g.memberCount == 1 ? 'member' : 'members'}',
               if (g.parentName != null) 'in ${g.parentName}',
             ].join(' · '),
             textAlign: TextAlign.center,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Circle\Controllers;
 
 use Circle\Core\Database;
+use Circle\Core\Env;
 use Circle\Core\Request;
 use Circle\Core\Response;
 use Circle\Core\Validator;
@@ -250,20 +251,34 @@ final class MemberController
         Response::created($link, 'All previous invite links revoked; new link created.');
     }
 
+    /** Called inside the authorized, rate-limited contact invitation transaction.
+     * @return array<string, mixed>
+     */
+    public static function contactInviteLink(int $group, int $sender, string $mobile): array
+    {
+        return self::insertInviteLink($group, $sender, self::INVITE_DEFAULT_HOURS, 1, self::recipientHash($group, $mobile));
+    }
+
+    private static function recipientHash(int $group, string $mobile): string
+    {
+        return hash_hmac('sha256', 'circle:invite-recipient:v1:' . $group . ':' . $mobile, Env::get('JWT_SECRET'));
+    }
+
     /** @return array<string, mixed> */
-    private static function insertInviteLink(int $groupId, int $userId, int $hours, ?int $maxUses): array
+    private static function insertInviteLink(int $groupId, int $userId, int $hours, ?int $maxUses, ?string $recipientHash = null): array
     {
         $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
 
         Database::execute(
-            'INSERT INTO invite_links (group_id, token_hash, created_by, expires_at, max_uses)
-             VALUES (:gid, :hash, :uid, DATE_ADD(NOW(), INTERVAL :hours HOUR), :max)',
+            'INSERT INTO invite_links (group_id, token_hash, created_by, expires_at, max_uses, recipient_mobile_hash)
+             VALUES (:gid, :hash, :uid, DATE_ADD(NOW(), INTERVAL :hours HOUR), :max, :recipient)',
             [
                 'gid' => $groupId,
                 'hash' => hash('sha256', $token),
                 'uid' => $userId,
                 'hours' => $hours,
                 'max' => $maxUses,
+                'recipient' => $recipientHash,
             ]
         );
         $id = Database::lastInsertId();
@@ -285,7 +300,7 @@ final class MemberController
     private static function findUsableInvite(string $token): array
     {
         $invite = Database::queryOne(
-            'SELECT il.id, il.group_id, il.max_uses, il.use_count, il.revoked_at,
+            'SELECT il.id, il.group_id, il.recipient_mobile_hash, il.max_uses, il.use_count, il.revoked_at,
                     (il.expires_at IS NOT NULL AND il.expires_at <= NOW()) AS expired,
                     g.name, g.`type`, g.cover_path, g.approval_mode, g.parent_id
              FROM invite_links il
@@ -315,12 +330,13 @@ final class MemberController
         $invite = self::findUsableInvite($request->param('token'));
 
         Response::ok([
-            'group_name' => $invite['name'],
+            'group_name' => $invite['recipient_mobile_hash'] !== null ? 'Private circle' : $invite['name'],
             'group_type' => $invite['type'],
-            'cover_path' => $invite['cover_path'],
+            'cover_path' => $invite['recipient_mobile_hash'] !== null ? null : $invite['cover_path'],
             'is_subgroup' => $invite['parent_id'] !== null,
             'approval_required' => $invite['approval_mode'] === 'manual',
-            'member_count' => MemberRepository::countActive((int) $invite['group_id']),
+            'member_count' => $invite['recipient_mobile_hash'] !== null ? 0 : MemberRepository::countActive((int) $invite['group_id']),
+            'recipient_restricted' => $invite['recipient_mobile_hash'] !== null,
         ]);
     }
 
@@ -336,6 +352,13 @@ final class MemberController
         $invite = self::findUsableInvite($request->param('token'));
         $groupId = (int) $invite['group_id'];
         $linkId = (int) $invite['id'];
+        if ($invite['recipient_mobile_hash'] !== null) {
+            $recipient = Database::queryOne('SELECT mobile FROM users WHERE id=:id', ['id'=>$userId]);
+            if ($recipient === null || !hash_equals((string) $invite['recipient_mobile_hash'], self::recipientHash($groupId, (string) $recipient['mobile']))) {
+                Response::forbidden('Sign in with the phone number this invitation was sent to.', 'invitation_recipient_mismatch');
+            }
+        }
+
 
         if ($invite['parent_id'] !== null && !MemberRepository::isActiveMember((int) $invite['parent_id'], $userId)) {
             Response::error('not_parent_member', 'You must be a member of the parent group first.', 403);
@@ -355,6 +378,13 @@ final class MemberController
         }
 
         $status = Database::transaction(static function () use ($invite, $groupId, $userId, $linkId): string {
+            if ($invite['recipient_mobile_hash'] !== null) {
+                $recipient = Database::queryOne('SELECT mobile,status FROM users WHERE id=:id FOR UPDATE', ['id'=>$userId]);
+                if ($recipient === null || $recipient['status'] !== 'active' || !hash_equals((string) $invite['recipient_mobile_hash'], self::recipientHash($groupId, (string) $recipient['mobile']))) {
+                    Response::forbidden('Sign in with the phone number this invitation was sent to.', 'invitation_recipient_mismatch');
+                }
+            }
+
             if ($invite['approval_mode'] === 'manual') {
                 $pending = Database::queryOne(
                     'SELECT id FROM join_requests WHERE group_id = :gid AND user_id = :uid AND status = :s FOR UPDATE',

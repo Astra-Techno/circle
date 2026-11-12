@@ -31,7 +31,12 @@ class ContactInvitationClient {
     if ((outcome == 'invited' || outcome == 'already_pending') && id == null) {
       ApiJson.unexpected();
     }
-    return ContactInviteOutcome(outcome, id);
+    final token = ApiJson.optionalString(data['token']);
+    if (outcome == 'share_link' &&
+        (token == null || !RegExp(r'^[A-Za-z0-9_-]{43}$').hasMatch(token))) {
+      ApiJson.unexpected();
+    }
+    return ContactInviteOutcome(outcome, id, shareToken: token);
   }
 
   Future<ApiPage> list({int offset = 0, int limit = 20}) async {
