@@ -44,6 +44,9 @@ class ActivityPages extends Notifier<int> {
 /// Legacy settings/test interface. Authenticated Activity reads and mutations
 /// use liveActivityApiProvider, without mixing real data into this fixture store.
 final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
+  if (ref.watch(serverAccountProvider) != null) {
+    throw const CircleFailure('Use connected notification services.');
+  }
   return MockNotificationRepository(
     groups: ref.watch(circleRepositoryProvider),
     chat: ref.watch(chatRepositoryProvider),
@@ -95,7 +98,11 @@ final notificationSettingsProvider = FutureProvider<NotificationSettingsView>((
 class NotificationController extends Notifier<int> {
   @override
   int build() {
-    ref.watch(notificationRepositoryProvider);
+    if (ref.watch(serverAccountProvider) == null) {
+      ref.watch(notificationRepositoryProvider);
+    } else {
+      ref.watch(liveActivityApiProvider);
+    }
     return 0;
   }
 

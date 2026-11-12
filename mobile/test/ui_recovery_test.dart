@@ -42,6 +42,34 @@ void main() {
     c.dispose();
     await tester.pump(const Duration(seconds: 10));
   });
+  testWidgets('server search remains independent of a workspace outage', (
+    tester,
+  ) async {
+    final server = FakeCircleServer();
+    final owner = server.addUser(
+      '+15559990103',
+      'fictional-password',
+      'Fictional A',
+    );
+    final group = server.addGroup('Fictional Circle', owner);
+    server.addMemory(group, owner, 'Fictional park day');
+    server.adapter.handler = (request) => request.path == '/groups'
+        ? FakeResponse.error(503, 'server_error')
+        : server.handle(request);
+    final container = await openServerCircle(
+      tester,
+      server,
+      tokens: await storedSession(server, owner),
+    );
+    container.read(circleRouterProvider).go('/search');
+    await settle(tester);
+    await tester.enterText(find.byKey(const ValueKey('search-field')), 'park');
+    await tester.pump(const Duration(milliseconds: 400));
+    await settle(tester);
+    expect(find.text('Fictional park day'), findsOneWidget);
+    expect(find.text("Couldn't load results"), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('search outage shows retry and preserves the query', (
     tester,
   ) async {

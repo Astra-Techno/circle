@@ -57,12 +57,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final corpus = ref.watch(searchCorpusProvider);
-    final workspaceFailed = ref.watch(circleWorkspaceProvider).hasError;
+    final server = ref.watch(serverAccountProvider) != null;
+    final corpus = server ? null : ref.watch(searchCorpusProvider);
+    final workspaceFailed =
+        !server && ref.watch(circleWorkspaceProvider).hasError;
     final recent = ref.watch(recentSearchesProvider);
     final ready = SearchRules.ready(_query);
-    final server = ref.watch(serverAccountProvider) != null;
-    final results = ready && corpus.hasValue
+    final results = ready && corpus != null && corpus.hasValue
         ? SearchRules.search(_query, corpus.requireValue)
         : null;
     return ReadingPane(
@@ -115,7 +116,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               const LinearProgressIndicator(semanticsLabel: 'Searching')
             else
               ServerSearchResults(query: _serverQuery, onOpen: _open),
-          ] else if (corpus.hasError || workspaceFailed)
+          ] else if ((corpus?.hasError ?? false) || workspaceFailed)
             CircleErrorState(
               title: "Couldn't load results",
               message: 'Your search is kept. Try again when connected.',

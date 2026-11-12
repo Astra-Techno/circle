@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/core/api/api_client.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/core/api/api_providers.dart';
+import 'package:mobile/features/workspace/application/workspace_providers.dart';
+import 'package:mobile/features/notifications/application/notification_providers.dart';
 import 'package:mobile/core/api/scoped_api.dart';
 import 'package:mobile/core/local_settings.dart';
 import 'package:mobile/features/albums/data/api_album_repository.dart';
@@ -28,6 +31,38 @@ Future<ScopedApi> scoped(FakeHandler handler) async {
 }
 
 void main() {
+  test(
+    'authenticated Activity never constructs the legacy mock repository',
+    () async {
+      final scope = await scoped(
+        (request) => FakeResponse.ok(
+          request.method == 'POST'
+              ? null
+              : {'items': <Object?>[], 'has_more': false, 'unread_count': 0},
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          apiClientProvider.overrideWithValue(scope.api),
+          serverAccountProvider.overrideWithValue(
+            const ApiAccount(id: '1', displayName: 'Fictional A'),
+          ),
+          notificationRepositoryProvider.overrideWith(
+            (ref) => throw StateError('Legacy repository accessed'),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      expect(
+        (await container.read(activityFeedProvider.future)).entries,
+        isEmpty,
+      );
+      await container
+          .read(notificationControllerProvider.notifier)
+          .markAllRead();
+    },
+  );
+
   test(
     'Capsule entries are fetched only after server unlock and retain text',
     () async {
