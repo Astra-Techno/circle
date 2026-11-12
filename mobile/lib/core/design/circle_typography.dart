@@ -38,6 +38,11 @@ abstract final class CircleTextStyles {
   static TextStyle cardTitle(Color ink) =>
       _style(ink, 15, 20, emphasis: true, display: true);
 
+  static TextStyle pollOption(Color ink) =>
+      _style(ink, 15, 20, weight: FontWeight.w600);
+  static TextStyle pollLabel(Color ink) =>
+      _style(ink, 15, 20, weight: FontWeight.w500);
+
   // Reading and control roles.
   static TextStyle body(Color ink) => _style(ink, 16, 24);
   static TextStyle bodyMedium(Color ink) => _style(ink, 16, 24, emphasis: true);

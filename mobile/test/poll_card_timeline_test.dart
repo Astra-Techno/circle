@@ -52,7 +52,7 @@ void main() {
           surface == 'polls' ? findsOneWidget : findsNothing,
         );
         expect(
-          find.text('See who voted'),
+          find.text('View voters'),
           findsNothing,
           reason: 'Empty voter list has no useful action',
         );
@@ -77,7 +77,7 @@ void main() {
         await capture(tester, 'poll-card-$surface', 'selected-393-light');
         await tapPoll(tester, find.text('Submit vote'));
         expect(f.votes, [1]);
-        expect(find.text('1 voter'), findsOneWidget);
+        expect(find.text('1 vote'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

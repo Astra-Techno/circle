@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/circle_experience.dart';
 import 'package:mobile/core/design.dart';
@@ -285,19 +286,42 @@ void main() {
         );
         c.read(circleRouterProvider).go('/polls/p/81');
         await settle(tester);
-        expect(
-          find.byType(RadioListTile<int>),
-          multiple ? findsNothing : findsNWidgets(2),
-        );
-        expect(
-          find.byType(CheckboxListTile),
-          multiple ? findsNWidgets(2) : findsNothing,
-        );
-        await tester.tap(find.text('Park'));
-        await settle(tester);
-        if (multiple) {
-          await tester.tap(find.text('Cafe'));
+        final semantics = tester.ensureSemantics();
+        try {
+          final park = find.byKey(const ValueKey('poll-81-option-1'));
+          final cafe = find.byKey(const ValueKey('poll-81-option-2'));
+          expect(park, findsOneWidget);
+          expect(cafe, findsOneWidget);
+          final flags = tester
+              .getSemantics(park)
+              .getSemanticsData()
+              .flagsCollection;
+          expect(flags.isInMutuallyExclusiveGroup, !multiple);
+          expect(flags.isChecked, ui.CheckedState.isFalse);
+          await tester.tap(find.text('Park'));
           await settle(tester);
+          if (multiple) {
+            await tester.tap(find.text('Cafe'));
+            await settle(tester);
+          }
+          expect(
+            tester
+                .getSemantics(park)
+                .getSemanticsData()
+                .flagsCollection
+                .isChecked,
+            ui.CheckedState.isTrue,
+          );
+          expect(
+            tester
+                .getSemantics(cafe)
+                .getSemanticsData()
+                .flagsCollection
+                .isChecked,
+            multiple ? ui.CheckedState.isTrue : ui.CheckedState.isFalse,
+          );
+        } finally {
+          semantics.dispose();
         }
         await tester.tap(find.text('Submit vote'));
         await settle(tester);

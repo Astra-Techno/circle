@@ -153,8 +153,8 @@ void main() {
       await tapPoll(tester, find.text('Park'));
       await tapPoll(tester, find.text('Submit vote'));
       expect(f.votes, [1]);
-      expect(find.text('1 voter'), findsOneWidget);
-      await tapPoll(tester, find.text('See who voted'));
+      expect(find.text('1 vote'), findsOneWidget);
+      await tapPoll(tester, find.text('View voters'));
       expect(find.text('Fictional Owner'), findsOneWidget);
       expect(find.text('Park'), findsOneWidget);
       c.read(circleRouterProvider).go('/polls/p/81');
@@ -171,7 +171,7 @@ void main() {
       await settle(tester);
       expect(find.text('Fictional meetup?'), findsOneWidget);
       expect(find.text('Closed'), findsOneWidget);
-      expect(find.text('1 voter'), findsOneWidget);
+      expect(find.text('1 vote'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -189,7 +189,7 @@ void main() {
       );
       c.read(circleRouterProvider).go('/polls/p/81');
       await settle(tester);
-      expect(find.text('See who voted'), findsNothing);
+      expect(find.text('View voters'), findsNothing);
       expect(find.textContaining('voter'), findsNothing);
       expect(
         find.text('Results appear when this poll closes.'),
@@ -204,8 +204,8 @@ void main() {
       await settle(tester);
       await tester.tap(find.text('Close poll').last);
       await settle(tester);
-      expect(find.text('1 voter'), findsOneWidget);
-      expect(find.text('See who voted'), findsNothing);
+      expect(find.text('1 vote'), findsOneWidget);
+      expect(find.text('View voters'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

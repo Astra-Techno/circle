@@ -944,3 +944,12 @@ class ReadingPane extends StatelessWidget {
     );
   }
 }
+
+/// Compact poll rows share the same geometry across every Memory surface.
+abstract final class CirclePollLayout {
+  static const optionGap = Space.contentInset;
+  static const optionPadding = EdgeInsets.symmetric(
+    horizontal: Space.md,
+    vertical: Space.contentInset,
+  );
+}

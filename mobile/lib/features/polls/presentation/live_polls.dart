@@ -223,12 +223,17 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
     final locked =
             closed || (p['allow_change_vote'] != true && mine.isNotEmpty),
         options = ApiJson.list(p['options']).map(ApiJson.map).toList();
+    final changed = chosen.length != mine.length || !chosen.containsAll(mine);
     final total = p['voter_count'] as int? ?? 0;
     final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: Space.sm),
-      child: DecoratedBox(
+      child: Container(
         decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(CircleRadius.card),
+        ),
+        foregroundDecoration: BoxDecoration(
           border: Border.all(color: colors.outlineVariant),
           borderRadius: BorderRadius.circular(CircleRadius.card),
         ),
@@ -238,7 +243,7 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Material(
-                color: colors.primaryContainer,
+                color: colors.surface,
                 child: InkWell(
                   key: ValueKey('open-poll-$id'),
                   onTap: widget.showAudience
@@ -260,17 +265,18 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
                               const SizedBox(width: Space.sm),
                             ],
                             Expanded(
-                              child: Text(
-                                widget.showAudience
-                                    ? p['group_name'] as String? ?? 'Circle'
-                                    : 'Poll',
-                                style: widget.showAudience
-                                    ? CircleTextStyles.homeShortcut(
-                                        CircleAccents.of(context).caption,
-                                      )
-                                    : CircleTextStyles.homeShortcut(
-                                        CircleAccents.of(context).caption,
-                                      ),
+                              child: Semantics(
+                                label: p['anonymous'] == true
+                                    ? 'Anonymous poll'
+                                    : 'Named poll. Your choice is visible to this Circle.',
+                                child: Text(
+                                  widget.showAudience
+                                      ? p['group_name'] as String? ?? 'Circle'
+                                      : 'Poll',
+                                  style: CircleTextStyles.pollLabel(
+                                    CircleAccents.of(context).caption,
+                                  ),
+                                ),
                               ),
                             ),
                             if (widget.showAudience)
@@ -351,145 +357,32 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
                         'Closes ${DateTime.parse(end).toLocal()}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                    RadioGroup<int>(
-                      groupValue: multiple ? null : chosen.firstOrNull,
-                      onChanged: (value) {
-                        if (locked || _busy || multiple) return;
-                        setState(
-                          () => _chosen = value == null ? <int>{} : {value},
-                        );
-                      },
-                      child: Column(
-                        children: [
-                          for (final option in options)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: Space.xs),
-                              child: Material(
-                                color: chosen.contains(option['id'])
-                                    ? Theme.of(
-                                        context,
-                                      ).colorScheme.primaryContainer
-                                    : Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(
-                                  CircleRadius.small,
-                                ),
-                                child: Column(
-                                  children: [
-                                    if (multiple)
-                                      CheckboxListTile(
-                                        controlAffinity:
-                                            ListTileControlAffinity.leading,
-                                        value: chosen.contains(option['id']),
-                                        onChanged: locked || _busy
-                                            ? null
-                                            : (value) => setState(() {
-                                                _chosen = multiple
-                                                    ? {...chosen}
-                                                    : <int>{};
-                                                if (value == true) {
-                                                  _chosen!.add(
-                                                    option['id'] as int,
-                                                  );
-                                                } else {
-                                                  _chosen!.remove(option['id']);
-                                                }
-                                              }),
-                                        title: Text(
-                                          option['label'] as String,
-                                          style: CircleTextStyles.homeShortcut(
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.onSurface,
-                                          ),
-                                        ),
-                                        secondary:
-                                            results &&
-                                                total > 0 &&
-                                                MediaQuery.textScalerOf(
-                                                      context,
-                                                    ).scale(1) <=
-                                                    CircleLayout
-                                                        .largeTextThreshold
-                                            ? Text(
-                                                '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}',
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              )
-                                            : null,
-                                        subtitle:
-                                            results &&
-                                                total > 0 &&
-                                                MediaQuery.textScalerOf(
-                                                      context,
-                                                    ).scale(1) >
-                                                    CircleLayout
-                                                        .largeTextThreshold
-                                            ? Text(
-                                                '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}${total == 0 ? '' : ' · ${((option['votes'] as int) * 100 / total).round()}%'}',
-                                              )
-                                            : null,
-                                      )
-                                    else
-                                      RadioListTile<int>(
-                                        value: option['id'] as int,
-                                        enabled: !locked && !_busy,
-                                        toggleable: true,
-                                        title: Text(
-                                          option['label'] as String,
-                                          style: CircleTextStyles.homeShortcut(
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.onSurface,
-                                          ),
-                                        ),
-                                        secondary:
-                                            results &&
-                                                total > 0 &&
-                                                MediaQuery.textScalerOf(
-                                                      context,
-                                                    ).scale(1) <=
-                                                    CircleLayout
-                                                        .largeTextThreshold
-                                            ? Text(
-                                                '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}',
-                                                style: Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                              )
-                                            : null,
-                                        subtitle:
-                                            results &&
-                                                total > 0 &&
-                                                MediaQuery.textScalerOf(
-                                                      context,
-                                                    ).scale(1) >
-                                                    CircleLayout
-                                                        .largeTextThreshold
-                                            ? Text(
-                                                '${option['votes']} ${option['votes'] == 1 ? 'vote' : 'votes'}${total == 0 ? '' : ' · ${((option['votes'] as int) * 100 / total).round()}%'}',
-                                              )
-                                            : null,
-                                      ),
-                                    if (!chosen.contains(option['id']))
-                                      const Divider(height: Space.xs),
-                                    if (results && total > 0)
-                                      Padding(
-                                        padding: const EdgeInsets.all(Space.md),
-                                        child: LinearProgressIndicator(
-                                          value: total == 0
-                                              ? 0
-                                              : (option['votes'] as int) /
-                                                    total,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ],
+                    for (final option in options) ...[
+                      _PollResultOption(
+                        key: ValueKey('poll-$id-option-${option['id']}'),
+                        label: option['label'] as String,
+                        selected: chosen.contains(option['id']),
+                        saved: mine.contains(option['id']) && !changed,
+                        multiple: multiple,
+                        votes: results && total > 0
+                            ? option['votes'] as int
+                            : null,
+                        total: total,
+                        onTap: locked || _busy
+                            ? null
+                            : () => setState(() {
+                                final oid = option['id'] as int;
+                                _chosen = multiple ? {...chosen} : <int>{};
+                                if (!chosen.contains(oid)) {
+                                  _chosen!.add(oid);
+                                } else if (multiple) {
+                                  _chosen!.remove(oid);
+                                }
+                              }),
                       ),
-                    ),
+                      if (option != options.last)
+                        const SizedBox(height: CirclePollLayout.optionGap),
+                    ],
                     const SizedBox(height: Space.sm),
                     Wrap(
                       alignment: WrapAlignment.spaceBetween,
@@ -498,8 +391,8 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
                       children: [
                         if (results)
                           Text(
-                            '${total == 0 ? 'No votes yet' : '$total ${total == 1 ? 'voter' : 'voters'}'}${multiple ? ' · multiple choices allowed' : ''}',
-                            style: CircleTextStyles.metadata(
+                            '${total == 0 ? 'No votes yet' : '$total ${multiple ? (total == 1 ? 'voter' : 'voters') : (total == 1 ? 'vote' : 'votes')}'}${multiple ? ' · multiple choices allowed' : ''}',
+                            style: CircleTextStyles.button(
                               CircleAccents.of(context).caption,
                             ),
                           )
@@ -514,10 +407,8 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
                             onPressed: () =>
                                 context.push('/polls/p/$id/voters'),
                             child: Text(
-                              'See who voted',
-                              style: CircleTextStyles.homeShortcut(
-                                colors.primary,
-                              ),
+                              'View voters',
+                              style: CircleTextStyles.button(colors.primary),
                             ),
                           ),
                       ],
@@ -526,8 +417,8 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
                       const Text(
                         'Your vote is saved. This poll does not allow vote changes.',
                       ),
-                    const SizedBox(height: Space.md),
-                    if (!locked)
+                    if (!locked && (mine.isEmpty || changed)) ...[
+                      const SizedBox(height: Space.md),
                       FilledButton(
                         onPressed: _busy || (chosen.isEmpty && mine.isEmpty)
                             ? null
@@ -544,15 +435,14 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
                               : 'Save vote',
                         ),
                       ),
-                    const SizedBox(height: Space.sm),
-                    Text(
-                      p['anonymous'] == true
-                          ? 'Your vote is anonymous.'
-                          : 'Your choice is visible to this Circle.',
-                      style: CircleTextStyles.metadata(
-                        CircleAccents.of(context).caption,
+                    ],
+                    if (p['anonymous'] == true)
+                      Text(
+                        'Anonymous poll',
+                        style: CircleTextStyles.metadata(
+                          CircleAccents.of(context).caption,
+                        ),
                       ),
-                    ),
                     if (!closed &&
                         p['allow_add_options'] == true &&
                         options.length < 12)
@@ -573,6 +463,143 @@ class _LivePollCardState extends ConsumerState<LivePollCard> {
                         label: const Text('Add an option'),
                       ),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The result is the row background, avoiding separate bars and dividers.
+class _PollResultOption extends StatelessWidget {
+  const _PollResultOption({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.saved,
+    required this.multiple,
+    required this.votes,
+    required this.total,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected, saved, multiple;
+  final int? votes;
+  final int total;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final accents = CircleAccents.of(context);
+    final progress = votes == null || total == 0
+        ? 0.0
+        : (votes! / total).clamp(0.0, 1.0);
+    final percentage = (progress * 100).round();
+    final result = votes == null
+        ? null
+        : '$votes ${votes == 1 ? 'vote' : 'votes'} · $percentage%';
+    final choice = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: CircleTextStyles.pollOption(colors.onSurface)),
+        if (selected) ...[
+          const SizedBox(height: Space.xs),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                CircleIcons.circleCheckBig,
+                size: CircleSizes.iconInline,
+                color: colors.primary,
+              ),
+              const SizedBox(width: Space.xs),
+              Text(
+                saved ? 'Your vote' : 'Selected',
+                style: CircleTextStyles.label(colors.primary),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      checked: selected,
+      inMutuallyExclusiveGroup: !multiple,
+      label: label,
+      value: [if (saved) 'Your vote', ?result].join(', '),
+      child: Material(
+        color: colors.surfaceContainerLowest,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(CircleRadius.tile),
+          side: BorderSide(color: colors.outlineVariant),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
+            children: [
+              if (votes != null || selected)
+                Positioned.fill(
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: FractionallySizedBox(
+                      widthFactor: votes == null ? 1 : progress,
+                      heightFactor: 1,
+                      child: ColoredBox(color: colors.primaryContainer),
+                    ),
+                  ),
+                ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: CircleSizes.minTouchTarget,
+                ),
+                child: Padding(
+                  padding: CirclePollLayout.optionPadding,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final stacked =
+                          MediaQuery.textScalerOf(context).scale(1) >
+                          CircleLayout.largeTextThreshold;
+                      return ExcludeSemantics(
+                        child: stacked
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  choice,
+                                  if (result != null) ...[
+                                    const SizedBox(height: Space.xs),
+                                    Text(
+                                      result,
+                                      style: CircleTextStyles.homeShortcut(
+                                        accents.caption,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              )
+                            : Row(
+                                children: [
+                                  Expanded(child: choice),
+                                  if (result != null) ...[
+                                    const SizedBox(width: Space.sm),
+                                    Text(
+                                      result,
+                                      style: CircleTextStyles.homeShortcut(
+                                        accents.caption,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
