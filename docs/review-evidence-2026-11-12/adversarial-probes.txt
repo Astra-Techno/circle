@@ -1,0 +1,40 @@
+PHPUnit 11.5.57 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.27
+Configuration: /workspace/circle/backend/phpunit.xml
+
+FF                                                                  2 / 2 (100%)
+
+Time: 00:01.265, Memory: 10.00 MB
+
+There were 2 failures:
+
+1) Circle\Tests\RecentReviewTest::testSearchMustNotExposeAHiddenPoll
+Hidden poll identity/question must not bypass normal poll visibility through search.
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+-Array &0 []
++Array &0 [
++    0 => Array &1 [
++        'id' => 1,
++        'group_id' => 1,
++        'group_name' => 'Fictional Circle',
++        'question' => 'Fictional hidden ballot',
++        'closed_at' => null,
++        'created_at' => '2026-11-12 08:30:02',
++    ],
++]
+
+/tmp/RecentReviewTest.php:26
+
+2) Circle\Tests\RecentReviewTest::testAlbumMustRejectNonexistentMedia
+An unbacked media identifier must not become an album photo.
+Failed asserting that an array contains 201.
+
+/tmp/RecentReviewTest.php:39
+
+FAILURES!
+Tests: 2, Assertions: 23, Failures: 2.
+Script phpunit --colors=always handling the test event returned with error code 1

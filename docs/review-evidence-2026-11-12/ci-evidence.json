@@ -1,0 +1,43 @@
+{
+  "reviewedSource": "81800fd3b59af292c08073157084528133e84ba0",
+  "reviewDate": "2026-11-12",
+  "windows": {
+    "run": 43140698351,
+    "job": 130926677009,
+    "conclusion": "failure",
+    "summary": "816 passed, 15 failed, 1 skipped",
+    "failedTestDescriptions": [
+      "The test description was: Saved uses Home cards; another author is excluded from Your Memories",
+      "The test description was: original circle golden /home",
+      "The test description was: original circle golden /chats",
+      "The test description was: original circle golden /events",
+      "The test description was: original circle golden /you",
+      "The test description was: original circle golden dark home",
+      "The test description was: Home Feed light at 393x852",
+      "The test description was: Home Feed dark at 393x852",
+      "The test description was: Home Feed at 360x800",
+      "The test description was: Home Feed at 393x852",
+      "The test description was: Home Feed at 430x932",
+      "The test description was: Home Feed at 600x960",
+      "The test description was: Home Feed at 800x1280",
+      "The test description was: Home Feed at 1024x768",
+      "The test description was: Home Feed at 1280x800"
+    ],
+    "savedTimeoutContext": [
+      "2026-11-12T02:24:34.1447044Z pumpAndSettle timed out"
+    ],
+    "goldenDifferenceCount": 14
+  },
+  "ios": {
+    "run": 43145846974,
+    "job": 130943341052,
+    "conclusion": "success",
+    "evidence": [
+      "2026-11-12T03:26:41.1069750Z Verified signed IPA: version 1.0.38, build 1070.1.",
+      "2026-11-12T03:27:46.8768870Z UPLOAD SUCCEEDED with no errors, 1 warning",
+      "2026-11-12T03:27:46.8782970Z 2026-11-12 03:27:46.842  WARN: [altool.6000016AC7C0] Deployment target too low. Your app targets iOS 13.0. Starting in April 2027, iOS apps must target 15.0 or later to be uploaded to App Store Connect or submitted for distribution. (90068)",
+      "2026-11-12T03:27:46.8788520Z       description : Deployment target too low. Your app targets iOS 13.0. Starting in April 2027, iOS apps must target 15.0 or later to be uploaded to App Store Connect or submitted for distribution.",
+      "2026-11-12T03:27:46.8792420Z Apple upload accepted. TestFlight processing is a separate step."
+    ]
+  }
+}
