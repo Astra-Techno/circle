@@ -113,8 +113,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ] else if (corpus.hasError || workspaceFailed)
             CircleErrorState(
               title: "Couldn't load results",
-              message:
-                  'Your search is kept. Try again when connected.',
+              message: 'Your search is kept. Try again when connected.',
               onRetry: () {
                 ref.invalidate(circleWorkspaceProvider);
                 ref.invalidate(searchCorpusProvider);

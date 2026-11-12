@@ -1120,8 +1120,8 @@ class _CircleSkeletonState extends State<CircleSkeleton>
                   shaderCallback: (rect) {
                     final dx = _shimmer.value * rect.width * 2 - rect.width;
                     final base = CircleAccents.of(context).recessed;
-                    final highlight = Theme.of(context).brightness ==
-                            Brightness.light
+                    final highlight =
+                        Theme.of(context).brightness == Brightness.light
                         ? base.withValues(alpha: 0.4)
                         : base.withValues(alpha: 0.7);
                     return LinearGradient(
