@@ -15,3 +15,5 @@ Validation: full dedicated-circle_test backend suite 288 tests/5248 assertions p
 Xcode CI caught a Swift importer mismatch in the bridge: Flutter exposes registrar.viewController as a property. Corrected the invocation before retrying the signed build; no failed-run IPA was uploaded.
 
 The shared-link landing page also links to the existing iPhone installation instructions, alongside Android downloads, and explains returning after installation and using the invited number. Public iPhone beta availability still follows Apple approval and tester access.
+
+Signed iOS validation completed successfully in [run 43283419839](https://github.com/Astra-Techno/circle/actions/runs/43283419839), mobile commit c04a05d: version **1.0.40 (1073.1)** compiled, signature/metadata verified, and App Store Connect reported UPLOAD SUCCEEDED. Apple processing, tester-group assignment and physical-device picker/push behavior remain unverified. Later commits change the website/documentation only.
