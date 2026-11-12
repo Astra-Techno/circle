@@ -164,7 +164,7 @@ final class CircleInviteShare: NSObject, FlutterPlugin, CNContactPickerDelegate,
     registrar.addMethodCallDelegate(bridge, channel: FlutterMethodChannel(name: "circle/invite_share", binaryMessenger: registrar.messenger()))
   }
   private var presenter: UIViewController? {
-    var root = registrar.viewController()
+    var root = registrar.viewController
     while let presented = root?.presentedViewController { root = presented }
     return root
   }
