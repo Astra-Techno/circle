@@ -4,7 +4,7 @@ import 'circle_failure.dart';
 import 'design.dart';
 import 'design/circle_typography.dart';
 
-/// An editorial page opening: a headline and one quiet line, with an
+/// An editorial page opening: a headline and one quiet line with an
 /// optional artwork (an avatar or photo) beside it. No panel, no motif
 /// bubble, so the page's real content starts higher. No fixed height:
 /// names and larger text can always wrap.
@@ -148,8 +148,9 @@ class CircleSceneTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final r = large ? CircleRadius.card : CircleRadius.photo;
-    final radius = BorderRadius.circular(r);
+    final radius = large
+        ? BorderRadius.zero
+        : BorderRadius.circular(CircleRadius.photo);
     return Semantics(
       container: true,
       image: true,
@@ -159,7 +160,9 @@ class CircleSceneTile extends StatelessWidget {
       onLongPress: onLongPress,
       excludeSemantics: true,
       child: DecoratedBox(
-        decoration: CircleDepth.panel(context, radius: r),
+        decoration: large
+            ? const BoxDecoration(color: CircleOverlay.background)
+            : CircleDepth.panel(context, radius: CircleRadius.photo),
         child: Material(
           color: Colors.transparent,
           borderRadius: radius,
@@ -171,7 +174,10 @@ class CircleSceneTile extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 if (asset != null) ...[
-                  Image.asset(asset!, fit: BoxFit.cover),
+                  Image.asset(
+                    asset!,
+                    fit: large ? BoxFit.contain : BoxFit.cover,
+                  ),
                   if (more != null)
                     Align(
                       alignment: AlignmentDirectional.bottomEnd,
@@ -192,7 +198,9 @@ class CircleSceneTile extends StatelessWidget {
                           Icon(
                             icon,
                             size: large ? Space.large * 2 : Space.large,
-                            color: CircleAccents.of(context).caption,
+                            color: large
+                                ? CircleOverlay.muted
+                                : CircleAccents.of(context).caption,
                           ),
                           const SizedBox(height: Space.sm),
                           // On the last tile, "+N more" takes the label's place
@@ -204,7 +212,11 @@ class CircleSceneTile extends StatelessWidget {
                               label,
                               textAlign: TextAlign.center,
                               style: (large ? text.titleLarge : text.titleSmall)
-                                  ?.copyWith(color: colors.onSurface),
+                                  ?.copyWith(
+                                    color: large
+                                        ? CircleOverlay.foreground
+                                        : colors.onSurface,
+                                  ),
                             ),
                         ],
                       ),
@@ -295,7 +307,8 @@ class CircleIdentityHeader extends StatelessWidget {
     this.trailing,
   });
   final Widget leading, title;
-  final Widget? subtitle, trailing;
+  final Widget? subtitle;
+  final Widget? trailing;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -380,7 +393,7 @@ class CircleHeading extends StatelessWidget {
                 letterSpacing: 1.2,
               ),
             ),
-            const SizedBox(height: Space.xs),
+            const SizedBox(height: Space.sm),
           ],
           if (context
                   .dependOnInheritedWidgetOfExactType<CirclePageTitle>()
@@ -413,7 +426,7 @@ class CircleSectionTitle extends StatelessWidget {
   final Widget? trailing;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: Space.section, bottom: Space.sm),
+    padding: const EdgeInsets.only(top: Space.section),
     child: Row(
       children: [
         Expanded(
@@ -555,6 +568,7 @@ class CirclePill extends StatelessWidget {
 
   /// Spoken instead of [label], e.g. "Shared with Family only".
   final String? semanticsLabel;
+
   @override
   Widget build(BuildContext context) {
     final palette = circleToneColors(context, tone);
@@ -572,7 +586,7 @@ class CirclePill extends StatelessWidget {
         children: [
           if (icon != null) ...[
             Icon(icon, size: Space.lg, color: palette.text),
-            const SizedBox(width: Space.xs),
+            const SizedBox(width: Space.sm),
           ],
           Flexible(
             child: Text(
@@ -607,7 +621,7 @@ enum CircleAvatarSize {
 
 /// A person or group avatar: an initial or icon on a tone fill. Decorative
 /// to screen readers; the name next to it is what gets read (include
-/// "active now" there when [active] is set).
+/// "active now" there if [active] is set).
 class CircleInitialAvatar extends StatelessWidget {
   const CircleInitialAvatar({
     super.key,
@@ -624,8 +638,9 @@ class CircleInitialAvatar extends StatelessWidget {
   final CircleTone tone;
   final CircleAvatarSize size;
 
-  /// Shows the "Active now" dot (1:1 contexts only).
+  /// The "Active now" dot (1:1 contexts only).
   final bool active;
+
   @override
   Widget build(BuildContext context) {
     final palette = circleToneColors(context, tone);
@@ -689,7 +704,7 @@ class CircleSearchField extends StatelessWidget {
     required this.controller,
     required this.label,
     this.helper,
-    required this.onChanged,
+    this.onChanged,
     this.onSubmitted,
     this.autofocus = false,
   });
@@ -704,14 +719,14 @@ class CircleSearchField extends StatelessWidget {
   Widget build(BuildContext context) =>
       ValueListenableBuilder<TextEditingValue>(
         valueListenable: controller,
-        builder: (context, value, _) => TextField(
+        builder: (context, value) => TextField(
           controller: controller,
           autofocus: autofocus,
           textInputAction: TextInputAction.search,
           onChanged: onChanged,
           onSubmitted: onSubmitted,
           decoration: InputDecoration(
-            hintText: label,
+            hintText: hint,
             helperText: helper,
             prefixIcon: const Icon(CircleIcons.search),
             suffixIcon: value.text.isEmpty
@@ -855,7 +870,7 @@ void _show(
     );
 }
 
-/// Shows a short snackbar; [onUndo] adds an Undo action.
+/// Shows a short snackbar; [onUndo] adds an Undo callback.
 void showCircleMessage(
   BuildContext context,
   String message, {
@@ -879,7 +894,7 @@ Future<T?> runCalmly<T>(
   final margin = _noticeMargin(context);
   try {
     final result = await action();
-    if (success != null) _show(messenger, success, onUndo, margin: margin);
+    if (success != null) _show(messenger, success, null);
     return result;
   } on CircleFailure catch (failure) {
     _show(messenger, failure.message, null, margin: margin);
@@ -887,7 +902,7 @@ Future<T?> runCalmly<T>(
     _show(
       messenger,
       'That didn’t work. Please try again.',
-      null,
+      onUndo,
       margin: margin,
     );
   }
@@ -902,8 +917,7 @@ Future<bool> confirmCircleAction(
   required String confirm,
   List<String> details = const [],
 
-  /// The button that backs out, when "Cancel" would be ambiguous (for
-  /// example "Keep event" next to "Cancel event").
+  /// "Cancel" when "Keep event" is clearer than "Cancel event".
   String dismiss = 'Cancel',
 }) async {
   final result = await showDialog<bool>(
@@ -918,7 +932,7 @@ Future<bool> confirmCircleAction(
           Text(message),
           for (final detail in details)
             Padding(
-              padding: const EdgeInsets.only(top: Space.sm),
+              padding: const EdgeInsets.only(top: Space.xs),
               child: Text('• $detail'),
             ),
         ],
@@ -944,9 +958,7 @@ VoidCallback undoWith(BuildContext context, Future<void> Function() action) =>
       if (context.mounted) runCalmly(context, action);
     };
 
-/// Undo for an action that removes the widget offering it (a deleted card
-/// or comment). The messenger is captured now, so a failed undo still gets
-/// a calm message after that widget is gone.
+/// An Undo callback that can outlive the widget that created it.
 VoidCallback undoDetached(
   BuildContext context,
   Future<void> Function() action,
@@ -1181,7 +1193,6 @@ class _CircleSkeletonState extends State<CircleSkeleton>
       padding: const EdgeInsets.all(Space.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
@@ -1254,6 +1265,7 @@ class CircleErrorState extends StatelessWidget {
         padding: const EdgeInsets.all(Space.section),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
               padding: const EdgeInsets.all(Space.md),

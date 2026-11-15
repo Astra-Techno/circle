@@ -224,6 +224,8 @@ class _PhotoPagerState extends State<PhotoPager> {
     widget.photos.isEmpty ? 0 : widget.photos.length - 1,
   );
   late final PageController _pages = PageController(initialPage: _index);
+  bool _zoomed = false;
+  int _zoomGeneration = 0;
 
   @override
   void dispose() {
@@ -294,17 +296,27 @@ class _PhotoPagerState extends State<PhotoPager> {
                 children: [
                   PageView.builder(
                     controller: _pages,
+                    // A zoomed photo owns horizontal drags until it is reset.
+                    physics: _zoomed
+                        ? const NeverScrollableScrollPhysics()
+                        : null,
                     itemCount: photos.length,
-                    onPageChanged: (page) => setState(() => _index = page),
-                    itemBuilder: (context, page) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Space.xs),
-                      child: MemoryPhotoTile(
-                        large: true,
-                        photo: photos[page],
-                        semanticsLabel:
-                            'Photo ${page + 1} of ${photos.length}: '
-                            '${photos[page].description}',
-                      ),
+                    onPageChanged: (page) => setState(() {
+                      _index = page;
+                      _zoomed = false;
+                      _zoomGeneration++;
+                    }),
+                    itemBuilder: (context, page) => _ZoomableMemoryPhoto(
+                      key: ValueKey('photo-${photos[page].id}-$page'),
+                      photo: photos[page],
+                      semanticsLabel:
+                          'Photo ${page + 1} of ${photos.length}: '
+                          '${photos[page].description}',
+                      resetGeneration: _zoomGeneration,
+                      onZoomChanged: (zoomed) {
+                        if (page != _index || _zoomed == zoomed) return;
+                        setState(() => _zoomed = zoomed);
+                      },
                     ),
                   ),
                   Positioned(
@@ -422,6 +434,83 @@ class _PhotoPagerState extends State<PhotoPager> {
   }
 }
 
+/// One consistently zoomable photo, including bundled scenes and placeholders.
+class _ZoomableMemoryPhoto extends StatefulWidget {
+  const _ZoomableMemoryPhoto({
+    super.key,
+    required this.photo,
+    required this.semanticsLabel,
+    required this.resetGeneration,
+    required this.onZoomChanged,
+  });
+  final MemoryPhoto photo;
+  final String semanticsLabel;
+  final int resetGeneration;
+  final ValueChanged<bool> onZoomChanged;
+
+  @override
+  State<_ZoomableMemoryPhoto> createState() => _ZoomableMemoryPhotoState();
+}
+
+class _ZoomableMemoryPhotoState extends State<_ZoomableMemoryPhoto> {
+  late final TransformationController _zoom = TransformationController()
+    ..addListener(_notifyZoom);
+  bool _zoomed = false;
+
+  void _notifyZoom() {
+    final zoomed = _zoom.value.getMaxScaleOnAxis() > 1.001;
+    if (_zoomed == zoomed) return;
+    _zoomed = zoomed;
+    widget.onZoomChanged(zoomed);
+  }
+
+  void _reset() {
+    _zoom.value = Matrix4.identity();
+  }
+
+  void _toggleZoom() {
+    if (_zoomed) {
+      _reset();
+      return;
+    }
+    final bounds = context.size;
+    if (bounds == null) return;
+    final center = bounds.center(Offset.zero);
+    _zoom.value = Matrix4.identity()
+      ..translate(center.dx, center.dy)
+      ..scale(2.0)
+      ..translate(-center.dx, -center.dy);
+  }
+
+  @override
+  void didUpdateWidget(_ZoomableMemoryPhoto oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.resetGeneration != widget.resetGeneration) _reset();
+  }
+
+  @override
+  void dispose() {
+    _zoom.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onDoubleTap: _toggleZoom,
+    child: InteractiveViewer(
+      transformationController: _zoom,
+      minScale: 1,
+      maxScale: 4,
+      child: MemoryPhotoTile(
+        large: true,
+        photo: widget.photo,
+        semanticsLabel:
+            '${widget.semanticsLabel}. Pinch to zoom; double-tap to zoom or reset.',
+      ),
+    ),
+  );
+}
+
 /// Action button for the photo viewer (white on dark).
 class _PhotoAction extends StatelessWidget {
   const _PhotoAction({
@@ -478,7 +567,9 @@ class MemoryPhotoTile extends StatelessWidget {
         more: more,
         large: large,
         child: ColoredBox(
-          color: Theme.of(context).colorScheme.surfaceContainer,
+          color: large
+              ? CircleOverlay.background
+              : Theme.of(context).colorScheme.surfaceContainer,
         ),
       ),
     );
@@ -553,9 +644,11 @@ class _LoadedMemoryPhotoTile extends ConsumerWidget {
               large: large,
               fit: large ? BoxFit.contain : BoxFit.cover,
             );
-            return large ? InteractiveViewer(maxScale: 4, child: image) : image;
+            return image;
           },
-          loading: () => frame(const CirclePhotoPlaceholder(loading: true)),
+          loading: () => frame(
+            CirclePhotoPlaceholder(loading: true, dark: large),
+          ),
           error: (_, _) => CirclePhotoFrame(
             semanticsLabel: '$semanticsLabel. Photo unavailable. Tap to retry.',
             onTap: retry,
@@ -565,6 +658,7 @@ class _LoadedMemoryPhotoTile extends ConsumerWidget {
               message: 'Retry photo',
               compact: !large,
               retryable: true,
+              dark: large,
             ),
           ),
         );
@@ -596,6 +690,7 @@ Future<List<MemoryScene>?> pickScenes(
 /// Multi-select of up to [max] fictional scenes. Labelled once as a preview.
 class _ScenePicker extends StatefulWidget {
   const _ScenePicker({
+    super.key,
     required this.initial,
     required this.max,
     required this.action,

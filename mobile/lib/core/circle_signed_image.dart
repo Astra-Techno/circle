@@ -33,7 +33,7 @@ class CircleSignedImage extends StatefulWidget {
   /// A "+3 more" pill over the photo.
   final String? more;
 
-  /// Rounder corners, for the full-screen viewer.
+  /// Full-bleed dark presentation for the photo viewer.
   final bool large;
 
   @override
@@ -81,7 +81,7 @@ class _CircleSignedImageState extends State<CircleSignedImage> {
       filterQuality: FilterQuality.medium,
       loadingBuilder: (context, child, progress) => progress == null
           ? child
-          : const CirclePhotoPlaceholder(loading: true),
+          : CirclePhotoPlaceholder(loading: true, dark: widget.large),
       errorBuilder: (context, error, _) {
         // A mounted tile can outlive its five-minute signed link. Renew once
         // through the authenticated repository; it rechecks current access.
@@ -95,7 +95,7 @@ class _CircleSignedImageState extends State<CircleSignedImage> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && widget.url == failedUrl) widget.onRetry?.call();
           });
-          return const CirclePhotoPlaceholder(loading: true);
+          return CirclePhotoPlaceholder(loading: true, dark: widget.large);
         }
         if (!_failed) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -106,14 +106,15 @@ class _CircleSignedImageState extends State<CircleSignedImage> {
           message: widget.onRetry == null ? 'Photo unavailable' : 'Retry photo',
           compact: !widget.large,
           retryable: widget.onRetry != null,
+          dark: widget.large,
         );
       },
     ),
   );
 }
 
-/// The tile around a real photo: tonal fill, rounded corners, tap target
-/// and screen-reader label.
+/// The frame around a real photo: a rounded preview tile, or a square
+/// full-screen dark canvas, with an optional tap target and reader label.
 class CirclePhotoFrame extends StatelessWidget {
   const CirclePhotoFrame({
     super.key,
@@ -131,9 +132,10 @@ class CirclePhotoFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(
-      large ? CircleRadius.card : CircleRadius.photo,
-    );
+    // Full-screen photos sit directly on the black gallery canvas.
+    final radius = large
+        ? BorderRadius.zero
+        : BorderRadius.circular(CircleRadius.photo);
     return Semantics(
       container: true,
       image: true,
@@ -142,7 +144,9 @@ class CirclePhotoFrame extends StatelessWidget {
       onTap: onTap,
       excludeSemantics: true,
       child: Material(
-        color: Theme.of(context).colorScheme.surfaceContainer,
+        color: large
+            ? CircleOverlay.background
+            : Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: radius,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -189,22 +193,24 @@ class CirclePhotoPlaceholder extends StatelessWidget {
     this.message,
     this.compact = false,
     this.retryable = false,
+    this.dark = false,
   });
   final bool loading;
   final String? message;
-  final bool compact, retryable;
+  final bool compact, retryable, dark;
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final foreground = dark ? CircleOverlay.muted : colors.onSurfaceVariant;
     return ColoredBox(
-      color: colors.surfaceContainer,
+      color: dark ? CircleOverlay.background : colors.surfaceContainer,
       child: Center(
         child: loading
             ? SizedBox.square(
                 dimension: Space.xl,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: colors.secondary,
+                  color: dark ? CircleOverlay.foreground : colors.secondary,
                 ),
               )
             : LayoutBuilder(
@@ -220,7 +226,7 @@ class CirclePhotoPlaceholder extends StatelessWidget {
                               ? CircleIcons.refreshCw
                               : CircleIcons.imageOff,
                           size: Space.lg,
-                          color: colors.onSurfaceVariant,
+                          color: foreground,
                         ),
                         if (message != null &&
                             (!compact ||
@@ -229,7 +235,7 @@ class CirclePhotoPlaceholder extends StatelessWidget {
                           Text(
                             message!,
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: colors.onSurfaceVariant),
+                                ?.copyWith(color: foreground),
                           ),
                         ],
                       ],
