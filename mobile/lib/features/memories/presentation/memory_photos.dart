@@ -88,7 +88,7 @@ class PhotoGrid extends StatelessWidget {
           ?more,
         ].join('. '),
         more: more,
-        onTap: () => onTap(index),
+        onTap: () => onOpen(index),
       );
     }
 
