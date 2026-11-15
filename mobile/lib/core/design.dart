@@ -27,7 +27,13 @@ abstract final class CirclePhotoMetrics {
 abstract final class CircleMemoryLayout {
   static const dividerThickness = Space.xs / 4;
   static const mediaInset = Space.md;
-  static const mediaRadius = Space.md;
+  static const mediaRadius = Space.sm;
+
+  /// Keepsake photo print: media rests on a paper mount that lifts it off
+  /// the page, like a print slipped into an album. The mount reaches
+  /// [printMount] beyond the usual inset, so the photo keeps its width.
+  static const printMount = Space.sm;
+  static const printRadius = mediaRadius + printMount;
   static const actionBorderWidth = Space.xs / 4;
   static const collageAspect = 4 / 3;
   static const actionIcon = 24.0;
@@ -188,7 +194,18 @@ abstract final class CircleDepth {
   static const buttonElevation = 0.0;
   static const pressedElevation = 0.0;
   static const floatingElevation = 2.0;
-  static const _ink = Color(0xFF1C1E21);
+  static const _ink = Color(0xFF2A2118);
+
+  /// Soft shadow under a Keepsake photo print: paper lifting off the page.
+  static List<BoxShadow> printShadow(Brightness brightness) => [
+    BoxShadow(
+      color: brightness == Brightness.light
+          ? const Color(0xFF5C4A32).withValues(alpha: 0.10)
+          : Colors.black.withValues(alpha: 0.45),
+      blurRadius: 12,
+      offset: const Offset(0, 3),
+    ),
+  ];
 
   /// Premium elevated card shadow — subtle depth for hero panels.
   static List<BoxShadow> elevatedShadow(Brightness brightness) => [
@@ -249,7 +266,7 @@ abstract final class CircleDepth {
         tint ??
         (brightness == Brightness.light
             ? Colors.white.withValues(alpha: 0.85)
-            : const Color(0xFF242526).withValues(alpha: 0.85));
+            : const Color(0xFF241E18).withValues(alpha: 0.85));
     return BoxDecoration(
       borderRadius: BorderRadius.circular(radius),
       color: base,
@@ -325,10 +342,11 @@ abstract final class CircleOverlay {
   static const chipBackground = Colors.black54;
 }
 
-/// Editorial, photo-first (owner, 28 Oct 2026). 60/30/10: 60% white
-/// surface, 30% warm neutral fills and ink text, 10% deep indigo for the one
-/// primary action, selection and love. Photos carry the colour, not chrome.
-/// Sage is kept only for confirmations; group identity always has a name.
+/// Editorial, photo-first (owner, 28 Oct 2026). 60/30/10: 60% warm paper
+/// canvas with white keepsake surfaces, 30% warm neutral fills and ink text,
+/// 10% deep indigo for the one primary action, selection and love. Photos
+/// carry the colour, not chrome. Sage is kept only for confirmations; group
+/// identity always has a name.
 @immutable
 class CircleAccents extends ThemeExtension<CircleAccents> {
   const CircleAccents({
@@ -353,6 +371,7 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     required this.chatWallpaper,
     required this.chatIncoming,
     required this.chatOutgoing,
+    required this.printMount,
   });
 
   /// Love and reactions: the primary indigo (a vector heart, never emoji).
@@ -372,7 +391,7 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
 
   /// Interactive boundaries remain distinct from decorative separators.
   Color get controlOutline =>
-      this == dark ? const Color(0xFF96999E) : const Color(0xFF7B7E84);
+      this == dark ? const Color(0xFFA39A8D) : const Color(0xFF8A8175);
 
   /// Title ink (#1C1B22) and warm caption grey (#6B6878). Body copy is the
   /// scheme's onSurfaceVariant (#34323C) via the text theme.
@@ -385,6 +404,9 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
   /// Chat (WhatsApp-style): the conversation background behind bubbles,
   /// incoming bubbles and the viewer's own (outgoing) bubbles.
   final Color chatWallpaper, chatIncoming, chatOutgoing;
+
+  /// Keepsake photo print mount: the paper frame around timeline media.
+  final Color printMount;
 
   static const light = CircleAccents(
     heart: Color(0xFFFF4054),
@@ -400,14 +422,15 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     videoContainer: Color(0xFFFDE8E8),
     amber: Color(0xFFD68F00),
     amberContainer: Color(0xFFFFF3DB),
-    recessed: Color(0xFFF0F2F5),
-    hairline: Color(0xFFCED0D4),
-    title: Color(0xFF1C1E21),
-    caption: Color(0xFF65676B),
+    recessed: Color(0xFFF4EEE4),
+    hairline: Color(0xFFE8DFCF),
+    title: Color(0xFF221D16),
+    caption: Color(0xFF7A7166),
     activeDot: Color(0xFF3F7A68),
-    chatWallpaper: Colors.white,
-    chatIncoming: Color(0xFFF0F2F5),
+    chatWallpaper: Color(0xFFFBF7F2),
+    chatIncoming: Color(0xFFF4EEE4),
     chatOutgoing: Color(0xFFE4DEFA),
+    printMount: Colors.white,
   );
 
   static const dark = CircleAccents(
@@ -424,14 +447,15 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     videoContainer: Color(0xFF442727),
     amber: Color(0xFFFFCC80),
     amberContainer: Color(0xFF3E2F10),
-    recessed: Color(0xFF18191A),
-    hairline: Color(0xFF3E4042),
-    title: Color(0xFFE4E6EB),
-    caption: Color(0xFFB0B3B8),
+    recessed: Color(0xFF1F1913),
+    hairline: Color(0xFF3D352B),
+    title: Color(0xFFF5EEE4),
+    caption: Color(0xFFB8AEA1),
     activeDot: Color(0xFF9CCFB9),
-    chatWallpaper: Color(0xFF18191A),
-    chatIncoming: Color(0xFF242526),
+    chatWallpaper: Color(0xFF1A1512),
+    chatIncoming: Color(0xFF241E18),
     chatOutgoing: Color(0xFF332B66),
+    printMount: Color(0xFF2E2820),
   );
 
   static CircleAccents of(BuildContext context) =>
@@ -462,8 +486,9 @@ TextTheme _textTheme({required Color title, required Color body}) => TextTheme(
   labelSmall: CircleTextStyles.caption(body),
 );
 
-/// Editorial, photo-first (owner, 28 Oct 2026): white canvas, warm neutral
-/// fills, ink text and one deep indigo accent, built on Material 3 tokens.
+/// Editorial, photo-first (owner, 28 Oct 2026): warm paper canvas, white
+/// keepsake surfaces, warm ink text and one deep indigo accent, built on
+/// Material 3 tokens.
 ThemeData circleTheme(Brightness brightness) {
   final light = brightness == Brightness.light;
   final accents = light ? CircleAccents.light : CircleAccents.dark;
@@ -471,7 +496,7 @@ ThemeData circleTheme(Brightness brightness) {
     seedColor: const Color(0xFF4930A7),
     brightness: brightness,
   );
-  final body = light ? const Color(0xFF34323C) : const Color(0xFFD6D2DA);
+  final body = light ? const Color(0xFF4A4238) : const Color(0xFFDDD5C9);
   final colors = generated.copyWith(
     primary: light ? const Color(0xFF4930A7) : const Color(0xFFC9C0FF),
     onPrimary: light ? Colors.white : const Color(0xFF1E1660),
@@ -484,18 +509,18 @@ ThemeData circleTheme(Brightness brightness) {
     tertiary: accents.sageText,
     tertiaryContainer: accents.sageContainer,
     onTertiaryContainer: accents.sageText,
-    surface: light ? Colors.white : const Color(0xFF242526),
+    surface: light ? Colors.white : const Color(0xFF241E18),
     onSurface: accents.title,
     onSurfaceVariant: body,
-    surfaceContainerLowest: light ? Colors.white : const Color(0xFF242526),
-    surfaceContainerLow: light ? Colors.white : const Color(0xFF242526),
+    surfaceContainerLowest: light ? Colors.white : const Color(0xFF241E18),
+    surfaceContainerLow: light ? Colors.white : const Color(0xFF241E18),
     surfaceContainer: accents.recessed,
     surfaceContainerHigh: light
-        ? const Color(0xFFECE8E1)
-        : const Color(0xFF26242B),
+        ? const Color(0xFFEFE8DB)
+        : const Color(0xFF2A241C),
     surfaceContainerHighest: light
-        ? const Color(0xFFE6E1D8)
-        : const Color(0xFF3E4042),
+        ? const Color(0xFFE7DFD0)
+        : const Color(0xFF3D352B),
     outline: accents.caption,
     outlineVariant: accents.hairline,
   );
@@ -527,7 +552,11 @@ ThemeData circleTheme(Brightness brightness) {
       color: accents.title,
     ),
     extensions: [accents],
-    scaffoldBackgroundColor: colors.surface,
+    // Warm paper canvas (light) / warm charcoal (dark): keepsake surfaces
+    // rest on it like prints on an album page.
+    scaffoldBackgroundColor: light
+        ? const Color(0xFFFBF7F2)
+        : const Color(0xFF1A1512),
     splashColor: pressedWash,
     highlightColor: pressedWash,
     hoverColor: pressedWash,

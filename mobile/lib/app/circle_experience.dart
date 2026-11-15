@@ -1086,7 +1086,6 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
           )
         : null;
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
       body: Listener(
         onPointerMove: (event) {
           // Restore navigation even if a refresh replaces the scroller with

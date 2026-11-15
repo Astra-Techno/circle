@@ -71,13 +71,18 @@ void main() {
     final x = (card.left + Space.md).round(),
         y = (card.bottom + Space.section).round();
     final offset = (y * image!.width + x) * 4;
+    // The pixel below the card must be the page canvas — the previous Circle
+    // tile must not paint through.
+    final canvas = Theme.of(
+      tester.element(find.byType(Scaffold).last),
+    ).scaffoldBackgroundColor;
     expect(
       bytes!.getUint8(offset),
-      255,
+      (canvas.r * 255).round(),
       reason: 'Previous Circle tile must not paint below the event card',
     );
-    expect(bytes.getUint8(offset + 1), 255);
-    expect(bytes.getUint8(offset + 2), 255);
+    expect(bytes.getUint8(offset + 1), (canvas.g * 255).round());
+    expect(bytes.getUint8(offset + 2), (canvas.b * 255).round());
     image.dispose();
     router.pop();
     await settle(tester);

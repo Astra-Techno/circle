@@ -185,7 +185,7 @@ class CircleGlass extends StatelessWidget {
         tint ??
         (brightness == Brightness.light
             ? Colors.white.withValues(alpha: 0.72)
-            : const Color(0xFF242526).withValues(alpha: 0.72));
+            : const Color(0xFF241E18).withValues(alpha: 0.72));
     final edge =
         border ??
         Border.all(

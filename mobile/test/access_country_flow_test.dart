@@ -30,11 +30,14 @@ void main() {
     );
     expect(ApiConfig.forBuild(baseUrl: 'not a url'), isNull);
   });
-  test('white is the initial appearance even on a dark device', () {
+  test('light paper is the initial appearance even on a dark device', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     expect(container.read(themeProvider), ThemeMode.light);
-    expect(circleTheme(Brightness.light).scaffoldBackgroundColor, Colors.white);
+    expect(
+      circleTheme(Brightness.light).scaffoldBackgroundColor,
+      const Color(0xFFFBF7F2),
+    );
   });
   testWidgets(
     'India default; lookup is opt-in and never overrides a manual country choice',

@@ -289,13 +289,33 @@ class CircleMemoryCard extends ConsumerWidget {
             if (hasPhotos)
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: CircleMemoryLayout.mediaInset,
+                  horizontal:
+                      CircleMemoryLayout.mediaInset -
+                      CircleMemoryLayout.printMount,
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                    CircleMemoryLayout.mediaRadius,
+                // Keepsake print: a paper mount with a soft shadow lifts the
+                // photo off the page like a print in an album.
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: accents.printMount,
+                    borderRadius: BorderRadius.circular(
+                      CircleMemoryLayout.printRadius,
+                    ),
+                    boxShadow: CircleDepth.printShadow(
+                      Theme.of(context).brightness,
+                    ),
                   ),
-                  child: MemoryPhotoGrid(memory: memory),
+                  child: Padding(
+                    padding: const EdgeInsets.all(
+                      CircleMemoryLayout.printMount,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        CircleMemoryLayout.mediaRadius,
+                      ),
+                      child: MemoryPhotoGrid(memory: memory),
+                    ),
+                  ),
                 ),
               ),
             if (!hasText && memory.poll != null)

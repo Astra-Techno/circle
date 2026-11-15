@@ -159,8 +159,9 @@ void main() {
   );
 
   testWidgets(
-    'Light page canvases stay white across root, detail and form routes',
+    'Light page canvases stay warm paper across root, detail and form routes',
     (tester) async {
+      final canvas = circleTheme(Brightness.light).scaffoldBackgroundColor;
       final fixture = RootStyleFixture();
       final container = await openServerCircle(
         tester,
@@ -185,7 +186,7 @@ void main() {
         final context = tester.element(find.byType(Scaffold).last);
         expect(
           Theme.of(context).scaffoldBackgroundColor,
-          Colors.white,
+          canvas,
           reason: route,
         );
         for (final element in find.byType(Scaffold).evaluate()) {
@@ -193,16 +194,16 @@ void main() {
           expect(
             scaffold.backgroundColor ??
                 Theme.of(element).scaffoldBackgroundColor,
-            Colors.white,
+            canvas,
             reason: route,
           );
         }
         expect(tester.takeException(), isNull, reason: route);
       }
-      expect(CircleAccents.light.chatWallpaper, Colors.white);
+      expect(CircleAccents.light.chatWallpaper, canvas);
       expect(
         circleTheme(Brightness.dark).scaffoldBackgroundColor,
-        isNot(Colors.white),
+        isNot(canvas),
       );
     },
   );

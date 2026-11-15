@@ -1,5 +1,16 @@
 # CIRCLE design system
 
+## Social 3.0: Warm Keepsake canvas, 15 November 2026 (owner choice)
+
+Owner chose the Keepsake direction from rendered concepts (`docs/design-previews/keepsake-concept/`): a living-scrapbook feel — warm paper canvas, white keepsake surfaces, photos mounted like album prints. A Circle is any closed group (family batch, college year, company team), never a family tree; nesting means circles within circles.
+
+- **Canvas:** scaffold is warm paper `#FBF7F2` (light) / warm charcoal `#1A1512` (dark); cards, sheets and inputs stay white / `#241E18` keepsake surfaces. Root tab scaffolds no longer override the background — every page paints the theme canvas.
+- **Ink:** warm title `#221D16` / `#F5EEE4`, warm caption `#7A7166` / `#B8AEA1`, body `#4A4238` / `#DDD5C9`, warm hairlines `#E8DFCF` / `#3D352B`, recessed fills `#F4EEE4` / `#1F1913`. Deep indigo `#4930A7` (light) / lavender `#C9C0FF` (dark) stays the one accent.
+- **Photo prints:** Memory media rests on a paper mount (`CircleAccents.printMount`: white / `#2E2820`) with a soft warm shadow (`CircleDepth.printShadow`). The mount is `CircleMemoryLayout.printMount` (8) thick and reaches 8px into the side margin, so the photo keeps its 16px inset and collage geometry; media corners are 8 (`mediaRadius`), mount corners 16 (`printRadius`).
+- Chat wallpaper follows the canvas; incoming bubbles use the recessed fill; outgoing keeps lavender.
+
+All values live in `mobile/lib/core/` tokens only; `test/design_system_guard_test.dart` still enforces this. Deferred Keepsake features (not in this batch): month-chapter timeline grouping, On This Day card, inner-circles row on Circle detail, captions below photos, and the circle-dive 3D transition concept (`docs/design-previews/keepsake-concept/circle-dive/`).
+
 ## Social 2.6: coloured icon tiles, 10 November 2026 (owner choice, style A)
 
 Owner picked style A from rendered options (`~/Downloads/circle-icon-options`): every primary icon is a coloured rounded-square tile with a crisp white Lucide glyph (`CircleActionIcon`, `mobile/lib/core/design/circle_action_icons.dart`). The tinted form (pale fill, coloured glyph) marks unselected states.
