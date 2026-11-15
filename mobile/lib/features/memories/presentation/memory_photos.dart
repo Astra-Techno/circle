@@ -88,7 +88,7 @@ class PhotoGrid extends StatelessWidget {
           ?more,
         ].join('. '),
         more: more,
-        onTap: () => onOpen(index),
+        onTap: () => onTap(index),
       );
     }
 
@@ -477,9 +477,9 @@ class _ZoomableMemoryPhotoState extends State<_ZoomableMemoryPhoto> {
     if (bounds == null) return;
     final center = bounds.center(Offset.zero);
     _zoom.value = Matrix4.identity()
-      ..translate(center.dx, center.dy)
-      ..scale(2.0)
-      ..translate(-center.dx, -center.dy);
+      ..translateByDouble(center.dx, center.dy, 0, 1)
+      ..scaleByDouble(2, 2, 1, 1)
+      ..translateByDouble(-center.dx, -center.dy, 0, 1);
   }
 
   @override

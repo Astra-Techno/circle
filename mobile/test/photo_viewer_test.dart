@@ -69,7 +69,7 @@ void main() {
     await tester.tap(finder);
     await tester.pump(const Duration(milliseconds: 80));
     await tester.tap(finder);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(zoom.value.getMaxScaleOnAxis(), closeTo(1, 0.001));
     expect(tester.takeException(), isNull);
   });
