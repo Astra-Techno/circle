@@ -690,7 +690,6 @@ Future<List<MemoryScene>?> pickScenes(
 /// Multi-select of up to [max] fictional scenes. Labelled once as a preview.
 class _ScenePicker extends StatefulWidget {
   const _ScenePicker({
-    super.key,
     required this.initial,
     required this.max,
     required this.action,
