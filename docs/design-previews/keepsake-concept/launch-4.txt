@@ -1,0 +1,2 @@
+Job log: C:\Users\gjmat\AppData\Local\Temp\image_generation-job-n48r0egd\worker.log
+Job PID file: C:\Users\gjmat\AppData\Local\Temp\image_generation-job-n48r0egd\worker.pid

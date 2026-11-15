@@ -1,0 +1,2 @@
+Job log: C:\Users\gjmat\AppData\Local\Temp\image_generation-job-koteyinr\worker.log
+Job PID file: C:\Users\gjmat\AppData\Local\Temp\image_generation-job-koteyinr\worker.pid

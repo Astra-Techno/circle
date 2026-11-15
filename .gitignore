@@ -8,3 +8,17 @@ __pycache__/
 # Persona harness tokens must remain private.
 /backend/tests/agents/state.json
 /backend/tests/agents/.state-*
+
+# Local MCP configuration holds private API keys; never commit it.
+/.mcp.json
+
+# Build outputs and local deploy artifacts.
+/mobile/packages/circle_push/android/.gradle/
+/mobile/packages/circle_push/android/build/
+/backend/deploy/circle-api-deploy.zip
+/backend/deploy/downloads/
+/backend/deploy/package/
+
+# The circle-dive 3D concept keeps source and docs, not its toolchain.
+/docs/design-previews/keepsake-concept/circle-dive/node_modules/
+/docs/design-previews/keepsake-concept/circle-dive/dist/

@@ -1,0 +1,2 @@
+Job log: C:\Users\gjmat\AppData\Local\Temp\image_generation-job-cuwif4pu\worker.log
+Job PID file: C:\Users\gjmat\AppData\Local\Temp\image_generation-job-cuwif4pu\worker.pid
