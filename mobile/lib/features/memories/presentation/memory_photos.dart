@@ -647,9 +647,8 @@ class _LoadedMemoryPhotoTile extends ConsumerWidget {
             );
             return image;
           },
-          loading: () => frame(
-            CirclePhotoPlaceholder(loading: true, dark: large),
-          ),
+          loading: () =>
+              frame(CirclePhotoPlaceholder(loading: true, dark: large)),
           error: (_, _) => CirclePhotoFrame(
             semanticsLabel: '$semanticsLabel. Photo unavailable. Tap to retry.',
             onTap: retry,

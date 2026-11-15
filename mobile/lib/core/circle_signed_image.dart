@@ -234,8 +234,9 @@ class CirclePhotoPlaceholder extends StatelessWidget {
                           const SizedBox(height: Space.xs),
                           Text(
                             message!,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: foreground),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(color: foreground),
                           ),
                         ],
                       ],

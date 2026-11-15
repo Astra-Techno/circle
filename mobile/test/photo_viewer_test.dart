@@ -22,10 +22,7 @@ void main() {
     final frame = tester.widget<DecoratedBox>(
       find.descendant(of: scene, matching: find.byType(DecoratedBox)).first,
     );
-    expect(
-      (frame.decoration as BoxDecoration).color,
-      CircleOverlay.background,
-    );
+    expect((frame.decoration as BoxDecoration).color, CircleOverlay.background);
     expect(
       tester
           .widget<Material>(
