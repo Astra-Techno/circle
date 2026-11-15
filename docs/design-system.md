@@ -9,7 +9,12 @@ Owner chose the Keepsake direction from rendered concepts (`docs/design-previews
 - **Photo prints:** Memory media rests on a paper mount (`CircleAccents.printMount`: white / `#2E2820`) with a soft warm shadow (`CircleDepth.printShadow`). The mount is `CircleMemoryLayout.printMount` (8) thick and reaches 8px into the side margin, so the photo keeps its 16px inset and collage geometry; media corners are 8 (`mediaRadius`), mount corners 16 (`printRadius`).
 - Chat wallpaper follows the canvas; incoming bubbles use the recessed fill; outgoing keeps lavender.
 
-All values live in `mobile/lib/core/` tokens only; `test/design_system_guard_test.dart` still enforces this. Deferred Keepsake features (not in this batch): month-chapter timeline grouping, On This Day card, inner-circles row on Circle detail, captions below photos, and the circle-dive 3D transition concept (`docs/design-previews/keepsake-concept/circle-dive/`).
+**Circle detail, 15 November 2026 (same batch, follow-up):** the Circle page gains the Keepsake structure from the approved `circle-v2` render:
+
+- **Inner circles:** between the header and Memories, the member's own direct sub-circles appear as round 56px avatar tiles with names, plus a hairline "New" tile when the member may create one (same `MembershipRules.canCreateGroup` gate as before). Tapping a tile opens that exact Circle; hidden circles stay invisible to non-members.
+- **Chapters:** year pills ("All" plus one pill per year found in the loaded timeline, newest first) filter the Circle's Memories. `MemoryQuery.year` filters client-side after every fetch — server-paginated pages included — so a selected Chapter keeps loading older pages until the year is complete. The row appears only when the loaded timeline spans more than one year.
+
+All values live in `mobile/lib/core/` tokens only; `test/design_system_guard_test.dart` still enforces this. Deferred Keepsake features (not in this batch): month-chapter timeline grouping on Home, On This Day card, masonry memory wall, captions below photos, and the circle-dive 3D transition concept (`docs/design-previews/keepsake-concept/circle-dive/`).
 
 ## Social 2.6: coloured icon tiles, 10 November 2026 (owner choice, style A)
 

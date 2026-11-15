@@ -55,7 +55,10 @@ void main() {
           '${page.startsWith('groups') ? 'circle' : 'profile'}-$scale',
         );
         expect(tester.takeException(), isNull, reason: page);
-        expect(find.byType(CircleMemoryCard), findsWidgets);
+        // Cards build lazily as their sliver nears the viewport.
+        final cards = find.byType(CircleMemoryCard);
+        await reveal(tester, cards);
+        expect(cards, findsWidgets);
       }
       await tester.pumpWidget(const SizedBox.shrink());
     });

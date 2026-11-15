@@ -75,53 +75,305 @@ class PendingGroupView extends ConsumerWidget {
 }
 
 /// One continuous page; secondary destinations stay in the header actions.
-class _GroupMemories extends ConsumerWidget {
+class _GroupMemories extends ConsumerStatefulWidget {
   const _GroupMemories({required this.group, required this.workspace});
   final CircleGroup group;
   final CircleWorkspace workspace;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ReadingPane(
-    child: RefreshIndicator(
-      onRefresh: () async {
-        await runCalmly(
-          context,
-          () => ref.read(circleWorkspaceProvider.notifier).refresh(),
-        );
-        if (context.mounted) {
-          ref.invalidate(
-            memoryTimelineProvider(MemoryQuery(groupId: group.id)),
+  ConsumerState<_GroupMemories> createState() => _GroupMemoriesState();
+}
+
+class _GroupMemoriesState extends ConsumerState<_GroupMemories> {
+  /// The selected Keepsake Chapter (local calendar year); null shows all.
+  int? _chapter;
+
+  @override
+  Widget build(BuildContext context) {
+    final group = widget.group;
+    final baseQuery = MemoryQuery(groupId: group.id);
+    // Chapter years come from the unfiltered timeline, so selecting a
+    // chapter never hides the other pills.
+    final loaded = ref.watch(memoryTimelineProvider(baseQuery)).value?.items;
+    final years = [
+      ...?loaded?.map((memory) => memory.createdAt.toLocal().year).toSet(),
+    ]..sort((a, b) => b.compareTo(a));
+    final query = MemoryQuery(groupId: group.id, year: _chapter);
+    return ReadingPane(
+      child: RefreshIndicator(
+        onRefresh: () async {
+          await runCalmly(
+            context,
+            () => ref.read(circleWorkspaceProvider.notifier).refresh(),
           );
-        }
-      },
-      child: CustomScrollView(
-        key: PageStorageKey('circle-memories-${group.id}'),
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: _GroupHeader(group: group, workspace: workspace),
-          ),
-          SliverToBoxAdapter(
-            child: ScopedMemoryList(
-              query: MemoryQuery(groupId: group.id),
-              empty: const CircleEmpty(
-                icon: CircleIcons.photo,
-                title: 'The first Memory is yours to make',
-                message: 'Use Memory to share a moment with this Circle.',
-              ),
-              itemBuilder: (_, memory) => CircleMemoryCard(
-                key: ValueKey(memory.id),
-                memory: memory,
+          if (context.mounted) {
+            ref.invalidate(memoryTimelineProvider(baseQuery));
+          }
+        },
+        child: CustomScrollView(
+          key: PageStorageKey('circle-memories-${group.id}'),
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: _GroupHeader(group: group, workspace: widget.workspace),
+            ),
+            SliverToBoxAdapter(
+              child: _InnerCirclesRow(
                 group: group,
-                audience: audiencePath(group, workspace.groupsById),
+                workspace: widget.workspace,
               ),
             ),
+            if (years.length > 1)
+              SliverToBoxAdapter(
+                child: _ChaptersRow(
+                  years: years,
+                  selected: _chapter,
+                  onSelected: (year) => setState(() => _chapter = year),
+                ),
+              ),
+            SliverToBoxAdapter(
+              child: ScopedMemoryList(
+                query: query,
+                empty: CircleEmpty(
+                  icon: CircleIcons.photo,
+                  title: _chapter == null
+                      ? 'The first Memory is yours to make'
+                      : 'No Memories from $_chapter yet',
+                  message: _chapter == null
+                      ? 'Use Memory to share a moment with this Circle.'
+                      : 'Pick another Chapter, or share a moment from $_chapter.',
+                ),
+                itemBuilder: (_, memory) => CircleMemoryCard(
+                  key: ValueKey(memory.id),
+                  memory: memory,
+                  group: group,
+                  audience: audiencePath(group, widget.workspace.groupsById),
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: Space.hero)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Keepsake Inner circles: the member's own sub-circles as round tiles.
+class _InnerCirclesRow extends ConsumerWidget {
+  const _InnerCirclesRow({required this.group, required this.workspace});
+  final CircleGroup group;
+  final CircleWorkspace workspace;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final subgroups = workspace.groups
+        .where((item) => item.parentId == group.id)
+        .toList();
+    final canCreate = MembershipRules.canCreateGroup(
+      person: workspace.viewer,
+      parent: group,
+    ).allowed;
+    if (subgroups.isEmpty && !canCreate) return const SizedBox.shrink();
+    final colors = Theme.of(context).colorScheme;
+    final accents = CircleAccents.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: CircleInsets.content,
+          child: Text(
+            'Inner circles',
+            style: Theme.of(context).textTheme.titleSmall,
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: Space.hero)),
-        ],
+        ),
+        const SizedBox(height: Space.sm),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: CircleInsets.content,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final sub in subgroups)
+                _InnerCircleTile(
+                  label: sub.name,
+                  onTap: () => context.push('/groups/g/${sub.id}'),
+                  avatar: GroupAvatar(
+                    groupId: sub.id,
+                    type: sub.type,
+                    size: CircleAvatarSize.large,
+                  ),
+                ),
+              if (canCreate)
+                _InnerCircleTile(
+                  label: 'New',
+                  semanticsLabel: 'Create InCircle in ${group.name}',
+                  onTap: () => _showCreateSubgroupSheet(context, ref, group),
+                  avatar: Container(
+                    width: CircleAvatarSize.large.diameter,
+                    height: CircleAvatarSize.large.diameter,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: accents.hairline),
+                      color: colors.surface,
+                    ),
+                    child: Icon(
+                      CircleIcons.create,
+                      size: CircleSizes.iconDefault,
+                      color: colors.primary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: Space.sm),
+      ],
+    );
+  }
+}
+
+class _InnerCircleTile extends StatelessWidget {
+  const _InnerCircleTile({
+    required this.label,
+    required this.onTap,
+    required this.avatar,
+    this.semanticsLabel,
+  });
+  final String label;
+  final VoidCallback onTap;
+  final Widget avatar;
+  final String? semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsetsDirectional.only(end: Space.md),
+    child: Semantics(
+      button: true,
+      label: semanticsLabel ?? label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.all(Space.xs),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              avatar,
+              const SizedBox(height: Space.xs),
+              SizedBox(
+                width: CircleAvatarSize.large.diameter + Space.md,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: CircleTextStyles.metadata(
+                    CircleAccents.of(context).title,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     ),
   );
+}
+
+/// Keepsake Chapters: year pills filtering this Circle's Memories.
+class _ChaptersRow extends StatelessWidget {
+  const _ChaptersRow({
+    required this.years,
+    required this.selected,
+    required this.onSelected,
+  });
+  final List<int> years;
+  final int? selected;
+  final ValueChanged<int?> onSelected;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: CircleInsets.content,
+        child: Text('Chapters', style: Theme.of(context).textTheme.titleSmall),
+      ),
+      const SizedBox(height: Space.sm),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: CircleInsets.content,
+        child: Row(
+          children: [
+            _ChapterPill(
+              label: 'All',
+              selected: selected == null,
+              onTap: () => onSelected(null),
+            ),
+            for (final year in years)
+              _ChapterPill(
+                label: '$year',
+                selected: selected == year,
+                onTap: () => onSelected(selected == year ? null : year),
+              ),
+          ],
+        ),
+      ),
+      const SizedBox(height: Space.sm),
+    ],
+  );
+}
+
+class _ChapterPill extends StatelessWidget {
+  const _ChapterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final accents = CircleAccents.of(context);
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: Space.sm),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: selected ? 'Chapter $label, selected' : 'Chapter $label',
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(CircleRadius.pill),
+          child: Container(
+            constraints: const BoxConstraints(
+              minHeight: CircleSizes.minTouchTarget,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: Space.md),
+            decoration: BoxDecoration(
+              color: selected ? colors.primary : colors.surface,
+              borderRadius: BorderRadius.circular(CircleRadius.pill),
+              border: Border.all(
+                color: selected ? colors.primary : accents.hairline,
+              ),
+            ),
+            child: Center(
+              widthFactor: 1,
+              child: Text(
+                label,
+                style: CircleTextStyles.homeShortcut(
+                  selected ? colors.onPrimary : accents.title,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Members and InCircles keep exact-group access and a normal Back destination.

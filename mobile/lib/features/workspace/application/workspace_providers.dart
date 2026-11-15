@@ -299,6 +299,15 @@ class MemoryTimeline extends AsyncNotifier<MemoryPage> {
   bool _loadingMore = false;
   int _generation = 0;
 
+  /// Keepsake Chapters: keeps only Memories from the selected local calendar
+  /// year. Applied after each fetch so server-paginated pages stay honest —
+  /// a chapter simply keeps loading older pages until it is complete.
+  List<CircleMemory> _inChapter(Iterable<CircleMemory> items) => [
+    for (final memory in items)
+      if (query.year == null || memory.createdAt.toLocal().year == query.year)
+        memory,
+  ];
+
   @override
   Future<MemoryPage> build() async {
     _generation++;
@@ -307,11 +316,19 @@ class MemoryTimeline extends AsyncNotifier<MemoryPage> {
     final repository = ref.watch(circleRepositoryProvider);
     final viewer = ref.watch(circleViewerProvider);
     if (repository is MemoryQueryReader) {
-      return (repository as MemoryQueryReader).queryMemories(viewer, query);
+      final page = await (repository as MemoryQueryReader).queryMemories(
+        viewer,
+        query,
+      );
+      return MemoryPage(
+        items: _inChapter(page.items),
+        cursor: page.cursor,
+        hasMore: page.hasMore,
+      );
     }
     final text = query.text.trim().toLowerCase();
     return MemoryPage(
-      items: [
+      items: _inChapter([
         for (final memory in workspace.memories)
           if ((query.groupId == null || memory.groupId == query.groupId) &&
               (!query.saved || memory.saved) &&
@@ -319,7 +336,7 @@ class MemoryTimeline extends AsyncNotifier<MemoryPage> {
                   memory.text.toLowerCase().contains(text) ||
                   (memory.place?.toLowerCase().contains(text) ?? false)))
             memory,
-      ],
+      ]),
     );
   }
 
@@ -343,7 +360,7 @@ class MemoryTimeline extends AsyncNotifier<MemoryPage> {
       );
       if (!ref.mounted || generation != _generation) return;
       final combined = {for (final memory in current.items) memory.id: memory};
-      for (final memory in next.items) {
+      for (final memory in _inChapter(next.items)) {
         combined[memory.id] = memory;
       }
       state = AsyncData(
