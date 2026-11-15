@@ -499,6 +499,7 @@ class _ZoomableMemoryPhotoState extends State<_ZoomableMemoryPhoto> {
     onDoubleTap: _toggleZoom,
     child: InteractiveViewer(
       transformationController: _zoom,
+      panEnabled: _zoomed,
       minScale: 1,
       maxScale: 4,
       child: MemoryPhotoTile(
