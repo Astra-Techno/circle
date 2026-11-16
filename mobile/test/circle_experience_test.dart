@@ -481,6 +481,12 @@ void main() {
     tester,
   ) async {
     await openCircle(tester);
+    await reveal(
+      tester,
+      find.byTooltip(
+        'Choose a reaction for Memory from Mira in The Sunday table',
+      ),
+    );
     final handle = tester.ensureSemantics();
     try {
       expect(
