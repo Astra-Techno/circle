@@ -9,6 +9,12 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
         ..addFont(rootBundle.load('assets/fonts/Inter-Medium.ttf'))
         ..addFont(rootBundle.load('assets/fonts/Inter-SemiBold.ttf')))
       .load();
+  await (FontLoader('Plus Jakarta Sans')
+        ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-Regular.ttf'))
+        ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-Medium.ttf'))
+        ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-SemiBold.ttf'))
+        ..addFont(rootBundle.load('assets/fonts/PlusJakartaSans-Bold.ttf')))
+      .load();
   await (FontLoader(
     'MaterialIcons',
   )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();

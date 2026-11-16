@@ -50,10 +50,14 @@ class CircleActionIcon extends StatelessWidget {
     this.size = 34,
     this.tinted = false,
     this.glyph,
+    this.accent,
   });
 
   final CircleActionIconType type;
   final double size;
+
+  /// Optional semantic accent for monochrome navigation and dashboard tiles.
+  final Color? accent;
 
   /// Pale fill with a coloured glyph instead of a solid tile.
   final bool tinted;
@@ -65,7 +69,7 @@ class CircleActionIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
-    final color = type.colorFor(theme.brightness);
+    final color = accent ?? type.colorFor(theme.brightness);
     final fill = tinted
         ? Color.alphaBlend(
             color.withValues(alpha: dark ? 0.28 : 0.14),

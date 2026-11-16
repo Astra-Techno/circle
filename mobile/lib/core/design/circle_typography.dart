@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
 /// Native Apple typography on iOS/macOS; correctly named Inter faces elsewhere.
-/// All screens resolve through these roles. No runtime font downloads.
+/// Circle Pulse Home and navigation use bundled Plus Jakarta Sans. All screens
+/// resolve through these roles. No runtime font downloads.
 abstract final class CircleTextStyles {
   static String get fontFamily => kIsWeb
       ? 'Inter'
@@ -11,6 +12,12 @@ abstract final class CircleTextStyles {
           _ => 'Inter',
         };
   static String get displayFamily => fontFamily;
+  static String get homeFontFamily => kIsWeb
+      ? 'Plus Jakarta Sans'
+      : switch (defaultTargetPlatform) {
+          TargetPlatform.iOS || TargetPlatform.macOS => 'CupertinoSystemText',
+          _ => 'Plus Jakarta Sans',
+        };
 
   static TextStyle _style(
     Color ink,
@@ -18,9 +25,10 @@ abstract final class CircleTextStyles {
     double line, {
     bool emphasis = false,
     bool display = false,
+    bool home = false,
     FontWeight? weight,
   }) => TextStyle(
-    fontFamily: display ? displayFamily : fontFamily,
+    fontFamily: home ? homeFontFamily : (display ? displayFamily : fontFamily),
     fontSize: size,
     fontWeight: weight ?? (emphasis ? FontWeight.w600 : FontWeight.w400),
     height: line / size,
@@ -30,7 +38,7 @@ abstract final class CircleTextStyles {
 
   // Compact headings share the same family as reading text.
   static TextStyle brand(Color ink) =>
-      _style(ink, 24, 30, emphasis: true, display: true);
+      _style(ink, 24, 30, weight: FontWeight.w700, home: true);
   static TextStyle pageTitle(Color ink) =>
       _style(ink, 21, 28, emphasis: true, display: true);
   static TextStyle sectionTitle(Color ink) =>
@@ -53,7 +61,7 @@ abstract final class CircleTextStyles {
   static TextStyle button(Color ink) =>
       _style(ink, 15, 20, weight: FontWeight.w500);
   static TextStyle navLabel(Color ink) =>
-      _style(ink, 11, 14, weight: FontWeight.w500);
+      _style(ink, 11, 14, weight: FontWeight.w700, home: true);
   static TextStyle input(Color ink) => body(ink);
 
   // Compatibility roles keep all existing screens on the same hierarchy.
@@ -62,7 +70,17 @@ abstract final class CircleTextStyles {
   static TextStyle postHeading(Color ink) =>
       _style(ink, 18, 24, emphasis: true);
   static TextStyle postBody(Color ink) => _style(ink, 16, 24);
-  static TextStyle homeShortcut(Color ink) => _style(ink, 14, 20);
-  static TextStyle homeBody(Color ink) => body(ink);
-  static TextStyle homeAuthor(Color ink) => cardTitle(ink);
+  static TextStyle homeShortcut(Color ink) =>
+      _style(ink, 14, 20, weight: FontWeight.w700, home: true);
+  static TextStyle homeBody(Color ink) => bodyMedium(ink);
+  static TextStyle homeAuthor(Color ink) =>
+      _style(ink, 16, 22, weight: FontWeight.w700, home: true);
+  static TextStyle homeSectionTitle(Color ink) =>
+      _style(ink, 18, 24, weight: FontWeight.w700, home: true);
+  static TextStyle homeCaption(Color ink) =>
+      _style(ink, 12, 16, weight: FontWeight.w600, home: true);
+  static TextStyle homeGreeting(Color ink) =>
+      _style(ink, 28, 34, weight: FontWeight.w700, home: true);
+  static TextStyle homeComposer(Color ink) =>
+      _style(ink, 16, 22, weight: FontWeight.w700, home: true);
 }
