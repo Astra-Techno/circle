@@ -148,21 +148,13 @@ void main() {
     );
     tester.platformDispatcher.textScaleFactorTestValue = 2;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await settle(tester);
     c.read(circleRouterProvider).go('/events');
     await settle(tester);
     expect(
       tester.getSize(find.text('Fictional picnic')).width,
       greaterThan(200),
     );
-    final exception = tester.takeException();
-    expect(
-      exception,
-      isNull,
-      reason: exception is Error
-          ? '$exception\n${exception.stackTrace}'
-          : '$exception',
-    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(
