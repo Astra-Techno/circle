@@ -33,12 +33,7 @@ void main() {
         final dock = tester.getRect(
           find.byKey(const ValueKey('circle-navigation-dock')),
         );
-        final context = tester.element(find.byTooltip('Home'));
-        final tabHeight = CircleLayout.homeDockHeightFor(context);
-        expect(dock.height, greaterThanOrEqualTo(tabHeight));
-        if (layout.$3 < CircleLayout.largeTextThreshold) {
-          expect(dock.height, tabHeight);
-        }
+        expect(dock.height, CircleLayout.homeDockHeight);
         expect(
           dock.bottom,
           layout.$2 - CircleLayout.navigationBottomPadding(layout.$5),
@@ -47,31 +42,22 @@ void main() {
         final items = ['Home', 'Circles', 'Chats', 'Events', 'Profile'];
         final centers = <double>[];
         for (final label in items) {
-          expect(find.text(label), findsOneWidget);
+          expect(find.text(label), findsNothing);
           final target = tester.getRect(find.byTooltip(label));
           expect(target.width, greaterThanOrEqualTo(48));
           expect(target.height, greaterThanOrEqualTo(48));
-          if (layout.$3 < CircleLayout.largeTextThreshold) {
-            expect(target.center.dy, closeTo(dock.center.dy, 0.01));
-          } else {
-            expect(dock.contains(target.center), isTrue);
-          }
+          expect(target.center.dy, closeTo(dock.center.dy, 0.01));
           centers.add(target.center.dx);
         }
-        if (layout.$3 < CircleLayout.largeTextThreshold) {
-          for (var i = 1; i < centers.length; i++) {
-            expect(centers[i] - centers[i - 1], closeTo(dock.width / 5, 0.01));
-          }
+        for (var i = 1; i < centers.length; i++) {
+          expect(centers[i] - centers[i - 1], closeTo(dock.width / 5, 0.01));
         }
         final avatar = find.descendant(
           of: find.byTooltip('Profile'),
           matching: find.byType(PersonAvatar),
         );
         expect(avatar, findsOneWidget);
-        expect(
-          tester.getCenter(avatar).dy,
-          lessThan(tester.getCenter(find.byTooltip('Profile')).dy),
-        );
+        expect(tester.getCenter(avatar).dy, closeTo(dock.center.dy, 0.01));
         await capture(
           tester,
           'icon-navigation',
