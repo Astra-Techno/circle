@@ -92,7 +92,7 @@ void main() {
         });
       }
       expect(bounds.bottom, 852 - 34);
-      expect(bounds.height, 72);
+      expect(bounds.height, 56);
       final homeIcon = tester.getRect(find.byIcon(LucideIcons.house).last);
       final profileAvatar = find
           .descendant(
@@ -101,8 +101,8 @@ void main() {
           )
           .last;
       expect(tester.getRect(profileAvatar).center.dy, homeIcon.center.dy);
-      expect(find.text('Home'), findsOneWidget);
-      expect(homeIcon.center.dy, lessThan(bounds.center.dy));
+      expect(find.text('Home'), findsNothing);
+      expect(homeIcon.center.dy, closeTo(bounds.center.dy, 0.01));
       expect(bounds.left, 12);
       expect(bounds.right, 393 - 12);
       final decoration =
