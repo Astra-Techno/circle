@@ -157,7 +157,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       final cards = find.byType(CircleMemoryCard);
-      // Verify that the action icon strip has adequate touch targets.
+      await reveal(tester, cards);
+      // Verify that the Create actions have adequate touch targets.
       final actionIcons = find.byType(CircleActionIcon);
       expect(actionIcons, findsWidgets);
       final firstAction = find

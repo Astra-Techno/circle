@@ -5,7 +5,7 @@ import 'package:mobile/core/theme_controller.dart';
 import 'package:mobile/features/events/presentation/live_events.dart';
 import 'live_chat_events_test.dart' show LiveFixture;
 import 'support/server_harness.dart';
-import 'support/circle_harness.dart' show currentUri;
+import 'support/circle_harness.dart' show currentUri, reveal;
 import 'screen_audit_visual_review_test.dart' show capture;
 
 void main() {
@@ -52,7 +52,7 @@ void main() {
           await settle(tester);
         }
         final card = find.byType(LiveEventCard);
-        await tester.ensureVisible(card);
+        await reveal(tester, card);
         await settle(tester);
         expect(card, findsOneWidget);
         expect(
@@ -127,6 +127,7 @@ void main() {
       expect(currentUri(c).path, '/events/e/91');
       c.read(circleRouterProvider).go('/home');
       await settle(tester);
+      await reveal(tester, find.byType(LiveEventCard));
       expect(find.byType(LiveEventCard), findsOneWidget);
       expect(find.text('Fictional Sunday game'), findsOneWidget);
       expect(tester.takeException(), isNull);
