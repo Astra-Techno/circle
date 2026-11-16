@@ -114,7 +114,36 @@ abstract final class CircleLayout {
   static const homeLogoSize = 32.0;
   static const headerActionPaintSize = 36.0;
   static const homeActionMinHeight = 48.0;
-  static const homeDockHeight = 56.0;
+  static const homeDockHeight = 72.0;
+  static const navigationLabelLineHeight = 14.0;
+  static double homeDockHeightFor(BuildContext context) {
+    final style = CircleTextStyles.navLabel(
+      Theme.of(context).colorScheme.onSurface,
+    );
+    final labelHeight =
+        MediaQuery.textScalerOf(context).scale(style.fontSize!) * style.height!;
+    final extra = labelHeight - navigationLabelLineHeight;
+    return homeDockHeight + (extra > 0 ? extra : 0);
+  }
+
+  static double navigationItemWidth(BuildContext context, String label) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: CircleTextStyles.navLabel(
+          Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final width = (painter.width + Space.md)
+        .clamp(CircleSizes.minTouchTarget, double.infinity)
+        .toDouble();
+    painter.dispose();
+    return width;
+  }
+
   static const navigationSideInset = Space.sm + Space.xs;
   static const navigationHighlightWidth = 40.0;
   static const navigationHighlightHeight = 36.0;
@@ -125,6 +154,49 @@ abstract final class CircleLayout {
 
   static const homeComposerMaxWidth = 720.0;
   static const homeDockMaxWidth = 640.0;
+}
+
+/// Geometry for the Circle Pulse Home dashboard. Feature widgets consume these
+/// values instead of inventing module-specific dimensions.
+abstract final class CirclePulseLayout {
+  static const circleItemWidth = 88.0;
+  static const circleSelectorHeight = 112.0;
+  static const composerMinHeight = 88.0;
+  static const createActionMinHeight = 104.0;
+  static const dashboardBreakpoint = 340.0;
+  static const pollProgressHeight = 6.0;
+  static const presenceAvatarOverlap = 12.0;
+}
+
+/// Circle Pulse colours: a pure-white canvas, quiet lavender modules, the
+/// indigo composer and a lime upcoming-event accent. Dark mode keeps the same
+/// roles with accessible dark surfaces.
+abstract final class CirclePulsePalette {
+  static bool _light(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.light;
+
+  static Color canvas(BuildContext context) => _light(context)
+      ? Colors.white
+      : Theme.of(context).scaffoldBackgroundColor;
+
+  static Color surface(BuildContext context) =>
+      _light(context) ? const Color(0xFFFAF9FC) : const Color(0xFF2A2547);
+  static Color raisedSurface(BuildContext context) =>
+      _light(context) ? const Color(0xFFF5F3FA) : const Color(0xFF332B66);
+  static const event = Color(0xFFC7F464);
+  static const eventText = Color(0xFF25300A);
+  static const eventMuted = Color(0xFF42550F);
+  static const presenceText = Color(0xFF5F7E14);
+  static const composerEnd = Color(0xFF6D51D8);
+
+  static BoxDecoration composer(BuildContext context) => BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [Theme.of(context).colorScheme.primary, composerEnd],
+    ),
+    borderRadius: BorderRadius.circular(CircleRadius.card),
+  );
 }
 
 /// Shared geometry for every standard input and primary form action.
@@ -964,11 +1036,17 @@ abstract final class CircleInsets {
 /// or 640dp for forms, keeping text readable without wasting space.
 /// Root pages that need full width should use [CirclePageLayout] instead.
 class ReadingPane extends StatelessWidget {
-  const ReadingPane({super.key, required this.child, this.maxWidth});
+  const ReadingPane({
+    super.key,
+    required this.child,
+    this.maxWidth,
+    this.color,
+  });
 
   /// Override the default responsive cap. Pass `double.infinity` for
   /// truly uncapped width (e.g. photo grids on tablets).
   final double? maxWidth;
+  final Color? color;
   final Widget child;
 
   @override
@@ -976,7 +1054,7 @@ class ReadingPane extends StatelessWidget {
     final available = MediaQuery.sizeOf(context).width;
     final cap = maxWidth ?? (available < 600 ? available : 720.0);
     return Material(
-      color: Theme.of(context).scaffoldBackgroundColor,
+      color: color ?? Theme.of(context).scaffoldBackgroundColor,
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
