@@ -775,7 +775,7 @@ ThemeData circleTheme(Brightness brightness) {
       indicatorColor: colors.primary,
       indicatorSize: TabBarIndicatorSize.label,
       dividerColor: accents.hairline,
-      tabAlignment: TabBarAlignment.start,
+      tabAlignment: TabBarIndicatorSize.label,
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: colors.surfaceContainerLowest,
