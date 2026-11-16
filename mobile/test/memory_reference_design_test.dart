@@ -31,9 +31,9 @@ void main() {
       final c = await openCircle(tester);
       for (final route in ['/home', '/home/memory/table', '/people/mira']) {
         await go(tester, c, route);
-        final photo = find.byType(MemoryPhotoGrid).first;
+        final photo = find.byType(MemoryPhotoGrid);
         await reveal(tester, photo);
-        final rect = tester.getRect(photo);
+        final rect = tester.getRect(photo.first);
         expect(
           rect.left,
           closeTo(CircleMemoryLayout.mediaInset, 0.01),
@@ -126,6 +126,7 @@ void main() {
           of: surface,
           matching: find.byType(MemoryPhotoGrid),
         );
+        await reveal(tester, grid);
         final rect = tester.getRect(grid);
         expect(
           rect.width,

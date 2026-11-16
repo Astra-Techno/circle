@@ -32,9 +32,11 @@ void main() {
 
   testWidgets('report a Memory to the group’s admins', (tester) async {
     final container = await openCircle(tester, now: fixed);
-    await tester.tap(
-      find.byTooltip('More options for Memory from Mira in The Sunday table'),
+    final menu = find.byTooltip(
+      'More options for Memory from Mira in The Sunday table',
     );
+    await reveal(tester, menu);
+    await tester.tap(menu);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Report'));
     await tester.pumpAndSettle();
