@@ -88,6 +88,7 @@ abstract final class CircleIcons {
   static const coffee = LucideIcons.coffee;
   static const contact = LucideIcons.contact;
   static const copy = LucideIcons.copy;
+  static const download = LucideIcons.download;
   static const crown = LucideIcons.crown;
   static const ellipsisVertical = LucideIcons.ellipsis_vertical;
   static const eye = LucideIcons.eye;
@@ -155,6 +156,7 @@ abstract final class CircleSizes {
 
   /// Photo-viewer action icons (React, Comment, Share).
   static const iconPhoto = 20.0;
+  static const progressStroke = 2.0;
 
   static const iconSmall = 17.0;
   static const iconDefault = 20.0;

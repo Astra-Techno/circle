@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_providers.dart';
 import '../../../core/api/signed_media_url.dart';
+import '../../../core/api/scoped_api.dart';
 import '../../workspace/application/workspace_providers.dart';
 import '../data/api_media_repository.dart';
+import '../data/photo_export.dart';
 import '../data/photo_picker.dart';
 
 export '../data/api_media_repository.dart';
+export '../data/photo_export.dart';
 export '../data/photo_picker.dart';
 
 /// Private photos on the server; null in the preview (fictional scenes).
@@ -20,6 +23,32 @@ final mediaRepositoryProvider = Provider<ApiMediaRepository?>((ref) {
   );
   ref.onDispose(repository.clear);
   return repository;
+});
+
+/// The native system share/save UI. Tests replace it.
+final photoExportBridgeProvider = Provider<PhotoExportBridge>(
+  (ref) => const DevicePhotoExportBridge(),
+);
+
+/// Full photo bytes for an explicit export, scoped to this signed-in session.
+final photoExportServiceProvider = Provider<PhotoExportService>((ref) {
+  final api = ref.watch(apiClientProvider);
+  final account = ref.watch(serverAccountProvider)?.id;
+  return PhotoExportService(
+    ref.watch(photoExportBridgeProvider),
+    ref.watch(mediaRepositoryProvider),
+    api == null || account == null
+        ? null
+        : ScopedApi(
+            api,
+            account,
+            api.sessionRevision,
+            () =>
+                ref.mounted &&
+                identical(ref.read(apiClientProvider), api) &&
+                ref.read(serverAccountProvider)?.id == account,
+          ),
+  );
 });
 
 /// The device photo library. Tests replace it.
