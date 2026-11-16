@@ -38,6 +38,7 @@ import MessageUI
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "CircleInviteShare") { CircleInviteShare.register(with: registrar) }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "CirclePhotoExport") { CirclePhotoExport.register(with: registrar) }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "CirclePushBridge") { CirclePushBridge.register(with: registrar) }
   }
 }
@@ -74,17 +75,17 @@ final class CirclePushBridge: NSObject, FlutterPlugin, FlutterStreamHandler {
     switch type {
     case "memory.created": return "Someone shared a new Memory in your circle."
     case "comment.created": return "Someone commented on your Memory."
-    case "comment.reply": return "You have a new reply to a comment."
+    case "comment.reply": return "Someone replied to your comment."
     case "group.invitation": return "You have a new circle invitation."
-    case "group.report": return "A new report needs your attention."
-    case "chat.message": return "You have a new message."
+    case "group.report": return "A group report needs your attention."
+    case "chat.message": return "You have a new chat message."
     case "poll.created": return "A new poll is available in your circle."
     case "poll.closed": return "A poll in your circle has closed."
-    case "event.created": return "A new event was added to your circle."
+    case "event.created": return "A new event was added in your circle."
     case "event.updated": return "An event in your circle was updated."
     case "event.cancelled": return "An event in your circle was cancelled."
-    case "event.rsvp": return "An event RSVP was updated."
-    case "event.reminder": return "An event in your circle is coming up."
+    case "event.rsvp": return "Someone responded to your event."
+    case "event.reminder": return "Your event is starting soon."
     case "scope": return "https://www.googleapis.com/auth/firebase.messaging"
     case "grant_type": return "urn:ietf:params:oauth:grant-type:jwt-bearer"
     default: return "You have a new update. Open CIRCLE to view it."
@@ -179,7 +180,7 @@ final class CircleInviteShare: NSObject, FlutterPlugin, CNContactPickerDelegate,
       picker.displayedPropertyKeys = [CNContactPhoneNumbersKey]
       picker.predicateForEnablingContact = NSPredicate(format: "phoneNumbers.@count > 0")
       picker.predicateForSelectionOfContact = NSPredicate(value: false)
-      picker.predicateForSelectionOfProperty = NSPredicate(format: "key == %@", CNContactPhoneNumbersKey)
+      picker.predicateForSelectionOfProperty = NSPredicate(format: "key == %@", CNPhoneNumberKey)
       view.present(picker, animated: true)
     case "compose":
       let args = call.arguments as? [String: Any] ?? [:]
@@ -220,5 +221,86 @@ final class CircleInviteShare: NSObject, FlutterPlugin, CNContactPickerDelegate,
   }
   func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
     controller.dismiss(animated: true)
+  }
+}
+
+
+/// System-owned image share/save sheet. The temporary file is removed when
+/// the sheet finishes; Download lets the person choose Save Image or Files.
+final class CirclePhotoExport: NSObject, FlutterPlugin {
+  private static var shared: CirclePhotoExport?
+  private let registrar: FlutterPluginRegistrar
+  private var exporting = false
+  private let maxBytes = 32 * 1024 * 1024
+
+  init(_ registrar: FlutterPluginRegistrar) {
+    self.registrar = registrar
+    super.init()
+  }
+
+  static func register(with registrar: FlutterPluginRegistrar) {
+    let bridge = CirclePhotoExport(registrar)
+    shared = bridge
+    registrar.addMethodCallDelegate(bridge, channel: FlutterMethodChannel(name: "circle/photo_export", binaryMessenger: registrar.messenger()))
+  }
+
+  private var presenter: UIViewController? {
+    var root = registrar.viewController
+    while let presented = root?.presentedViewController { root = presented }
+    return root
+  }
+
+  private func valid(_ name: String, _ mime: String) -> Bool {
+    (name == "circle-photo.jpg" && mime == "image/jpeg") ||
+      (name == "circle-photo.png" && mime == "image/png") ||
+      (name == "circle-photo.webp" && mime == "image/webp")
+  }
+
+  func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard call.method == "export" else { result(FlutterMethodNotImplemented); return }
+    guard !exporting else {
+      result(FlutterError(code: "busy", message: "Finish the current photo action first.", details: nil)); return
+    }
+    guard let view = presenter else {
+      result(FlutterError(code: "unavailable", message: "Open the photo again.", details: nil)); return
+    }
+    let args = call.arguments as? [String: Any] ?? [:]
+    let action = args["action"] as? String ?? ""
+    let name = args["name"] as? String ?? ""
+    let mime = args["mime_type"] as? String ?? ""
+    guard (action == "share" || action == "download"),
+      let data = (args["bytes"] as? FlutterStandardTypedData)?.data,
+      !data.isEmpty, data.count <= maxBytes, valid(name, mime) else {
+      result(FlutterError(code: "invalid", message: "The photo could not be exported.", details: nil)); return
+    }
+
+    exporting = true
+    let directory = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+      .appendingPathComponent("circle-photo-exports", isDirectory: true)
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    let file = directory.appendingPathComponent(name)
+    do {
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+      try data.write(to: file, options: .atomic)
+    } catch {
+      exporting = false
+      try? FileManager.default.removeItem(at: directory)
+      result(FlutterError(code: "unavailable", message: "The photo could not be prepared.", details: nil))
+      return
+    }
+
+    let sheet = UIActivityViewController(activityItems: [file], applicationActivities: nil)
+    sheet.popoverPresentationController?.sourceView = view.view
+    sheet.popoverPresentationController?.sourceRect = CGRect(x: view.view.bounds.midX, y: view.view.bounds.midY, width: 1, height: 1)
+    sheet.completionWithItemsHandler = { _, completed, _, error in
+      self.exporting = false
+      try? FileManager.default.removeItem(at: directory)
+      if let error = error {
+        result(FlutterError(code: "unavailable", message: error.localizedDescription, details: nil))
+      } else {
+        result(completed)
+      }
+    }
+    view.present(sheet, animated: true)
   }
 }
