@@ -340,6 +340,20 @@ abstract final class CircleOverlay {
   static final muted = Colors.white.withValues(alpha: 0.7);
   static final divider = Colors.white.withValues(alpha: 0.2);
   static const chipBackground = Colors.black54;
+  static final topScrim = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Colors.black.withValues(alpha: 0.82), Colors.transparent],
+  );
+  static final bottomScrim = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.88)],
+  );
+  static const filmstripHeight = 72.0;
+  static const filmstripThumbWidth = 56.0;
+  static const filmstripBorderWidth = 2.0;
+  static const maxChromeFraction = 0.6;
 }
 
 /// Editorial, photo-first (owner, 28 Oct 2026). 60/30/10: 60% warm paper
