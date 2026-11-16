@@ -24,8 +24,12 @@ void main() {
         theme.textTheme.titleLarge!.fontSize,
         CircleTextStyles.pageTitle(ink).fontSize,
       );
-      expect(CircleTextStyles.homeBody(ink), CircleTextStyles.body(ink));
-      expect(CircleTextStyles.homeAuthor(ink), CircleTextStyles.cardTitle(ink));
+      expect(CircleTextStyles.homeBody(ink), CircleTextStyles.bodyMedium(ink));
+      expect(CircleTextStyles.homeAuthor(ink).fontWeight, FontWeight.w700);
+      expect(
+        CircleTextStyles.homeAuthor(ink).fontFamily,
+        CircleTextStyles.homeFontFamily,
+      );
       expect(theme.textTheme.bodyMedium!.fontFamily, 'Inter');
     }
   });

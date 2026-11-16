@@ -7,6 +7,7 @@ import 'package:mobile/app/circle_experience.dart';
 import 'package:mobile/core/theme_controller.dart';
 import 'package:mobile/features/moderation/application/server_moderation.dart';
 import 'package:mobile/features/workspace/application/workspace_providers.dart';
+import 'support/circle_harness.dart' show reveal;
 import 'support/fake_api.dart';
 import 'support/server_harness.dart';
 
@@ -39,6 +40,7 @@ void main() {
       );
       final controller = c.read(circleWorkspaceProvider.notifier);
       final menu = find.byTooltip(RegExp('More options for'));
+      await reveal(tester, menu);
       await tester.tap(menu.first);
       await settle(tester);
       await tester.tap(find.text('Report'));
