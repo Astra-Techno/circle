@@ -953,6 +953,13 @@ class _CircleAppShellState extends ConsumerState<CircleAppShell> {
                       borderRadius: BorderRadius.circular(CircleRadius.pill),
                       clipBehavior: Clip.antiAlias,
                       child: _DockLayout(
+                        labels: const [
+                          'Home',
+                          'Circles',
+                          'Chats',
+                          'Events',
+                          'Profile',
+                        ],
                         children: [
                           _DockTab(
                             type: CircleActionIconType.home,
@@ -1172,36 +1179,59 @@ class _DockTab extends StatelessWidget {
           customBorder: const StadiumBorder(),
           onTap: onTap,
           child: SizedBox(
-            height: CircleLayout.homeDockHeight,
-            child: Center(
-              child: AnimatedContainer(
-                duration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 200),
-                width: CircleLayout.navigationHighlightWidth,
-                height: CircleLayout.navigationHighlightHeight,
-
-                alignment: Alignment.center,
-                child: leading == null
-                    ? CircleActionIcon(type: type, tinted: !selected)
-                    : DecoratedBox(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: selected
-                              ? Border.all(
-                                  color: color,
-                                  width: CircleLayout.navigationRingWidth,
-                                )
-                              : null,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(
-                            CircleLayout.navigationAvatarInset,
+            height: CircleLayout.homeDockHeightFor(context),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 200),
+                  width: CircleLayout.navigationHighlightWidth,
+                  height: CircleLayout.navigationHighlightHeight,
+                  alignment: Alignment.center,
+                  child: leading == null
+                      ? CircleActionIcon(
+                          type: type,
+                          tinted: !selected,
+                          accent: color,
+                          size: CircleLayout.navigationHighlightHeight,
+                        )
+                      : DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: selected
+                                ? Border.all(
+                                    color: color,
+                                    width: CircleLayout.navigationRingWidth,
+                                  )
+                                : null,
                           ),
-                          child: leading!,
+                          child: Padding(
+                            padding: const EdgeInsets.all(
+                              CircleLayout.navigationAvatarInset,
+                            ),
+                            child: leading!,
+                          ),
                         ),
-                      ),
-              ),
+                ),
+                const SizedBox(height: Space.xs),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: CircleTextStyles.navLabel(color),
+                ),
+                const SizedBox(height: Space.xs),
+                Container(
+                  width: Space.xs,
+                  height: Space.xs,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? color : Colors.transparent,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1210,16 +1240,21 @@ class _DockTab extends StatelessWidget {
   }
 }
 
-/// Icon-only tabs keep one row independent of text scaling.
-/// Very narrow surfaces reflow to preserve 48px touch targets.
+/// Labels stay visible as the dock grows at accessibility text sizes. Very
+/// narrow surfaces reflow to preserve 48px touch targets.
 class _DockLayout extends StatelessWidget {
-  const _DockLayout({required this.children});
+  const _DockLayout({required this.labels, required this.children});
+  final List<String> labels;
   final List<Widget> children;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      const minimum = CircleSizes.minTouchTarget;
-      final fit = (constraints.maxWidth / minimum).floor();
+      var itemWidth = CircleSizes.minTouchTarget;
+      for (final label in labels) {
+        final measured = CircleLayout.navigationItemWidth(context, label);
+        if (measured > itemWidth) itemWidth = measured;
+      }
+      final fit = (constraints.maxWidth / itemWidth).floor();
       final columns = fit >= children.length
           ? children.length
           : fit.clamp(1, 3);
