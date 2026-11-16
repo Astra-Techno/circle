@@ -14,10 +14,13 @@ import java.util.TimeZone
 
 class MainActivity : FlutterActivity() {
     private var contactResult: MethodChannel.Result? = null
+    private lateinit var photoExport: PhotoExportHandler
     private val contactRequest = 4107
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (::photoExport.isInitialized &&
+            photoExport.onActivityResult(requestCode, resultCode, data)) return
         if (requestCode != contactRequest) return
         val result = contactResult ?: return
         contactResult = null
@@ -43,6 +46,7 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() {
         runCatching { contactResult?.success(null) }
         contactResult = null
+        if (::photoExport.isInitialized) photoExport.cancel()
         super.onDestroy()
     }
 
@@ -82,6 +86,9 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        photoExport = PhotoExportHandler(this)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "circle/photo_export")
+            .setMethodCallHandler(photoExport::handle)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "circle/session_device")
             .setMethodCallHandler { call, result ->
                 if (call.method == "details") {
