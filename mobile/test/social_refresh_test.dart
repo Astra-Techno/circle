@@ -26,24 +26,21 @@ void main() {
       await settle(tester);
       for (final label in ['Home', 'Circles', 'Chats', 'Events', 'Profile']) {
         final target = find.byTooltip(label);
-        expect(find.text(label), findsOneWidget);
+        expect(find.text(label), findsNothing);
         expect(tester.getRect(target).bottom, lessThanOrEqualTo(1000));
         expect(tester.getSize(target).width, greaterThanOrEqualTo(48));
         expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
-        if (scale < CircleLayout.largeTextThreshold) {
-          expect(
-            tester.getCenter(target).dy,
-            tester.getCenter(find.byTooltip('Home')).dy,
-          );
-        }
+        expect(
+          tester.getCenter(target).dy,
+          tester.getCenter(find.byTooltip('Home')).dy,
+        );
       }
       if (scale == 1) {
         final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
         expect(
           tester.getSize(find.byWidget(scaffold.bottomNavigationBar!)).height,
-          lessThanOrEqualTo(CircleLayout.homeDockHeight + Space.md),
-          reason:
-              '72px labelled capsule plus one 8px gap on each side at normal text',
+          lessThanOrEqualTo(72),
+          reason: '56px capsule plus one 8px gap on each side',
         );
       }
       c.read(circleRouterProvider).go('/events/new');
