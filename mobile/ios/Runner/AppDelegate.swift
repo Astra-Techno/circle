@@ -75,14 +75,14 @@ final class CirclePushBridge: NSObject, FlutterPlugin, FlutterStreamHandler {
     switch type {
     case "memory.created": return "Someone shared a new Memory in your circle."
     case "comment.created": return "Someone commented on your Memory."
-    case "comment.reply": return "Someone replied to your comment."
+    case "comment.reply": return "Someone commented on your Memory."
     case "group.invitation": return "You have a new circle invitation."
-    case "group.report": return "A group report needs your attention."
+    case "group.report": return "A group report needs attention."
     case "chat.message": return "You have a new chat message."
     case "poll.created": return "A new poll is available in your circle."
     case "poll.closed": return "A poll in your circle has closed."
     case "event.created": return "A new event was added in your circle."
-    case "event.updated": return "An event in your circle was updated."
+    case "event.updated": return "An event in your circle was updated"
     case "event.cancelled": return "An event in your circle was cancelled."
     case "event.rsvp": return "Someone responded to your event."
     case "event.reminder": return "Your event is starting soon."
@@ -180,7 +180,7 @@ final class CircleInviteShare: NSObject, FlutterPlugin, CNContactPickerDelegate,
       picker.displayedPropertyKeys = [CNContactPhoneNumbersKey]
       picker.predicateForEnablingContact = NSPredicate(format: "phoneNumbers.@count > 0")
       picker.predicateForSelectionOfContact = NSPredicate(value: false)
-      picker.predicateForSelectionOfProperty = NSPredicate(format: "key == %@", CNPhoneNumberKey)
+      picker.predicateForSelectionOfProperty = NSPredicate(format: "key == %@", CNContactPhoneNumbersKey)
       view.present(picker, animated: true)
     case "compose":
       let args = call.arguments as? [String: Any] ?? [:]
