@@ -81,7 +81,8 @@ void main() {
     await go(tester, c, '/home/memory/table/photos');
     expect(find.byType(AppBar), findsNothing);
     expect(find.byTooltip('Close'), findsOneWidget);
-    expect(find.text('Share'), findsNothing);
+    expect(find.text('Share'), findsOneWidget);
+    expect(find.text('Download'), findsOneWidget);
     await tester.tap(find.widgetWithText(TextButton, 'React'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, '😂'));
