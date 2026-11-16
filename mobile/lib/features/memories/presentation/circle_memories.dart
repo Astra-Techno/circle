@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import '../../events/presentation/event_visuals.dart';
+import '../../groups/presentation/group_photos.dart';
 import '../../profile/presentation/person_avatar.dart';
 import 'package:flutter/material.dart';
 
@@ -35,8 +39,9 @@ class CircleHome extends ConsumerWidget {
 
       final more = workspace.hasMoreMemories;
       return ColoredBox(
-        color: Theme.of(context).colorScheme.surface,
+        color: CirclePulsePalette.canvas(context),
         child: ReadingPane(
+          color: CirclePulsePalette.canvas(context),
           maxWidth: CircleLayout.homeComposerMaxWidth,
           child: RefreshIndicator(
             onRefresh: () => runCalmly(
@@ -58,7 +63,7 @@ class CircleHome extends ConsumerWidget {
                       return _HomeHeader(
                         workspace: workspace,
                         groupId: groupId,
-                        hasMemories: memories.isNotEmpty,
+                        memories: memories,
                         features: features,
                       );
                     }
@@ -86,182 +91,331 @@ class CircleHome extends ConsumerWidget {
   );
 }
 
-/// Selected Home concept: Floating 3D Glass Island with whisper prompt and tactile action tray.
+/// Owner-approved Circle Pulse Home: a white social dashboard with real
+/// Circles, creation actions, upcoming plans and active polls.
 class _HomeHeader extends ConsumerWidget {
   const _HomeHeader({
     required this.workspace,
     required this.groupId,
-    required this.hasMemories,
+    required this.memories,
     required this.features,
   });
   final CircleWorkspace workspace;
   final String? groupId;
-  final bool hasMemories;
+  final List<CircleMemory> memories;
   final CircleFeatures features;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final now = ref.read(circleClockProvider)();
+    final account = ref.watch(serverAccountProvider);
+    final upcoming = workspace.events
+        .where(
+          (event) =>
+              (groupId == null || event.groupId == groupId) &&
+              !event.cancelled &&
+              event.endsOrStarts.isAfter(now.toUtc()),
+        )
+        .toList();
+    final pollMemory = memories
+        .where((memory) => memory.poll != null && !memory.poll!.closed)
+        .firstOrNull;
+    final people = {
+      for (final group in workspace.groups)
+        if (groupId == null || group.id == groupId)
+          for (final person in group.roles.keys)
+            if (person != workspace.viewer) person,
+    }.toList();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Space.md,
+        Space.sm,
+        Space.md,
+        Space.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(
+              homeGreeting(now, account?.displayName ?? ''),
+              style: CircleTextStyles.homeGreeting(
+                Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          const SizedBox(height: Space.xs),
+          Text(
+            'The people and moments that matter, all in one place.',
+            style: CircleTextStyles.homeShortcut(
+              CircleAccents.of(context).caption,
+            ),
+          ),
+          if (workspace.groups.isNotEmpty) ...[
+            const SizedBox(height: Space.md),
+            _HomeCircleSelector(workspace: workspace, groupId: groupId),
+            const SizedBox(height: Space.sm),
+            _HomeComposer(workspace: workspace, groupId: groupId),
+            const SizedBox(height: Space.md),
+            _CreatePanel(groupId: groupId, features: features),
+            if (features.has(CircleFeature.liveEvents) && upcoming.isNotEmpty ||
+                features.has(CircleFeature.livePolls) &&
+                    pollMemory != null) ...[
+              const SizedBox(height: Space.md),
+              _HomePulseModules(
+                event: features.has(CircleFeature.liveEvents)
+                    ? upcoming.first
+                    : null,
+                pollMemory: features.has(CircleFeature.livePolls)
+                    ? pollMemory
+                    : null,
+                workspace: workspace,
+                now: now,
+              ),
+            ],
+            if (people.isNotEmpty) ...[
+              const SizedBox(height: Space.md),
+              _HomePeoplePanel(
+                workspace: workspace,
+                people: people,
+                canChat: features.has(CircleFeature.liveChat),
+              ),
+            ],
+          ],
+          if (memories.isNotEmpty) ...[
+            const SizedBox(height: Space.xl),
+            const _HomeSectionTitle(title: 'Memories'),
+          ] else
+            _FirstSteps(workspace: workspace, groupId: groupId),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeCircleSelector extends ConsumerWidget {
+  const _HomeCircleSelector({required this.workspace, required this.groupId});
+  final CircleWorkspace workspace;
+  final String? groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final circles = homeCircles(workspace, ref.watch(circleSeenProvider).value);
+    return SizedBox(
+      height: CirclePulseLayout.circleSelectorHeight,
+      child: ListView(
+        key: const ValueKey('home-circle-selector'),
+        scrollDirection: Axis.horizontal,
+        children: [
+          _HomeCircleChoice(
+            label: 'All Circles',
+            selected: groupId == null,
+            avatar: const CircleInitialAvatar(
+              icon: CircleIcons.layers,
+              size: CircleAvatarSize.large,
+            ),
+            onTap: () =>
+                ref.read(homeGroupFilterProvider.notifier).select(null),
+          ),
+          for (final entry in circles.ordered)
+            _HomeCircleChoice(
+              label: entry.group.name,
+              selected: groupId == entry.group.id,
+              fresh: entry.fresh,
+              avatar: GroupAvatar(
+                groupId: entry.group.id,
+                type: entry.group.type,
+                size: CircleAvatarSize.large,
+              ),
+              onTap: () {
+                ref
+                    .read(homeGroupFilterProvider.notifier)
+                    .select(entry.group.id);
+                final latest = circles.latest[entry.group.id];
+                if (latest != null) {
+                  unawaited(
+                    ref
+                        .read(circleSeenProvider.notifier)
+                        .markSeen(entry.group.id, latest),
+                  );
+                }
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeCircleChoice extends StatelessWidget {
+  const _HomeCircleChoice({
+    required this.label,
+    required this.selected,
+    required this.avatar,
+    required this.onTap,
+    this.fresh = false,
+  });
+  final String label;
+  final bool selected;
+  final bool fresh;
+  final Widget avatar;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final accents = CircleAccents.of(context);
-    final theme = Theme.of(context);
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: CircleLayout.homeComposerMaxWidth,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (workspace.groups.isNotEmpty)
-              Padding(
-                // Full-width divider; content keeps the 16px margins.
-                padding: const EdgeInsets.only(top: Space.xs),
-                // Merged with the header (owner, 10 Nov 2026): no card of its
-                // own; the prompt and tiles continue the header surface and a
-                // divider separates them from the Memories.
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: accents.hairline)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(CircleRadius.card),
+          onTap: onTap,
+          child: SizedBox(
+            width: CirclePulseLayout.circleItemWidth,
+            child: Padding(
+              padding: const EdgeInsets.all(Space.xs),
+              child: Column(
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          Space.md,
-                          0,
-                          Space.md,
-                          Space.sm,
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: selected
+                              ? Border.all(
+                                  color: colors.primary,
+                                  width: CircleLayout.navigationRingWidth,
+                                )
+                              : null,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Keepsake whisper prompt row: avatar + tactile capsule with sparkle
-                            Row(
-                              children: [
-                                PersonAvatar(
-                                  person: workspace.viewer,
-                                  name: 'You',
-                                  size: CircleAvatarSize.medium,
-                                ),
-                                const SizedBox(width: Space.sm),
-                                Expanded(
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    borderRadius: BorderRadius.circular(
-                                      CircleRadius.pill,
-                                    ),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(
-                                        CircleRadius.pill,
-                                      ),
-                                      onTap: () => context.push(
-                                        composeLocation(groupId),
-                                      ),
-                                      child: ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          minHeight: Space.large,
-                                        ),
-                                        child: Center(
-                                          heightFactor: 1,
-                                          child: SizedBox(
-                                            width: double.infinity,
-                                            child: Ink(
-                                              decoration: BoxDecoration(
-                                                color: accents.recessed,
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                      CircleRadius.pill,
-                                                    ),
-                                                border: Border.all(
-                                                  color: accents.hairline,
-                                                ),
-                                              ),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: Space.md,
-                                                      vertical:
-                                                          Space.sm + Space.xs,
-                                                    ),
-                                                child: Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        'Share a memory…',
-                                                        maxLines:
-                                                            MediaQuery.textScalerOf(
-                                                                  context,
-                                                                ).scale(1) <=
-                                                                CircleLayout
-                                                                    .largeTextThreshold
-                                                            ? 1
-                                                            : 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        style:
-                                                            CircleTextStyles.homeBody(
-                                                              accents.caption,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(
-                                                      width: Space.xs,
-                                                    ),
-                                                    Icon(
-                                                      CircleIcons.sparkles,
-                                                      size:
-                                                          CircleSizes.iconSmall,
-                                                      color: theme
-                                                          .colorScheme
-                                                          .primary,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: Space.sm),
-                            // Icon-only flat bold action strip
-                            _ActionIconStrip(
-                              groupId: groupId,
-                              features: features,
-                            ),
-                          ],
+                        child: Padding(
+                          padding: const EdgeInsets.all(Space.xs),
+                          child: avatar,
                         ),
                       ),
+                      if (fresh)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            width: Space.sm + Space.xs,
+                            height: Space.sm + Space.xs,
+                            decoration: BoxDecoration(
+                              color: accents.activeDot,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: colors.surface,
+                                width: CircleLayout.navigationRingWidth,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: Space.xs),
+                  Text(
+                    label,
+                    maxLines:
+                        MediaQuery.textScalerOf(context).scale(1) >=
+                            CircleLayout.largeTextThreshold
+                        ? 1
+                        : 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: CircleTextStyles.homeCaption(
+                      selected ? colors.primary : accents.caption,
+                    ),
+                  ),
+                ],
               ),
-            if (!hasMemories)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Space.section),
-                child: _FirstSteps(workspace: workspace, groupId: groupId),
-              ),
-          ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-/// Flat bold icon-only action strip for the Home header.
-/// Renders 34px [CircleActionIcon] tiles in 48px tap targets with dividers.
-class _ActionIconStrip extends StatelessWidget {
-  const _ActionIconStrip({required this.groupId, required this.features});
+class _HomeComposer extends StatelessWidget {
+  const _HomeComposer({required this.workspace, required this.groupId});
+  final CircleWorkspace workspace;
+  final String? groupId;
+
+  @override
+  Widget build(BuildContext context) {
+    const foreground = CircleOverlay.foreground;
+    return Semantics(
+      button: true,
+      label: 'Share a memory',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(CircleRadius.card),
+          onTap: () => context.push(composeLocation(groupId)),
+          child: Ink(
+            decoration: CirclePulsePalette.composer(context),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: CirclePulseLayout.composerMinHeight,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(Space.md),
+                child: Row(
+                  children: [
+                    PersonAvatar(
+                      person: workspace.viewer,
+                      name: 'You',
+                      size: CircleAvatarSize.medium,
+                    ),
+                    const SizedBox(width: Space.md),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Share a memory…',
+                            style: CircleTextStyles.homeComposer(foreground),
+                          ),
+                          const SizedBox(height: Space.xs),
+                          Text(
+                            'A photo, a thought, a moment.',
+                            style: CircleTextStyles.homeCaption(foreground),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: Space.sm),
+                    const Icon(
+                      CircleIcons.create,
+                      color: foreground,
+                      size: CircleSizes.iconCreate,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CreatePanel extends StatelessWidget {
+  const _CreatePanel({required this.groupId, required this.features});
   final String? groupId;
   final CircleFeatures features;
 
   @override
   Widget build(BuildContext context) {
-    final accents = CircleAccents.of(context);
     final items = <_ActionItem>[
       _ActionItem(
         type: CircleActionIconType.memory,
@@ -280,7 +434,6 @@ class _ActionIconStrip extends StatelessWidget {
           tooltip: 'Poll',
           route: groupId == null ? '/polls/new' : '/polls/new?group=$groupId',
         ),
-      // Capsules are phone-only until the server offers them: hidden.
       if (features.has(CircleFeature.capsules))
         _ActionItem(
           type: CircleActionIconType.capsule,
@@ -290,36 +443,393 @@ class _ActionIconStrip extends StatelessWidget {
               : '/capsules/new?group=$groupId',
         ),
     ];
-
-    return SizedBox(
-      height: CircleSizes.minTouchTarget,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return Container(
+      padding: const EdgeInsets.all(Space.md),
+      decoration: BoxDecoration(
+        color: CirclePulsePalette.surface(context),
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0)
-              Container(
-                width: CircleMemoryLayout.dividerThickness * 4,
-                height: CircleSizes.iconDefault,
-                color: accents.hairline,
-              ),
-            Tooltip(
-              message: items[i].tooltip,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(CircleRadius.card),
-                onTap: () => context.push(items[i].route),
-                // 48px tap target around the 34px tile.
-                child: SizedBox.square(
-                  dimension: CircleSizes.minTouchTarget,
-                  child: Center(child: CircleActionIcon(type: items[i].type)),
-                ),
+          const _HomeSectionTitle(title: 'Create something'),
+          const SizedBox(height: Space.sm),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = (constraints.maxWidth - Space.sm) / 2;
+              return Wrap(
+                spacing: Space.sm,
+                runSpacing: Space.sm,
+                children: [
+                  for (final item in items)
+                    SizedBox(
+                      width: width,
+                      child: _PulseCreateAction(item: item),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PulseCreateAction extends StatelessWidget {
+  const _PulseCreateAction({required this.item});
+  final _ActionItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: item.tooltip,
+      child: Material(
+        color: CirclePulsePalette.raisedSurface(context),
+        borderRadius: BorderRadius.circular(CircleRadius.tile),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(CircleRadius.tile),
+          onTap: () => context.push(item.route),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: CirclePulseLayout.createActionMinHeight,
+              minWidth: CircleSizes.minTouchTarget,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(Space.md),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleActionIcon(
+                    type: item.type,
+                    size: CircleLayout.quickActionPaint,
+                  ),
+                  const SizedBox(height: Space.sm),
+                  Text(
+                    item.tooltip,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: CircleTextStyles.homeShortcut(
+                      Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomePulseModules extends StatelessWidget {
+  const _HomePulseModules({
+    required this.event,
+    required this.pollMemory,
+    required this.workspace,
+    required this.now,
+  });
+  final CircleEvent? event;
+  final CircleMemory? pollMemory;
+  final CircleWorkspace workspace;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final stack =
+        MediaQuery.textScalerOf(context).scale(1) >=
+            CircleLayout.largeTextThreshold ||
+        MediaQuery.sizeOf(context).width <
+            CirclePulseLayout.dashboardBreakpoint;
+    final children = [
+      if (event != null)
+        _UpcomingEventCard(event: event!, workspace: workspace, now: now),
+      if (pollMemory?.poll != null)
+        _HomePollCard(memory: pollMemory!, poll: pollMemory!.poll!),
+    ];
+    if (stack) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(height: Space.sm),
+            children[i],
+          ],
+        ],
+      );
+    }
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(width: Space.sm),
+            Expanded(child: children[i]),
           ],
         ],
       ),
     );
   }
+}
+
+class _UpcomingEventCard extends StatelessWidget {
+  const _UpcomingEventCard({
+    required this.event,
+    required this.workspace,
+    required this.now,
+  });
+  final CircleEvent event;
+  final CircleWorkspace workspace;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    const ink = CirclePulsePalette.eventText;
+    const muted = CirclePulsePalette.eventMuted;
+    return Semantics(
+      button: true,
+      label: 'Upcoming event: ${event.title}',
+      child: Material(
+        color: CirclePulsePalette.event,
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(CircleRadius.card),
+          onTap: () => context.push('/events/e/${event.id}'),
+          child: Padding(
+            padding: const EdgeInsets.all(Space.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const CircleActionIcon(
+                  type: CircleActionIconType.event,
+                  tinted: true,
+                  accent: ink,
+                  size: CircleLayout.quickActionPaint,
+                ),
+                const SizedBox(height: Space.md),
+                Text(
+                  'UPCOMING EVENT',
+                  style: CircleTextStyles.homeCaption(muted),
+                ),
+                const SizedBox(height: Space.xs),
+                Text(event.title, style: CircleTextStyles.homeAuthor(ink)),
+                const SizedBox(height: Space.sm),
+                Text(
+                  eventWhenLabel(event, now),
+                  style: CircleTextStyles.homeCaption(muted),
+                ),
+                const SizedBox(height: Space.xs),
+                Text(
+                  workspace.group(event.groupId)?.name ?? '',
+                  style: CircleTextStyles.homeCaption(muted),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomePollCard extends StatelessWidget {
+  const _HomePollCard({required this.memory, required this.poll});
+  final CircleMemory memory;
+  final PollView poll;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: 'Open poll: ${poll.question}',
+      child: Material(
+        color: CirclePulsePalette.raisedSurface(context),
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(CircleRadius.card),
+          onTap: () => context.push('/home/memory/${memory.id}'),
+          child: Padding(
+            padding: const EdgeInsets.all(Space.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const CircleActionIcon(
+                      type: CircleActionIconType.poll,
+                      tinted: true,
+                      size: CircleLayout.quickActionPaint,
+                    ),
+                    const SizedBox(width: Space.sm),
+                    Expanded(
+                      child: Text(
+                        'LIVE POLL',
+                        style: CircleTextStyles.homeCaption(colors.primary),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Space.md),
+                Text(
+                  poll.question,
+                  style: CircleTextStyles.homeAuthor(colors.onSurface),
+                ),
+                const SizedBox(height: Space.sm),
+                for (final option in poll.options.take(2))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: Space.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                option.label,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: CircleTextStyles.homeCaption(
+                                  colors.onSurface,
+                                ),
+                              ),
+                            ),
+                            if (option.percent != null)
+                              Text(
+                                '${option.percent}%',
+                                style: CircleTextStyles.homeCaption(
+                                  colors.primary,
+                                ),
+                              ),
+                          ],
+                        ),
+                        if (option.percent != null) ...[
+                          const SizedBox(height: Space.xs),
+                          LinearProgressIndicator(
+                            value: option.percent! / 100,
+                            minHeight: CirclePulseLayout.pollProgressHeight,
+                            color: colors.primary,
+                            backgroundColor: colors.surface,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                Text(
+                  '${poll.totalVoters} ${poll.totalVoters == 1 ? 'vote' : 'votes'}',
+                  style: CircleTextStyles.homeCaption(
+                    CircleAccents.of(context).caption,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomePeoplePanel extends StatelessWidget {
+  const _HomePeoplePanel({
+    required this.workspace,
+    required this.people,
+    required this.canChat,
+  });
+  final CircleWorkspace workspace;
+  final List<String> people;
+  final bool canChat;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: CirclePulsePalette.surface(context),
+      borderRadius: BorderRadius.circular(CircleRadius.card),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CircleRadius.card),
+        onTap: () => context.go(canChat ? '/chats' : '/groups'),
+        child: Padding(
+          padding: const EdgeInsets.all(Space.md),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final copy = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your people are here',
+                    style: CircleTextStyles.homeAuthor(colors.onSurface),
+                  ),
+                  const SizedBox(height: Space.xs),
+                  Text(
+                    '${people.length} ${people.length == 1 ? 'person shares' : 'people share'} your Circles',
+                    style: CircleTextStyles.homeCaption(
+                      CircleAccents.of(context).caption,
+                    ),
+                  ),
+                ],
+              );
+              final avatars = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final person in people.take(4))
+                    Padding(
+                      padding: const EdgeInsets.only(left: Space.xs),
+                      child: PersonAvatar(
+                        person: person,
+                        name: workspace.nameOf(person),
+                        size: CircleAvatarSize.small,
+                      ),
+                    ),
+                  const SizedBox(width: Space.xs),
+                  Icon(CircleIcons.chevronRight, color: colors.primary),
+                ],
+              );
+              final stack =
+                  constraints.maxWidth <
+                      CirclePulseLayout.dashboardBreakpoint ||
+                  MediaQuery.textScalerOf(context).scale(1) >=
+                      CircleLayout.largeTextThreshold;
+              if (stack) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    copy,
+                    const SizedBox(height: Space.sm),
+                    avatars,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: copy),
+                  avatars,
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeSectionTitle extends StatelessWidget {
+  const _HomeSectionTitle({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    child: Text(
+      title,
+      style: CircleTextStyles.homeSectionTitle(
+        Theme.of(context).colorScheme.onSurface,
+      ),
+    ),
+  );
 }
 
 class _ActionItem {
@@ -397,6 +907,19 @@ class _LoadOlderState extends ConsumerState<_LoadOlderMemories> {
             ),
     ),
   );
+}
+
+/// A local-time greeting with the signed-in person's first name when known.
+String homeGreeting(DateTime now, String displayName) {
+  final greeting = switch (now.hour) {
+    < 12 => 'Good morning',
+    < 17 => 'Good afternoon',
+    _ => 'Good evening',
+  };
+  final firstName = displayName.trim().split(RegExp(r'\s+')).first;
+  return firstName.isEmpty || firstName == 'You'
+      ? greeting
+      : '$greeting, $firstName';
 }
 
 /// Compose location with the audience in view, if any.
