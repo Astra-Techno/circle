@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../../../core/viewport_load.dart';
 import '../../../core/api/api_providers.dart';
@@ -144,53 +147,66 @@ class MemoryPhotoViewer extends ConsumerWidget {
   final int initialIndex;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => WorkspaceView(
-    builder: (workspace) {
-      final memory = workspace.memories
-          .where((memory) => memory.id == memoryId)
-          .firstOrNull;
-      if (memory == null || memory.photos.isEmpty) {
-        return const ReadingPane(
-          child: Padding(
-            padding: CircleInsets.form,
-            child: CircleEmpty(
-              icon: CircleIcons.lockKeyhole,
-              title: 'Photos unavailable',
-              message: 'These photos are not shared with your current groups.',
+  Widget build(BuildContext context, WidgetRef ref) {
+    final export = ref.watch(photoExportServiceProvider);
+    final exportSupported = ref.watch(photoExportBridgeProvider).supported;
+    return WorkspaceView(
+      builder: (workspace) {
+        final memory = workspace.memories
+            .where((memory) => memory.id == memoryId)
+            .firstOrNull;
+        if (memory == null || memory.photos.isEmpty) {
+          return const ReadingPane(
+            child: Padding(
+              padding: CircleInsets.form,
+              child: CircleEmpty(
+                icon: CircleIcons.lockKeyhole,
+                title: 'Photos unavailable',
+                message:
+                    'These photos are not shared with your current groups.',
+              ),
             ),
-          ),
+          );
+        }
+        return PhotoPager(
+          photos: memory.photos,
+          initialIndex: initialIndex,
+          caption: memory.text,
+          authorName: memory.author,
+          createdAt: memory.createdAt,
+          onExport: exportSupported
+              ? (photo, action) => export.export(
+                  photo,
+                  action,
+                  asset: memoryScenePhoto(photo.scene),
+                )
+              : null,
+          onReact: () async {
+            final api = ref.read(apiClientProvider);
+            final session = api?.sessionRevision;
+            final repository = ref.read(circleRepositoryProvider);
+            final emoji = await showReactionPicker(context, memory.reactions);
+            if (!context.mounted ||
+                !identical(ref.read(apiClientProvider), api) ||
+                api?.sessionRevision != session ||
+                !identical(ref.read(circleRepositoryProvider), repository)) {
+              return;
+            }
+            if (emoji != null) {
+              await runCalmly(
+                context,
+                () => ref
+                    .read(circleWorkspaceProvider.notifier)
+                    .react(memory.id, emoji),
+              );
+            }
+          },
+          onComment: () =>
+              context.push('/home/memory/${memory.id}?comment=true'),
         );
-      }
-      return PhotoPager(
-        photos: memory.photos,
-        initialIndex: initialIndex,
-        caption: memory.text,
-        authorName: memory.author,
-        createdAt: memory.createdAt,
-        onReact: () async {
-          final api = ref.read(apiClientProvider);
-          final session = api?.sessionRevision;
-          final repository = ref.read(circleRepositoryProvider);
-          final emoji = await showReactionPicker(context, memory.reactions);
-          if (!context.mounted ||
-              !identical(ref.read(apiClientProvider), api) ||
-              api?.sessionRevision != session ||
-              !identical(ref.read(circleRepositoryProvider), repository)) {
-            return;
-          }
-          if (emoji != null) {
-            await runCalmly(
-              context,
-              () => ref
-                  .read(circleWorkspaceProvider.notifier)
-                  .react(memory.id, emoji),
-            );
-          }
-        },
-        onComment: () => context.push('/home/memory/${memory.id}?comment=true'),
-      );
-    },
-  );
+      },
+    );
+  }
 }
 
 /// Full-screen immersive photo viewer with dark background, swipe
@@ -207,6 +223,7 @@ class PhotoPager extends StatefulWidget {
     this.createdAt,
     this.onReact,
     this.onComment,
+    this.onExport,
   });
   final List<MemoryPhoto> photos;
   final int initialIndex;
@@ -214,6 +231,8 @@ class PhotoPager extends StatefulWidget {
   final String? caption, authorName;
   final DateTime? createdAt;
   final VoidCallback? onReact, onComment;
+  final Future<bool> Function(MemoryPhoto photo, PhotoExportAction action)?
+  onExport;
   @override
   State<PhotoPager> createState() => _PhotoPagerState();
 }
@@ -224,13 +243,66 @@ class _PhotoPagerState extends State<PhotoPager> {
     widget.photos.isEmpty ? 0 : widget.photos.length - 1,
   );
   late final PageController _pages = PageController(initialPage: _index);
-  bool _zoomed = false;
+  final _filmstrip = ScrollController();
+  bool _zoomed = false, _chromeVisible = true;
+  PhotoExportAction? _exportAction;
   int _zoomGeneration = 0;
 
   @override
   void dispose() {
     _pages.dispose();
+    _filmstrip.dispose();
     super.dispose();
+  }
+
+  void _resetZoom() => setState(() {
+    _zoomed = false;
+    _zoomGeneration++;
+  });
+
+  void _pageChanged(int page) {
+    setState(() {
+      _index = page;
+      _zoomed = false;
+      _zoomGeneration++;
+    });
+    if (widget.photos.length < 2) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_filmstrip.hasClients) return;
+      final position = _filmstrip.position;
+      final offset =
+          (page * (CircleOverlay.filmstripThumbWidth + Space.sm) -
+                  position.viewportDimension / 2 +
+                  CircleOverlay.filmstripThumbWidth / 2)
+              .clamp(0.0, position.maxScrollExtent);
+      _filmstrip.animateTo(
+        offset,
+        duration: CircleMotion.micro,
+        curve: CircleMotion.enterCurve,
+      );
+    });
+  }
+
+  void _goTo(int page) => _pages.animateToPage(
+    page,
+    duration: const Duration(milliseconds: 300),
+    curve: Curves.easeInOut,
+  );
+
+  bool _canExport(MemoryPhoto photo) =>
+      widget.onExport != null &&
+      (photo.mediaId != null || memoryScenePhoto(photo.scene) != null);
+
+  Future<void> _export(MemoryPhoto photo, PhotoExportAction action) async {
+    final export = widget.onExport;
+    if (export == null || _exportAction != null) return;
+    setState(() => _exportAction = action);
+    final completed = await runCalmly(context, () => export(photo, action));
+    if (!mounted) return;
+    setState(() => _exportAction = null);
+    if (completed == true && action == PhotoExportAction.download) {
+      showCircleMessage(context, 'Photo saved.');
+    }
   }
 
   @override
@@ -243,7 +315,7 @@ class _PhotoPagerState extends State<PhotoPager> {
           child: CircleEmpty(
             icon: CircleIcons.photo,
             title: 'No photos here',
-            message: 'There\u2019s nothing left to show.',
+            message: 'There’s nothing left to show.',
           ),
         ),
       );
@@ -251,187 +323,345 @@ class _PhotoPagerState extends State<PhotoPager> {
     final index = _index.clamp(0, photos.length - 1);
     final photo = photos[index];
     final footer = widget.footer?.call(context, photo);
+    final busy = _exportAction != null;
     return ColoredBox(
       color: CircleOverlay.background,
       child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            // Top bar: X close + "n of N" + more options.
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Space.xs,
-                vertical: Space.xs,
+            PageView.builder(
+              controller: _pages,
+              // A zoomed photo owns horizontal drags until it is reset.
+              physics: _zoomed ? const NeverScrollableScrollPhysics() : null,
+              itemCount: photos.length,
+              onPageChanged: _pageChanged,
+              itemBuilder: (context, page) => _ZoomableMemoryPhoto(
+                key: ValueKey('photo-${photos[page].id}-$page'),
+                photo: photos[page],
+                semanticsLabel:
+                    'Photo ${page + 1} of ${photos.length}: '
+                    '${photos[page].description}',
+                resetGeneration: _zoomGeneration,
+                onTap: () => setState(() => _chromeVisible = !_chromeVisible),
+                onZoomChanged: (zoomed) {
+                  if (page != _index || _zoomed == zoomed) return;
+                  setState(() => _zoomed = zoomed);
+                },
               ),
-              child: Row(
-                children: [
-                  IconButton(
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).maybePop(),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _PhotoChrome(
+                visible: _chromeVisible,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(gradient: CircleOverlay.topScrim),
+                  child: Padding(
+                    padding: const EdgeInsets.all(Space.xs),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          tooltip: 'Close',
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: const Icon(
+                            CircleIcons.close,
+                            color: CircleOverlay.foreground,
+                          ),
+                        ),
+                        Expanded(
+                          child: Semantics(
+                            liveRegion: true,
+                            child: Text(
+                              '${index + 1} of ${photos.length}',
+                              textAlign: TextAlign.center,
+                              style: CircleTextStyles.cardTitle(
+                                CircleOverlay.foreground,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (_zoomed)
+                          IconButton(
+                            tooltip: 'Reset zoom',
+                            onPressed: _resetZoom,
+                            icon: const Icon(
+                              CircleIcons.undo,
+                              color: CircleOverlay.foreground,
+                            ),
+                          )
+                        else
+                          const SizedBox(width: CircleSizes.minTouchTarget),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: _PhotoChrome(
+                visible: _chromeVisible,
+                child: Center(
+                  child: IconButton(
+                    tooltip: 'Previous photo',
+                    onPressed: index > 0
+                        ? () => _pages.previousPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          )
+                        : null,
                     icon: const Icon(
-                      CircleIcons.close,
+                      CircleIcons.chevronLeft,
                       color: CircleOverlay.foreground,
                     ),
                   ),
-                  Expanded(
-                    child: Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        '${index + 1} of ${photos.length}',
-                        textAlign: TextAlign.center,
-                        style: CircleTextStyles.cardTitle(
-                          CircleOverlay.foreground,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: CircleSizes.minTouchTarget),
-                ],
+                ),
               ),
             ),
-            // Photo with navigation.
-            Expanded(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  PageView.builder(
-                    controller: _pages,
-                    // A zoomed photo owns horizontal drags until it is reset.
-                    physics: _zoomed
-                        ? const NeverScrollableScrollPhysics()
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: _PhotoChrome(
+                visible: _chromeVisible,
+                child: Center(
+                  child: IconButton(
+                    tooltip: 'Next photo',
+                    onPressed: index < photos.length - 1
+                        ? () => _pages.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          )
                         : null,
-                    itemCount: photos.length,
-                    onPageChanged: (page) => setState(() {
-                      _index = page;
-                      _zoomed = false;
-                      _zoomGeneration++;
-                    }),
-                    itemBuilder: (context, page) => _ZoomableMemoryPhoto(
-                      key: ValueKey('photo-${photos[page].id}-$page'),
-                      photo: photos[page],
-                      semanticsLabel:
-                          'Photo ${page + 1} of ${photos.length}: '
-                          '${photos[page].description}',
-                      resetGeneration: _zoomGeneration,
-                      onZoomChanged: (zoomed) {
-                        if (page != _index || _zoomed == zoomed) return;
-                        setState(() => _zoomed = zoomed);
-                      },
+                    icon: const Icon(
+                      CircleIcons.chevronRight,
+                      color: CircleOverlay.foreground,
                     ),
                   ),
-                  Positioned(
-                    left: 0,
-                    child: IconButton(
-                      tooltip: 'Previous photo',
-                      onPressed: index > 0
-                          ? () => _pages.previousPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            )
-                          : null,
-                      icon: const Icon(
-                        CircleIcons.chevronLeft,
-                        color: CircleOverlay.foreground,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    child: IconButton(
-                      tooltip: 'Next photo',
-                      onPressed: index < photos.length - 1
-                          ? () => _pages.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            )
-                          : null,
-                      icon: const Icon(
-                        CircleIcons.chevronRight,
-                        color: CircleOverlay.foreground,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Caption + author.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Space.md,
-                Space.md,
-                Space.md,
-                Space.sm,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (widget.caption != null && widget.caption!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: Space.xs),
-                      child: Text(
-                        widget.caption!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: CircleTextStyles.bodyMedium(
-                          CircleOverlay.foreground,
-                        ),
-                      ),
-                    ),
-                  if (widget.authorName != null)
-                    Text(
-                      [
-                        widget.authorName!,
-                        if (widget.createdAt != null)
-                          circleTimeAgo(widget.createdAt!),
-                      ].join(' \u00b7 '),
-                      style: CircleTextStyles.label(CircleOverlay.muted),
-                    ),
-                  if (photo.caption != null && photo.caption != widget.caption)
-                    Padding(
-                      padding: const EdgeInsets.only(top: Space.xs),
-                      child: Text(
-                        photo.caption!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: CircleTextStyles.label(CircleOverlay.muted),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (widget.onReact != null || widget.onComment != null) ...[
-              Divider(height: 1, color: CircleOverlay.divider),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Space.md,
-                  vertical: Space.sm,
-                ),
-                child: Wrap(
-                  alignment: WrapAlignment.spaceEvenly,
-                  spacing: Space.md,
-                  children: [
-                    if (widget.onReact != null)
-                      _PhotoAction(
-                        icon: CircleIcons.faceSlightlySmiling,
-                        label: 'React',
-                        onPressed: widget.onReact!,
-                      ),
-                    if (widget.onComment != null)
-                      _PhotoAction(
-                        icon: CircleIcons.comment,
-                        label: 'Comment',
-                        onPressed: widget.onComment!,
-                      ),
-                  ],
                 ),
               ),
-            ],
-            ?footer,
+            ),
+            if (_zoomed && !_chromeVisible)
+              Positioned(
+                top: Space.sm,
+                right: Space.sm,
+                child: TextButton.icon(
+                  onPressed: _resetZoom,
+                  style: TextButton.styleFrom(
+                    foregroundColor: CircleOverlay.foreground,
+                    backgroundColor: CircleOverlay.chipBackground,
+                  ),
+                  icon: const Icon(CircleIcons.undo),
+                  label: const Text('Reset zoom'),
+                ),
+              ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _PhotoChrome(
+                visible: _chromeVisible,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: CircleOverlay.bottomScrim,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight:
+                          MediaQuery.sizeOf(context).height *
+                          CircleOverlay.maxChromeFraction,
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              Space.md,
+                              Space.lg,
+                              Space.md,
+                              Space.sm,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (widget.caption != null &&
+                                    widget.caption!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: Space.xs,
+                                    ),
+                                    child: Text(
+                                      widget.caption!,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: CircleTextStyles.bodyMedium(
+                                        CircleOverlay.foreground,
+                                      ),
+                                    ),
+                                  ),
+                                if (widget.authorName != null)
+                                  Text(
+                                    [
+                                      widget.authorName!,
+                                      if (widget.createdAt != null)
+                                        circleTimeAgo(widget.createdAt!),
+                                    ].join(' · '),
+                                    style: CircleTextStyles.label(
+                                      CircleOverlay.muted,
+                                    ),
+                                  ),
+                                if (photo.caption != null &&
+                                    photo.caption != widget.caption)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: Space.xs,
+                                    ),
+                                    child: Text(
+                                      photo.caption!,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: CircleTextStyles.label(
+                                        CircleOverlay.muted,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (photos.length > 1)
+                            SizedBox(
+                              height: CircleOverlay.filmstripHeight,
+                              child: ListView.separated(
+                                controller: _filmstrip,
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: Space.md,
+                                  vertical: Space.xs,
+                                ),
+                                itemCount: photos.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: Space.sm),
+                                itemBuilder: (context, page) => AnimatedContainer(
+                                  key: ValueKey(
+                                    'filmstrip-photo-${photos[page].id}',
+                                  ),
+                                  duration: CircleMotion.micro,
+                                  width: CircleOverlay.filmstripThumbWidth,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: page == index
+                                          ? CircleOverlay.foreground
+                                          : Colors.transparent,
+                                      width: CircleOverlay.filmstripBorderWidth,
+                                    ),
+                                  ),
+                                  child: MemoryPhotoTile(
+                                    photo: photos[page],
+                                    semanticsLabel:
+                                        'View photo ${page + 1} of ${photos.length}: '
+                                        '${photos[page].description}',
+                                    onTap: () => _goTo(page),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (widget.onReact != null ||
+                              widget.onComment != null ||
+                              _canExport(photo)) ...[
+                            Divider(height: 1, color: CircleOverlay.divider),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: Space.md,
+                                vertical: Space.sm,
+                              ),
+                              child: Wrap(
+                                alignment: WrapAlignment.spaceEvenly,
+                                spacing: Space.md,
+                                children: [
+                                  if (widget.onReact != null)
+                                    _PhotoAction(
+                                      icon: CircleIcons.faceSlightlySmiling,
+                                      label: 'React',
+                                      onPressed: busy ? null : widget.onReact,
+                                    ),
+                                  if (widget.onComment != null)
+                                    _PhotoAction(
+                                      icon: CircleIcons.comment,
+                                      label: 'Comment',
+                                      onPressed: busy ? null : widget.onComment,
+                                    ),
+                                  if (_canExport(photo)) ...[
+                                    _PhotoAction(
+                                      icon: CircleIcons.share,
+                                      label: 'Share',
+                                      busy:
+                                          _exportAction ==
+                                          PhotoExportAction.share,
+                                      onPressed: busy
+                                          ? null
+                                          : () => _export(
+                                              photo,
+                                              PhotoExportAction.share,
+                                            ),
+                                    ),
+                                    _PhotoAction(
+                                      icon: CircleIcons.download,
+                                      label: 'Download',
+                                      busy:
+                                          _exportAction ==
+                                          PhotoExportAction.download,
+                                      onPressed: busy
+                                          ? null
+                                          : () => _export(
+                                              photo,
+                                              PhotoExportAction.download,
+                                            ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                          ?footer,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+/// Keeps hidden controls out of hit testing and the accessibility tree.
+class _PhotoChrome extends StatelessWidget {
+  const _PhotoChrome({required this.visible, required this.child});
+  final bool visible;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    ignoring: !visible,
+    child: ExcludeSemantics(
+      excluding: !visible,
+      child: AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: CircleMotion.micro,
+        curve: CircleMotion.enterCurve,
+        child: child,
+      ),
+    ),
+  );
 }
 
 /// One consistently zoomable photo, including bundled scenes and placeholders.
@@ -442,11 +672,13 @@ class _ZoomableMemoryPhoto extends StatefulWidget {
     required this.semanticsLabel,
     required this.resetGeneration,
     required this.onZoomChanged,
+    required this.onTap,
   });
   final MemoryPhoto photo;
   final String semanticsLabel;
   final int resetGeneration;
   final ValueChanged<bool> onZoomChanged;
+  final VoidCallback onTap;
 
   @override
   State<_ZoomableMemoryPhoto> createState() => _ZoomableMemoryPhotoState();
@@ -456,6 +688,10 @@ class _ZoomableMemoryPhotoState extends State<_ZoomableMemoryPhoto> {
   late final TransformationController _zoom = TransformationController()
     ..addListener(_notifyZoom);
   bool _zoomed = false;
+  Timer? _tapTimer;
+  int _pointers = 0;
+  Offset? _pointerDown;
+  bool _moved = false, _multiTouch = false, _suppressTap = false;
 
   void _notifyZoom() {
     final zoomed = _zoom.value.getMaxScaleOnAxis() > 1.001;
@@ -482,6 +718,59 @@ class _ZoomableMemoryPhotoState extends State<_ZoomableMemoryPhoto> {
       ..translateByDouble(-center.dx, -center.dy, 0, 1);
   }
 
+  void _cancelTap() {
+    _tapTimer?.cancel();
+    _tapTimer = null;
+  }
+
+  void _onPointerDown(PointerDownEvent event) {
+    _pointers++;
+    if (_pointers == 1) {
+      _pointerDown = event.position;
+      _moved = false;
+      _multiTouch = false;
+      if (_tapTimer != null) {
+        _cancelTap();
+        _suppressTap = true;
+      }
+    } else {
+      _multiTouch = true;
+      _cancelTap();
+    }
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    final down = _pointerDown;
+    if (_pointers == 1 &&
+        down != null &&
+        (event.position - down).distance > kTouchSlop) {
+      _moved = true;
+      _cancelTap();
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    if (_pointers > 0) _pointers--;
+    if (_pointers > 0) return;
+    if (!_multiTouch && !_moved && !_suppressTap) {
+      _tapTimer = Timer(kDoubleTapTimeout, () {
+        _tapTimer = null;
+        if (mounted) widget.onTap();
+      });
+    }
+    _pointerDown = null;
+    _multiTouch = false;
+    _suppressTap = false;
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    _pointers = 0;
+    _pointerDown = null;
+    _multiTouch = false;
+    _suppressTap = false;
+    _cancelTap();
+  }
+
   @override
   void didUpdateWidget(_ZoomableMemoryPhoto oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -490,23 +779,31 @@ class _ZoomableMemoryPhotoState extends State<_ZoomableMemoryPhoto> {
 
   @override
   void dispose() {
+    _cancelTap();
     _zoom.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onDoubleTap: _toggleZoom,
-    child: InteractiveViewer(
-      transformationController: _zoom,
-      panEnabled: _zoomed,
-      minScale: 1,
-      maxScale: 4,
-      child: MemoryPhotoTile(
-        large: true,
-        photo: widget.photo,
-        semanticsLabel:
-            '${widget.semanticsLabel}. Pinch to zoom; double-tap to zoom or reset.',
+  Widget build(BuildContext context) => Listener(
+    onPointerDown: _onPointerDown,
+    onPointerMove: _onPointerMove,
+    onPointerUp: _onPointerUp,
+    onPointerCancel: _onPointerCancel,
+    child: GestureDetector(
+      onDoubleTap: _toggleZoom,
+      child: InteractiveViewer(
+        transformationController: _zoom,
+        panEnabled: _zoomed,
+        minScale: 1,
+        maxScale: 4,
+        child: MemoryPhotoTile(
+          large: true,
+          photo: widget.photo,
+          semanticsLabel:
+              '${widget.semanticsLabel}. Pinch to zoom; double-tap to zoom or reset; '
+              'tap to show or hide controls.',
+        ),
       ),
     ),
   );
@@ -518,15 +815,25 @@ class _PhotoAction extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onPressed,
+    this.busy = false,
   });
   final IconData icon;
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final bool busy;
   @override
   Widget build(BuildContext context) => TextButton.icon(
     onPressed: onPressed,
     style: TextButton.styleFrom(foregroundColor: CircleOverlay.foreground),
-    icon: Icon(icon, size: CircleSizes.iconPhoto),
+    icon: busy
+        ? const SizedBox.square(
+            dimension: CircleSizes.iconPhoto,
+            child: CircularProgressIndicator(
+              strokeWidth: CircleSizes.progressStroke,
+              color: CircleOverlay.foreground,
+            ),
+          )
+        : Icon(icon, size: CircleSizes.iconPhoto),
     label: Text(label),
   );
 }
