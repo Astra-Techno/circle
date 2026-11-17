@@ -441,7 +441,7 @@ class CircleAccents extends ThemeExtension<CircleAccents> {
     title: Color(0xFF221D16),
     caption: Color(0xFF7A7166),
     activeDot: Color(0xFF3F7A68),
-    chatWallpaper: Color(0xFFFBF7F2),
+    chatWallpaper: Color(0xFFFFFFFF),
     chatIncoming: Color(0xFFF4EEE4),
     chatOutgoing: Color(0xFFE4DEFA),
     printMount: Colors.white,
@@ -566,10 +566,10 @@ ThemeData circleTheme(Brightness brightness) {
       color: accents.title,
     ),
     extensions: [accents],
-    // Warm paper canvas (light) / warm charcoal (dark): keepsake surfaces
+    // Pure white canvas (light) / warm charcoal (dark): keepsake surfaces
     // rest on it like prints on an album page.
     scaffoldBackgroundColor: light
-        ? const Color(0xFFFBF7F2)
+        ? const Color(0xFFFFFFFF)
         : const Color(0xFF1A1512),
     splashColor: pressedWash,
     highlightColor: pressedWash,

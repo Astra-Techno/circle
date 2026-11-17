@@ -261,7 +261,6 @@ class _ActionIconStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accents = CircleAccents.of(context);
     final items = <_ActionItem>[
       _ActionItem(
         type: CircleActionIconType.memory,
@@ -296,26 +295,19 @@ class _ActionIconStrip extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0)
-              Container(
-                width: CircleMemoryLayout.dividerThickness * 4,
-                height: CircleSizes.iconDefault,
-                color: accents.hairline,
-              ),
+          for (final item in items)
             Tooltip(
-              message: items[i].tooltip,
+              message: item.tooltip,
               child: InkWell(
                 borderRadius: BorderRadius.circular(CircleRadius.card),
-                onTap: () => context.push(items[i].route),
+                onTap: () => context.push(item.route),
                 // 48px tap target around the 34px tile.
                 child: SizedBox.square(
                   dimension: CircleSizes.minTouchTarget,
-                  child: Center(child: CircleActionIcon(type: items[i].type)),
+                  child: Center(child: CircleActionIcon(type: item.type)),
                 ),
               ),
             ),
-          ],
         ],
       ),
     );
